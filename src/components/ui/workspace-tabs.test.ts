@@ -26,12 +26,60 @@ test("workspace tabs keep their accessible visual contract and raise positive co
     component,
     /\{" "\}[\s\S]*?<sup className="workspace-tab-count">\{item\.count\}<\/sup>/,
   );
+  assert.match(
+    component,
+    /className=\{classNames\("workspace-tabs-rail", className\)\}/,
+  );
+  assert.match(
+    component,
+    /className="workspace-tabs-scroll"[\s\S]*?onScroll=\{updateScrollEdges\}/,
+  );
+  assert.match(component, /aria-label="Прокрутить вкладки влево"/);
+  assert.match(component, /aria-label="Прокрутить вкладки вправо"/);
+  assert.match(component, /hidden=\{!scrollEdges\.canScrollLeft\}/);
+  assert.match(component, /hidden=\{!scrollEdges\.canScrollRight\}/);
+  assert.match(
+    component,
+    /<ChevronLeft aria-hidden="true" \/>[\s\S]*?role="tablist"[\s\S]*?<ChevronRight aria-hidden="true" \/>/,
+  );
+  assert.match(component, /scroller\.scrollBy\(\{/);
+  assert.match(component, /behavior: reducedMotion \? "auto" : "smooth"/);
+  assert.match(component, /document\.activeElement === leftScrollControlRef/);
+  assert.match(component, /document\.activeElement === rightScrollControlRef/);
+  assert.match(component, /const focusTarget = nextControl \?\? tabRefs/);
 
   assert.match(
     styles,
     /\.workspace-tabs\s*\{[^}]*--workspace-tabs-inline-offset: 0px;[^}]*padding-inline: var\(--workspace-tabs-inline-offset\);/,
   );
-  assert.match(component, /const edgePadding = 0;/);
+  assert.match(
+    component,
+    /const leftEdgePadding =[\s\S]*?SCROLL_CONTROL_REVEAL_PADDING/,
+  );
+  assert.match(
+    component,
+    /const rightEdgePadding =[\s\S]*?SCROLL_CONTROL_REVEAL_PADDING/,
+  );
+  assert.match(
+    styles,
+    /\.workspace-tabs-scroll\s*\{[^}]*overflow-x: auto;[^}]*scrollbar-width: none;[^}]*-ms-overflow-style: none;/,
+  );
+  assert.match(
+    styles,
+    /\.workspace-tabs-scroll::\-webkit-scrollbar\s*\{[^}]*display: none;[^}]*width: 0;[^}]*height: 0;/,
+  );
+  assert.match(
+    styles,
+    /\.workspace-tabs-rail\[data-can-scroll-left="true"\]\[data-can-scroll-right="true"\][\s\S]*?mask-image: linear-gradient/,
+  );
+  assert.match(
+    styles,
+    /\.workspace-tabs-scroll-control\s*\{[^}]*position: absolute;[^}]*width: var\(--course-demo-control-height, 2\.5rem\);[^}]*height: var\(--course-demo-control-height, 2\.5rem\);/,
+  );
+  assert.match(
+    styles,
+    /\.workspace-tabs-scroll-control\[hidden\]\s*\{[^}]*display: none;/,
+  );
   assert.match(
     styles,
     /:root\s*\{[^}]*--product-secondary-foreground: oklch\(0\.19 0 0 \/ 0\.6\);[^}]*--product-workspace-tabs-divider-color: oklch\(0\.19 0 0 \/ 0\.4\);/,
@@ -53,7 +101,9 @@ test("workspace tabs keep their accessible visual contract and raise positive co
   assert.match(component, /activeTab\.getBoundingClientRect\(\)/);
   assert.match(component, /left: activeTabRect\.left - tabsRect\.left/);
   assert.match(component, /width: activeTabRect\.width/);
-  assert.match(component, /new ResizeObserver\(updateIndicator\)/);
+  assert.match(component, /new ResizeObserver\(updateLayout\)/);
+  assert.match(component, /observer\.observe\(scroller\)/);
+  assert.match(component, /updateScrollEdges\(\)/);
   assert.match(component, /data-indicator-ready=\{indicator\.ready/);
   assert.match(component, /indicator\.ready && indicatorMotionReady/);
   assert.match(component, /panel\.animate\(/);

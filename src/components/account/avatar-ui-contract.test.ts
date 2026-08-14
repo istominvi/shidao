@@ -67,7 +67,7 @@ test("account settings keep avatar choices compact and require confirmation", ()
   assert.ok((form.match(/await refetchSession\(\)/g) ?? []).length >= 2);
 });
 
-test("header uses a square avatar image and dropdown keeps identity text only", () => {
+test("protected mobile header uses a burger while desktop keeps the Account avatar", () => {
   const navigation = source("src/components/session-nav-actions.tsx");
   const navigationPrimitives = source(
     "src/components/navigation/primitives.tsx",
@@ -82,6 +82,18 @@ test("header uses a square avatar image and dropdown keeps identity text only", 
     navigation,
     /<AvatarImage[\s\S]*?avatar=\{state\.avatar\}[\s\S]*?size=\{40\}/,
   );
+  assert.match(navigation, /variant = "top-nav"/);
+  assert.match(navigation, /const isProtectedTopNav = variant === "top-nav"/);
+  assert.match(
+    navigation,
+    /<Menu className="nav-main-menu-icon md:hidden" aria-hidden="true" \/>/,
+  );
+  assert.match(
+    navigation,
+    /<span className="hidden md:inline-flex">\s*<AvatarImage/,
+  );
+  assert.match(navigation, /aria-label=\{accountMenuTriggerLabel\}/);
+  assert.match(navigation, /aria-label=\{accountMenuLabel\}/);
   assert.match(navigation, /<div className="nav-dropdown-profile">/);
   assert.doesNotMatch(
     navigation.match(
@@ -99,6 +111,10 @@ test("header uses a square avatar image and dropdown keeps identity text only", 
   assert.match(
     navigationCss,
     /--header-pill-height: 2\.5rem[\s\S]*?\.nav-user-trigger-avatar\s*\{[\s\S]*?border-radius: var\(--product-element-radius/,
+  );
+  assert.match(
+    navigationCss,
+    /\.nav-user-trigger > \.nav-main-menu-icon,[\s\S]*?width: 1\.25rem;[\s\S]*?height: 1\.25rem;/,
   );
   assert.match(
     navigationPrimitives,

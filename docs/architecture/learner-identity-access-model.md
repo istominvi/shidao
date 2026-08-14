@@ -5,7 +5,7 @@ identity, teacher directory, observer access и consented AI history
 
 **Дата решения:** 9 августа 2026 года
 
-**Актуально на:** 14 августа 2026 года
+**Актуально на:** 15 августа 2026 года
 
 **Implementation state:** production содержит полный application/API/UI slice,
 M1–M6 contract schema и Account-avatar contract. Четыре verified backup, strict
@@ -350,7 +350,14 @@ UI surfaces:
   Account settings, AI consents и destructive self lifecycle;
 - прежние `/learning-profile`, `/settings`, `/settings/profile`,
   `/settings/security` и `/settings/observers` — только compatibility redirects
-  в этот раздел.
+  в этот раздел;
+- current source / next production protected mobile navigation открывается
+  burger-кнопкой вместо avatar-trigger. Menu header использует browser-safe
+  Account projection: trimmed имя с fallback и email только если он не скрыт
+  internal-auth boundary. Visible destinations ограничены пунктами «Расписание /
+  Ученики / Курсы / Магазин / Профиль»; desktop сохраняет полный profile menu,
+  включая sign-out, а landing avatar/dropdown остаётся прежним. Account/Auth IDs
+  и private Storage path в browser projection для этого не добавляются.
 
 ## Subject-only unlink и erasure
 
@@ -440,7 +447,7 @@ closed как stale.
   `course-builder-service.ts`;
 - profile/navigation UI: `src/app/(app)/profile/`, `src/components/profile/`,
   `src/components/learner-identity/learning-profile-workspace.tsx`,
-  `src/lib/navigation/profile-nav.ts`;
+  `src/lib/navigation/profile-nav.ts`, `src/components/session-nav-actions.tsx`;
 - Account/avatar UI: `src/components/account/avatar-image.tsx`,
   `src/components/account/avatar-settings-form.tsx`,
   `src/components/account/account-settings-panel.tsx`;

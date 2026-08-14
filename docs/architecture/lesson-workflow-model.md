@@ -4,7 +4,7 @@
 
 **Дата решения:** 5 августа 2026 года
 
-**Актуально на:** 14 августа 2026 года
+**Актуально на:** 15 августа 2026 года
 
 **Область:** Course Builder / Lesson / Components / Student Screen / audience / scheduling / learning history / course materials / homework
 
@@ -627,6 +627,14 @@ Visual contract Course routes не меняет эту навигационну�
   одной строке и обрезается ellipsis, а интервалы над и под backlink совпадают с
   page-header block-inset (20 px desktop, 16 px mobile). Этот UI-only follow-up
   не меняет Lesson hierarchy, API или schema.
+  В current source / next production layout ниже `1280 px` становится
+  content-aware wrapping row: content растёт, intrinsic action остаётся справа
+  в той же строке, пока суммарная фактическая ширина помещается, и переносится
+  вниз только при реальном overflow. Это не меняет лимит одного visible primary
+  action и не превращает control в full-width кнопку. Product shell использует
+  `overflow-x: clip`, чтобы directional route entrance не расширял document на
+  промежуточном frame; собственные горизонтальные scrollers остаются
+  интерактивными.
   Надзаголовок/eyebrow не входит в `AppPageHeader` API и не может появиться на
   отдельном product route;
 - current production action contract допускает не больше одного visible primary
@@ -794,7 +802,14 @@ Visual contract Course routes не меняет эту навигационну�
   16 px Lucide icon; только positive numeric
   count показывается маленьким приподнятым `sup` с weight 500, а `0` отсутствует. Каждый tab
   ссылается на постоянный matching `tabpanel`, который возвращает его id через
-  `aria-labelledby`;
+  `aria-labelledby`. В current source / next production native scrollbar скрыт
+  через Firefox/WebKit/MS-compatible contract при сохранённом
+  `overflow-x: auto` и touch/swipe. ResizeObserver и scroll events вычисляют
+  доступные края; 40 px chevron-кнопки находятся вне `tablist`, показывают
+  direction-aware fade, прокручивают примерно 75% viewport без выбора tab и
+  учитывают reduced motion. Active-tab reveal резервирует ширину overlay, а
+  исчезающий focused control передаёт focus противоположной стрелке или
+  активной вкладке;
 - отдельный authenticated Settings shell удалён: compatibility `/settings/*`
   перенаправляет в адресуемые вкладки `/profile`, использующие тот же product
   shell, TopNav и shared controls; visual tokens не меняют landing, Auth или
@@ -953,7 +968,12 @@ actions`; пять data headers сортируют полную client-loaded pr
 
 Current production primary navigation для roleless Account содержит
 «Расписание / Ученики / Курсы / Магазин». «Профиль» находится в Account menu, а
-«Наблюдение» — третья вкладка `/students`; `/observing` служит compatibility redirect. Пустой
+«Наблюдение» — третья вкладка `/students`; `/observing` служит compatibility redirect.
+В current source / next production protected mobile header скрывает desktop
+primary rail и заменяет avatar-trigger на burger. Его menu header показывает
+Account name и только допустимый публичный email, а visible items ограничены
+«Расписание / Ученики / Курсы / Магазин / Профиль». Desktop сохраняет avatar и
+полный profile menu; landing contract не меняется. Пустой
 `/courses` позволяет начать authoring; он не является Course enrollment
 учащегося. Owner-scoped CourseSummary поддерживает поиск, subject/level/content
 filters, сортировку и режимы «Карточки / Таблица» без второй модели; current

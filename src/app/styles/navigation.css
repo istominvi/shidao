@@ -113,6 +113,15 @@
   opacity: 1;
 }
 
+.nav-user-trigger > .nav-main-menu-icon,
+.site-header-shell-demo .nav-user-trigger > .nav-main-menu-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 1.25rem;
+  color: currentColor;
+  opacity: 1;
+}
+
 .site-header-shell-demo .nav-dropdown-item {
   border: 0;
   font-weight: var(--course-demo-control-font-weight, 400);

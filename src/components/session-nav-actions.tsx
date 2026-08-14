@@ -1,12 +1,13 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
 import {
   BadgeCheck,
   History,
   LogOut,
+  Menu,
   Settings,
   UserRound,
   UsersRound,
@@ -78,10 +79,12 @@ async function readActionError(
 
 export function SessionNavActions({
   state,
+  variant = "top-nav",
   portalMenu = false,
   mobileNavItems = [],
 }: SessionNavActionsProps) {
   const menuId = useId();
+  const pathname = usePathname();
   const router = useRouter();
   const { refetchSession } = useSessionView();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -91,6 +94,15 @@ export function SessionNavActions({
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const [actionLoading, setActionLoading] = useState<ActionLoadingState>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const isProtectedTopNav = variant === "top-nav";
+  const accountMenuLabel = isProtectedTopNav
+    ? "Меню аккаунта"
+    : "Меню пользователя";
+  const accountMenuTriggerLabel = isProtectedTopNav
+    ? "Открыть меню аккаунта"
+    : "Открыть меню пользователя";
+  const profileActive = pathname === ROUTES.profile;
+  const nameLabel = state.fullName?.trim() || "Пользователь";
   const emailLabel = isInternalAuthEmail(state.email) ? null : state.email;
   const updateMenuPosition = useCallback(() => {
     if (!portalMenu || !containerRef.current) return;
@@ -242,7 +254,7 @@ export function SessionNavActions({
       ref={menuRef}
       id={menuId}
       role="menu"
-      aria-label="Меню пользователя"
+      aria-label={accountMenuLabel}
       onKeyDown={handleMenuKeyDown}
       className={`w-[18rem] max-w-[calc(100vw-16px)] ${portalMenu ? "fixed z-[260]" : "absolute right-0 z-[120] mt-2"}`}
       style={
@@ -258,7 +270,7 @@ export function SessionNavActions({
       <div className="nav-dropdown-profile">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-neutral-900">
-            {state.fullName ?? "Пользователь"}
+            {nameLabel}
           </p>
           {emailLabel ? (
             <p className="truncate text-xs text-neutral-500">{emailLabel}</p>
@@ -277,8 +289,8 @@ export function SessionNavActions({
       ) : null}
 
       <div className="nav-dropdown-items">
-        {mobileNavItems.length > 0 ? (
-          <div className="mb-1 md:hidden">
+        {isProtectedTopNav ? (
+          <div className="md:hidden">
             {mobileNavItems.map((item) => (
               <PageTransitionLink
                 key={item.id}
@@ -305,44 +317,73 @@ export function SessionNavActions({
                 </span>
               </PageTransitionLink>
             ))}
-          </div>
-        ) : null}
-        {PROFILE_NAV_ITEMS.map((item) => {
-          const Icon = PROFILE_MENU_ICONS[item.id];
-          return (
+
             <PageTransitionLink
-              key={item.id}
-              href={profileTabHref(item.id)}
-              className={navigationDropdownItemClass()}
+              href={profileTabHref("profile")}
+              className={navigationDropdownItemClass(
+                profileActive
+                  ? "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
+                  : undefined,
+              )}
               onClick={() => setOpen(false)}
               role="menuitem"
               scroll={false}
+              aria-current={profileActive ? "page" : undefined}
             >
               <span className="inline-flex items-center gap-2.5">
-                <Icon
+                <UserRound
                   size={16}
                   className="text-neutral-500"
                   aria-hidden="true"
                 />
-                {item.label}
+                Профиль
               </span>
             </PageTransitionLink>
-          );
-        })}
+          </div>
+        ) : null}
 
-        <button
-          className={navigationDropdownItemClass("text-neutral-700")}
-          onClick={handleSignOut}
-          disabled={actionLoading === "signout"}
-          aria-busy={actionLoading === "signout"}
-          role="menuitem"
-          type="button"
-        >
-          <span className="inline-flex items-center gap-2.5">
-            <LogOut size={16} className="text-neutral-500" aria-hidden="true" />
-            {actionLoading === "signout" ? "Выход…" : "Выход"}
-          </span>
-        </button>
+        <div className={isProtectedTopNav ? "hidden md:block" : undefined}>
+          {PROFILE_NAV_ITEMS.map((item) => {
+            const Icon = PROFILE_MENU_ICONS[item.id];
+            return (
+              <PageTransitionLink
+                key={item.id}
+                href={profileTabHref(item.id)}
+                className={navigationDropdownItemClass()}
+                onClick={() => setOpen(false)}
+                role="menuitem"
+                scroll={false}
+              >
+                <span className="inline-flex items-center gap-2.5">
+                  <Icon
+                    size={16}
+                    className="text-neutral-500"
+                    aria-hidden="true"
+                  />
+                  {item.label}
+                </span>
+              </PageTransitionLink>
+            );
+          })}
+
+          <button
+            className={navigationDropdownItemClass("text-neutral-700")}
+            onClick={handleSignOut}
+            disabled={actionLoading === "signout"}
+            aria-busy={actionLoading === "signout"}
+            role="menuitem"
+            type="button"
+          >
+            <span className="inline-flex items-center gap-2.5">
+              <LogOut
+                size={16}
+                className="text-neutral-500"
+                aria-hidden="true"
+              />
+              {actionLoading === "signout" ? "Выход…" : "Выход"}
+            </span>
+          </button>
+        </div>
       </div>
     </NavigationDropdownPanel>
   );
@@ -356,17 +397,33 @@ export function SessionNavActions({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
-        aria-label="Открыть меню пользователя"
+        aria-label={accountMenuTriggerLabel}
         className="nav-user-trigger inline-flex cursor-pointer items-center justify-center"
       >
-        <AvatarImage
-          avatar={state.avatar}
-          initials={state.initials}
-          alt=""
-          size={40}
-          className="nav-user-trigger-avatar"
-          priority
-        />
+        {isProtectedTopNav ? (
+          <>
+            <Menu className="nav-main-menu-icon md:hidden" aria-hidden="true" />
+            <span className="hidden md:inline-flex">
+              <AvatarImage
+                avatar={state.avatar}
+                initials={state.initials}
+                alt=""
+                size={40}
+                className="nav-user-trigger-avatar"
+                priority
+              />
+            </span>
+          </>
+        ) : (
+          <AvatarImage
+            avatar={state.avatar}
+            initials={state.initials}
+            alt=""
+            size={40}
+            className="nav-user-trigger-avatar"
+            priority
+          />
+        )}
       </button>
 
       {open && (portalMenu ? createPortal(menu, document.body) : menu)}

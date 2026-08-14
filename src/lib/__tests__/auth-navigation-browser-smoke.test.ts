@@ -5599,7 +5599,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     );
 
     const userMenuTrigger = runtime.page.getByRole("button", {
-      name: "Открыть меню пользователя",
+      name: "Открыть меню аккаунта",
       exact: true,
     });
     await userMenuTrigger.click();
@@ -5617,7 +5617,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       "Профиль",
     );
     await runtime.page
-      .getByRole("menu", { name: "Меню пользователя", exact: true })
+      .getByRole("menu", { name: "Меню аккаунта", exact: true })
       .waitFor();
     assert.deepEqual(
       await runtime.page.evaluate(() => {
@@ -7475,6 +7475,206 @@ test("browser smoke: self profile exposes only learner-safe history and controls
     assert.match(html, /Известное фактическое время/);
     await assertProfileSurfaceContract("Профиль");
 
+    await runtime.page.setViewportSize({ width: 484, height: 812 });
+    await runtime.page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          window.requestAnimationFrame(() =>
+            window.requestAnimationFrame(() => resolve()),
+          ),
+        ),
+    );
+    const compactProfileHeader = await runtime.page.evaluate(() => {
+      const header = document.querySelector<HTMLElement>(".app-page-header");
+      const content = header?.querySelector<HTMLElement>(
+        ".app-page-header-content",
+      );
+      const actions = header?.querySelector<HTMLElement>(".app-page-actions");
+      const action = actions?.querySelector<HTMLElement>(".product-btn");
+      if (!header || !content || !actions || !action) {
+        throw new Error("Compact Profile header contract is missing");
+      }
+
+      const headerStyle = getComputedStyle(header);
+      const headerRect = header.getBoundingClientRect();
+      const contentRect = content.getBoundingClientRect();
+      const actionsRect = actions.getBoundingClientRect();
+      const actionRect = action.getBoundingClientRect();
+      return {
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        direction: headerStyle.flexDirection,
+        wrap: headerStyle.flexWrap,
+        actionLabel: action.textContent?.trim() ?? "",
+        actionIntrinsicWidthDelta: Math.abs(
+          actionsRect.width - actionRect.width,
+        ),
+        actionCenterDelta: Math.abs(
+          actionsRect.top +
+            actionsRect.height / 2 -
+            (contentRect.top + contentRect.height / 2),
+        ),
+        actionRightInsetDelta: Math.abs(
+          headerRect.right -
+            Number.parseFloat(headerStyle.paddingRight) -
+            actionsRect.right,
+        ),
+        contentActionGap: actionsRect.left - contentRect.right,
+        actionsShareContentRow:
+          actionsRect.top < contentRect.bottom &&
+          actionsRect.bottom > contentRect.top,
+      };
+    });
+    assert.deepEqual(
+      {
+        clientWidth: compactProfileHeader.clientWidth,
+        scrollWidth: compactProfileHeader.scrollWidth,
+        direction: compactProfileHeader.direction,
+        wrap: compactProfileHeader.wrap,
+        actionLabel: compactProfileHeader.actionLabel,
+        actionsShareContentRow: compactProfileHeader.actionsShareContentRow,
+      },
+      {
+        clientWidth: 484,
+        scrollWidth: 484,
+        direction: "row",
+        wrap: "wrap",
+        actionLabel: "Выход",
+        actionsShareContentRow: true,
+      },
+    );
+    assert.ok(compactProfileHeader.actionIntrinsicWidthDelta < 0.5);
+    assert.ok(compactProfileHeader.actionCenterDelta < 0.5);
+    assert.ok(compactProfileHeader.actionRightInsetDelta < 0.5);
+    assert.ok(Math.abs(compactProfileHeader.contentActionGap - 24) < 0.5);
+
+    const initialProfileTabs = await runtime.page.evaluate(() => {
+      const rail = document.querySelector<HTMLElement>(".workspace-tabs-rail");
+      const scroller = rail?.querySelector<HTMLElement>(
+        ".workspace-tabs-scroll",
+      );
+      const leftControl = rail?.querySelector<HTMLButtonElement>(
+        '.workspace-tabs-scroll-control[aria-label="Прокрутить вкладки влево"]',
+      );
+      const rightControl = rail?.querySelector<HTMLButtonElement>(
+        '.workspace-tabs-scroll-control[aria-label="Прокрутить вкладки вправо"]',
+      );
+      if (!rail || !scroller || !leftControl || !rightControl) {
+        throw new Error("Compact Profile tabs contract is missing");
+      }
+      return {
+        overflowX: getComputedStyle(scroller).overflowX,
+        scrollbarWidth: getComputedStyle(scroller).scrollbarWidth,
+        scrollLeft: scroller.scrollLeft,
+        overflows: scroller.scrollWidth > scroller.clientWidth,
+        leftControlHidden: leftControl.hidden,
+        rightControlHidden: rightControl.hidden,
+        controlsOutsideTablist:
+          !leftControl.closest('[role="tablist"]') &&
+          !rightControl.closest('[role="tablist"]'),
+      };
+    });
+    assert.deepEqual(initialProfileTabs, {
+      overflowX: "auto",
+      scrollbarWidth: "none",
+      scrollLeft: 0,
+      overflows: true,
+      leftControlHidden: true,
+      rightControlHidden: false,
+      controlsOutsideTablist: true,
+    });
+
+    await runtime.page
+      .getByRole("button", {
+        name: "Прокрутить вкладки вправо",
+        exact: true,
+      })
+      .click();
+    await runtime.page.waitForFunction(() => {
+      const scroller = document.querySelector<HTMLElement>(
+        ".workspace-tabs-scroll",
+      );
+      return Boolean(scroller && scroller.scrollLeft > 1);
+    });
+    await runtime.page
+      .getByRole("button", {
+        name: "Прокрутить вкладки влево",
+        exact: true,
+      })
+      .waitFor();
+    const scrolledProfileTabsLeft = await runtime.page
+      .locator(".workspace-tabs-scroll")
+      .evaluate((scroller) => scroller.scrollLeft);
+    assert.ok(scrolledProfileTabsLeft > initialProfileTabs.scrollLeft);
+
+    await runtime.page
+      .getByRole("button", {
+        name: "Прокрутить вкладки влево",
+        exact: true,
+      })
+      .click();
+    await runtime.page.waitForFunction(() => {
+      const scroller = document.querySelector<HTMLElement>(
+        ".workspace-tabs-scroll",
+      );
+      const leftControl = document.querySelector<HTMLButtonElement>(
+        ".workspace-tabs-scroll-control-left",
+      );
+      const rightControl = document.querySelector<HTMLButtonElement>(
+        ".workspace-tabs-scroll-control-right",
+      );
+      return Boolean(
+        scroller &&
+        leftControl?.hidden &&
+        rightControl &&
+        !rightControl.hidden &&
+        scroller.scrollLeft <= 1,
+      );
+    });
+    assert.equal(
+      await runtime.page
+        .locator(".workspace-tabs-scroll-control-right")
+        .getAttribute("hidden"),
+      null,
+    );
+    assert.equal(
+      await runtime.page
+        .locator(".workspace-tabs-scroll-control-left")
+        .getAttribute("hidden"),
+      "",
+    );
+
+    await runtime.page.setViewportSize({ width: 1280, height: 720 });
+    await runtime.page.waitForFunction(() => {
+      const scroller = document.querySelector<HTMLElement>(
+        ".workspace-tabs-scroll",
+      );
+      const leftControl = document.querySelector<HTMLButtonElement>(
+        ".workspace-tabs-scroll-control-left",
+      );
+      const rightControl = document.querySelector<HTMLButtonElement>(
+        ".workspace-tabs-scroll-control-right",
+      );
+      return Boolean(
+        scroller &&
+        leftControl?.hidden &&
+        rightControl?.hidden &&
+        scroller.scrollWidth <= scroller.clientWidth,
+      );
+    });
+    assert.equal(
+      await runtime.page
+        .locator(".workspace-tabs-scroll-control-right")
+        .getAttribute("hidden"),
+      "",
+    );
+    assert.equal(
+      await runtime.page
+        .locator(".workspace-tabs-scroll-control-left")
+        .getAttribute("hidden"),
+      "",
+    );
+
     await runtime.page.getByRole("tab", { name: /^История/ }).click();
     await runtime.page
       .getByText("Опубликованный комментарий для учебного профиля.", {
@@ -8633,7 +8833,7 @@ test("browser smoke: child activation creates a separate login with acknowledged
   }
 });
 
-test("browser smoke: mobile Account menu exposes primary sections and account actions", async (t) => {
+test("browser smoke: mobile Account menu exposes main sections and Profile", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
     return;
@@ -8951,50 +9151,44 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
     });
 
     await runtime.page
-      .getByRole("button", { name: "Открыть меню пользователя", exact: true })
+      .getByRole("button", { name: "Открыть меню аккаунта", exact: true })
       .click();
 
     assert.deepEqual(
       await runtime.page.evaluate(() => {
         const trigger =
           document.querySelector<HTMLElement>(".nav-user-trigger");
+        const burger = trigger?.querySelector<SVGElement>(
+          ".nav-main-menu-icon",
+        );
         const avatar = trigger?.querySelector<HTMLElement>(
           ".nav-user-trigger-avatar",
         );
-        const avatarImage = avatar?.querySelector<HTMLImageElement>("img");
         const menu = document.querySelector<HTMLElement>(
-          '[role="menu"][aria-label="Меню пользователя"]',
+          '[role="menu"][aria-label="Меню аккаунта"]',
         );
         const profileHeader = menu?.querySelector<HTMLElement>(
           ".nav-dropdown-profile",
         );
         const items = menu?.querySelector<HTMLElement>(".nav-dropdown-items");
-        if (
-          !trigger ||
-          !avatar ||
-          !avatarImage ||
-          !menu ||
-          !profileHeader ||
-          !items
-        ) {
+        if (!trigger || !burger || !menu || !profileHeader || !items) {
           throw new Error("Mobile account menu contract is missing");
         }
         const triggerRect = trigger.getBoundingClientRect();
-        const avatarRect = avatar.getBoundingClientRect();
-        const avatarImageRect = avatarImage.getBoundingClientRect();
+        const burgerRect = burger.getBoundingClientRect();
         const menuRect = menu.getBoundingClientRect();
         const itemsRect = items.getBoundingClientRect();
+        const visibleMenuItems = Array.from(
+          menu.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+        ).filter((item) => item.getClientRects().length > 0);
         return {
           trigger: {
             width: triggerRect.width,
             height: triggerRect.height,
-            avatarWidth: avatarRect.width,
-            avatarHeight: avatarRect.height,
-            avatarRadius: getComputedStyle(avatar).borderRadius,
-            imageTag: avatarImage.tagName,
-            imageWidth: avatarImageRect.width,
-            imageHeight: avatarImageRect.height,
-            imageObjectFit: getComputedStyle(avatarImage).objectFit,
+            burgerWidth: burgerRect.width,
+            burgerHeight: burgerRect.height,
+            visibleAvatarCount:
+              avatar && avatar.getClientRects().length > 0 ? 1 : 0,
           },
           profileName: profileHeader
             .querySelector("p:first-child")
@@ -9011,19 +9205,18 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
             leftDelta: Math.abs(itemsRect.left - menuRect.left),
             rightDelta: Math.abs(itemsRect.right - menuRect.right),
           },
+          visibleMenuItems: visibleMenuItems.map(
+            (item) => item.textContent?.trim() ?? "",
+          ),
         };
       }),
       {
         trigger: {
           width: 40,
           height: 40,
-          avatarWidth: 40,
-          avatarHeight: 40,
-          avatarRadius: "12px",
-          imageTag: "IMG",
-          imageWidth: 40,
-          imageHeight: 40,
-          imageObjectFit: "cover",
+          burgerWidth: 20,
+          burgerHeight: 20,
+          visibleAvatarCount: 0,
         },
         profileName: "E2E Adult",
         profileEmail: "adult-e2e@example.test",
@@ -9034,12 +9227,21 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
           leftDelta: 6,
           rightDelta: 6,
         },
+        visibleMenuItems: [
+          "Расписание",
+          "Ученики",
+          "Курсы",
+          "Магазин",
+          "Профиль",
+        ],
       },
     );
 
-    await runtime.page
-      .getByRole("menuitem", { name: "Расписание", exact: true })
-      .waitFor();
+    const scheduleMenuItem = runtime.page.getByRole("menuitem", {
+      name: "Расписание",
+      exact: true,
+    });
+    await scheduleMenuItem.waitFor();
     await runtime.page
       .getByRole("menuitem", { name: "Курсы", exact: true })
       .waitFor();
@@ -9051,40 +9253,42 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       exact: true,
     });
     await learningProfileMenuItem.waitFor();
-    await runtime.page
-      .getByRole("menuitem", { name: "История", exact: true })
-      .waitFor();
-    await runtime.page
-      .getByRole("menuitem", { name: "Аттестация", exact: true })
-      .waitFor();
-    await runtime.page
-      .getByRole("menuitem", { name: "Наблюдатели", exact: true })
-      .waitFor();
-    await runtime.page
-      .getByRole("menuitem", { name: "Настройки", exact: true })
-      .waitFor();
-    await runtime.page
-      .getByRole("menuitem", { name: "Выход", exact: true })
-      .waitFor();
-
     const accountMenu = runtime.page.getByRole("menu", {
-      name: "Меню пользователя",
+      name: "Меню аккаунта",
       exact: true,
     });
-    await accountMenu.press("End");
-    assert.equal(
-      await runtime.page.evaluate(() =>
-        document.activeElement?.textContent?.trim(),
-      ),
-      "Выход",
-    );
-    await accountMenu.press("Home");
+    await runtime.page.locator(".nav-dropdown-item:focus").waitFor();
     assert.equal(
       await runtime.page.evaluate(() =>
         document.activeElement?.textContent?.trim(),
       ),
       "Расписание",
     );
+    await scheduleMenuItem.press("End");
+    assert.equal(
+      await runtime.page.evaluate(() =>
+        document.activeElement?.textContent?.trim(),
+      ),
+      "Профиль",
+    );
+    await learningProfileMenuItem.press("Home");
+    assert.equal(
+      await runtime.page.evaluate(() =>
+        document.activeElement?.textContent?.trim(),
+      ),
+      "Расписание",
+    );
+    await scheduleMenuItem.press("Escape");
+    await accountMenu.waitFor({ state: "detached" });
+    assert.equal(
+      await runtime.page.evaluate(
+        () => document.activeElement?.getAttribute("aria-label") ?? "",
+      ),
+      "Открыть меню аккаунта",
+    );
+    await runtime.page
+      .getByRole("button", { name: "Открыть меню аккаунта", exact: true })
+      .click();
 
     await Promise.all([
       runtime.page.waitForURL(/\/profile$/),
@@ -9099,7 +9303,7 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
       .waitFor();
 
     await runtime.page
-      .getByRole("button", { name: "Открыть меню пользователя", exact: true })
+      .getByRole("button", { name: "Открыть меню аккаунта", exact: true })
       .click();
     const studentsMenuItem = runtime.page.getByRole("menuitem", {
       name: "Ученики",
@@ -11402,6 +11606,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         documentScrollWidth: document.documentElement.scrollWidth,
         headerDisplay: headerStyle.display,
         headerDirection: headerStyle.flexDirection,
+        headerWrap: headerStyle.flexWrap,
         headingOwnsContentDelta: Math.abs(pageHeadingRect.width - contentWidth),
         actionsInsideHeader:
           actionsRect.left >=
@@ -11442,6 +11647,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         documentScrollWidth: narrowLessonHeader.documentScrollWidth,
         headerDisplay: narrowLessonHeader.headerDisplay,
         headerDirection: narrowLessonHeader.headerDirection,
+        headerWrap: narrowLessonHeader.headerWrap,
         actionsInsideHeader: narrowLessonHeader.actionsInsideHeader,
         actionsDoNotOverlapHeading:
           narrowLessonHeader.actionsDoNotOverlapHeading,
@@ -11460,7 +11666,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         documentClientWidth: 1120,
         documentScrollWidth: 1120,
         headerDisplay: "flex",
-        headerDirection: "column",
+        headerDirection: "row",
+        headerWrap: "wrap",
         actionsInsideHeader: true,
         actionsDoNotOverlapHeading: true,
         titleWrap: "anywhere",
@@ -12501,6 +12708,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         document.querySelector<HTMLElement>(".app-page-header");
       const pageHeading =
         pageHeader?.querySelector<HTMLElement>(".app-page-heading");
+      const pageHeaderContent = pageHeader?.querySelector<HTMLElement>(
+        ".app-page-header-content",
+      );
       const headerActions =
         pageHeader?.querySelector<HTMLElement>(".app-page-actions");
       const headerAction = headerActions?.firstElementChild;
@@ -12522,6 +12732,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       if (
         !pageHeader ||
         !pageHeading ||
+        !pageHeaderContent ||
         !headerActions ||
         !headerAction ||
         !toolbar ||
@@ -12535,6 +12746,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const viewportWidth = document.documentElement.clientWidth;
       const pageHeaderStyle = getComputedStyle(pageHeader);
       const pageHeaderRect = pageHeader.getBoundingClientRect();
+      const pageHeaderContentRect = pageHeaderContent.getBoundingClientRect();
       const pageHeadingRect = pageHeading.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
       const headerActionRect = headerAction.getBoundingClientRect();
@@ -12557,9 +12769,20 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
           actionsFitContentDelta: Math.abs(
             headerActionsRect.width - headerActionRect.width,
           ),
-          headingOwnsContentDelta: Math.abs(
-            pageHeadingRect.width - pageHeaderContentWidth,
+          actionCenterDelta: Math.abs(
+            headerActionsRect.top +
+              headerActionsRect.height / 2 -
+              (pageHeaderContentRect.top + pageHeaderContentRect.height / 2),
           ),
+          actionRightInsetDelta: Math.abs(
+            pageHeaderRect.right -
+              Number.parseFloat(pageHeaderStyle.paddingRight) -
+              headerActionsRect.right,
+          ),
+          contentActionGap:
+            headerActionsRect.left - pageHeaderContentRect.right,
+          actionsDoNotOverlapContent:
+            headerActionsRect.left >= pageHeaderContentRect.right,
           actionsInsideViewport:
             headerActionsRect.left >= 0 &&
             headerActionsRect.right <= viewportWidth,
@@ -12614,7 +12837,15 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         mobileCoursesToolbar.pageHeader.actionsWidth,
     );
     assert.ok(mobileCoursesToolbar.pageHeader.actionsFitContentDelta < 0.5);
-    assert.ok(mobileCoursesToolbar.pageHeader.headingOwnsContentDelta < 0.5);
+    assert.ok(mobileCoursesToolbar.pageHeader.actionCenterDelta < 0.5);
+    assert.ok(mobileCoursesToolbar.pageHeader.actionRightInsetDelta < 0.5);
+    assert.ok(
+      Math.abs(mobileCoursesToolbar.pageHeader.contentActionGap - 24) < 0.5,
+    );
+    assert.equal(
+      mobileCoursesToolbar.pageHeader.actionsDoNotOverlapContent,
+      true,
+    );
     assert.equal(mobileCoursesToolbar.pageHeader.actionsInsideViewport, true);
 
     const mobileCourseFilterTrigger = runtime.page.locator(

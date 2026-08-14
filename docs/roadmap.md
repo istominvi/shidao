@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
 **Статус:** current / next / later priorities после production identity release
-**Актуально на:** 14 августа 2026 года
+**Актуально на:** 15 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -22,6 +22,20 @@
    обновляются в том же изменении.
 8. Нельзя расширять scope за счёт Auth, SMTP, JWT/API keys, базового Storage или
    recovery V1 без отдельного решения.
+
+## Current source / next production — mobile responsive polish
+
+- `AppPageHeader` теперь оставляет короткий content и intrinsic action в одной
+  строке на узком экране, пока они действительно помещаются, и переносит action
+  только при нехватке ширины.
+- `WorkspaceTabs` сохраняет горизонтальный swipe, скрывает системный scrollbar
+  и показывает только доступные fade-chevron направления; кнопки прокручивают
+  ленту, не выбирая вкладку, а keyboard/ARIA/indicator остаются прежними.
+- Protected mobile header использует burger и короткое главное меню
+  «Расписание / Ученики / Курсы / Магазин / Профиль» с именем и допустимым
+  email. Desktop Account dropdown и landing avatar contract не меняются.
+- Следующий release step — обычный Coolify rollout и authenticated postflight
+  на мобильной ширине; API, schema и migration work для этого среза не нужны.
 
 ## Выполненный фундамент
 

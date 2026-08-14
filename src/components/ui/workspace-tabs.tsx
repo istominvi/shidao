@@ -8,8 +8,12 @@ import {
   useState,
   type KeyboardEvent,
 } from "react";
-import type { LucideIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, type LucideIcon } from "lucide-react";
 import { classNames } from "@/lib/ui/classnames";
+
+const SCROLL_EDGE_EPSILON = 1;
+const SCROLL_CONTROL_REVEAL_PADDING = 40;
+const SCROLL_PAGE_RATIO = 0.75;
 
 type WorkspaceTabItem<T extends string> = {
   value: T;
@@ -46,6 +50,9 @@ export function WorkspaceTabs<T extends string>({
   const scrollRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef(new Map<T, HTMLButtonElement>());
+  const leftScrollControlRef = useRef<HTMLButtonElement>(null);
+  const rightScrollControlRef = useRef<HTMLButtonElement>(null);
+  const pendingScrollControlFocusRef = useRef<"left" | "right" | null>(null);
   const panelAnimationRef = useRef<Animation | null>(null);
   const previousValueRef = useRef(value);
   const pendingPanelTransitionRef = useRef<{
@@ -58,6 +65,10 @@ export function WorkspaceTabs<T extends string>({
     left: 0,
     width: 0,
     ready: false,
+  });
+  const [scrollEdges, setScrollEdges] = useState({
+    canScrollLeft: false,
+    canScrollRight: false,
   });
 
   const updateIndicator = useCallback(() => {
@@ -89,21 +100,82 @@ export function WorkspaceTabs<T extends string>({
     });
   }, [value]);
 
-  useLayoutEffect(() => {
-    updateIndicator();
-    const tabs = tabsRef.current;
-    if (!tabs) return;
+  const updateScrollEdges = useCallback(() => {
+    const scroller = scrollRef.current;
+    if (!scroller) return;
 
-    if (typeof ResizeObserver === "undefined") {
-      window.addEventListener("resize", updateIndicator);
-      return () => window.removeEventListener("resize", updateIndicator);
+    const maximumScrollLeft = Math.max(
+      0,
+      scroller.scrollWidth - scroller.clientWidth,
+    );
+    const currentScrollLeft = Math.min(
+      maximumScrollLeft,
+      Math.max(0, scroller.scrollLeft),
+    );
+    const nextScrollEdges = {
+      canScrollLeft: currentScrollLeft > SCROLL_EDGE_EPSILON,
+      canScrollRight:
+        maximumScrollLeft - currentScrollLeft > SCROLL_EDGE_EPSILON,
+    };
+
+    if (
+      !nextScrollEdges.canScrollLeft &&
+      document.activeElement === leftScrollControlRef.current
+    ) {
+      pendingScrollControlFocusRef.current = "left";
+    } else if (
+      !nextScrollEdges.canScrollRight &&
+      document.activeElement === rightScrollControlRef.current
+    ) {
+      pendingScrollControlFocusRef.current = "right";
     }
 
-    const observer = new ResizeObserver(updateIndicator);
+    setScrollEdges((current) =>
+      current.canScrollLeft === nextScrollEdges.canScrollLeft &&
+      current.canScrollRight === nextScrollEdges.canScrollRight
+        ? current
+        : nextScrollEdges,
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    const updateLayout = () => {
+      updateIndicator();
+      updateScrollEdges();
+    };
+    updateLayout();
+    const tabs = tabsRef.current;
+    const scroller = scrollRef.current;
+    if (!tabs || !scroller) return;
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateLayout);
+      return () => window.removeEventListener("resize", updateLayout);
+    }
+
+    const observer = new ResizeObserver(updateLayout);
+    observer.observe(scroller);
     observer.observe(tabs);
     for (const tab of tabRefs.current.values()) observer.observe(tab);
     return () => observer.disconnect();
-  }, [items, updateIndicator]);
+  }, [items, updateIndicator, updateScrollEdges]);
+
+  useLayoutEffect(() => {
+    const pendingDirection = pendingScrollControlFocusRef.current;
+    if (!pendingDirection) return;
+
+    const nextControl =
+      pendingDirection === "left"
+        ? scrollEdges.canScrollRight
+          ? rightScrollControlRef.current
+          : null
+        : scrollEdges.canScrollLeft
+          ? leftScrollControlRef.current
+          : null;
+    const focusTarget = nextControl ?? tabRefs.current.get(value);
+    focusTarget?.focus();
+    pendingScrollControlFocusRef.current = null;
+  }, [scrollEdges, value]);
 
   useEffect(() => {
     if (!indicator.ready) {
@@ -132,18 +204,34 @@ export function WorkspaceTabs<T extends string>({
 
       const scrollerRect = scroller.getBoundingClientRect();
       const activeRect = activeTab.getBoundingClientRect();
-      const edgePadding = 0;
-      if (activeRect.left < scrollerRect.left + edgePadding) {
+      const maximumScrollLeft = Math.max(
+        0,
+        scroller.scrollWidth - scroller.clientWidth,
+      );
+      const currentScrollLeft = Math.min(
+        maximumScrollLeft,
+        Math.max(0, scroller.scrollLeft),
+      );
+      const leftEdgePadding =
+        currentScrollLeft > SCROLL_EDGE_EPSILON
+          ? SCROLL_CONTROL_REVEAL_PADDING
+          : 0;
+      const rightEdgePadding =
+        maximumScrollLeft - currentScrollLeft > SCROLL_EDGE_EPSILON
+          ? SCROLL_CONTROL_REVEAL_PADDING
+          : 0;
+      if (activeRect.left < scrollerRect.left + leftEdgePadding) {
         scroller.scrollLeft +=
-          activeRect.left - scrollerRect.left - edgePadding;
-      } else if (activeRect.right > scrollerRect.right - edgePadding) {
+          activeRect.left - scrollerRect.left - leftEdgePadding;
+      } else if (activeRect.right > scrollerRect.right - rightEdgePadding) {
         scroller.scrollLeft +=
-          activeRect.right - scrollerRect.right + edgePadding;
+          activeRect.right - scrollerRect.right + rightEdgePadding;
       }
+      updateScrollEdges();
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [value]);
+  }, [updateScrollEdges, value]);
 
   useLayoutEffect(() => {
     const previousValue = previousValueRef.current;
@@ -255,69 +343,116 @@ export function WorkspaceTabs<T extends string>({
     focusTab(nextIndex, direction);
   }
 
+  function scrollTabs(direction: "left" | "right") {
+    const scroller = scrollRef.current;
+    if (!scroller) return;
+
+    const distance = Math.max(
+      SCROLL_CONTROL_REVEAL_PADDING * 2,
+      scroller.clientWidth * SCROLL_PAGE_RATIO,
+    );
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    scroller.scrollBy({
+      left: direction === "left" ? -distance : distance,
+      behavior: reducedMotion ? "auto" : "smooth",
+    });
+  }
+
   return (
     <div
-      ref={scrollRef}
-      className={classNames("workspace-tabs-scroll", className)}
+      className={classNames("workspace-tabs-rail", className)}
+      data-can-scroll-left={scrollEdges.canScrollLeft || undefined}
+      data-can-scroll-right={scrollEdges.canScrollRight || undefined}
     >
-      <div
-        ref={tabsRef}
-        className="workspace-tabs"
-        role="tablist"
-        aria-label={ariaLabel}
-        aria-orientation="horizontal"
-        data-indicator-ready={indicator.ready || undefined}
+      <button
+        ref={leftScrollControlRef}
+        type="button"
+        className="workspace-tabs-scroll-control workspace-tabs-scroll-control-left"
+        aria-label="Прокрутить вкладки влево"
+        aria-controls={`${idBase}-tablist`}
+        hidden={!scrollEdges.canScrollLeft}
+        onClick={() => scrollTabs("left")}
       >
-        <span
-          className="workspace-tabs-indicator"
-          aria-hidden="true"
-          data-ready={indicator.ready || undefined}
-          data-motion-ready={
-            (indicator.ready && indicatorMotionReady) || undefined
-          }
-          style={{
-            width: `${indicator.width}px`,
-            transform: `translate3d(${indicator.left}px, 0, 0)`,
-          }}
-        />
-        {items.map((item, index) => {
-          const active = item.value === value;
-          const Icon = item.icon;
+        <ChevronLeft aria-hidden="true" />
+      </button>
+      <div
+        ref={scrollRef}
+        className="workspace-tabs-scroll"
+        onScroll={updateScrollEdges}
+      >
+        <div
+          ref={tabsRef}
+          id={`${idBase}-tablist`}
+          className="workspace-tabs"
+          role="tablist"
+          aria-label={ariaLabel}
+          aria-orientation="horizontal"
+          data-indicator-ready={indicator.ready || undefined}
+        >
+          <span
+            className="workspace-tabs-indicator"
+            aria-hidden="true"
+            data-ready={indicator.ready || undefined}
+            data-motion-ready={
+              (indicator.ready && indicatorMotionReady) || undefined
+            }
+            style={{
+              width: `${indicator.width}px`,
+              transform: `translate3d(${indicator.left}px, 0, 0)`,
+            }}
+          />
+          {items.map((item, index) => {
+            const active = item.value === value;
+            const Icon = item.icon;
 
-          return (
-            <button
-              key={item.value}
-              type="button"
-              role="tab"
-              id={workspaceTabId(idBase, item.value)}
-              aria-controls={workspaceTabPanelId(idBase, item.value)}
-              aria-selected={active}
-              tabIndex={active ? 0 : -1}
-              ref={(node) => {
-                if (node) tabRefs.current.set(item.value, node);
-                else tabRefs.current.delete(item.value);
-              }}
-              className={classNames(
-                "workspace-tab",
-                active && "workspace-tab-active",
-              )}
-              onClick={() => selectTab(item.value, index)}
-              onKeyDown={(event) => handleKeyDown(event, index)}
-            >
-              <Icon className="workspace-tab-icon" aria-hidden="true" />
-              <span className="workspace-tab-label">
-                {item.label}
-                {typeof item.count === "number" && item.count > 0 ? (
-                  <>
-                    {" "}
-                    <sup className="workspace-tab-count">{item.count}</sup>
-                  </>
-                ) : null}
-              </span>
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={item.value}
+                type="button"
+                role="tab"
+                id={workspaceTabId(idBase, item.value)}
+                aria-controls={workspaceTabPanelId(idBase, item.value)}
+                aria-selected={active}
+                tabIndex={active ? 0 : -1}
+                ref={(node) => {
+                  if (node) tabRefs.current.set(item.value, node);
+                  else tabRefs.current.delete(item.value);
+                }}
+                className={classNames(
+                  "workspace-tab",
+                  active && "workspace-tab-active",
+                )}
+                onClick={() => selectTab(item.value, index)}
+                onKeyDown={(event) => handleKeyDown(event, index)}
+              >
+                <Icon className="workspace-tab-icon" aria-hidden="true" />
+                <span className="workspace-tab-label">
+                  {item.label}
+                  {typeof item.count === "number" && item.count > 0 ? (
+                    <>
+                      {" "}
+                      <sup className="workspace-tab-count">{item.count}</sup>
+                    </>
+                  ) : null}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
+      <button
+        ref={rightScrollControlRef}
+        type="button"
+        className="workspace-tabs-scroll-control workspace-tabs-scroll-control-right"
+        aria-label="Прокрутить вкладки вправо"
+        aria-controls={`${idBase}-tablist`}
+        hidden={!scrollEdges.canScrollRight}
+        onClick={() => scrollTabs("right")}
+      >
+        <ChevronRight aria-hidden="true" />
+      </button>
     </div>
   );
 }

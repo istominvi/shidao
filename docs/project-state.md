@@ -1,7 +1,7 @@
 # Текущее состояние ShiDao V2
 
 **Статус:** главный входной документ для разработки
-**Актуально на:** 14 августа 2026 года
+**Актуально на:** 15 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
 **Текущий functional application source:**
@@ -58,6 +58,23 @@ glyphs без изменения геометрии: public production CSS
 `z-index`. Guest `/profile` продолжает fail closed через `307 → /login`.
 Это public-bundle/HTTP postflight; он не подменяет matching-container evidence
 Profile/avatar release `4462da2`, зафиксированное ниже.
+
+**Current source / next production — mobile responsive polish:** общий
+`AppPageHeader` ниже `1280 px` использует content-aware wrapping row: короткие
+title/metric и intrinsic action остаются в одной строке, action прижат к правому
+краю, а при реальной нехватке места безопасно переносится вниз. Общий
+`WorkspaceTabs` сохраняет touch/swipe и `overflow-x: auto`, но скрывает native
+scrollbar во всех браузерах; доступное продолжение обозначают fade и отдельные
+40 px chevron-кнопки с прокруткой, direction-aware состоянием и возвратом
+фокуса. Product shell клипует только transient document-level horizontal
+overflow route entrance, не внутренние scroll containers. В protected mobile
+header вместо аватара показан burger; его Account
+menu содержит имя, допустимый email и ровно «Расписание / Ученики / Курсы /
+Магазин / Профиль». Desktop protected header сохраняет avatar и полный
+profile dropdown, а landing не меняется. Изменение UI-only в
+`src/components/app/page-header.tsx`, `src/components/ui/workspace-tabs.tsx`,
+`src/components/session-nav-actions.tsx` и соответствующих styles/tests; API,
+session projection, schema, migrations и Lesson hierarchy не меняются.
 
 **Current production Course catalog slice:** реализует reusable Course catalog,
 immutable publication revisions, независимое копирование детских Course и

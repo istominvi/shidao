@@ -208,6 +208,19 @@ test("active V2 pages share one page header contract without visual modifiers", 
     styles,
     /\.course-demo-shell \.app-page-header > \.app-page-actions\s*\{[^}]*width: max-content;[^}]*max-width: 100%;[^}]*align-self: flex-start;/,
   );
+  assert.match(styles, /\.course-demo-shell\s*\{[^}]*overflow-x: clip;/);
+  assert.match(
+    styles,
+    /@media \(max-width: 1279px\)\s*\{[\s\S]*?\.course-demo-shell \.app-page-header-with-actions\s*\{[^}]*flex-flow: row wrap;[^}]*align-items: center;[^}]*column-gap: 1\.5rem;/,
+  );
+  assert.match(
+    styles,
+    /@media \(max-width: 1279px\)[\s\S]*?\.course-demo-shell\s*\.app-page-header-with-actions\s*> \.app-page-header-content\s*\{[^}]*width: auto;[^}]*flex: 1 1 auto;/,
+  );
+  assert.match(
+    styles,
+    /@media \(max-width: 1279px\)[\s\S]*?\.course-demo-shell \.app-page-header-with-actions > \.app-page-actions\s*\{[^}]*flex: 0 0 auto;[^}]*align-self: center;/,
+  );
   assert.match(
     styles,
     /@media \(min-width: 1280px\)\s*\{[\s\S]*?\.course-demo-shell \.app-page-header-with-actions\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\) max-content;[^}]*column-gap: 1\.5rem;/,

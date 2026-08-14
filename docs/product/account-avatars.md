@@ -84,8 +84,16 @@ Storage path, signed token or internal Account identifier.
 
 ## Rendering and accessibility
 
-- Header avatar: `40 × 40`, `12 px` radius, `object-fit: cover`, decorative
-  alternative text because the trigger already has an accessible Account name.
+- Current production header avatar: `40 × 40`, `12 px` radius,
+  `object-fit: cover`, decorative alternative text because the trigger already
+  has an accessible Account name.
+- Current source / next production protected mobile header replaces that
+  visible avatar with a `20 px` burger inside the same `40 × 40` accessible
+  trigger. Its menu shows Account name, a privacy-safe email when available and
+  only `Расписание / Ученики / Курсы / Магазин / Профиль`. Protected desktop
+  keeps the avatar and full profile dropdown; landing keeps the avatar at every
+  width. Avatar selection/storage remains Account state and is not changed by
+  this responsive presentation rule.
 - Settings keeps the avatar surface compact: the current `80 × 80` image and
   only two actions, `Загрузить фото` and `Выбрать аватар`. The twenty preset
   files are not rendered until the picker dialog opens.
@@ -109,6 +117,8 @@ Storage path, signed token or internal Account identifier.
 - Account settings/profile integration:
   `src/components/account/account-settings-panel.tsx`,
   `src/app/(app)/profile/page.tsx` and `src/lib/navigation/profile-nav.ts`;
+- responsive protected/landing trigger and Account menu composition:
+  `src/components/session-nav-actions.tsx`;
 - same-origin API and normalization/storage/reconciliation boundary:
   `src/app/api/settings/profile/avatar/route.ts` and
   `src/lib/server/profile-avatar-*.ts`;
