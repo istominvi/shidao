@@ -377,10 +377,10 @@ test("course tables and filter CTA adopt canonical raised surfaces", () => {
   );
   assert.match(
     globalStyles,
-    /\.course-filter-trigger\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*transform: none;/,
+    /\.course-filter-trigger\s*\{[^}]*list-style: none;/,
   );
-  assert.match(
-    globalStyles,
-    /\.course-filter-trigger:focus-visible\s*\{[^}]*outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
+  assert.doesNotMatch(
+    /\.course-filter-trigger\s*\{[^}]*\}/.exec(globalStyles)?.[0] ?? "",
+    /border|background|box-shadow|transform|transition/,
   );
 });

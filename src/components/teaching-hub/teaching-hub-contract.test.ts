@@ -810,7 +810,7 @@ test("teaching hub inputs, filters, and data surfaces use canonical control toke
   }
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-hub-search\s*\{[^}]*box-shadow: var\(--product-recessed-control-shadow\);/,
+    /\.teaching-hub-search\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
   assert.match(
     teachingHubStyleSource,
@@ -818,7 +818,7 @@ test("teaching hub inputs, filters, and data surfaces use canonical control toke
   );
   assert.match(
     teachingHubStyleSource,
-    /\.student-directory-picker-search input\s*\{[^}]*color: var\(--product-entry-control-foreground\);[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*box-shadow: var\(--product-recessed-control-shadow\);/,
+    /\.student-directory-picker-search input\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*color: var\(--product-entry-control-foreground\);[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
 
   for (const selector of [

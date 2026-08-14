@@ -462,10 +462,12 @@ rollout входит в exact functional source
 
 **Next production:** единый raised-control contract распространяется на все
 канонические `.product-btn`: белый borderless surface и однослойная базовая тень
-`0 1px 3px 0px oklch(0 0 0 / 0.2)`. Fine-pointer hover плавно увеличивает blur
-до `6 px` и поднимает surface через `translateY(-1px)`, а pressed `:active`
-возвращает его на исходную позицию и уменьшает blur до `1 px`; layout и hit
-target не меняются.
+`0 1px 6px 0px oklch(0% 0 0 / 0.1)`. Один общий `.product-btn` state-contract
+обслуживает header, toolbar и filter CTA без контекстных shadow/transform fork.
+Fine-pointer hover использует `0 4px 10px -2px oklch(0% 0 0 / 0.16)` и
+поднимает surface через `translateY(-1px)` без scale, а pressed `:active`
+возвращает его на исходную позицию с тенью
+`0 1px 3px 0px oklch(0% 0 0 / 0.14)`; layout и размеры control не меняются.
 Keyboard outline и forced-colors fallback остаются отдельными доступными
 индикаторами, reduced-motion отключает transition и translate, danger actions сохраняют
 красный текст. Строчные ellipsis и Component-card icon-actions остаются
@@ -494,9 +496,11 @@ Component/Run-history/Students/Store cards и progress stats использую�
 сохраняются; Component/Store focus обозначается отдельным outline, а
 `forced-colors` заменяет тень системным контуром.
 
-Shared `Input` и canonical однострочные text/search fields получают recessed
-inset `0px 1px 4px oklch(0 0 0 / 0.3)`, единые foreground/типографику и
-непрозрачные placeholder/icons; focus остаётся отдельным outline. Select,
+Shared `Input` и canonical однострочные text/search fields получают белый
+borderless surface и статический `--product-entry-control-shadow`, равный
+базовым `0 1px 6px 0px oklch(0% 0 0 / 0.1)`, единые foreground/типографику и
+непрозрачные placeholder/icons. Hover не меняет shadow/transform, а click или
+keyboard focus добавляет отдельный 2 px halo без изменения геометрии. Select,
 textarea, checkbox/radio/file, multiline editor, dialog/menu/popover surfaces,
 Student Screen content и raw utility panels исключены. Изменение остаётся
 UI-only, не меняет schema/API/Lesson hierarchy и ещё не имеет production

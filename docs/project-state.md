@@ -321,16 +321,19 @@ trigger контекстного меню; buttons открываемого из
 **Next production canonical control elevation and muted-color refinement:** текущий source применяет
 один raised-surface contract ко всем каноническим `.product-btn`, а не только к
 actions заголовка. Обычная кнопка имеет белый surface, border `0` и exact
-однослойную тень `0 1px 3px 0px oklch(0 0 0 / 0.2)`. На fine-pointer hover
-blur увеличивается до `6 px`, а surface сдвигается через
-`transform: translateY(-1px)` без layout reflow; transient pressed `:active`
-возвращает кнопку на исходную позицию и уменьшает blur до `1 px`. Danger actions
+однослойную тень `0 1px 6px 0px oklch(0% 0 0 / 0.1)`. Все ordinary buttons
+получают rest/hover/pressed только из общего `.product-btn`, поэтому header и
+toolbar/filter controls не имеют контекстных fork. На fine-pointer hover тень
+становится `0 4px 10px -2px oklch(0% 0 0 / 0.16)`, а surface сдвигается через
+`transform: translateY(-1px)` без scale или layout reflow; transient pressed
+`:active` возвращает кнопку на исходную позицию и использует более плотную тень
+`0 1px 3px 0px oklch(0% 0 0 / 0.14)`. Danger actions
 сохраняют красный текст, keyboard focus —
 отдельный 2 px outline, forced-colors — системный контур, а
 `prefers-reduced-motion` отключает transition и вертикальный сдвиг. Плоские служебные icon-actions
 в строках таблиц и на Component cards намеренно остаются transparent/no-shadow.
 У составных тумблеров убрана постоянная внешняя inset-обводка; выбранная белая
-option использует только базовую `3 px` тень без button hover/pressed states,
+option использует только базовую тень без button hover/pressed states,
 сохраняет собственный focus outline, а фон compound shell задан отдельным
 `oklch(0.19 0 0 / 0.1)` token. Подзаголовок `AppPageHeader`, inactive text и
 16 px иконки `WorkspaceTabs` используют отдельный foreground
@@ -361,15 +364,16 @@ history cards, Students cards, Store product cards и progress-stat cards.
 используют отдельный outline поверх неизменной базовой тени; в `forced-colors`
 исчезающую тень заменяет системный outline.
 
-Канонические однострочные text/search entry controls используют
-`--product-recessed-control-shadow: inset 0px 1px 4px oklch(0 0 0 / 0.3)`, общий
-foreground/типографику и непрозрачные placeholder и сопровождающие
-search/select icons через `currentColor`; keyboard focus обозначается отдельным
-2 px outline и не
-сбрасывает inset. В `forced-colors` inset убирается в пользу `Field` /
+Канонические однострочные text/search entry controls имеют белый borderless
+surface и статический `--product-entry-control-shadow`, являющийся alias той же
+базовой тени `0 1px 6px 0px oklch(0% 0 0 / 0.1)`. Они не поднимаются и не
+меняют тень на hover/pressed, сохраняют общий foreground/типографику,
+непрозрачные placeholder и сопровождающие search/select icons через
+`currentColor`; click/keyboard focus добавляет отдельный 2 px halo и не меняет
+базовую тень или геометрию. В `forced-colors` декоративная тень убирается в пользу `Field` /
 `FieldText` и системной рамки. Select, textarea, checkbox, radio, file input,
 многострочные Component editors, dialog/menu/popover surfaces, Student Screen
-content renderers и utility-only raw panels не получают recessed или static
+content renderers и utility-only raw panels не получают entry или static
 surface contract автоматически. Это UI-only current-source изменение без API,
 schema или migrations; production rollout и deployed acceptance пока не
 заявлены.

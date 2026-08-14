@@ -21,11 +21,14 @@
   --product-inner-control-size: 2rem;
   --product-inner-control-radius: 0.5rem;
   --product-inner-control-inset: 0.25rem;
-  --product-raised-control-shadow: 0 1px 3px 0px oklch(0 0 0 / 0.2);
-  --product-raised-control-shadow-hover: 0 1px 6px 0px oklch(0 0 0 / 0.2);
-  --product-raised-control-shadow-pressed: 0 1px 1px 0px oklch(0 0 0 / 0.2);
+  --product-raised-control-shadow: 0 1px 6px 0px oklch(0% 0 0 / 0.1);
+  --product-raised-control-shadow-hover: 0 4px 10px -2px oklch(0% 0 0 / 0.16);
+  --product-raised-control-shadow-pressed: 0 1px 3px 0px oklch(0% 0 0 / 0.14);
+  --product-raised-control-hover-translate-y: -1px;
+  --product-raised-control-transition: 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --product-raised-surface-shadow: var(--product-raised-control-shadow);
-  --product-recessed-control-shadow: inset 0px 1px 4px oklch(0 0 0 / 0.3);
+  --product-entry-control-shadow: var(--product-raised-surface-shadow);
+  --product-control-focus-halo: rgba(20, 20, 20, 0.58);
   --product-entry-control-foreground: #171717;
   --product-entry-control-font-size: 0.9rem;
   --product-entry-control-font-weight: 600;
@@ -1643,12 +1646,14 @@ a {
 }
 
 input.field-input {
+  border: 0;
+  background: #fff;
   color: var(--product-entry-control-foreground);
   font-family: inherit;
   font-size: var(--product-entry-control-font-size);
   font-weight: var(--product-entry-control-font-weight);
   line-height: var(--product-entry-control-line-height);
-  box-shadow: var(--product-recessed-control-shadow);
+  box-shadow: var(--product-entry-control-shadow);
 }
 
 input.field-input::placeholder {
@@ -1666,9 +1671,10 @@ input.field-input::placeholder {
 }
 
 input.field-input:focus {
-  outline: 2px solid rgba(20, 20, 20, 0.58);
+  border: 0;
+  outline: 2px solid var(--product-control-focus-halo);
   outline-offset: 2px;
-  box-shadow: var(--product-recessed-control-shadow);
+  box-shadow: var(--product-entry-control-shadow);
 }
 
 .auth-checkbox {
@@ -1750,11 +1756,12 @@ input.field-input:focus {
   box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.08);
 }
 
-input.product-control-input:focus-visible,
-input.product-control-search:focus-visible {
-  outline: 2px solid rgba(20, 20, 20, 0.58);
+input.product-control-input:focus,
+input.product-control-search:focus {
+  border: 0;
+  outline: 2px solid var(--product-control-focus-halo);
   outline-offset: 2px;
-  box-shadow: var(--product-recessed-control-shadow);
+  box-shadow: var(--product-entry-control-shadow);
 }
 
 .product-control:disabled {
@@ -1769,7 +1776,9 @@ input.product-control-search:focus-visible {
 
 input.product-control-input,
 input.product-control-search {
-  box-shadow: var(--product-recessed-control-shadow);
+  border: 0;
+  background: #fff;
+  box-shadow: var(--product-entry-control-shadow);
 }
 
 input.product-control-input::placeholder,
@@ -1891,39 +1900,13 @@ input.product-control-search::placeholder {
   padding: 0;
 }
 
-.product-btn.compact-toolbar-reset:focus-visible {
-  outline: 2px solid rgba(20, 20, 20, 0.58);
-  outline-offset: 2px;
-}
-
 .course-filter-menu {
   position: relative;
   flex: 0 0 auto;
 }
 
 .course-filter-trigger {
-  display: inline-flex;
-  height: var(--course-demo-control-height, 2.5rem);
-  min-height: var(--course-demo-control-height, 2.5rem);
-  align-items: center;
-  gap: 0.45rem;
-  border: 0;
-  border-radius: var(--course-demo-control-radius, 0.75rem);
-  background: #fff;
-  padding: 0 0.7rem;
-  color: var(--product-entry-control-foreground);
-  font-size: var(--course-demo-control-font-size, 0.88rem);
-  font-weight: var(--course-demo-control-font-weight, 500);
-  line-height: 1;
   list-style: none;
-  cursor: pointer;
-  box-shadow: var(--product-raised-control-shadow);
-  transform: none;
-}
-
-.course-demo-shell .course-filter-trigger {
-  color: var(--course-demo-control-foreground);
-  font-weight: var(--course-demo-control-font-weight);
 }
 
 .course-demo-shell .course-filter-trigger svg,
@@ -1938,17 +1921,6 @@ input.product-control-search::placeholder {
 
 .course-filter-trigger::-webkit-details-marker {
   display: none;
-}
-
-.course-filter-trigger:hover:not([aria-disabled="true"]) {
-  border: 0;
-  background: #fff;
-}
-
-.course-filter-trigger:focus-visible {
-  outline: 2px solid rgba(20, 20, 20, 0.58);
-  outline-offset: 2px;
-  box-shadow: var(--product-raised-control-shadow);
 }
 
 .course-filter-count {
@@ -2093,10 +2065,10 @@ input.product-control-search::placeholder {
   box-shadow: var(--product-raised-control-shadow);
   transform: none;
   transition:
-    transform 180ms ease,
-    border-color 180ms ease,
-    box-shadow 180ms ease,
-    background-color 180ms ease;
+    transform var(--product-raised-control-transition),
+    border-color var(--product-raised-control-transition),
+    box-shadow var(--product-raised-control-transition),
+    background-color var(--product-raised-control-transition);
 }
 
 .course-demo-shell .product-btn {
@@ -2110,8 +2082,6 @@ input.product-control-search::placeholder {
   font-size: var(--course-demo-control-font-size);
   font-weight: var(--course-demo-control-font-weight);
   line-height: var(--course-demo-control-line-height);
-  box-shadow: var(--product-raised-control-shadow);
-  transform: none;
 }
 
 .course-demo-shell .product-btn svg {
@@ -2122,19 +2092,13 @@ input.product-control-search::placeholder {
   opacity: 1;
 }
 
-.course-demo-shell .product-btn:hover:not(:disabled) {
+.product-btn:hover:not(:disabled):not([aria-disabled="true"]) {
   border: 0;
   background: #fff;
   box-shadow: var(--product-raised-control-shadow-hover);
 }
 
-.product-btn:hover:not(:disabled) {
-  border: 0;
-  background: #fff;
-  box-shadow: var(--product-raised-control-shadow-hover);
-}
-
-.product-btn:active:not(:disabled) {
+.product-btn:active:not(:disabled):not([aria-disabled="true"]) {
   border: 0;
   background: #fff;
   box-shadow: var(--product-raised-control-shadow-pressed);
@@ -2142,7 +2106,7 @@ input.product-control-search::placeholder {
 }
 
 .product-btn:focus-visible {
-  outline: 2px solid rgba(20, 20, 20, 0.58);
+  outline: 2px solid var(--product-control-focus-halo);
   outline-offset: 2px;
 }
 
@@ -2166,13 +2130,6 @@ input.product-control-search::placeholder {
   border: 0;
   background: #fff;
   color: var(--course-demo-control-foreground);
-  box-shadow: var(--product-raised-control-shadow);
-}
-
-.course-demo-shell .product-btn-primary:hover:not(:disabled) {
-  border: 0;
-  background: #fff;
-  box-shadow: var(--product-raised-control-shadow-hover);
 }
 
 .product-btn-secondary {
@@ -2223,27 +2180,12 @@ input.product-control-search::placeholder {
   background: #fff;
 }
 
-.course-demo-shell .product-btn:active:not(:disabled) {
-  border: 0;
-  background: #fff;
-  box-shadow: var(--product-raised-control-shadow-pressed);
-  transform: none;
-}
-
-.course-demo-shell .product-btn:focus-visible:not(:disabled) {
-  outline: 2px solid rgba(20, 20, 20, 0.58);
-  outline-offset: 2px;
-}
-
 @media (hover: hover) and (pointer: fine) {
-  .product-btn:hover:not(:disabled),
-  .course-demo-shell .product-btn:hover:not(:disabled),
-  .course-demo-shell .product-btn-primary:hover:not(:disabled) {
-    transform: translateY(-1px);
+  .product-btn:hover:not(:disabled):not([aria-disabled="true"]) {
+    transform: translateY(var(--product-raised-control-hover-translate-y));
   }
 
-  .product-btn:active:not(:disabled),
-  .course-demo-shell .product-btn:active:not(:disabled) {
+  .product-btn:active:not(:disabled):not([aria-disabled="true"]) {
     transform: none;
   }
 }
@@ -2844,11 +2786,11 @@ input.product-control-search::placeholder {
     box-shadow: none;
   }
 
-  input.product-control-input:focus-visible,
-  input.product-control-search:focus-visible,
+  input.product-control-input:focus,
+  input.product-control-search:focus,
   input.field-input:focus,
   .teaching-hub-search:focus-within,
-  .student-directory-picker-search input:focus-visible {
+  .student-directory-picker-search input:focus {
     outline-color: Highlight;
     box-shadow: none;
   }

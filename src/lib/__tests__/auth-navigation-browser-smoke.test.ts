@@ -78,12 +78,13 @@ const E2E_PUBLISHED_SELF_COMMENT =
   "Опубликованный комментарий E2E Adult из completion UI.";
 const E2E_PRIVATE_OBSERVED_COMMENT =
   "PRIVATE OBSERVED COMMENT — только преподавателю";
-const E2E_RAISED_CONTROL_SHADOW = "oklch(0 0 0 / 0.2) 0px 1px 3px 0px";
-const E2E_RAISED_CONTROL_HOVER_SHADOW = "oklch(0 0 0 / 0.2) 0px 1px 6px 0px";
-const E2E_RAISED_CONTROL_PRESSED_SHADOW = "oklch(0 0 0 / 0.2) 0px 1px 1px 0px";
+const E2E_RAISED_CONTROL_SHADOW = "oklch(0 0 0 / 0.1) 0px 1px 6px 0px";
+const E2E_RAISED_CONTROL_HOVER_SHADOW = "oklch(0 0 0 / 0.16) 0px 4px 10px -2px";
+const E2E_RAISED_CONTROL_PRESSED_SHADOW = "oklch(0 0 0 / 0.14) 0px 1px 3px 0px";
 const E2E_RAISED_SURFACE_SHADOW = E2E_RAISED_CONTROL_SHADOW;
-const E2E_RECESSED_CONTROL_SHADOW = "oklch(0 0 0 / 0.3) 0px 1px 4px 0px inset";
+const E2E_ENTRY_CONTROL_SHADOW = E2E_RAISED_SURFACE_SHADOW;
 const E2E_RAISED_CONTROL_HOVER_TRANSFORM = "matrix(1, 0, 0, 1, 0, -1)";
+const E2E_FOCUS_HALO_COLOR = "rgba(20, 20, 20, 0.58)";
 const E2E_MUTED_FOREGROUND = "oklch(0.19 0 0 / 0.6)";
 const E2E_WORKSPACE_TABS_DIVIDER = "oklch(0.19 0 0 / 0.4)";
 const E2E_SEGMENTED_CONTROL_BACKGROUND = "oklch(0.19 0 0 / 0.1)";
@@ -599,6 +600,12 @@ let e2eCourseAudienceReplacement: {
 const e2eSupabaseReferers: string[] = [];
 
 type PlaywrightLocator = {
+  boundingBox: () => Promise<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>;
   click: () => Promise<void>;
   check: () => Promise<void>;
   count: () => Promise<number>;
@@ -3822,6 +3829,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       name: "Назначить урок",
       exact: true,
     });
+    const scheduleHeaderRestRect =
+      await scheduleHeaderPrimaryButton.boundingBox();
+    assert.ok(scheduleHeaderRestRect);
     await scheduleHeaderPrimaryButton.hover();
     await runtime.page.waitForTimeout(220);
     assert.deepEqual(
@@ -3839,6 +3849,21 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         transform: E2E_RAISED_CONTROL_HOVER_TRANSFORM,
       },
     );
+    const scheduleHeaderHoverRect =
+      await scheduleHeaderPrimaryButton.boundingBox();
+    assert.ok(scheduleHeaderHoverRect);
+    assert.ok(
+      Math.abs(scheduleHeaderHoverRect.width - scheduleHeaderRestRect.width) <
+        0.01,
+    );
+    assert.ok(
+      Math.abs(scheduleHeaderHoverRect.height - scheduleHeaderRestRect.height) <
+        0.01,
+    );
+    assert.ok(
+      Math.abs(scheduleHeaderHoverRect.y - (scheduleHeaderRestRect.y - 1)) <
+        0.01,
+    );
     await runtime.page.mouse.down();
     await runtime.page.waitForTimeout(220);
     assert.deepEqual(
@@ -3853,6 +3878,21 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         boxShadow: E2E_RAISED_CONTROL_PRESSED_SHADOW,
         transform: "none",
       },
+    );
+    const scheduleHeaderPressedRect =
+      await scheduleHeaderPrimaryButton.boundingBox();
+    assert.ok(scheduleHeaderPressedRect);
+    assert.ok(
+      Math.abs(scheduleHeaderPressedRect.width - scheduleHeaderRestRect.width) <
+        0.01,
+    );
+    assert.ok(
+      Math.abs(
+        scheduleHeaderPressedRect.height - scheduleHeaderRestRect.height,
+      ) < 0.01,
+    );
+    assert.ok(
+      Math.abs(scheduleHeaderPressedRect.y - scheduleHeaderRestRect.y) < 0.01,
     );
     await runtime.page.mouse.move(0, 0);
     await runtime.page.mouse.up();
@@ -5218,7 +5258,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.ok(Math.abs(studentsVisual.toolbarAlignment.searchStartInset) < 0.5);
     assert.ok(Math.abs(studentsVisual.toolbarAlignment.controlsEndInset) < 0.5);
     assert.deepEqual(studentsVisual.searchControl, {
-      boxShadow: E2E_RECESSED_CONTROL_SHADOW,
+      boxShadow: E2E_ENTRY_CONTROL_SHADOW,
       color: "rgb(20, 20, 20)",
       fontSize: "14.08px",
       fontWeight: "400",
@@ -5228,6 +5268,54 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       iconColor: "rgb(20, 20, 20)",
       iconOpacity: "1",
     });
+    const studentSearchSurface = runtime.page.locator(".teaching-hub-search");
+    const studentSearchInput = studentSearchSurface.locator(
+      'input[type="search"]',
+    );
+    const studentSearchRestRect = await studentSearchSurface.boundingBox();
+    assert.ok(studentSearchRestRect);
+    await studentSearchSurface.hover();
+    await runtime.page.waitForTimeout(220);
+    assert.deepEqual(
+      await studentSearchSurface.evaluate((surface) => {
+        const style = getComputedStyle(surface);
+        const rect = surface.getBoundingClientRect();
+        return {
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+          width: rect.width,
+          height: rect.height,
+        };
+      }),
+      {
+        boxShadow: E2E_ENTRY_CONTROL_SHADOW,
+        transform: "none",
+        width: studentSearchRestRect.width,
+        height: studentSearchRestRect.height,
+      },
+    );
+    await studentSearchInput.click();
+    assert.deepEqual(
+      await studentSearchSurface.evaluate((surface) => {
+        const style = getComputedStyle(surface);
+        return {
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+          outlineColor: style.outlineColor,
+          outlineStyle: style.outlineStyle,
+          outlineWidth: style.outlineWidth,
+          outlineOffset: style.outlineOffset,
+        };
+      }),
+      {
+        boxShadow: E2E_ENTRY_CONTROL_SHADOW,
+        transform: "none",
+        outlineColor: E2E_FOCUS_HALO_COLOR,
+        outlineStyle: "solid",
+        outlineWidth: "2px",
+        outlineOffset: "2px",
+      },
+    );
     assert.deepEqual(studentsVisual.controlGeometry, {
       filterTriggerHeight: "40px",
       filterTriggerText: "Фильтр",
@@ -5257,6 +5345,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     const filterTriggerControl = runtime.page.locator(
       ".student-directory-filter-menu .course-filter-trigger",
     );
+    const filterTriggerRestRect = await filterTriggerControl.boundingBox();
+    assert.ok(filterTriggerRestRect);
     await filterTriggerControl.hover();
     await runtime.page.waitForTimeout(220);
     assert.deepEqual(
@@ -5272,6 +5362,19 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         transform: E2E_RAISED_CONTROL_HOVER_TRANSFORM,
       },
     );
+    const filterTriggerHoverRect = await filterTriggerControl.boundingBox();
+    assert.ok(filterTriggerHoverRect);
+    assert.ok(
+      Math.abs(filterTriggerHoverRect.width - filterTriggerRestRect.width) <
+        0.01,
+    );
+    assert.ok(
+      Math.abs(filterTriggerHoverRect.height - filterTriggerRestRect.height) <
+        0.01,
+    );
+    assert.ok(
+      Math.abs(filterTriggerHoverRect.y - (filterTriggerRestRect.y - 1)) < 0.01,
+    );
     await runtime.page.mouse.down();
     await runtime.page.waitForTimeout(220);
     assert.deepEqual(
@@ -5286,6 +5389,19 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         boxShadow: E2E_RAISED_CONTROL_PRESSED_SHADOW,
         transform: "none",
       },
+    );
+    const filterTriggerPressedRect = await filterTriggerControl.boundingBox();
+    assert.ok(filterTriggerPressedRect);
+    assert.ok(
+      Math.abs(filterTriggerPressedRect.width - filterTriggerRestRect.width) <
+        0.01,
+    );
+    assert.ok(
+      Math.abs(filterTriggerPressedRect.height - filterTriggerRestRect.height) <
+        0.01,
+    );
+    assert.ok(
+      Math.abs(filterTriggerPressedRect.y - filterTriggerRestRect.y) < 0.01,
     );
     await runtime.page.mouse.move(0, 0);
     await runtime.page.mouse.up();
@@ -7800,7 +7916,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.ok(Math.abs(coursesVisual.toolbarAlignment.searchStartInset) < 0.5);
     assert.ok(Math.abs(coursesVisual.toolbarAlignment.railEndInset) < 0.5);
     assert.deepEqual(coursesVisual.searchControl, {
-      boxShadow: E2E_RECESSED_CONTROL_SHADOW,
+      boxShadow: E2E_ENTRY_CONTROL_SHADOW,
       color: "rgb(20, 20, 20)",
       fontSize: "14.08px",
       fontWeight: "400",
@@ -10133,7 +10249,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       ),
     );
     assert.deepEqual(fileComponentDialogVisual.entryInput, {
-      boxShadow: E2E_RECESSED_CONTROL_SHADOW,
+      boxShadow: E2E_ENTRY_CONTROL_SHADOW,
       color: "rgb(20, 20, 20)",
       fontSize: "14.08px",
       fontWeight: "400",

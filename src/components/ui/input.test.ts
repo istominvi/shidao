@@ -10,7 +10,7 @@ const inputSource = source("src/components/ui/input.tsx");
 const globalStyles = source("src/app/globals.css");
 const teachingStyles = source("src/app/styles/teaching-hub.css");
 
-test("single-line product inputs use one recessed typography contract", () => {
+test("single-line product inputs use one static raised typography contract", () => {
   assert.match(
     inputSource,
     /return classNames\("product-control", `product-control-\$\{kind\}`, className\)/,
@@ -21,7 +21,7 @@ test("single-line product inputs use one recessed typography contract", () => {
   );
   assert.match(
     globalStyles,
-    /:root\s*\{[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);[^}]*--product-recessed-control-shadow: inset 0px 1px 4px\s+oklch\(0 0 0 \/ 0\.3\);[^}]*--product-entry-control-foreground: #171717;[^}]*--product-entry-control-font-size: 0\.9rem;[^}]*--product-entry-control-font-weight: 600;[^}]*--product-entry-control-line-height: 1;/,
+    /:root\s*\{[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);[^}]*--product-entry-control-shadow: var\(--product-raised-surface-shadow\);[^}]*--product-control-focus-halo: rgba\(20, 20, 20, 0\.58\);[^}]*--product-entry-control-foreground: #171717;[^}]*--product-entry-control-font-size: 0\.9rem;[^}]*--product-entry-control-font-weight: 600;[^}]*--product-entry-control-line-height: 1;/,
   );
   assert.match(
     globalStyles,
@@ -33,16 +33,16 @@ test("single-line product inputs use one recessed typography contract", () => {
   );
   assert.match(
     globalStyles,
-    /input\.field-input\s*\{[^}]*color: var\(--product-entry-control-foreground\);[^}]*font-family: inherit;[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*line-height: var\(--product-entry-control-line-height\);[^}]*box-shadow: var\(--product-recessed-control-shadow\);/,
+    /input\.field-input\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*color: var\(--product-entry-control-foreground\);[^}]*font-family: inherit;[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*line-height: var\(--product-entry-control-line-height\);[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
   assert.match(
     globalStyles,
-    /input\.product-control-input,\s*input\.product-control-search\s*\{[^}]*box-shadow: var\(--product-recessed-control-shadow\);/,
+    /input\.product-control-input,\s*input\.product-control-search\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
   assert.doesNotMatch(
     /\.field-input\s*\{[^}]*\}/.exec(globalStyles)?.[0] ?? "",
-    /product-recessed-control-shadow/,
-    "textarea/select consumers of field-input must not inherit the single-line inset",
+    /product-entry-control-shadow/,
+    "textarea/select consumers of field-input must not inherit the single-line surface",
   );
 });
 
@@ -65,7 +65,7 @@ test("search fields keep one foreground across copy and icons", () => {
   );
   assert.match(
     teachingStyles,
-    /\.teaching-hub-search\s*\{[^}]*box-shadow: var\(--product-recessed-control-shadow\);/,
+    /\.teaching-hub-search\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
   assert.match(
     teachingStyles,
@@ -77,7 +77,7 @@ test("search fields keep one foreground across copy and icons", () => {
   );
   assert.match(
     teachingStyles,
-    /\.student-directory-picker-search input\s*\{[^}]*color: var\(--product-entry-control-foreground\);[^}]*font-family: inherit;[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*line-height: var\(--product-entry-control-line-height\);[^}]*box-shadow: var\(--product-recessed-control-shadow\);/,
+    /\.student-directory-picker-search input\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*color: var\(--product-entry-control-foreground\);[^}]*font-family: inherit;[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*line-height: var\(--product-entry-control-line-height\);[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
 });
 
@@ -85,7 +85,7 @@ test("input focus and forced colors preserve an accessible indicator", () => {
   const genericProductFocus =
     /\.product-control:focus-visible\s*\{[^}]*\}/.exec(globalStyles)?.[0] ?? "";
   const productInputFocus =
-    /input\.product-control-input:focus-visible,\s*input\.product-control-search:focus-visible\s*\{[^}]*\}/.exec(
+    /input\.product-control-input:focus,\s*input\.product-control-search:focus\s*\{[^}]*\}/.exec(
       globalStyles,
     )?.[0] ?? "";
   const genericFieldFocus =
@@ -102,7 +102,7 @@ test("input focus and forced colors preserve an accessible indicator", () => {
   );
   assert.match(
     productInputFocus,
-    /outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-recessed-control-shadow\);/,
+    /border: 0;[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
   assert.match(
     genericFieldFocus,
@@ -110,11 +110,11 @@ test("input focus and forced colors preserve an accessible indicator", () => {
   );
   assert.match(
     fieldInputFocus,
-    /outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-recessed-control-shadow\);/,
+    /border: 0;[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
   assert.match(
     teachingStyles,
-    /\.teaching-hub-search:focus-within\s*\{[^}]*outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: 2px;/,
+    /\.teaching-hub-search:focus-within\s*\{[^}]*border: 0;[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
   assert.equal(
     (teachingStyles.match(/\.teaching-hub-search:focus-within\s*\{/g) ?? [])
@@ -124,7 +124,7 @@ test("input focus and forced colors preserve an accessible indicator", () => {
   );
   assert.match(
     teachingStyles,
-    /\.student-directory-picker-search input:focus-visible\s*\{[^}]*outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: 2px;/,
+    /\.student-directory-picker-search input:focus\s*\{[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
   assert.match(
     forcedColors,
@@ -132,6 +132,6 @@ test("input focus and forced colors preserve an accessible indicator", () => {
   );
   assert.match(
     forcedColors,
-    /input\.product-control-input:focus-visible,\s*input\.product-control-search:focus-visible,\s*input\.field-input:focus,\s*\.teaching-hub-search:focus-within,\s*\.student-directory-picker-search input:focus-visible\s*\{[^}]*outline-color: Highlight;[^}]*box-shadow: none;/,
+    /input\.product-control-input:focus,\s*input\.product-control-search:focus,\s*input\.field-input:focus,\s*\.teaching-hub-search:focus-within,\s*\.student-directory-picker-search input:focus\s*\{[^}]*outline-color: Highlight;[^}]*box-shadow: none;/,
   );
 });

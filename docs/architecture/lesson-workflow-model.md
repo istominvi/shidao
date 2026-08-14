@@ -630,9 +630,11 @@ Visual contract Course routes не меняет эту навигационну�
   slice не реализован;
 - next production refinement распространяет единый raised contract на все
   канонические `.product-btn`: белый borderless surface и exact однослойная
-  тень `3 px` rest / `6 px` hover / `1 px` pressed при цвете
-  `oklch(0 0 0 / 0.2)`. Fine-pointer hover дополнительно использует
-  `translateY(-1px)`, pressed возвращается на исходную позицию; focus outline,
+  тень `0 1px 6px 0px oklch(0% 0 0 / 0.1)`. Header, toolbar и filter CTA
+  используют один state-contract без context fork: fine-pointer hover получает
+  `0 4px 10px -2px oklch(0% 0 0 / 0.16)` и `translateY(-1px)` без scale,
+  pressed возвращается на исходную позицию с
+  `0 1px 3px 0px oklch(0% 0 0 / 0.14)`; focus outline,
   danger color и forced-colors fallback сохраняются, а reduced-motion отключает
   transition и translate. Плоские ellipsis в строках и
   Component-card icon-actions остаются transparent/no-shadow. У compound
@@ -660,11 +662,12 @@ Visual contract Course routes не меняет эту навигационну�
   состояния сохраняются. Component focus-within и Store focus/deep-link
   highlight используют отдельный outline; `forced-colors` заменяет исчезающую
   тень системным контуром;
-- canonical однострочные text/search entry controls получают
-  `--product-recessed-control-shadow: inset 0px 1px 4px oklch(0 0 0 / 0.3)`,
-  общий foreground/типографику и непрозрачные placeholder/icons через
-  `currentColor`. Focus остаётся отдельным 2 px outline и не сбрасывает inset;
-  forced colors использует `Field`/`FieldText` и системную рамку. Select,
+- canonical однострочные text/search entry controls получают белый borderless
+  surface и статический `--product-entry-control-shadow`, равный базовой тени
+  `0 1px 6px 0px oklch(0% 0 0 / 0.1)`, общий foreground/типографику и
+  непрозрачные placeholder/icons через `currentColor`. Hover не меняет shadow
+  или transform; click/keyboard focus добавляет отдельный 2 px halo и сохраняет
+  геометрию. Forced colors использует `Field`/`FieldText` и системную рамку. Select,
   textarea, checkbox/radio/file input, multiline Component editor,
   dialog/menu/popover surfaces, Student Screen content renderers и raw utility
   panels исключены. Этот current-source UI slice не меняет API, schema, Lesson

@@ -60,7 +60,7 @@ test("Store filters and cards adopt canonical raised surfaces", () => {
   );
   assert.match(
     globalStyles,
-    /\.course-filter-trigger\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*transform: none;/,
+    /\.course-filter-trigger\s*\{[^}]*list-style: none;/,
   );
   assert.match(
     styles,

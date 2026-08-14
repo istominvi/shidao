@@ -1041,14 +1041,17 @@ flow как permanent delete.
   navigation без inset/shadow/translate, icon opacity `1` и contrast-aware
   `currentColor`. Все канонические `.product-btn` должны быть белыми, иметь
   border `0` и ту же computed base shadow
-  `oklch(0 0 0 / 0.2) 0px 1px 3px 0px`, что selected button переключателя
-  вида Расписания. После завершения transition hover должен давать blur
-  `6 px` и `matrix(1, 0, 0, 1, 0, -1)`, а pointer-down `:active` — `1 px` и
-  `transform: none`; при `prefers-reduced-motion` transition и translate
-  отключены. Проверить,
+  `oklch(0 0 0 / 0.1) 0px 1px 6px 0px`, что selected button переключателя
+  вида Расписания. Header и toolbar/filter CTA должны использовать один
+  `.product-btn` state-contract и сохранять одинаковые width/height во всех
+  состояниях. После завершения transition hover должен давать
+  `oklch(0 0 0 / 0.16) 0px 4px 10px -2px` и
+  `matrix(1, 0, 0, 1, 0, -1)` без scale, а pointer-down `:active` —
+  `oklch(0 0 0 / 0.14) 0px 1px 3px 0px` и `transform: none`; при
+  `prefers-reduced-motion` transition и translate отключены. Проверить,
   что row ellipsis и Component-card icon-actions остаются transparent/no-shadow.
   У compound toggles не должно быть постоянной внешней обводки, selected white
-  option использует только base shadow и не получает `6/1 px` button states,
+  option использует только base shadow и не получает hover/pressed button states,
   а shell имеет computed background `oklch(0.19 0 0 / 0.1)`; keyboard focus
   сохраняет видимый outline. Menu items сохраняют border `0`.
   Повторить
@@ -1069,7 +1072,7 @@ flow как permanent delete.
   items, flat row/Component icon-actions, compound toggles и filter popover
   panels не должны получить ordinary button lift;
 - в том же Next-acceptance сравнить computed `box-shadow` с
-  `oklch(0 0 0 / 0.2) 0px 1px 3px 0px` у shared `SurfaceCard`, Schedule,
+  `oklch(0 0 0 / 0.1) 0px 1px 6px 0px` у shared `SurfaceCard`, Schedule,
   Students/Groups, owned/catalog Course, Course Lessons, Store и subject
   progress table wrappers, authored Component, Run-history, Students/Store и
   progress-stat cards. У поверхности нет hover/pressed transform или
@@ -1080,12 +1083,14 @@ flow как permanent delete.
   сохраняются. В `forced-colors` shadow исчезает, а boundary остаётся видимой
   через `CanvasText`/`Highlight` outline;
 - для canonical однострочных `Input`, `input.field-input`, product search,
-  Schedule/Students search и dialog picker search проверить computed inset
-  `oklch(0 0 0 / 0.3) 0px 1px 4px 0px inset`, scope typography/foreground,
-  непрозрачные placeholder/icons и отдельный 2 px focus outline без сброса
-  inset. Select, textarea, checkbox/radio/file, multiline Component editor,
+  Schedule/Students search и dialog picker search проверить белый borderless
+  surface, computed static shadow `oklch(0 0 0 / 0.1) 0px 1px 6px 0px`, scope
+  typography/foreground и непрозрачные placeholder/icons. Hover не должен
+  менять shadow, transform или rect; click/keyboard focus добавляет отдельный
+  2 px halo, сохраняя base shadow и геометрию. Select, textarea,
+  checkbox/radio/file, multiline Component editor,
   dialog/menu/popover surfaces, Student Screen content renderers и raw utility
-  panels не должны получить recessed/static-surface contract автоматически. В
+  panels не должны получить entry/static-surface contract автоматически. В
   `forced-colors` entry control использует `Field`/`FieldText`, системную рамку
   и `Highlight` focus без box-shadow;
 - `/students` показывает точный подзаголовок «Ученики и группы, с которыми вы
