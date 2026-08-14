@@ -3,10 +3,11 @@
 import { type FormEvent, useMemo, useState } from "react";
 import { SecuritySettingsForm } from "@/app/(app)/(profile-required)/settings/security/security-settings-form";
 import { AvatarSettingsForm } from "@/components/account/avatar-settings-form";
+import { ProfileSurface } from "@/components/profile/profile-surface";
+import profileStyles from "@/components/profile/profile-workspace.module.css";
 import { StatusMessage } from "@/components/product-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SurfaceCard } from "@/components/ui/surface-card";
 
 export type AccountEmailStatus = "changed" | "change-requested" | null;
 
@@ -82,15 +83,12 @@ export function AccountSettingsPanel({
   }
 
   return (
-    <div className="space-y-6">
-      <SurfaceCard
-        title="Аватар"
-        description="Выберите фирменный вариант или загрузите своё изображение. Без аватара профиль оставить нельзя."
-      >
+    <div className={`${profileStyles.workspace} space-y-5`}>
+      <ProfileSurface title="Аватар">
         <AvatarSettingsForm />
-      </SurfaceCard>
+      </ProfileSurface>
 
-      <SurfaceCard
+      <ProfileSurface
         title="Профиль и email"
         description="Смена email завершится только после подтверждения нового адреса."
       >
@@ -102,7 +100,7 @@ export function AccountSettingsPanel({
 
         <form onSubmit={onEmailSubmit} className="mt-4 space-y-4">
           <label className="block">
-            <span className="mb-2 block text-sm font-medium">Новый email</span>
+            <span className="field-label">Новый email</span>
             <Input
               type="email"
               value={newEmail}
@@ -112,9 +110,7 @@ export function AccountSettingsPanel({
             />
           </label>
           <label className="block">
-            <span className="mb-2 block text-sm font-medium">
-              Текущий пароль
-            </span>
+            <span className="field-label">Текущий пароль</span>
             <Input
               type="password"
               value={currentPassword}
@@ -135,7 +131,7 @@ export function AccountSettingsPanel({
             {emailLoading ? "Отправляем…" : "Запросить смену email"}
           </Button>
         </form>
-      </SurfaceCard>
+      </ProfileSurface>
 
       <SecuritySettingsForm
         initialHasPin={initialHasPin}

@@ -70,9 +70,9 @@ Current production contract обеспечивает:
   том числе после concurrent signup/bootstrap/reset/claim.
 
 Onboarding редактирует общие `display_name/locale/timezone` Account и не просит
-выбрать постоянную роль. `/courses`, `/schedule`, `/students` и
-`/learning-profile` доступны любому authenticated Account; `/observing`
-сохранён как protected compatibility redirect на
+выбрать постоянную роль. `/courses`, `/schedule`, `/students` и `/profile`
+доступны любому authenticated Account; `/learning-profile` сохранён как
+protected compatibility redirect на `/profile`, а `/observing` — на
 `/students?tab=observing`. Authoring Course по-прежнему owner-only и не
 означает learner enrollment.
 
@@ -336,17 +336,18 @@ Observer — explicit read-only grant, не Parent/Guardian role.
 
 UI surfaces:
 
-- `/learning-profile?tab=observers` — grants `observed_by` (люди, наблюдающие
+- `/profile?tab=observers` — grants `observed_by` (люди, наблюдающие
   за subject), управление их подписями и отзывом, а также исходящие invitations;
   входящие invitations наблюдать за другим profile отделены ниже и не входят в
   count собственных observers;
 - `/students?tab=observing` — profiles, на которые текущему Account дан active
   grant; прежний `/observing` перенаправляет сюда;
-- `/learning-profile` — единый раздел с вкладками `Профиль / История /
+- `/profile` — единый раздел с вкладками `Профиль / История /
 Аттестация / Наблюдатели / Настройки`: self history/progress/share code,
   Account settings, AI consents и destructive self lifecycle;
-- прежние `/settings`, `/settings/profile`, `/settings/security` и
-  `/settings/observers` — только compatibility redirects в этот раздел.
+- прежние `/learning-profile`, `/settings`, `/settings/profile`,
+  `/settings/security` и `/settings/observers` — только compatibility redirects
+  в этот раздел.
 
 ## Subject-only unlink и erasure
 
@@ -433,7 +434,8 @@ closed как stale.
   `src/modules/ai/shared-history.ts`, `course-context.ts`,
   `course-builder-service.ts`;
 - UI: `src/components/learner-identity/`, `src/components/account/`,
-  `/learning-profile`, `/students?tab=observing`, compatibility `/settings/*`,
+  `/profile`, `/students?tab=observing`, compatibility `/learning-profile` и
+  `/settings/*`,
   `/identity/invitations/[invitationId]`; `/observing` — compatibility redirect;
 - API: `/api/v2/me/learning-profile/*`, `/api/v2/learner-directory/*`,
   `/api/v2/learner-connections/*`, `/api/v2/identity-invitations/*`,
@@ -478,7 +480,7 @@ disposable fixture удалён без orphan rows, а stale session закры�
 terminal condition выполнен.
 
 **Current source UI:** self profile, observer management and Account settings
-объединены в адресуемые вкладки `/learning-profile`; это не меняет observer,
+объединены в адресуемые вкладки `/profile`; это не меняет observer,
 consent, credential или subject-lifecycle authorization boundaries.
 
 **Current outside identity:** Account-scoped self-learning approved educator

@@ -19,6 +19,8 @@ export const ROUTES = {
   courses: "/courses",
   store: "/store",
   coursesNew: "/courses/new",
+  profile: "/profile",
+  // Compatibility route. New UI links must use `profile`.
   learningProfile: "/learning-profile",
   observing: "/observing",
   settings: "/settings",

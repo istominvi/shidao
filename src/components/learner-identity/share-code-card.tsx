@@ -4,6 +4,7 @@ import Image from "next/image";
 import QRCode from "qrcode";
 import { Copy, QrCode, RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import profileStyles from "@/components/profile/profile-workspace.module.css";
 import { Button } from "@/components/ui/button";
 import type { ShareCode } from "@/modules/learner-identity/domain";
 import { formatIdentityDate } from "./identity-ui";
@@ -46,15 +47,16 @@ export function ShareCodeCard({
 
   return (
     <section
-      className="rounded-2xl border border-neutral-200 bg-white p-5"
+      className={profileStyles.card}
+      data-profile-surface="card"
       aria-labelledby="share-code-title"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 id="share-code-title" className="font-bold text-neutral-950">
+          <h2 id="share-code-title" className="surface-card-title">
             Одноразовый код подключения
           </h2>
-          <p className="mt-1 max-w-xl text-sm leading-relaxed text-neutral-600">
+          <p className="surface-card-description max-w-xl">
             Покажите код или QR конкретному преподавателю. Он создаст только
             запрос; связь появится после вашего подтверждения.
           </p>

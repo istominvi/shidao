@@ -127,7 +127,7 @@ const PAGE_LABELS: Record<SystemAssistantPageContext["surface"], string> = {
   course: "Курс",
   lesson: "Урок",
   student_preview: "Предпросмотр экрана ученика",
-  learning_profile: "Учебный профиль",
+  learning_profile: "Профиль",
   profile_settings: "Настройки профиля",
   security_settings: "Настройки безопасности",
   observer_settings: "Настройки наблюдателей",

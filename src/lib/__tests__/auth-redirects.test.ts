@@ -12,7 +12,7 @@ import { profileSettingsStatusHref } from "../navigation/profile-nav";
 
 test("post-auth redirects default to Account courses and reject external paths", () => {
   assert.equal(afterLogin(), ROUTES.courses);
-  assert.equal(afterLogin(ROUTES.settingsProfile), ROUTES.settingsProfile);
+  assert.equal(afterLogin(ROUTES.profile), ROUTES.profile);
   assert.equal(afterLogin("https://malicious.example/steal"), ROUTES.courses);
   assert.equal(afterLogin("//malicious.example/steal"), ROUTES.courses);
   assert.equal(afterLogin("/\\malicious.example/steal"), ROUTES.courses);

@@ -184,12 +184,15 @@ final snapshot, DB/API/GoTrue postflight, exact functional web SHA `01aa88a` и
 authenticated browser acceptance завершены. Identity program complete.
 Homework, RAG, billing, templates и live Student Screen по-прежнему не входят.
 
-**Current source UI follow-up:** `/learning-profile` стал единым адресуемым
+**Current source UI follow-up:** `/profile` стал единым адресуемым
 разделом с вкладками `Профиль / История / Аттестация / Наблюдатели / Настройки`.
-Отдельный settings shell удалён; старые `/settings/*` остаются compatibility
-redirects. Teacher connection requests, AI consents и subject lifecycle не
+Отдельный settings shell удалён; старые `/learning-profile` и `/settings/*`
+остаются compatibility redirects. Teacher connection requests, AI consents и
+subject lifecycle не
 удалены, а перенесены в соответствующие вкладки. Это UI/routing slice без schema
-или migration.
+или migration. Все вкладки используют единый opaque-white profile surface;
+avatar settings показывают только текущий avatar и две основные команды, а
+выбор preset и preview собственного файла выполняются в отдельных modal flows.
 
 **Current Account avatar follow-up:** AV1 DB-first contract применён к
 production; каждый Account имеет ровно одно

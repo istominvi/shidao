@@ -126,7 +126,8 @@ learner enrollment.
 /schedule
 /students
 /store
-/learning-profile
+/profile
+/learning-profile                 # compatibility redirect → /profile
 /observing
 /settings
 /settings/profile
@@ -153,16 +154,17 @@ Resource access остаётся relation/ownership-scoped:
   ассортимент учебных товаров и React-state cart/checkout. Он не читает Course,
   Lesson, roster или LearningRecord, не вызывает order/payment API и не пишет
   в database/Storage;
-- `/learning-profile` — единый Account/profile section; query `tab` принимает
+- `/profile` — единый Account/profile section; query `tab` принимает
   только `history | attestation | observers | settings`, а отсутствие/неверное
   значение открывает `profile`. Вкладки содержат linked subject safe
   history/progress, share code, observer grants, Account security/email, AI
   consent и subject lifecycle;
 - `/observing` — protected compatibility redirect на
   `/students?tab=observing`;
-- `/settings`, `/settings/profile`, `/settings/security` и
+- `/learning-profile`, `/settings`, `/settings/profile`, `/settings/security` и
   `/settings/observers` — protected compatibility redirects в соответствующие
-  вкладки `/learning-profile`; email-change flags сохраняются;
+  вкладки `/profile`; query и email-change flags сохраняются, а security URL
+  указывает на `#security`;
 - Student Screen по-прежнему owner preview, не learner Course access.
 
 Primary navigation для каждого Account в current production UI:

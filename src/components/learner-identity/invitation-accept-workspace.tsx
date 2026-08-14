@@ -428,12 +428,14 @@ export function InvitationAcceptWorkspace({
             </div>
           ) : null}
           <Link
-            href={completed.childAccountLogin ? "/login" : "/learning-profile"}
+            href={
+              completed.childAccountLogin ? "/login" : profileTabHref("profile")
+            }
             className={productButtonClassName("primary", "mt-4")}
           >
             {completed.childAccountLogin
               ? "Перейти ко входу"
-              : "Открыть учебный профиль"}
+              : "Открыть профиль"}
           </Link>
         </div>
       ) : null}
@@ -453,10 +455,10 @@ export function InvitationAcceptWorkspace({
             История теперь доступна в вашем текущем учебном профиле.
           </p>
           <Link
-            href="/learning-profile"
+            href={profileTabHref("profile")}
             className={productButtonClassName("primary", "mt-4")}
           >
-            Открыть учебный профиль
+            Открыть профиль
           </Link>
         </div>
       ) : null}

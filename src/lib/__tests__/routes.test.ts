@@ -10,6 +10,7 @@ import {
 import { ROUTES, toCourseRoute, toCourseStudentPreviewRoute } from "../auth";
 import {
   PROFILE_NAV_ITEMS,
+  profileCompatibilityHref,
   profileSettingsStatusHref,
   profileTabHref,
   resolveProfileTab,
@@ -46,6 +47,8 @@ test("isProtectedAppRoute covers private app trees", () => {
   assert.equal(isProtectedAppRoute(ROUTES.store), true);
   assert.equal(isProtectedAppRoute(`${ROUTES.store}/product-1`), true);
   assert.equal(isProtectedAppRoute("/storefront"), false);
+  assert.equal(isProtectedAppRoute(ROUTES.profile), true);
+  assert.equal(isProtectedAppRoute(`${ROUTES.profile}/history`), true);
   assert.equal(isProtectedAppRoute(ROUTES.learningProfile), true);
   assert.equal(isProtectedAppRoute(`${ROUTES.learningProfile}/history`), true);
   assert.equal(isProtectedAppRoute(ROUTES.observing), true);
@@ -92,17 +95,36 @@ test("profile tabs have stable addressable URLs and fail closed to profile", () 
     PROFILE_NAV_ITEMS.map((item) => item.id),
     ["profile", "history", "attestation", "observers", "settings"],
   );
-  assert.equal(profileTabHref("profile"), ROUTES.learningProfile);
-  assert.equal(
-    profileTabHref("observers"),
-    `${ROUTES.learningProfile}?tab=observers`,
-  );
+  assert.equal(profileTabHref("profile"), ROUTES.profile);
+  assert.equal(profileTabHref("observers"), `${ROUTES.profile}?tab=observers`);
   assert.equal(
     profileSettingsStatusHref("emailChanged"),
-    `${ROUTES.learningProfile}?tab=settings&emailChanged=1`,
+    `${ROUTES.profile}?tab=settings&emailChanged=1`,
   );
   assert.equal(resolveProfileTab("history"), "history");
   assert.equal(resolveProfileTab(["settings", "history"]), "settings");
   assert.equal(resolveProfileTab("unknown"), "profile");
   assert.equal(resolveProfileTab(undefined), "profile");
+});
+
+test("legacy profile redirects retain safe query values and forced tab semantics", () => {
+  assert.equal(
+    profileCompatibilityHref({
+      tab: ["history", "settings"],
+      filter: "семья и школа",
+      empty: undefined,
+    }),
+    `${ROUTES.profile}?tab=history&tab=settings&filter=%D1%81%D0%B5%D0%BC%D1%8C%D1%8F+%D0%B8+%D1%88%D0%BA%D0%BE%D0%BB%D0%B0`,
+  );
+  assert.equal(
+    profileCompatibilityHref(
+      { tab: "history", emailChanged: "1", source: ["a", "b"] },
+      { tab: "settings", fragment: "security" },
+    ),
+    `${ROUTES.profile}?tab=settings&emailChanged=1&source=a&source=b#security`,
+  );
+  assert.equal(
+    profileCompatibilityHref({}, { tab: "profile" }),
+    ROUTES.profile,
+  );
 });

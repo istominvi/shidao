@@ -8,7 +8,7 @@ function source(path: string) {
 }
 
 test("profile, observers, and account settings share one product workspace", () => {
-  const page = source("src/app/(app)/learning-profile/page.tsx");
+  const page = source("src/app/(app)/profile/page.tsx");
   const workspace = source(
     "src/components/learner-identity/learning-profile-workspace.tsx",
   );
@@ -91,6 +91,7 @@ test("account settings actions and one-line fields use shared primitives", () =>
 });
 
 test("legacy settings URLs redirect into the canonical profile tabs", () => {
+  const learningProfile = source("src/app/(app)/learning-profile/page.tsx");
   const profile = source(
     "src/app/(app)/(profile-required)/settings/profile/page.tsx",
   );
@@ -100,9 +101,15 @@ test("legacy settings URLs redirect into the canonical profile tabs", () => {
   const observers = source("src/app/(app)/settings/observers/page.tsx");
   const root = source("src/app/(app)/settings/page.tsx");
 
-  assert.match(profile, /profileTabHref\("settings"\)/);
-  assert.match(profile, /profileSettingsStatusHref\("emailChanged"\)/);
-  assert.match(security, /profileTabHref\("settings"\)[\s\S]*#security/);
-  assert.match(observers, /profileTabHref\("observers"\)/);
-  assert.match(root, /profileTabHref\("settings"\)/);
+  assert.match(
+    learningProfile,
+    /profileCompatibilityHref\(await searchParams\)/,
+  );
+  for (const redirectPage of [profile, security, observers, root]) {
+    assert.match(redirectPage, /profileCompatibilityHref\(await searchParams/);
+  }
+  assert.match(profile, /tab: "settings"/);
+  assert.match(security, /tab: "settings"[\s\S]*fragment: "security"/);
+  assert.match(observers, /tab: "observers"/);
+  assert.match(root, /tab: "settings"/);
 });

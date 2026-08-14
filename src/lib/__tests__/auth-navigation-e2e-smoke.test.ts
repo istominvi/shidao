@@ -450,7 +450,7 @@ test("e2e smoke: authenticated /login redirects and legacy security URL stays co
   assert.equal(loginResponse.headers.get("location"), "/courses");
 
   const securityResponse = await fetch(
-    `http://127.0.0.1:${appPort}/settings/security`,
+    `http://127.0.0.1:${appPort}/settings/security?source=e2e`,
     {
       headers: { cookie },
       redirect: "manual",
@@ -459,16 +459,26 @@ test("e2e smoke: authenticated /login redirects and legacy security URL stays co
   assert.equal(securityResponse.status, 307);
   assert.equal(
     securityResponse.headers.get("location"),
-    "/learning-profile?tab=settings#security",
+    "/profile?tab=settings&source=e2e#security",
   );
 
   const canonicalResponse = await fetch(
-    `http://127.0.0.1:${appPort}/learning-profile?tab=settings`,
+    `http://127.0.0.1:${appPort}/profile?tab=settings`,
     { headers: { cookie } },
   );
   const canonicalHtml = await canonicalResponse.text();
   assert.equal(canonicalResponse.status, 200);
   assert.match(canonicalHtml, /E2E Adult/);
+
+  const legacyProfileResponse = await fetch(
+    `http://127.0.0.1:${appPort}/learning-profile?tab=observers&source=e2e`,
+    { headers: { cookie }, redirect: "manual" },
+  );
+  assert.equal(legacyProfileResponse.status, 307);
+  assert.equal(
+    legacyProfileResponse.headers.get("location"),
+    "/profile?tab=observers&source=e2e",
+  );
 });
 
 test("API e2e: learner directory returns the exact public DTO and fails closed on injected RPC secrets", async () => {

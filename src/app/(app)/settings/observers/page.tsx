@@ -1,6 +1,15 @@
 import { redirect } from "next/navigation";
-import { profileTabHref } from "@/lib/navigation/profile-nav";
+import {
+  profileCompatibilityHref,
+  type ProfileRouteSearchParams,
+} from "@/lib/navigation/profile-nav";
 
-export default function LegacyObserversSettingsPage() {
-  redirect(profileTabHref("observers"));
+type LegacyObserversSettingsPageProps = {
+  searchParams: Promise<ProfileRouteSearchParams>;
+};
+
+export default async function LegacyObserversSettingsPage({
+  searchParams,
+}: LegacyObserversSettingsPageProps) {
+  redirect(profileCompatibilityHref(await searchParams, { tab: "observers" }));
 }

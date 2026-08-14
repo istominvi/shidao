@@ -1,4 +1,5 @@
 import { CheckCircle2, Clock3, RotateCcw, UserX } from "lucide-react";
+import profileStyles from "@/components/profile/profile-workspace.module.css";
 import { Button } from "@/components/ui/button";
 import type { LearnerSafeHistoryItem } from "@/modules/learner-identity/domain";
 import { formatIdentityDate, IdentityEmpty } from "./identity-ui";
@@ -17,6 +18,7 @@ export function SafeHistoryList({
   if (items.length === 0) {
     return (
       <IdentityEmpty
+        surface="card"
         title="История пока пуста"
         description="Появятся только завершённые занятия и комментарии, которые преподаватель явно добавил в учебный профиль."
       />
@@ -28,7 +30,8 @@ export function SafeHistoryList({
         {items.map((item) => (
           <li
             key={item.key}
-            className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5"
+            className={profileStyles.card}
+            data-profile-surface="card"
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>

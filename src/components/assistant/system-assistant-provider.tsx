@@ -80,12 +80,12 @@ function fallbackContext(pathname: string): RegisteredSystemAssistantContext {
       label: "Курсы · Мои",
     };
   }
-  if (pathname === "/learning-profile") {
+  if (pathname === "/profile") {
     return {
       surface: "learning_profile",
       courseId: null,
       lessonId: null,
-      label: "Учебный профиль",
+      label: "Профиль",
     };
   }
   if (pathname === "/settings/profile") {

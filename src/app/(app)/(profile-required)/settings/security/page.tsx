@@ -1,6 +1,20 @@
 import { redirect } from "next/navigation";
-import { profileTabHref } from "@/lib/navigation/profile-nav";
+import {
+  profileCompatibilityHref,
+  type ProfileRouteSearchParams,
+} from "@/lib/navigation/profile-nav";
 
-export default function LegacySecuritySettingsPage() {
-  redirect(`${profileTabHref("settings")}#security`);
+type LegacySecuritySettingsPageProps = {
+  searchParams: Promise<ProfileRouteSearchParams>;
+};
+
+export default async function LegacySecuritySettingsPage({
+  searchParams,
+}: LegacySecuritySettingsPageProps) {
+  redirect(
+    profileCompatibilityHref(await searchParams, {
+      tab: "settings",
+      fragment: "security",
+    }),
+  );
 }

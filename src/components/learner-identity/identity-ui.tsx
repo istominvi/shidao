@@ -1,5 +1,7 @@
 import { AlertCircle, CheckCircle2, Clock3, LoaderCircle } from "lucide-react";
+import profileStyles from "@/components/profile/profile-workspace.module.css";
 import { Button } from "@/components/ui/button";
+import { classNames } from "@/lib/ui/classnames";
 import type {
   AiConsentStatus,
   IdentityRequestStatus,
@@ -55,12 +57,22 @@ export function IdentityError({
 export function IdentityEmpty({
   title,
   description,
+  surface,
 }: {
   title: string;
   description: string;
+  surface?: "card" | "row";
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-6 text-center">
+    <div
+      className={classNames(
+        surface ? profileStyles[surface] : null,
+        !surface &&
+          "rounded-2xl border border-dashed border-neutral-300 bg-white p-6",
+        "text-center",
+      )}
+      data-profile-surface={surface}
+    >
       <p className="font-semibold text-neutral-950">{title}</p>
       <p className="mx-auto mt-1 max-w-xl text-sm leading-relaxed text-neutral-600">
         {description}

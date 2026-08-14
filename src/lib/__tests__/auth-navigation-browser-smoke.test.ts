@@ -618,12 +618,16 @@ type PlaywrightLocator = {
   fill: (value: string) => Promise<void>;
   hover: () => Promise<void>;
   inputValue: () => Promise<string>;
+  setInputFiles: (files: string) => Promise<void>;
   selectOption: (option: { label: string }) => Promise<string[]>;
   getAttribute: (name: string) => Promise<string | null>;
   textContent: () => Promise<string | null>;
   allTextContents: () => Promise<string[]>;
   locator: (selector: string) => PlaywrightLocator;
   evaluate: <T>(pageFunction: (element: Element) => T) => Promise<T>;
+  evaluateAll: <T>(pageFunction: (elements: Element[]) => T) => Promise<T>;
+  nth: (index: number) => PlaywrightLocator;
+  isEnabled: () => Promise<boolean>;
   press: (key: string) => Promise<void>;
   getByRole: (
     role: string,
@@ -793,6 +797,9 @@ type PlaywrightChromium = {
           move: (x: number, y: number) => Promise<void>;
           up: () => Promise<void>;
         };
+        keyboard: {
+          press: (key: string) => Promise<void>;
+        };
         setViewportSize: (viewport: {
           width: number;
           height: number;
@@ -801,6 +808,7 @@ type PlaywrightChromium = {
           reducedMotion: "reduce" | "no-preference";
         }) => Promise<void>;
         waitForTimeout: (timeout: number) => Promise<void>;
+        waitForFunction: (pageFunction: () => boolean) => Promise<void>;
         goto: (
           url: string,
           options?: { waitUntil?: "domcontentloaded" | "networkidle" },
@@ -6786,7 +6794,7 @@ test("browser smoke: self profile exposes only learner-safe history and controls
   e2eAiConsentStatus = "pending";
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
   try {
-    await runtime.page.goto("/learning-profile", { waitUntil: "networkidle" });
+    await runtime.page.goto("/profile", { waitUntil: "networkidle" });
     await runtime.page
       .getByRole("heading", {
         name: "E2E Adult",
@@ -6798,6 +6806,80 @@ test("browser smoke: self profile exposes only learner-safe history and controls
       await runtime.page.getByRole("heading", { level: 1 }).count(),
       1,
     );
+    const assertProfileSurfaceContract = async (surfaceName: string) => {
+      const cards = await runtime.page
+        .locator('[data-profile-surface="card"]')
+        .evaluateAll((elements) =>
+          elements
+            .filter((element) => (element as HTMLElement).offsetParent !== null)
+            .map((element) => {
+              const style = getComputedStyle(element);
+              return {
+                backgroundColor: style.backgroundColor,
+                backgroundClip: style.backgroundClip,
+                borderRadius: style.borderRadius,
+                borderTopWidth: style.borderTopWidth,
+                boxShadow: style.boxShadow,
+              };
+            }),
+        );
+      assert.ok(cards.length > 0, `${surfaceName}: expected visible cards`);
+      for (const card of cards) {
+        assert.equal(card.backgroundColor, "rgb(255, 255, 255)", surfaceName);
+        assert.equal(card.backgroundClip, "padding-box", surfaceName);
+        assert.equal(card.borderRadius, "20px", surfaceName);
+        assert.equal(card.borderTopWidth, "1px", surfaceName);
+        assert.notEqual(card.boxShadow, "none", surfaceName);
+      }
+
+      const rows = await runtime.page
+        .locator('[data-profile-surface="row"]')
+        .evaluateAll((elements) =>
+          elements
+            .filter((element) => (element as HTMLElement).offsetParent !== null)
+            .map((element) => {
+              const style = getComputedStyle(element);
+              return {
+                backgroundColor: style.backgroundColor,
+                backgroundClip: style.backgroundClip,
+                borderRadius: style.borderRadius,
+                borderTopWidth: style.borderTopWidth,
+                boxShadow: style.boxShadow,
+              };
+            }),
+        );
+      for (const row of rows) {
+        assert.equal(row.backgroundColor, "rgb(255, 255, 255)", surfaceName);
+        assert.equal(row.backgroundClip, "padding-box", surfaceName);
+        assert.equal(row.borderRadius, "20px", surfaceName);
+        assert.equal(row.borderTopWidth, "1px", surfaceName);
+        assert.equal(row.boxShadow, "none", surfaceName);
+      }
+
+      const tables = await runtime.page
+        .locator('[data-profile-surface="table"]')
+        .evaluateAll((elements) =>
+          elements
+            .filter((element) => (element as HTMLElement).offsetParent !== null)
+            .map((element) => {
+              const style = getComputedStyle(element);
+              return {
+                backgroundColor: style.backgroundColor,
+                backgroundClip: style.backgroundClip,
+                borderRadius: style.borderRadius,
+                borderTopWidth: style.borderTopWidth,
+                boxShadow: style.boxShadow,
+              };
+            }),
+        );
+      for (const table of tables) {
+        assert.equal(table.backgroundColor, "rgb(255, 255, 255)", surfaceName);
+        assert.equal(table.backgroundClip, "padding-box", surfaceName);
+        assert.equal(table.borderRadius, "20px", surfaceName);
+        assert.equal(table.borderTopWidth, "1px", surfaceName);
+        assert.notEqual(table.boxShadow, "none", surfaceName);
+      }
+    };
     const profileTabOwnership = await runtime.page.evaluate(() =>
       Array.from(document.querySelectorAll<HTMLElement>('[role="tab"]')).map(
         (tab) => {
@@ -6823,6 +6905,7 @@ test("browser smoke: self profile exposes only learner-safe history and controls
     let html = await runtime.page.content();
     assert.match(html, /1 ч 32 мин/);
     assert.match(html, /Известное фактическое время/);
+    await assertProfileSurfaceContract("Профиль");
 
     await runtime.page.getByRole("tab", { name: /^История/ }).click();
     await runtime.page
@@ -6832,6 +6915,7 @@ test("browser smoke: self profile exposes only learner-safe history and controls
       .waitFor();
     html = await runtime.page.content();
     assert.doesNotMatch(html, /FOREIGN TRAP RECORD|Чужой курс/);
+    await assertProfileSurfaceContract("История");
 
     await runtime.page
       .getByRole("tab", { name: /^Аттестация/, exact: false })
@@ -6845,6 +6929,15 @@ test("browser smoke: self profile exposes only learner-safe history and controls
         .count(),
       0,
     );
+    await assertProfileSurfaceContract("Аттестация");
+
+    await runtime.page
+      .getByRole("tab", { name: /^Наблюдатели/, exact: false })
+      .click();
+    await runtime.page
+      .getByRole("heading", { name: "Активные наблюдатели", exact: true })
+      .waitFor();
+    await assertProfileSurfaceContract("Наблюдатели");
 
     await runtime.page
       .getByRole("tab", { name: /^Настройки/, exact: false })
@@ -6852,6 +6945,133 @@ test("browser smoke: self profile exposes only learner-safe history and controls
     await runtime.page
       .getByText("Персонализация с общей историей", { exact: true })
       .waitFor();
+    await assertProfileSurfaceContract("Настройки");
+
+    assert.equal(await runtime.page.getByRole("radio").count(), 0);
+    const chooseAvatarButton = runtime.page.getByRole("button", {
+      name: "Выбрать аватар",
+      exact: true,
+    });
+    await chooseAvatarButton.click();
+    const avatarDialog = runtime.page.getByRole("dialog", {
+      name: "Выберите аватар",
+      exact: true,
+    });
+    await avatarDialog.waitFor();
+    const presetRadios = avatarDialog.getByRole("radio");
+    assert.equal(await presetRadios.count(), 20);
+    await runtime.page.waitForFunction(() => {
+      const images = Array.from(
+        document.querySelectorAll<HTMLImageElement>(
+          '[role="dialog"] fieldset img[src^="/avatars/presets/"]',
+        ),
+      );
+      return (
+        images.length === 20 &&
+        images.every(
+          (image) =>
+            image.complete && image.naturalWidth > 0 && image.naturalHeight > 0,
+        )
+      );
+    });
+    const presetImageContract = await avatarDialog
+      .locator('fieldset img[src^="/avatars/presets/"]')
+      .evaluateAll((images) =>
+        images.map((image) => {
+          const avatarImage = image as HTMLImageElement;
+          return {
+            complete: avatarImage.complete,
+            naturalWidth: avatarImage.naturalWidth,
+            naturalHeight: avatarImage.naturalHeight,
+            src: avatarImage.getAttribute("src") ?? "",
+          };
+        }),
+      );
+    assert.equal(presetImageContract.length, 20);
+    assert.equal(
+      presetImageContract.every(
+        (image) =>
+          image.complete &&
+          image.naturalWidth > 0 &&
+          image.naturalHeight > 0 &&
+          image.src.startsWith("/avatars/presets/") &&
+          !image.src.includes("/_next/image"),
+      ),
+      true,
+    );
+    const saveAvatarButton = avatarDialog.getByRole("button", {
+      name: "Сохранить",
+      exact: true,
+    });
+    assert.equal(await saveAvatarButton.isEnabled(), false);
+    const secondPresetId = await presetRadios.nth(1).getAttribute("id");
+    assert.ok(secondPresetId);
+    await avatarDialog.locator(`label[for="${secondPresetId}"]`).click();
+    assert.equal(await saveAvatarButton.isEnabled(), true);
+    await runtime.page.keyboard.press("Escape");
+    await avatarDialog.waitFor({ state: "detached" });
+    assert.equal(
+      await chooseAvatarButton.evaluate(
+        (button) => button === document.activeElement,
+      ),
+      true,
+    );
+
+    await runtime.page
+      .locator('input[type="file"][aria-label="Выбрать фото на компьютере"]')
+      .setInputFiles(
+        join(process.cwd(), "public/avatars/presets/sd-avatar-v1-02.webp"),
+      );
+    const uploadDialog = runtime.page.getByRole("dialog", {
+      name: "Новое фото",
+      exact: true,
+    });
+    await uploadDialog.waitFor();
+    await runtime.page.waitForFunction(() => {
+      const preview = document.querySelector<HTMLImageElement>(
+        '[role="dialog"] img[alt="Предпросмотр нового фото"]',
+      );
+      return Boolean(preview?.complete && preview.naturalWidth > 0);
+    });
+    assert.match(
+      (await uploadDialog.getByText("sd-avatar-v1-02.webp").textContent()) ??
+        "",
+      /sd-avatar-v1-02\.webp/,
+    );
+    await uploadDialog
+      .getByRole("button", { name: "Отмена", exact: true })
+      .click();
+    await uploadDialog.waitFor({ state: "detached" });
+
+    await runtime.page.setViewportSize({ width: 375, height: 812 });
+    await chooseAvatarButton.click();
+    await avatarDialog.waitFor();
+    const mobileAvatarDialog = await avatarDialog.evaluate((element) => {
+      const panel = element as HTMLElement;
+      const grid = panel.querySelector<HTMLElement>("fieldset > div");
+      if (!grid) throw new Error("Avatar preset grid is missing");
+      const rect = panel.getBoundingClientRect();
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+        columns: getComputedStyle(grid).gridTemplateColumns.split(" ").length,
+        overflowY: getComputedStyle(panel).overflowY,
+      };
+    });
+    assert.ok(mobileAvatarDialog.left >= 0 && mobileAvatarDialog.top >= 0);
+    assert.ok(
+      mobileAvatarDialog.right <= mobileAvatarDialog.viewportWidth &&
+        mobileAvatarDialog.bottom <= mobileAvatarDialog.viewportHeight,
+    );
+    assert.equal(mobileAvatarDialog.columns, 4);
+    assert.equal(mobileAvatarDialog.overflowY, "auto");
+    await runtime.page.keyboard.press("Escape");
+    await avatarDialog.waitFor({ state: "detached" });
+
     await runtime.page
       .getByRole("button", { name: "Разрешить", exact: true })
       .click();
@@ -6979,7 +7199,7 @@ test("browser smoke: observer settings accepts an incoming request and revokes o
   e2eObserverInviteCreated = false;
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
   try {
-    await runtime.page.goto("/learning-profile?tab=observers", {
+    await runtime.page.goto("/profile?tab=observers", {
       waitUntil: "networkidle",
     });
     await runtime.page
@@ -7141,7 +7361,7 @@ test("browser smoke: trusted adult resets child credentials and learner revokes 
   e2eRecoveryDelegateRevoked = false;
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
   try {
-    await runtime.page.goto("/learning-profile?tab=settings#security", {
+    await runtime.page.goto("/profile?tab=settings#security", {
       waitUntil: "networkidle",
     });
     await runtime.page
@@ -7617,7 +7837,7 @@ test("browser smoke: completion UI keeps private comments teacher-only and publi
     assert.match(html, /Только преподавателю/);
     assert.match(html, /Опубликован в учебном профиле/);
 
-    await runtime.page.goto("/learning-profile", { waitUntil: "networkidle" });
+    await runtime.page.goto("/profile", { waitUntil: "networkidle" });
     await runtime.page.getByRole("tab", { name: /^История/ }).click();
     await runtime.page
       .getByText(E2E_PUBLISHED_SELF_COMMENT, { exact: true })
@@ -8299,7 +8519,7 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
     );
 
     await Promise.all([
-      runtime.page.waitForURL(/\/learning-profile$/),
+      runtime.page.waitForURL(/\/profile$/),
       learningProfileMenuItem.click(),
     ]);
     await runtime.page

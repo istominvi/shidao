@@ -25,12 +25,26 @@ test("unoptimized preset images render their static WebP directly", () => {
   assert.doesNotMatch(markup, /\/_next\/image/);
 });
 
-test("account settings require either a preset or a validated custom avatar", () => {
+test("account settings keep avatar choices compact and require confirmation", () => {
   const settings = source("src/components/account/account-settings-panel.tsx");
   const form = source("src/components/account/avatar-settings-form.tsx");
 
   assert.match(settings, /title="Аватар"/);
   assert.match(settings, /<AvatarSettingsForm \/>/);
+  assert.match(form, /Загрузить фото/);
+  assert.match(form, /Выбрать аватар/);
+  assert.match(form, /fileInputRef\.current\.click\(\)/);
+  assert.match(form, /dialog === "preset"/);
+  assert.match(form, /dialog === "custom"/);
+  assert.match(
+    form,
+    /function openPresetDialog\(\)[\s\S]*setSelectedPreset\(currentPreset\)/,
+  );
+  assert.match(
+    form,
+    /const previewAvatar: AccountAvatarView = selectedPreset[\s\S]*: currentAvatar/,
+  );
+  assert.equal((form.match(/<DialogShell/g) ?? []).length, 2);
   assert.match(form, /ACCOUNT_AVATAR_PRESETS\.map/);
   assert.match(
     form,
@@ -38,9 +52,12 @@ test("account settings require either a preset or a validated custom avatar", ()
   );
   assert.match(form, /type="radio"/);
   assert.match(form, /checked=\{selected\}/);
-  assert.match(form, /Снять выбор без замены нельзя/);
+  assert.match(form, /Профиль нельзя оставить без/);
   assert.match(form, /accept="image\/jpeg,image\/png,image\/webp"/);
   assert.match(form, /ACCOUNT_AVATAR_MAX_UPLOAD_BYTES/);
+  assert.match(form, /event\.key !== "Escape"/);
+  assert.ok((form.match(/Сохранить/g) ?? []).length >= 2);
+  assert.ok((form.match(/Отмена/g) ?? []).length >= 2);
   assert.match(form, /formData\.set\("expectedRevision"/);
   assert.match(form, /presetKey: selectedPreset/);
   assert.equal(

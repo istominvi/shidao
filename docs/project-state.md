@@ -122,10 +122,11 @@ Account/Profile bootstrap, Account login/PIN
 boundary, safe discovery/recipient-bound claim и child activation, physical
 merge/lineage, archive/restore, self/observer history/progress, subject erasure
 и consented cross-provider AI. Application/API/UI находятся в
-`src/modules/learner-identity/`, `src/components/learner-identity/` и новых
-routes `/learning-profile`, `/students?tab=observing`,
-`/identity/invitations/[invitationId]`; прежние `/observing` и `/settings/*`
-сохранены только как protected compatibility redirects. Security slice также
+`src/modules/learner-identity/`, `src/components/learner-identity/` и routes
+`/profile`, `/students?tab=observing`,
+`/identity/invitations/[invitationId]`; прежние `/learning-profile`,
+`/observing` и `/settings/*` сохранены только как protected compatibility
+redirects. Security slice также
 закрывает production
 host allowlist и CSRF до exact `v2.shidao.ru` Origin. Coolify завершил roleless
 deployments точных SHA `5944d31f86f7d3795ec9f17928cb311ecbdfdd21` и
@@ -145,18 +146,25 @@ Coolify deployment `887` завершил exact functional SHA
 restart count `0`, HTTPS `200`.
 
 **Current source profile navigation:** собственный профиль и Account settings
-собраны в одном разделе `/learning-profile` с адресуемыми вкладками `Профиль /
+собраны в одном разделе `/profile` с адресуемыми вкладками `Профиль /
 История / Аттестация / Наблюдатели / Настройки`. Account menu повторяет этот
 порядок и завершает список действием `Выход`; trigger показывает только
 квадратный avatar `40 × 40 px` с радиусом `12 px`, а dropdown header — ФИО и
 email без второй avatar. Заголовок раздела использует ФИО Account, метрику
 активной вкладки и действие `Выход`. `Наблюдатели` показывает grants направления
 `observed_by` первыми; входящие приглашения наблюдать за другим профилем отделены
-ниже. Прежние `/settings`, `/settings/profile`, `/settings/security` и
-`/settings/observers` сохранены как compatibility redirects. Отдельные вкладки
+ниже. Прежние `/learning-profile`, `/settings`, `/settings/profile`,
+`/settings/security` и `/settings/observers` сохранены как compatibility
+redirects с переносом query; security redirect сохраняет `#security`. Отдельные вкладки
 `Данные` и `Связи и помощник` удалены: teacher connection requests перенесены в
 `Профиль`, AI consents и subject-only unlink/erasure — в `Настройки`. UI/API
 используют прежние audited identity boundaries; schema и migrations не менялись.
+Все пять вкладок используют один profile-surface contract: непрозрачный белый
+фон, радиус `20 px`, тонкую product border и одну мягкую тень только у верхнего
+уровня. Вложенные строки остаются белыми с тем же радиусом и border, но без
+повторной тени. Настройка аватара компактна: текущий avatar и две кнопки;
+двадцать presets открываются в modal picker, а локальный файл — в отдельном
+preview dialog до явного сохранения.
 
 **Current Account avatar follow-up:** AV1 DB-first contract применён к
 production, а avatar теперь является обязательным
@@ -863,8 +871,8 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - Existing learner login/PIN работает через `account_login_alias` и
   `account_security`; active login path не читает legacy Student.
 - В current production primary navigation одинакова для каждого Account и
-  содержит «Расписание / Ученики / Курсы / Магазин»; «Учебный профиль» остаётся в
-  меню Account справа перед «Настройки / Выход», а observer projection —
+  содержит «Расписание / Ученики / Курсы / Магазин»; «Профиль» находится в
+  меню Account вместе с остальными вкладками раздела, а observer projection —
   третьей вкладкой «Наблюдение» внутри «Ученики».
 - Существующая app-session поддерживает глобальную и пользовательскую
   инвалидизацию; destructive identity/credential flows дополнительно требуют
@@ -1092,7 +1100,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 - В current production основная навигация любого Account содержит «Расписание /
   Ученики / Курсы / Магазин» без role switch. Персональное меню справа содержит
-  «Учебный профиль / Настройки / Выход».
+  «Профиль / История / Аттестация / Наблюдатели / Настройки / Выход».
 - «Магазин» остаётся тем же universal Account route и не вводит роль продавца
   или покупателя.
 - `/schedule` и `/students` filesystem-совместимо остаются под прежним route
@@ -1227,7 +1235,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - Одиночные actor-scoped teacher URLs резолвят stale merged UUID. Bulk
   Group/Course/Run UUID fail generic и требуют reload/reselect; erasure удаляет
   alias, поэтому старый UUID больше не резолвится.
-- `/learning-profile` показывает linked self profile, cursor-paginated
+- `/profile` показывает linked self profile, cursor-paginated
   learner-safe history, real-record progress, share code, AI consents и
   preview/confirm destructive actions.
 - `/settings/observers` управляет pending/active observers, free display labels
@@ -1817,7 +1825,7 @@ positions, а плотность поддерживают текущие service
 | LessonRun API                        | `src/app/api/v2/lesson-runs/`, `learner-profiles/`, `learner-groups/`, Course/Lesson audience/history/runs routes                                                                                                                                                                 |
 | LessonRun UI                         | `src/components/lesson-runs/`                                                                                                                                                                                                                                                     |
 | Learner identity contracts/service   | `src/modules/learner-identity/`                                                                                                                                                                                                                                                   |
-| Learner identity UI/routes           | `src/components/learner-identity/`, `/learning-profile`, `/students?tab=observing`, `/settings/observers`, `/identity/invitations/*`; `/observing` — compatibility redirect                                                                                                       |
+| Learner identity UI/routes           | `src/components/learner-identity/`, `/profile`, `/students?tab=observing`, `/identity/invitations/*`; `/learning-profile`, `/settings/*` и `/observing` — compatibility redirects                                                                                                 |
 | Learner identity access doc          | `docs/architecture/learner-identity-access-model.md`                                                                                                                                                                                                                              |
 | Consented AI safe history            | `src/modules/ai/shared-history.ts`, `course-context.ts`, `course-builder-service.ts`                                                                                                                                                                                              |
 | Historical identity execution prompt | `docs/v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md`                                                                                                                                                                                                                                   |
@@ -1866,7 +1874,8 @@ positions, а плотность поддерживают текущие service
 /courses/[courseId]
 /courses/catalog/[publicationId]     # отдельный published learning workspace
 /courses/[courseId]/student-preview
-/learning-profile
+/profile
+/learning-profile                 # compatibility redirect → /profile
 /observing                        # compatibility redirect → /students?tab=observing
 /settings/profile
 /settings/security

@@ -1135,7 +1135,7 @@ flow как permanent delete.
   option использует только base shadow и не получает hover/pressed button states,
   а shell имеет computed background `oklch(0.19 0 0 / 0.1)`; keyboard focus
   сохраняет видимый outline. Menu items сохраняют border `0`.
-  Повторить этот visual check на authenticated `/learning-profile` и вкладках
+  Повторить этот visual check на authenticated `/profile` и вкладках
   `?tab=observers|settings`: единый раздел использует beige product shell и
   solid-white demo TopNav; Account trigger/avatar имеют ровно `40 × 40 px` и
   radius `12 px`, видимого имени рядом нет. Dropdown header содержит ФИО/email
@@ -1303,11 +1303,11 @@ flow как permanent delete.
 - child activation создаёт отдельный learner Account с login/PIN, требует
   recovery acknowledgement; adult recipient Account не становится learner
   target; отдельный login открывает новый Account profile;
-- `/learning-profile` показывает один H1 с ФИО, вкладки `Профиль / История /
+- `/profile` показывает один H1 с ФИО, вкладки `Профиль / История /
 Аттестация / Наблюдатели / Настройки` и метрику активной вкладки; private
   comment отсутствует, explicit shared comment виден, known duration не
   подменяет unknown нулём;
-- `/learning-profile?tab=observers` первым показывает active `observed_by`,
+- `/profile?tab=observers` первым показывает active `observed_by`,
   создаёт/accepts/revokes invitation, а вкладка
   `/students?tab=observing` показывает read-only profile; после revoke следующий
   read немедленно fail closed;

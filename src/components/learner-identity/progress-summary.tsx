@@ -1,4 +1,5 @@
 import { CalendarClock, CheckCircle2, Clock3, RotateCcw } from "lucide-react";
+import profileStyles from "@/components/profile/profile-workspace.module.css";
 import type { LearnerProgress } from "@/modules/learner-identity/domain";
 import { formatIdentityDate, IdentityEmpty } from "./identity-ui";
 
@@ -14,6 +15,7 @@ export function ProgressSummary({ progress }: { progress: LearnerProgress }) {
   if (progress.finalizedRunCount === 0) {
     return (
       <IdentityEmpty
+        surface="card"
         title="Проведённых занятий пока нет"
         description="Здесь появятся только реальные итоги завершённых занятий — без выдуманных оценок и нулей вместо неизвестных данных."
       />
@@ -45,7 +47,8 @@ export function ProgressSummary({ progress }: { progress: LearnerProgress }) {
         {cards.map((card) => (
           <div
             key={card.label}
-            className="product-raised-surface rounded-2xl border border-neutral-200 bg-white p-4"
+            className={profileStyles.card}
+            data-profile-surface="card"
           >
             <card.icon
               className="h-5 w-5 text-neutral-500"
@@ -67,7 +70,10 @@ export function ProgressSummary({ progress }: { progress: LearnerProgress }) {
         проведений; неизвестное время не считается нулём.
       </p>
       {progress.subjects.length > 0 ? (
-        <div className="product-table-wrap overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
+        <div
+          className="product-table-wrap overflow-x-auto rounded-2xl border border-neutral-200 bg-white"
+          data-profile-surface="table"
+        >
           <table className="product-table w-full min-w-[620px] text-left text-sm">
             <caption className="sr-only">Прогресс по предметам</caption>
             <thead className="border-b border-neutral-200 bg-neutral-50 text-neutral-600">

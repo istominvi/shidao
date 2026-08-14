@@ -927,7 +927,7 @@ actions`; пять data headers сортируют полную client-loaded pr
   learner-identity service/API, не внутри Course Builder.
 
 Current production primary navigation для roleless Account содержит
-«Расписание / Ученики / Курсы / Магазин». «Учебный профиль» находится в Account menu, а
+«Расписание / Ученики / Курсы / Магазин». «Профиль» находится в Account menu, а
 «Наблюдение» — третья вкладка `/students`; `/observing` служит compatibility redirect. Пустой
 `/courses` позволяет начать authoring; он не является Course enrollment
 учащегося. Owner-scoped CourseSummary поддерживает поиск, subject/level/content
@@ -1138,7 +1138,8 @@ Implementation map:
   `learner-groups/`, Course/Lesson `audience|history|runs` routes;
 - identity contracts/service/repositories: `src/modules/learner-identity/`;
 - identity/self/observer UI: `src/components/learner-identity/`,
-  `/learning-profile`, `/students?tab=observing`, `/settings/observers`;
+  `/profile`, `/students?tab=observing`; `/learning-profile` и
+  `/settings/observers` — compatibility redirects;
   `/observing` — compatibility redirect;
 - consented AI projection: `src/modules/ai/shared-history.ts`;
 - canonical learner identity/access contract:

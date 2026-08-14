@@ -1,0 +1,39 @@
+.workspace {
+  --profile-content-card-radius: var(--product-card-radius, 1.25rem);
+  --profile-content-card-padding: 1.25rem;
+}
+
+.card.card,
+.row.row {
+  border: var(--product-surface-border, 1px solid oklch(0 0 0 / 0.1));
+  border-radius: var(
+    --profile-content-card-radius,
+    var(--product-card-radius, 1.25rem)
+  );
+  background: #fff;
+  background-clip: padding-box;
+}
+
+.card.card {
+  box-shadow: var(--product-raised-surface-shadow);
+}
+
+.card.card,
+.row.row {
+  padding: var(--profile-content-card-padding, 1.25rem);
+}
+
+.row.row {
+  box-shadow: none;
+}
+
+.workspace [data-profile-surface="table"] {
+  border: var(--product-surface-border, 1px solid oklch(0 0 0 / 0.1));
+  border-radius: var(
+    --profile-content-card-radius,
+    var(--product-card-radius, 1.25rem)
+  );
+  background: #fff;
+  background-clip: padding-box;
+  box-shadow: var(--product-raised-surface-shadow);
+}

@@ -80,8 +80,15 @@ Storage path, signed token or internal Account identifier.
 
 - Header avatar: `40 × 40`, `12 px` radius, `object-fit: cover`, decorative
   alternative text because the trigger already has an accessible Account name.
-- Settings preview: `80 × 80`, with a text label beside it.
-- Preset picker: one native radio group with twenty labelled choices, visible
-  selection, keyboard focus and touch targets of at least `44 px`.
+- Settings keeps the avatar surface compact: the current `80 × 80` image and
+  only two actions, `Загрузить фото` and `Выбрать аватар`. The twenty preset
+  files are not rendered until the picker dialog opens.
+- `Выбрать аватар` opens a modal preview and one native radio group with twenty
+  labelled choices, visible selection, keyboard focus and touch targets of at
+  least `44 px`. Selection is applied only by an explicit `Сохранить`; close,
+  backdrop, Escape and `Отмена` discard it and return focus to the trigger.
+- `Загрузить фото` opens the operating-system file picker. A valid file then
+  opens a separate square preview dialog with `Сохранить`, `Отмена` and
+  `Выбрать другое фото`; choosing a file alone never mutates the Account.
 - If an image cannot load, render the Account initials without changing or
   clearing the saved avatar.

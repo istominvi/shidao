@@ -42,6 +42,7 @@ test("TopNav resolves guest actions without exposing them on private routes", ()
     ROUTES.schedule,
     ROUTES.students,
     ROUTES.store,
+    ROUTES.profile,
     ROUTES.learningProfile,
     ROUTES.observing,
   ]) {

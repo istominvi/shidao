@@ -5,6 +5,8 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Input } from "@/components/ui/input";
+import { ProfileSurface } from "@/components/profile/profile-surface";
+import profileStyles from "@/components/profile/profile-workspace.module.css";
 import type {
   ObserverGrant,
   ObserverOverview,
@@ -150,7 +152,7 @@ export function ObserversSettingsWorkspace({
     ) ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className={`${profileStyles.workspace} space-y-5`}>
       {error ? (
         <IdentityError message={error} onRetry={() => void load()} />
       ) : null}
@@ -159,27 +161,23 @@ export function ObserversSettingsWorkspace({
       ) : null}
       {overview ? (
         <>
-          <section aria-labelledby="active-observers-title">
-            <h2 id="active-observers-title" className="text-lg font-bold">
-              Активные наблюдатели
-            </h2>
-            <p className="mt-1 text-sm text-neutral-600">
-              Эти пользователи могут видеть вашу завершённую учебную историю и
-              прогресс, но не могут действовать от вашего имени.
-            </p>
+          <ProfileSurface
+            title="Активные наблюдатели"
+            description="Эти пользователи могут видеть вашу завершённую учебную историю и прогресс, но не могут действовать от вашего имени."
+          >
             {myObservers.length === 0 ? (
-              <div className="mt-3">
-                <IdentityEmpty
-                  title="Наблюдателей пока нет"
-                  description="Учебные связи сами по себе не дают доступ наблюдателя."
-                />
-              </div>
+              <IdentityEmpty
+                surface="row"
+                title="Наблюдателей пока нет"
+                description="Учебные связи сами по себе не дают доступ наблюдателя."
+              />
             ) : (
-              <ul className="mt-3 space-y-3">
+              <ul className="space-y-3">
                 {myObservers.map((grant) => (
                   <li
                     key={grant.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white p-4"
+                    className={`${profileStyles.row} flex flex-wrap items-center justify-between gap-3`}
+                    data-profile-surface="row"
                   >
                     <div>
                       <strong>{grant.observerLabel}</strong>
@@ -211,20 +209,19 @@ export function ObserversSettingsWorkspace({
                 ))}
               </ul>
             )}
-          </section>
+          </ProfileSurface>
 
           <form
-            className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-5"
+            className={`${profileStyles.card} space-y-4`}
+            data-profile-surface="card"
             onSubmit={(event) => {
               event.preventDefault();
               void invite();
             }}
           >
             <div>
-              <h2 className="font-bold text-neutral-950">
-                Пригласить наблюдателя
-              </h2>
-              <p className="mt-1 text-sm text-neutral-600">
+              <h2 className="surface-card-title">Пригласить наблюдателя</h2>
+              <p className="surface-card-description">
                 Адресованная одноразовая ссылка. Получатель должен войти с
                 подтверждённым email и сам принять доступ.
               </p>
@@ -273,23 +270,20 @@ export function ObserversSettingsWorkspace({
             ) : null}
           </form>
 
-          <section aria-labelledby="observer-invitations-title">
-            <h2 id="observer-invitations-title" className="text-lg font-bold">
-              Отправленные приглашения
-            </h2>
+          <ProfileSurface title="Отправленные приглашения">
             {outgoing.length === 0 ? (
-              <div className="mt-3">
-                <IdentityEmpty
-                  title="Нет приглашений"
-                  description="Для повторного приглашения введите email заново: старый секрет не хранится и не восстанавливается."
-                />
-              </div>
+              <IdentityEmpty
+                surface="row"
+                title="Нет приглашений"
+                description="Для повторного приглашения введите email заново: старый секрет не хранится и не восстанавливается."
+              />
             ) : (
-              <ul className="mt-3 space-y-3">
+              <ul className="space-y-3">
                 {outgoing.map((invitation) => (
                   <li
                     key={invitation.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white p-4"
+                    className={`${profileStyles.row} flex flex-wrap items-center justify-between gap-3`}
+                    data-profile-surface="row"
                   >
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -326,29 +320,25 @@ export function ObserversSettingsWorkspace({
                 ))}
               </ul>
             )}
-          </section>
+          </ProfileSurface>
 
-          <section aria-labelledby="incoming-observers-title">
-            <h2 id="incoming-observers-title" className="text-lg font-bold">
-              Вас приглашают наблюдать
-            </h2>
-            <p className="mt-1 text-sm text-neutral-600">
-              Это отдельные приглашения видеть профиль другого учащегося; они не
-              входят в список ваших наблюдателей выше.
-            </p>
+          <ProfileSurface
+            title="Вас приглашают наблюдать"
+            description="Это отдельные приглашения видеть профиль другого учащегося; они не входят в список ваших наблюдателей выше."
+          >
             {incoming.length === 0 ? (
-              <div className="mt-3">
-                <IdentityEmpty
-                  title="Новых приглашений нет"
-                  description="Здесь появится запрос, если учащийся предложит вам наблюдать за своим профилем."
-                />
-              </div>
+              <IdentityEmpty
+                surface="row"
+                title="Новых приглашений нет"
+                description="Здесь появится запрос, если учащийся предложит вам наблюдать за своим профилем."
+              />
             ) : (
-              <ul className="mt-3 space-y-3">
+              <ul className="space-y-3">
                 {incoming.map((invitation) => (
                   <li
                     key={invitation.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white p-4"
+                    className={`${profileStyles.row} flex flex-wrap items-center justify-between gap-3`}
+                    data-profile-surface="row"
                   >
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -392,7 +382,7 @@ export function ObserversSettingsWorkspace({
                 ))}
               </ul>
             )}
-          </section>
+          </ProfileSurface>
         </>
       ) : null}
 

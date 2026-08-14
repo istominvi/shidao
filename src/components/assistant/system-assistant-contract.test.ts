@@ -10,12 +10,14 @@ async function source(relativePath: string) {
 }
 
 test("the assistant is mounted once inside the protected app layout only", async () => {
-  const [appLayout, rootLayout, assistant, provider] = await Promise.all([
-    source("src/app/(app)/layout.tsx"),
-    source("src/app/layout.tsx"),
-    source("src/components/assistant/system-assistant.tsx"),
-    source("src/components/assistant/system-assistant-provider.tsx"),
-  ]);
+  const [appLayout, rootLayout, assistant, provider, service] =
+    await Promise.all([
+      source("src/app/(app)/layout.tsx"),
+      source("src/app/layout.tsx"),
+      source("src/components/assistant/system-assistant.tsx"),
+      source("src/components/assistant/system-assistant-provider.tsx"),
+      source("src/modules/ai/system-assistant-service.ts"),
+    ]);
 
   assert.equal((appLayout.match(/<SystemAssistant\s*\/>/g) ?? []).length, 1);
   assert.equal((appLayout.match(/<SystemAssistantProvider>/g) ?? []).length, 1);
@@ -33,6 +35,10 @@ test("the assistant is mounted once inside the protected app layout only", async
   assert.doesNotMatch(assistant, /dangerouslySetInnerHTML/);
   assert.doesNotMatch(provider, /window\.location|location\.href|\.hash/);
   assert.doesNotMatch(provider, /useSearchParams|querySelector|innerText/);
+  assert.match(provider, /pathname === "\/profile"/);
+  assert.match(provider, /surface: "learning_profile"[\s\S]*label: "Профиль"/);
+  assert.doesNotMatch(provider, /pathname === "\/learning-profile"/);
+  assert.match(service, /learning_profile: "Профиль"/);
 });
 
 test("Course and Lesson headers no longer own an assistant dialog", async () => {

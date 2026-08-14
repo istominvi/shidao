@@ -14,7 +14,8 @@ import {
 import { AvatarImage } from "@/components/account/avatar-image";
 import { StatusMessage } from "@/components/product-shell";
 import { useSessionView } from "@/components/use-session-view";
-import { Button, productButtonClassName } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { DialogShell } from "@/components/ui/dialog-shell";
 import {
   ACCOUNT_AVATAR_MAX_UPLOAD_BYTES,
   ACCOUNT_AVATAR_PRESETS,
@@ -42,6 +43,7 @@ type AvatarActionPayload = {
 };
 
 type AvatarSavingState = "preset" | "custom" | null;
+type AvatarDialog = "preset" | "custom" | null;
 
 async function throwAvatarActionError(
   response: Response,
@@ -61,13 +63,14 @@ function selectedPresetFromAvatar(
 }
 
 export function AvatarSettingsForm() {
-  const descriptionId = useId();
+  const presetDescriptionId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { state, refetchSession } = useSessionView();
   const avatar = state.kind === "account" ? state.avatar : null;
   const avatarKind = avatar?.kind;
   const avatarPresetKey = avatar?.presetKey;
   const avatarRevision = avatar?.revision;
+  const [dialog, setDialog] = useState<AvatarDialog>(null);
   const [selectedPreset, setSelectedPreset] = useState<AvatarPresetKey | null>(
     avatar ? selectedPresetFromAvatar(avatar) : DEFAULT_AVATAR_PRESET_KEY,
   );
@@ -99,6 +102,26 @@ export function AvatarSettingsForm() {
     return () => URL.revokeObjectURL(objectUrl);
   }, [customFile]);
 
+  useEffect(() => {
+    if (!dialog) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape" || saving) return;
+      event.preventDefault();
+      setDialog(null);
+      setCustomFile(null);
+      setSelectedPreset(
+        avatarKind === "preset"
+          ? (avatarPresetKey ?? DEFAULT_AVATAR_PRESET_KEY)
+          : null,
+      );
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [avatarKind, avatarPresetKey, dialog, saving]);
+
   const selectedPresetDetails = useMemo(
     () =>
       selectedPreset
@@ -111,7 +134,7 @@ export function AvatarSettingsForm() {
 
   if (!avatar || state.kind !== "account") return null;
   const currentAvatar = avatar;
-
+  const currentPreset = selectedPresetFromAvatar(currentAvatar);
   const previewAvatar: AccountAvatarView = selectedPreset
     ? {
         kind: "preset",
@@ -120,20 +143,40 @@ export function AvatarSettingsForm() {
       }
     : currentAvatar;
   const presetUnchanged =
-    currentAvatar.kind === "preset" &&
-    selectedPreset === (currentAvatar.presetKey ?? DEFAULT_AVATAR_PRESET_KEY) &&
-    customFile === null;
+    currentAvatar.kind === "preset" && selectedPreset === currentPreset;
 
   function resetMessages() {
     setError(null);
     setSuccess(null);
   }
 
-  function selectPreset(presetKey: AvatarPresetKey) {
-    resetMessages();
-    setSelectedPreset(presetKey);
+  function closeDialog() {
+    if (saving) return;
+    setDialog(null);
     setCustomFile(null);
+    setSelectedPreset(currentPreset);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function openPresetDialog() {
+    resetMessages();
+    setCustomFile(null);
+    setSelectedPreset(currentPreset);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setDialog("preset");
+  }
+
+  function openFilePicker() {
+    resetMessages();
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
+  }
+
+  function selectPreset(presetKey: AvatarPresetKey) {
+    setError(null);
+    setSelectedPreset(presetKey);
   }
 
   function chooseCustomFile(event: ChangeEvent<HTMLInputElement>) {
@@ -159,6 +202,7 @@ export function AvatarSettingsForm() {
 
     setSelectedPreset(null);
     setCustomFile(file);
+    setDialog("custom");
   }
 
   async function savePreset(event: FormEvent<HTMLFormElement>) {
@@ -177,7 +221,10 @@ export function AvatarSettingsForm() {
         }),
       });
       if (!response.ok) {
-        if (response.status === 409) await refetchSession();
+        if (response.status === 409) {
+          await refetchSession();
+          setDialog(null);
+        }
         await throwAvatarActionError(
           response,
           "Не удалось сохранить выбранный аватар.",
@@ -185,6 +232,7 @@ export function AvatarSettingsForm() {
       }
 
       await refetchSession();
+      setDialog(null);
       setSuccess("Аватар сохранён.");
     } catch (submitError) {
       setError(
@@ -199,10 +247,7 @@ export function AvatarSettingsForm() {
 
   async function uploadCustomAvatar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!customFile || saving) {
-      if (!customFile) setError("Сначала выберите изображение.");
-      return;
-    }
+    if (!customFile || saving) return;
     resetMessages();
 
     try {
@@ -215,7 +260,11 @@ export function AvatarSettingsForm() {
         body: formData,
       });
       if (!response.ok) {
-        if (response.status === 409) await refetchSession();
+        if (response.status === 409) {
+          await refetchSession();
+          setDialog(null);
+          setCustomFile(null);
+        }
         await throwAvatarActionError(
           response,
           "Не удалось загрузить изображение.",
@@ -223,7 +272,10 @@ export function AvatarSettingsForm() {
       }
 
       await refetchSession();
-      setSuccess("Ваше изображение сохранено как аватар.");
+      setDialog(null);
+      setCustomFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setSuccess("Фото сохранено как аватар.");
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -236,164 +288,221 @@ export function AvatarSettingsForm() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-black/5 bg-white/70 p-3">
-        {customPreviewUrl ? (
-          <span className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-neutral-100">
-            <Image
-              src={customPreviewUrl}
-              alt="Предпросмотр нового аватара"
-              fill
-              sizes="80px"
-              unoptimized
-              className="object-cover"
-            />
-          </span>
-        ) : (
-          <AvatarImage
-            avatar={previewAvatar}
-            initials={state.initials}
-            alt="Предпросмотр аватара"
-            size={80}
-          />
-        )}
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-neutral-950">
-            {customFile
-              ? "Новое изображение"
-              : (selectedPresetDetails?.label ?? "Ваше изображение")}
-          </p>
-          <p className="mt-1 max-w-[52ch] text-sm leading-relaxed text-neutral-600">
-            Аватар обязателен и будет виден в верхнем меню. Выберите готовый
-            вариант или загрузите своё изображение.
-          </p>
+    <>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <AvatarImage
+          avatar={currentAvatar}
+          initials={state.initials}
+          alt="Текущий аватар"
+          size={80}
+        />
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button type="button" variant="secondary" onClick={openFilePicker}>
+            <Upload size={16} aria-hidden="true" />
+            Загрузить фото
+          </Button>
+          <Button type="button" onClick={openPresetDialog}>
+            <ImagePlus size={16} aria-hidden="true" />
+            Выбрать аватар
+          </Button>
         </div>
+        <input
+          ref={fileInputRef}
+          className="sr-only"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={chooseCustomFile}
+          disabled={saving !== null}
+          tabIndex={-1}
+          aria-label="Выбрать фото на компьютере"
+        />
       </div>
 
-      <form onSubmit={savePreset} className="space-y-4">
-        <fieldset disabled={saving !== null} aria-describedby={descriptionId}>
-          <legend className="text-sm font-semibold text-neutral-950">
-            Готовые аватары
-          </legend>
-          <p
-            id={descriptionId}
-            className="mt-1 text-sm leading-relaxed text-neutral-600"
-          >
-            Можно выбрать только один вариант. Снять выбор без замены нельзя.
-          </p>
-          <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-10">
-            {ACCOUNT_AVATAR_PRESETS.map((preset) => {
-              const selected = selectedPreset === preset.key;
-              const label = `${preset.label}, ${AVATAR_COLOR_LABELS[preset.dominantColor]}`;
-              return (
-                <div key={preset.key} className="relative aspect-square">
-                  <input
-                    id={`avatar-preset-${preset.key}`}
-                    className="peer sr-only"
-                    type="radio"
-                    name="avatar-preset"
-                    value={preset.key}
-                    checked={selected}
-                    onChange={() => selectPreset(preset.key)}
-                    aria-label={label}
-                  />
-                  <label
-                    htmlFor={`avatar-preset-${preset.key}`}
-                    title={label}
-                    className={classNames(
-                      "relative block h-full cursor-pointer overflow-hidden rounded-xl border-2 bg-white p-0.5 transition",
-                      "hover:-translate-y-0.5 hover:border-neutral-400 hover:shadow-sm",
-                      "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-neutral-950 peer-focus-visible:ring-offset-2",
-                      selected
-                        ? "border-neutral-950 shadow-sm"
-                        : "border-transparent",
-                    )}
-                  >
-                    <Image
-                      src={preset.src}
-                      alt=""
-                      width={96}
-                      height={96}
-                      unoptimized
-                      sizes="(max-width: 640px) 22vw, (max-width: 768px) 18vw, 80px"
-                      className="h-full w-full rounded-[0.55rem] object-cover"
-                    />
-                    {selected ? (
-                      <span className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-md bg-neutral-950 text-white shadow-sm">
-                        <Check size={13} strokeWidth={3} aria-hidden="true" />
-                        <span className="sr-only">Выбрано</span>
-                      </span>
-                    ) : null}
-                  </label>
-                </div>
-              );
-            })}
-          </div>
-        </fieldset>
-
-        <Button
-          type="submit"
-          disabled={!selectedPreset || presetUnchanged || saving !== null}
-          aria-busy={saving === "preset"}
-        >
-          {saving === "preset" ? "Сохраняем…" : "Сохранить выбранный"}
-        </Button>
-      </form>
-
-      <div className="border-t border-black/5" aria-hidden="true" />
-
-      <form onSubmit={uploadCustomAvatar} className="space-y-3">
-        <div>
-          <h3 className="text-sm font-semibold text-neutral-950">
-            Своё изображение или фото
-          </h3>
-          <p className="mt-1 text-sm leading-relaxed text-neutral-600">
-            JPEG, PNG или WebP, до 5 МБ. Изображение будет кадрировано до
-            квадрата.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <label
-            className={productButtonClassName(
-              "secondary",
-              "focus-within:ring-2 focus-within:ring-neutral-950 focus-within:ring-offset-2",
-            )}
-          >
-            <ImagePlus size={16} aria-hidden="true" />
-            <span>{customFile ? "Выбрать другое" : "Выбрать изображение"}</span>
-            <input
-              ref={fileInputRef}
-              className="sr-only"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={chooseCustomFile}
-              disabled={saving !== null}
-            />
-          </label>
-          {customFile ? (
-            <span className="max-w-full truncate text-sm text-neutral-600">
-              {customFile.name}
-            </span>
+      {!dialog && (error || success) ? (
+        <div className="mt-4" aria-live="polite" aria-atomic="true">
+          {error ? <StatusMessage kind="error">{error}</StatusMessage> : null}
+          {success ? (
+            <StatusMessage kind="success">{success}</StatusMessage>
           ) : null}
         </div>
+      ) : null}
 
-        <Button
-          type="submit"
-          disabled={!customFile || saving !== null}
-          aria-busy={saving === "custom"}
+      {dialog === "preset" ? (
+        <DialogShell
+          title="Выберите аватар"
+          description="Выберите один из 20 фирменных вариантов и сохраните изменения."
+          onClose={closeDialog}
+          closeLabel="Закрыть выбор аватара"
+          panelClassName="max-w-2xl"
         >
-          <Upload size={16} aria-hidden="true" />
-          {saving === "custom" ? "Загружаем…" : "Загрузить и сохранить"}
-        </Button>
-      </form>
+          <form onSubmit={savePreset}>
+            <div className="flex items-center gap-3 rounded-xl border border-black/5 bg-white p-3">
+              <AvatarImage
+                avatar={previewAvatar}
+                initials={state.initials}
+                alt="Предпросмотр выбранного аватара"
+                size={72}
+              />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-neutral-950">
+                  {selectedPresetDetails?.label ?? "Текущий аватар"}
+                </p>
+                <p className="mt-1 text-sm text-neutral-600">
+                  Так аватар будет выглядеть в профиле.
+                </p>
+              </div>
+            </div>
 
-      <div aria-live="polite" aria-atomic="true">
-        {error ? <StatusMessage kind="error">{error}</StatusMessage> : null}
-        {success ? (
-          <StatusMessage kind="success">{success}</StatusMessage>
-        ) : null}
-      </div>
-    </div>
+            <fieldset
+              disabled={saving !== null}
+              aria-describedby={presetDescriptionId}
+              className="mt-4"
+            >
+              <legend className="sr-only">Фирменные аватары</legend>
+              <p id={presetDescriptionId} className="sr-only">
+                Можно выбрать только один вариант. Профиль нельзя оставить без
+                аватара.
+              </p>
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+                {ACCOUNT_AVATAR_PRESETS.map((preset) => {
+                  const selected = selectedPreset === preset.key;
+                  const label = `${preset.label}, ${AVATAR_COLOR_LABELS[preset.dominantColor]}`;
+                  return (
+                    <div key={preset.key} className="relative aspect-square">
+                      <input
+                        id={`avatar-preset-${preset.key}`}
+                        className="peer sr-only"
+                        type="radio"
+                        name="avatar-preset"
+                        value={preset.key}
+                        checked={selected}
+                        onChange={() => selectPreset(preset.key)}
+                        aria-label={label}
+                      />
+                      <label
+                        htmlFor={`avatar-preset-${preset.key}`}
+                        title={label}
+                        className={classNames(
+                          "relative block h-full cursor-pointer overflow-hidden rounded-xl border-2 bg-white p-0.5 transition",
+                          "hover:-translate-y-0.5 hover:border-neutral-400 hover:shadow-sm",
+                          "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-neutral-950 peer-focus-visible:ring-offset-2",
+                          selected
+                            ? "border-neutral-950 shadow-sm"
+                            : "border-transparent",
+                        )}
+                      >
+                        <Image
+                          src={preset.src}
+                          alt=""
+                          width={112}
+                          height={112}
+                          unoptimized
+                          sizes="(max-width: 640px) 22vw, 104px"
+                          className="h-full w-full rounded-[0.55rem] object-cover"
+                        />
+                        {selected ? (
+                          <span className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-md bg-neutral-950 text-white shadow-sm">
+                            <Check
+                              size={13}
+                              strokeWidth={3}
+                              aria-hidden="true"
+                            />
+                            <span className="sr-only">Выбрано</span>
+                          </span>
+                        ) : null}
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            {error ? (
+              <div className="mt-4" aria-live="polite">
+                <StatusMessage kind="error">{error}</StatusMessage>
+              </div>
+            ) : null}
+
+            <div className="dialog-shell-actions">
+              <Button
+                type="submit"
+                disabled={!selectedPreset || presetUnchanged || saving !== null}
+                aria-busy={saving === "preset"}
+              >
+                {saving === "preset" ? "Сохраняем…" : "Сохранить"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={saving !== null}
+                onClick={closeDialog}
+              >
+                Отмена
+              </Button>
+            </div>
+          </form>
+        </DialogShell>
+      ) : null}
+
+      {dialog === "custom" && customFile && customPreviewUrl ? (
+        <DialogShell
+          title="Новое фото"
+          description="Проверьте изображение перед сохранением. Оно будет кадрировано до квадрата."
+          onClose={closeDialog}
+          closeLabel="Закрыть загрузку фото"
+          panelClassName="max-w-lg"
+        >
+          <form onSubmit={uploadCustomAvatar}>
+            <div className="flex flex-col items-center gap-3 rounded-xl border border-black/5 bg-white p-4 text-center">
+              <span className="relative h-36 w-36 shrink-0 overflow-hidden rounded-xl bg-neutral-100">
+                <Image
+                  src={customPreviewUrl}
+                  alt="Предпросмотр нового фото"
+                  fill
+                  sizes="144px"
+                  unoptimized
+                  className="object-cover"
+                />
+              </span>
+              <p className="max-w-full truncate text-sm font-medium text-neutral-700">
+                {customFile.name}
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={saving !== null}
+                onClick={openFilePicker}
+              >
+                Выбрать другое фото
+              </Button>
+            </div>
+
+            {error ? (
+              <div className="mt-4" aria-live="polite">
+                <StatusMessage kind="error">{error}</StatusMessage>
+              </div>
+            ) : null}
+
+            <div className="dialog-shell-actions">
+              <Button
+                type="submit"
+                disabled={saving !== null}
+                aria-busy={saving === "custom"}
+              >
+                {saving === "custom" ? "Сохраняем…" : "Сохранить"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={saving !== null}
+                onClick={closeDialog}
+              >
+                Отмена
+              </Button>
+            </div>
+          </form>
+        </DialogShell>
+      ) : null}
+    </>
   );
 }

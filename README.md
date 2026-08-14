@@ -94,10 +94,12 @@ Functional E2 release
 - Приложение: `/onboarding`, `/schedule`, `/students`, `/store`, `/courses`,
   `/courses/new`, `/courses/[courseId]`,
   `/courses/catalog/[publicationId]`,
-  `/courses/[courseId]/student-preview`, `/learning-profile`,
-  `/settings/profile`, `/settings/security`, `/settings/observers` и
+  `/courses/[courseId]/student-preview`, `/profile` и
   `/identity/invitations/[invitationId]`. Все эти shells используют Account
   session; resource access остаётся relation/ownership-scoped.
+- `/learning-profile`, `/settings`, `/settings/profile`, `/settings/security`
+  и `/settings/observers` сохранены как protected compatibility redirects в
+  соответствующие вкладки `/profile`.
 - Canonical observer surface — `/students?tab=observing`; `/observing` сохранён
   как protected compatibility redirect.
 - Рабочий app-домен: `v2.shidao.ru` — active production-контур.

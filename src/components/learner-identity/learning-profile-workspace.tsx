@@ -20,7 +20,7 @@ import { AppPageHeader } from "@/components/app/page-header";
 import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
 import { useSessionView } from "@/components/use-session-view";
 import { Button } from "@/components/ui/button";
-import { SurfaceCard } from "@/components/ui/surface-card";
+import { ProfileSurface } from "@/components/profile/profile-surface";
 import {
   WorkspaceTabs,
   workspaceTabId,
@@ -38,6 +38,7 @@ import type {
 import type { AccountAttestationCredential } from "@/modules/course-attestations/domain";
 import { signOutViaServer } from "@/lib/auth-flow";
 import { profileTabHref, type ProfileTab } from "@/lib/navigation/profile-nav";
+import profileStyles from "@/components/profile/profile-workspace.module.css";
 import {
   actOnAiConsent,
   actOnConnection,
@@ -189,7 +190,7 @@ export function LearningProfileWorkspace({
         setError(
           requiredFailure instanceof Error
             ? requiredFailure.message
-            : "Не удалось загрузить учебный профиль.",
+            : "Не удалось загрузить профиль.",
         );
       } else if (unavailableSections.length > 0) {
         setError(
@@ -202,7 +203,7 @@ export function LearningProfileWorkspace({
       setError(
         caught instanceof Error
           ? caught.message
-          : "Не удалось загрузить учебный профиль.",
+          : "Не удалось загрузить профиль.",
       );
     } finally {
       setLoading(false);
@@ -386,7 +387,7 @@ export function LearningProfileWorkspace({
       : (profile?.displayName ?? "Профиль");
 
   return (
-    <div className="space-y-6">
+    <div className={`${profileStyles.workspace} space-y-6`}>
       <AppPageHeader
         title={profileTitle}
         metric={headerMetric}
@@ -442,9 +443,7 @@ export function LearningProfileWorkspace({
       {error ? (
         <IdentityError message={error} onRetry={() => void load()} />
       ) : null}
-      {loading ? (
-        <IdentityLoading>Загружаем учебный профиль…</IdentityLoading>
-      ) : null}
+      {loading ? <IdentityLoading>Загружаем профиль…</IdentityLoading> : null}
       <div
         id={workspaceTabPanelId(LEARNING_PROFILE_TABS_ID, "profile")}
         role="tabpanel"
@@ -454,8 +453,8 @@ export function LearningProfileWorkspace({
       >
         {!loading && profile && progress && surface === "profile" ? (
           <div className="space-y-5">
-            <SurfaceCard
-              title="Учебный профиль"
+            <ProfileSurface
+              title="Учебная информация"
               description={`Создан ${formatIdentityDate(profile.createdAt)} · объединено прежних профилей: ${profile.mergedLineageCount}`}
               actions={
                 <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">
@@ -469,12 +468,13 @@ export function LearningProfileWorkspace({
               busy={busy}
               onRotate={() => void rotateCode()}
             />
-            <SurfaceCard
+            <ProfileSurface
               title="Запросы преподавателей"
               description="Код и email создают только запрос. Вы сами решаете, активировать ли связь."
             >
               {connections.length === 0 ? (
                 <IdentityEmpty
+                  surface="row"
                   title="Запросов нет"
                   description="Поделитесь одноразовым кодом только с нужным преподавателем."
                 />
@@ -483,7 +483,8 @@ export function LearningProfileWorkspace({
                   {connections.map((request) => (
                     <li
                       key={request.id}
-                      className="rounded-xl border border-neutral-200 p-3"
+                      className={profileStyles.row}
+                      data-profile-surface="row"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <strong className="text-sm">
@@ -542,7 +543,7 @@ export function LearningProfileWorkspace({
                   ))}
                 </ul>
               )}
-            </SurfaceCard>
+            </ProfileSurface>
           </div>
         ) : null}
       </div>
@@ -574,22 +575,18 @@ export function LearningProfileWorkspace({
       >
         {surface === "attestation" ? (
           <div className="space-y-4">
-            <div className="rounded-2xl border border-neutral-200 bg-white p-5">
-              <div className="flex items-start gap-3">
-                <BadgeCheck
-                  className="mt-0.5 h-5 w-5 text-emerald-700"
-                  aria-hidden="true"
-                />
-                <div>
-                  <h2 className="font-bold text-neutral-950">Аттестация</h2>
-                  <p className="mt-1 text-sm leading-relaxed text-neutral-600">
-                    Здесь собраны пройденные аттестации по профессиональным
-                    курсам. Это результат внутри ShiDao, а не государственное
-                    удостоверение о повышении квалификации.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <ProfileSurface
+              title={
+                <span className="inline-flex items-center gap-2">
+                  <BadgeCheck
+                    className="h-5 w-5 text-emerald-700"
+                    aria-hidden="true"
+                  />
+                  Аттестация
+                </span>
+              }
+              description="Здесь собраны пройденные аттестации по профессиональным курсам. Это результат внутри ShiDao, а не государственное удостоверение о повышении квалификации."
+            />
 
             {attestationsLoading ? (
               <IdentityLoading>Загружаем аттестации…</IdentityLoading>
@@ -604,6 +601,7 @@ export function LearningProfileWorkspace({
             !attestationsError &&
             attestations?.length === 0 ? (
               <IdentityEmpty
+                surface="card"
                 title="Аттестаций пока нет"
                 description="После успешного прохождения итогового теста результат появится здесь."
               />
@@ -616,7 +614,8 @@ export function LearningProfileWorkspace({
                 {attestations.map((attestation) => (
                   <li
                     key={`${attestation.publicationId}:${attestation.revisionId}:${attestation.assessmentVersion}`}
-                    className="rounded-2xl border border-neutral-200 bg-white p-5"
+                    className={profileStyles.card}
+                    data-profile-surface="card"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -712,7 +711,7 @@ export function LearningProfileWorkspace({
             />
 
             {!loading ? (
-              <SurfaceCard
+              <ProfileSurface
                 title={
                   <span className="inline-flex items-center gap-2">
                     <BrainCircuit className="h-5 w-5" aria-hidden="true" />
@@ -723,6 +722,7 @@ export function LearningProfileWorkspace({
               >
                 {consents.length === 0 ? (
                   <IdentityEmpty
+                    surface="row"
                     title="Запросов помощника нет"
                     description="Без вашего разрешения помощник использует только историю, записанную владельцем курса."
                   />
@@ -731,7 +731,8 @@ export function LearningProfileWorkspace({
                     {consents.map((consent) => (
                       <li
                         key={consent.id}
-                        className="rounded-xl border border-neutral-200 p-3"
+                        className={profileStyles.row}
+                        data-profile-surface="row"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <strong className="text-sm">
@@ -798,23 +799,32 @@ export function LearningProfileWorkspace({
                     ))}
                   </ul>
                 )}
-              </SurfaceCard>
+              </ProfileSurface>
             ) : null}
 
             {profile ? (
               <section aria-labelledby="learning-profile-lifecycle-title">
-                <h2
-                  id="learning-profile-lifecycle-title"
-                  className="text-xl font-bold"
-                >
-                  Управление учебными данными
-                </h2>
+                <div>
+                  <h2
+                    id="learning-profile-lifecycle-title"
+                    className="surface-card-title"
+                  >
+                    Управление данными профиля
+                  </h2>
+                  <p className="surface-card-description">
+                    Отвязка и сброс требуют отдельного подтверждения и никогда
+                    не выполняются автоматически.
+                  </p>
+                </div>
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-                    <h3 className="font-bold text-amber-950">
+                  <div
+                    className={profileStyles.card}
+                    data-profile-surface="card"
+                  >
+                    <h3 className="surface-card-title">
                       Ошибочная прямая связь
                     </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-amber-900">
+                    <p className="mt-2 text-sm leading-relaxed text-neutral-600">
                       Отвязка доступна только до объединения результатов и при
                       отсутствии зависимых разрешений. У аккаунта появится новый
                       пустой профиль.
@@ -829,11 +839,12 @@ export function LearningProfileWorkspace({
                       Проверить возможность отвязки
                     </Button>
                   </div>
-                  <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
-                    <h3 className="font-bold text-rose-950">
-                      Сброс учебных данных
-                    </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-rose-900">
+                  <div
+                    className={profileStyles.card}
+                    data-profile-surface="card"
+                  >
+                    <h3 className="surface-card-title">Сброс учебных данных</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-neutral-600">
                       Будут удалены учебные результаты, связи, приглашения,
                       доступы наблюдателей и разрешения помощнику. Потребуется
                       повторное подтверждение входа.

@@ -7,6 +7,7 @@ import {
   resetRecoverableLearnerCredentials,
   revokeMyLearnerRecoveryDelegate,
 } from "@/components/learner-identity/identity-client";
+import profileStyles from "@/components/profile/profile-workspace.module.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type {
@@ -191,11 +192,12 @@ export function SecuritySettingsForm({
     <>
       <form
         onSubmit={onSubmit}
-        className="mt-6 space-y-4 rounded-3xl border border-black/10 bg-white p-5"
+        className={`${profileStyles.card} space-y-4`}
+        data-profile-surface="card"
       >
-        <h2 className="text-lg font-bold">Мой PIN-код</h2>
+        <h2 className="surface-card-title">Мой PIN-код</h2>
         <label className="block">
-          <span className="mb-2 block text-sm font-medium">
+          <span className="field-label">
             Подтвердите текущим паролем{hasPin ? " или старым PIN" : ""}
           </span>
           <Input
@@ -207,9 +209,7 @@ export function SecuritySettingsForm({
           />
         </label>
         <label className="block">
-          <span className="mb-2 block text-sm font-medium">
-            Новый PIN (4–8 цифр)
-          </span>
+          <span className="field-label">Новый PIN (4–8 цифр)</span>
           <Input
             type="password"
             inputMode="numeric"
@@ -240,13 +240,14 @@ export function SecuritySettingsForm({
       </form>
 
       <section
-        className="mt-6 rounded-3xl border border-black/10 bg-white p-5"
+        className={profileStyles.card}
+        data-profile-surface="card"
         aria-labelledby="learner-recovery-title"
       >
-        <h2 id="learner-recovery-title" className="text-lg font-bold">
+        <h2 id="learner-recovery-title" className="surface-card-title">
           Доступ учащегося
         </h2>
-        <p className="mt-2 text-sm leading-relaxed text-neutral-600">
+        <p className="surface-card-description">
           При активации отдельного аккаунта вы становитесь доверенным взрослым:
           можете задать новый логин и PIN, но не получаете доступ к учебной
           истории. Все прежние сеансы учащегося завершатся.
@@ -266,7 +267,8 @@ export function SecuritySettingsForm({
             {recovery.recoverableLearners.map((learner) => (
               <div
                 key={learner.grantId}
-                className="rounded-2xl border border-neutral-200 p-4"
+                className={profileStyles.row}
+                data-profile-surface="row"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -293,9 +295,7 @@ export function SecuritySettingsForm({
                     onSubmit={onRecoverySubmit}
                   >
                     <label className="block">
-                      <span className="mb-2 block text-sm font-medium">
-                        Новый логин учащегося
-                      </span>
+                      <span className="field-label">Новый логин учащегося</span>
                       <Input
                         required
                         minLength={3}
@@ -309,7 +309,7 @@ export function SecuritySettingsForm({
                       />
                     </label>
                     <label className="block">
-                      <span className="mb-2 block text-sm font-medium">
+                      <span className="field-label">
                         Новый PIN учащегося (4–8 цифр)
                       </span>
                       <Input
@@ -326,7 +326,7 @@ export function SecuritySettingsForm({
                       />
                     </label>
                     <label className="block sm:col-span-2">
-                      <span className="mb-2 block text-sm font-medium">
+                      <span className="field-label">
                         Ваш текущий пароль или PIN
                       </span>
                       <Input
@@ -369,13 +369,14 @@ export function SecuritySettingsForm({
       </section>
 
       <section
-        className="mt-6 rounded-3xl border border-black/10 bg-white p-5"
+        className={profileStyles.card}
+        data-profile-surface="card"
         aria-labelledby="my-recovery-delegates-title"
       >
-        <h2 id="my-recovery-delegates-title" className="text-lg font-bold">
+        <h2 id="my-recovery-delegates-title" className="surface-card-title">
           Кто может восстановить мой логин и PIN
         </h2>
-        <p className="mt-2 text-sm leading-relaxed text-neutral-600">
+        <p className="surface-card-description">
           Это отдельное право безопасности. Оно не даёт человеку доступ к вашим
           урокам или учебной истории.
         </p>
@@ -384,7 +385,8 @@ export function SecuritySettingsForm({
             {recovery.myDelegates.map((delegate) => (
               <div
                 key={delegate.grantId}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-neutral-200 p-4"
+                className={`${profileStyles.row} flex flex-wrap items-center justify-between gap-3`}
+                data-profile-surface="row"
               >
                 <div>
                   <p className="font-semibold">{delegate.delegateLabel}</p>
@@ -434,9 +436,13 @@ export function SecuritySettingsForm({
   );
 
   return (
-    <section id="security" aria-labelledby="security-settings-title">
+    <section
+      id="security"
+      className={`${profileStyles.workspace} space-y-5`}
+      aria-labelledby="security-settings-title"
+    >
       <div className="flex flex-wrap items-end justify-between gap-2">
-        <h2 id="security-settings-title" className="text-xl font-bold">
+        <h2 id="security-settings-title" className="surface-card-title">
           Безопасность
         </h2>
         <p className="text-sm text-neutral-600">
