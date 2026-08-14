@@ -133,21 +133,27 @@ API или storage contract.
 Ещё не развёрнутый current source заменяет прежнюю динамическую тень authored
 Component card на общий статический
 `--product-raised-surface-shadow: var(--product-raised-control-shadow)`. Белый
-12 px element surface остаётся без border, не получает hover/pressed transform
-или shadow-transition и сохраняет одну base-тень
+12 px element surface получает
+`--product-surface-border: 1px solid oklch(0 0 0 / .1)` и
+`background-clip: padding-box`: полупрозрачная рамка смешивается с фоном под
+card, а не с белой заливкой. Surface не получает hover/pressed transform или
+shadow-transition и сохраняет одну base-тень
 `0 1px 6px 0px oklch(0% 0 0 / 0.05)` в rest, hover и focus-within. Focus-within
 добавляет отдельный outline, не меняя геометрию или тень; hover/focus по-прежнему
 раскрывает action overlay. Сам overlay и его 32 px icon-actions остаются
 transparent/borderless/shadowless, а `forced-colors` заменяет surface shadow
 системным контуром.
 
-Однострочные `input.field-input` в Component editor используют белый borderless
-surface и статический `--product-entry-control-shadow`, равный
+Base `.field-input`, включая select и textarea, использует общий surface border
+и clipped background. Однострочные `input.field-input` в Component editor
+дополнительно используют белый surface, внешние `40 px`, внутренние `38 px` и
+статический `--product-entry-control-shadow`, равный
 `0 1px 6px 0px oklch(0% 0 0 / 0.05)`, canonical foreground/типографику,
 непрозрачный placeholder и отдельный 2 px focus halo. Hover не меняет shadow
-или геометрию. `textarea`, `select`,
-checkbox/radio/file controls, preview/student content renderers,
-component-picker choice cards и `DialogShell` surface этим правилом не
+или геометрию. `textarea` и `select` сохраняют base boundary, но не получают
+single-line height или entry shadow. Checkbox/radio/file controls,
+preview/student content renderers, component-picker choice cards и
+`DialogShell` surface этим правилом не
 перекрашиваются и не получают static card shadow автоматически. Ordinary CTA и
 filter-trigger adoption относится к shared application controls, но не
 превращает Component overlay actions или picker cards в raised buttons. Это

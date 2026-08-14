@@ -1110,11 +1110,17 @@ flow как permanent delete.
   canonical active V2 controls: exact `40 px / 12 px / .88rem / 400`, active
   navigation без inset/shadow/translate, icon opacity `1` и contrast-aware
   `currentColor`. Все канонические `.product-btn` должны быть белыми, иметь
-  border `0` и ту же computed base shadow
+  `--product-surface-border: 1px solid oklch(0 0 0 / .1)`, computed border
+  `1px solid oklch(0 0 0 / 0.1)`, `background-clip: padding-box` и ту же
+  computed base shadow
   `oklch(0 0 0 / 0.05) 0px 1px 6px 0px`, что selected button переключателя
-  вида Расписания. Header и toolbar/filter CTA должны использовать один
+  вида Расписания. Alpha-border должен смешиваться с ancestor/page background,
+  а не с белым button background. Header и toolbar/filter CTA должны
+  использовать один
   `.product-btn` state-contract и сохранять одинаковые width/height во всех
-  состояниях. Белый `.site-header-shell-demo` сохраняет `68 px / 20 px` и
+  состояниях: внешний control остаётся `40 px`, внутренняя client-area —
+  `38 px`, border не исчезает на hover, active или focus. Белый
+  `.site-header-shell-demo` сохраняет `68 px / 20 px` и
   имеет единственную computed shadow
   `oklch(0 0 0 / 0.05) 0px 6px 12px 0px` без inset-слоёв. После завершения
   transition hover должен давать
@@ -1122,7 +1128,9 @@ flow как permanent delete.
   `matrix(1, 0, 0, 1, 0, -1)` без scale, а pointer-down `:active` —
   `oklch(0 0 0 / 0.14) 0px 1px 3px 0px` и `transform: none`; при
   `prefers-reduced-motion` transition и translate отключены. Проверить,
-  что row ellipsis и Component-card icon-actions остаются transparent/no-shadow.
+  что row ellipsis и Component-card icon-actions остаются
+  transparent/borderless/no-shadow, а contextual menu panels/items сохраняют
+  border `0`.
   У compound toggles не должно быть постоянной внешней обводки, selected white
   option использует только base shadow и не получает hover/pressed button states,
   а shell имеет computed background `oklch(0.19 0 0 / 0.1)`; keyboard focus
@@ -1146,7 +1154,9 @@ flow как permanent delete.
   `aria-expanded`, Escape/focus-return и disabled boundary. Contextual menu
   items, flat row/Component icon-actions, compound toggles и filter popover
   panels не должны получить ordinary button lift;
-- в том же Next-acceptance сравнить computed `box-shadow` с
+- в том же Next-acceptance проверить общий computed border
+  `1px solid oklch(0 0 0 / 0.1)` и `background-clip: padding-box`, затем
+  сравнить computed `box-shadow` с
   `oklch(0 0 0 / 0.05) 0px 1px 6px 0px` у shared `SurfaceCard`, Schedule,
   Students/Groups, owned/catalog Course, Course Lessons, Store и subject
   progress table wrappers, authored Component, Run-history, Students/Store и
@@ -1154,17 +1164,22 @@ flow как permanent delete.
   shadow-transition; после hover/focus Component card сохраняет ту же тень и
   rect, но action overlay раскрывается. Component focus-within и Store
   focus/deep-link highlight добавляют outline, не меняя base shadow. Existing
-  backgrounds, radius, semantic/dashed borders, row hover/focus и table scroll
-  сохраняются. В `forced-colors` shadow исчезает, а boundary остаётся видимой
+  backgrounds, radius, semantic/dashed `SurfaceCard` borders, row hover/focus
+  и table scroll сохраняются: общий border не перезаписывает смысловую рамку.
+  В `forced-colors` shadow исчезает, а boundary остаётся видимой
   через `CanvasText`/`Highlight` outline;
-- для canonical однострочных `Input`, `input.field-input`, product search,
-  Schedule/Students search и dialog picker search проверить белый borderless
-  surface, computed static shadow `oklch(0 0 0 / 0.05) 0px 1px 6px 0px`, scope
+- для base `.product-control` / `.field-input`, включая select и textarea,
+  проверить общий border и `background-clip: padding-box`. Для canonical
+  однострочных `Input`, `input.field-input`, product search, Schedule/Students
+  search и dialog picker search дополнительно проверить белый surface,
+  `40 px` outer / `38 px` client-area, computed static shadow
+  `oklch(0 0 0 / 0.05) 0px 1px 6px 0px`, scope
   typography/foreground и непрозрачные placeholder/icons. Hover не должен
   менять shadow, transform или rect; click/keyboard focus добавляет отдельный
-  2 px halo, сохраняя base shadow и геометрию. Select, textarea,
-  checkbox/radio/file, multiline Component editor,
-  dialog/menu/popover surfaces, Student Screen content renderers и raw utility
+  2 px halo, сохраняя base shadow, border и геометрию. Select и textarea
+  сохраняют base boundary, но не получают single-line height или entry shadow.
+  Checkbox/radio/file, dialog/menu/popover surfaces, Student Screen content
+  renderers и raw utility
   panels не должны получить entry/static-surface contract автоматически. В
   `forced-colors` entry control использует `Field`/`FieldText`, системную рамку
   и `Highlight` focus без box-shadow;

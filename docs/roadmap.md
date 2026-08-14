@@ -500,9 +500,14 @@ rollout входит в exact functional source
 `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`.
 
 **Next production:** единый raised-control contract распространяется на все
-канонические `.product-btn`: белый borderless surface и однослойная базовая тень
-`0 1px 6px 0px oklch(0% 0 0 / 0.05)`. Один общий `.product-btn` state-contract
-обслуживает header, toolbar и filter CTA без контекстных shadow/transform fork.
+канонические `.product-btn`: белый surface, общий
+`--product-surface-border: 1px solid oklch(0 0 0 / .1)`,
+`background-clip: padding-box` и однослойная базовая тень
+`0 1px 6px 0px oklch(0% 0 0 / 0.05)`. Полупрозрачная рамка композится с
+ancestor/page background, а не с белой заливкой; фиксированный control остаётся
+`40 px` снаружи и получает `38 px` внутренней client-area. Один общий
+`.product-btn` state-contract обслуживает header, toolbar и filter CTA без
+контекстных shadow/transform fork.
 Fine-pointer hover использует `0 4px 10px -2px oklch(0% 0 0 / 0.16)` и
 поднимает surface через `translateY(-1px)` без scale, а pressed `:active`
 возвращает его на исходную позицию с тенью
@@ -510,7 +515,8 @@ Fine-pointer hover использует `0 4px 10px -2px oklch(0% 0 0 / 0.16)` �
 Keyboard outline и forced-colors fallback остаются отдельными доступными
 индикаторами, reduced-motion отключает transition и translate, danger actions сохраняют
 красный текст. Строчные ellipsis и Component-card icon-actions остаются
-плоскими. У compound toggles удаляется внешняя inset-обводка, а выбранная белая
+transparent/borderless/no-shadow; contextual menu panels/items тоже исключены.
+У compound toggles удаляется внешняя обводка, а выбранная белая
 option получает только base shadow без динамических button states; shell имеет
 фон `oklch(0.19 0 0 / 0.1)`. Подзаголовки страниц и inactive tab text/icon
 получают `oklch(0.19 0 0 / 0.6)`, а отдельный 1.2 px tab baseline —
@@ -528,23 +534,31 @@ contract. Contextual menu
 items, row/Component icon-actions и compound toggles остаются отдельными
 плоскими controls.
 
-Для неинтерактивной глубины добавлен
+Кнопки, поля и plain content surfaces разделяют
+`--product-surface-border: 1px solid oklch(0 0 0 / .1)` и
+`background-clip: padding-box`, поэтому border смешивается с фоном под
+элементом. Для неинтерактивной глубины добавлен
 `--product-raised-surface-shadow: var(--product-raised-control-shadow)`: shared
 cards, canonical `ProductTable` wrappers вместе с subject progress, authored
 Component/Run-history/Students/Store cards и progress stats используют одну
 статическую базовую тень без hover/pressed transform или shadow-transition.
-Существующие radius/background/borders и внутренние row hover/focus состояния
-сохраняются; Component/Store focus обозначается отдельным outline, а
+Существующие radius/background, semantic/dashed `SurfaceCard` borders и
+внутренние row hover/focus состояния сохраняются; общий border не
+перезаписывает смысловую рамку. Component/Store focus обозначается отдельным
+outline, а
 `forced-colors` заменяет тень системным контуром.
 
-Shared `Input` и canonical однострочные text/search fields получают белый
-borderless surface и статический `--product-entry-control-shadow`, равный
+Base `.product-control` / `.field-input`, включая select и textarea, получают
+общую рамку и clipped background. Shared `Input` и canonical однострочные
+text/search fields дополнительно получают белый surface, внешние `40 px`,
+внутренние `38 px` и статический `--product-entry-control-shadow`, равный
 базовым `0 1px 6px 0px oklch(0% 0 0 / 0.05)`, единые foreground/типографику и
 непрозрачные placeholder/icons. Hover не меняет shadow/transform, а click или
-keyboard focus добавляет отдельный 2 px halo без изменения геометрии. Select,
-textarea, checkbox/radio/file, multiline editor, dialog/menu/popover surfaces,
-Student Screen content и raw utility panels исключены. Изменение остаётся
-UI-only, не меняет schema/API/Lesson hierarchy и ещё не имеет production
+keyboard focus добавляет отдельный 2 px halo без изменения border или
+геометрии. Select и textarea сохраняют base boundary, но не получают
+single-line height/entry shadow; checkbox/radio/file, dialog/menu/popover
+surfaces, Student Screen content и raw utility panels исключены. Изменение
+остаётся UI-only, не меняет schema/API/Lesson hierarchy и ещё не имеет production
 rollout evidence.
 
 **Current production:** общий `WorkspaceTabs`

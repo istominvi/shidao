@@ -668,16 +668,22 @@ Visual contract Course routes не меняет эту навигационну�
   вне header actions. Сам пользовательский выбор фона Course этим UI-only
   slice не реализован;
 - next production refinement распространяет единый raised contract на все
-  канонические `.product-btn`: белый borderless surface и exact однослойная
-  тень `0 1px 6px 0px oklch(0% 0 0 / 0.05)`. Header, toolbar и filter CTA
+  канонические `.product-btn`: белый surface,
+  `--product-surface-border: 1px solid oklch(0 0 0 / .1)`,
+  `background-clip: padding-box` и exact однослойная тень
+  `0 1px 6px 0px oklch(0% 0 0 / 0.05)`. Полупрозрачный border композится с
+  непосредственным ancestor/page background вместо белой заливки; фиксированная
+  внешняя высота остаётся `40 px`, а внутренняя client-area равна `38 px`.
+  Header, toolbar и filter CTA
   используют один state-contract без context fork: fine-pointer hover получает
   `0 4px 10px -2px oklch(0% 0 0 / 0.16)` и `translateY(-1px)` без scale,
   pressed возвращается на исходную позицию с
   `0 1px 3px 0px oklch(0% 0 0 / 0.14)`; focus outline,
   danger color и forced-colors fallback сохраняются, а reduced-motion отключает
   transition и translate. Плоские ellipsis в строках и
-  Component-card icon-actions остаются transparent/no-shadow. У compound
-  toggles удаляется внешняя inset-обводка, а selected white option использует
+  Component-card icon-actions остаются transparent/borderless/no-shadow;
+  contextual menu panels/items также исключены. У compound toggles удаляется
+  внешняя обводка, а selected white option использует
   только base shadow без hover/pressed-анимации; фон shell равен
   `oklch(0.19 0 0 / 0.1)`. Подзаголовок `AppPageHeader` и inactive tab
   text/icon используют `oklch(0.19 0 0 / 0.6)`, а независимый 1.2 px baseline —
@@ -691,24 +697,31 @@ Visual contract Course routes не меняет эту навигационну�
   `summary`, `aria-expanded`, focus/Escape и disabled boundary. Contextual menu items,
   row/Component icon-actions, compound toggles и filter popover panel не
   становятся ordinary raised buttons;
-- статические content surfaces используют семантический
+- кнопки, поля и plain static content surfaces используют общий
+  `--product-surface-border: 1px solid oklch(0 0 0 / .1)` и
+  `background-clip: padding-box`, чтобы рамка смешивалась с фоном под элементом.
+  Статические surfaces также используют семантический
   `--product-raised-surface-shadow`, являющийся alias базового
   `--product-raised-control-shadow`. Shared `SurfaceCard`, canonical
   `.product-table-wrap` вместе с subject progress, authored Component и Run
   history cards, Students/Store cards и progress stats получают одну base-тень
   без hover/pressed transform или shadow-transition. Их существующие
-  background, radius, semantic/dashed border и внутренние row hover/focus
-  состояния сохраняются. Component focus-within и Store focus/deep-link
+  background, radius, semantic/dashed `SurfaceCard` border и внутренние row
+  hover/focus состояния сохраняются: общий border не заменяет смысловую рамку.
+  Component focus-within и Store focus/deep-link
   highlight используют отдельный outline; `forced-colors` заменяет исчезающую
   тень системным контуром;
-- canonical однострочные text/search entry controls получают белый borderless
-  surface и статический `--product-entry-control-shadow`, равный базовой тени
+- base `.product-control` / `.field-input`, включая select и textarea, получают
+  общую рамку и clipped background. Canonical однострочные text/search entry
+  controls дополнительно получают белый surface, внешние `40 px`, внутренние
+  `38 px` и статический `--product-entry-control-shadow`, равный базовой тени
   `0 1px 6px 0px oklch(0% 0 0 / 0.05)`, общий foreground/типографику и
   непрозрачные placeholder/icons через `currentColor`. Hover не меняет shadow
   или transform; click/keyboard focus добавляет отдельный 2 px halo и сохраняет
-  геометрию. Forced colors использует `Field`/`FieldText` и системную рамку. Select,
-  textarea, checkbox/radio/file input, multiline Component editor,
-  dialog/menu/popover surfaces, Student Screen content renderers и raw utility
+  border/геометрию. Forced colors использует `Field`/`FieldText` и системную
+  рамку. Select и textarea сохраняют base boundary, но не получают single-line
+  height/entry shadow; checkbox/radio/file input, dialog/menu/popover surfaces,
+  Student Screen content renderers и raw utility
   panels исключены. Этот current-source UI slice не меняет API, schema, Lesson
   hierarchy или learner projection и пока не имеет production rollout;
 - в current production общий contextual `ActionMenu`, открываемый

@@ -38,11 +38,11 @@ test("product tables use the element radius instead of the card radius", () => {
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-table-wrap\s*\{[^}]*overflow-x: auto;[^}]*border: 0;[^}]*--course-demo-table-radius,[^}]*--product-element-radius,[^}]*background: #fff;/,
+    /\.product-table-wrap\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background-clip: padding-box;[^}]*\}[\s\S]*?\.course-demo-shell \.product-table-wrap\s*\{[^}]*overflow-x: auto;[^}]*--course-demo-table-radius,[^}]*--product-element-radius,[^}]*background-color: #fff;/,
   );
   assert.match(
     styles,
-    /:root\s*\{[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
+    /:root\s*\{[^}]*--product-surface-border: 1px solid oklch\(0 0 0 \/ 0\.1\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
   );
   assert.match(
     styles,
@@ -99,7 +99,11 @@ test("product tables use the element radius instead of the card radius", () => {
 
   assert.match(
     styles,
-    /\.surface-card\s*\{[^}]*box-shadow: var\(--product-raised-surface-shadow\);[\s\S]*?\.course-demo-shell \.surface-card\s*\{[^}]*--course-demo-card-radius,[^}]*--product-card-radius,/,
+    /\.surface-card\s*\{[^}]*background: #fff;[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-surface-shadow\);[\s\S]*?\.surface-card:not\(\.border\)\s*\{[^}]*border: var\(--product-surface-border\);[\s\S]*?\.course-demo-shell \.surface-card\s*\{[^}]*--course-demo-card-radius,[^}]*--product-card-radius,[^}]*background-color: rgba\(255, 255, 255, 0\.82\);/,
+  );
+  assert.match(
+    styles,
+    /@media \(forced-colors: active\)\s*\{[\s\S]*?\.product-raised-surface,\s*\.product-raised-surface:not\(\.border\),\s*\.surface-card,\s*\.surface-card:not\(\.border\),[\s\S]*?border-color: CanvasText;/,
   );
   assert.doesNotMatch(
     styles,

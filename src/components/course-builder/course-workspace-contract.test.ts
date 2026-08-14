@@ -472,7 +472,7 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
-    /:root\s*\{[^}]*--product-raised-control-shadow:\s*0 1px 6px 0px oklch\(0% 0 0 \/ 0\.05\);[^}]*--product-raised-control-shadow-hover:\s*0 4px 10px -2px\s+oklch\(0% 0 0 \/ 0\.16\);[^}]*--product-raised-control-shadow-pressed:\s*0 1px 3px 0px\s+oklch\(0% 0 0 \/ 0\.14\);[^}]*--product-raised-control-hover-translate-y: -1px;[^}]*--product-raised-control-transition: 160ms\s+cubic-bezier\(0\.2, 0\.8, 0\.2, 1\);/,
+    /:root\s*\{[^}]*--product-raised-control-shadow:\s*0 1px 6px 0px oklch\(0% 0 0 \/ 0\.05\);[^}]*--product-raised-control-shadow-hover:\s*0 4px 10px -2px\s+oklch\(0% 0 0 \/ 0\.16\);[^}]*--product-raised-control-shadow-pressed:\s*0 1px 3px 0px\s+oklch\(0% 0 0 \/ 0\.14\);[^}]*--product-surface-border: 1px solid oklch\(0 0 0 \/ 0\.1\);[^}]*--product-raised-control-hover-translate-y: -1px;[^}]*--product-raised-control-transition: 160ms\s+cubic-bezier\(0\.2, 0\.8, 0\.2, 1\);/,
   );
   assert.match(
     styles,
@@ -481,15 +481,18 @@ test("product buttons share one animated raised-control elevation contract", () 
   assert.doesNotMatch(styles, /--course-demo-header-action-border/);
   assert.match(
     styles,
-    /\.product-btn\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*color: #171717;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*transform: none;[^}]*transition:\s*transform var\(--product-raised-control-transition\),\s*border-color var\(--product-raised-control-transition\),\s*box-shadow var\(--product-raised-control-transition\),\s*background-color var\(--product-raised-control-transition\);/,
+    /\.product-btn\s*\{[^}]*height: var\(--product-control-height\);[^}]*border: var\(--product-surface-border\);[^}]*background: #fff;[^}]*background-clip: padding-box;[^}]*color: #171717;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*transform: none;[^}]*transition:\s*transform var\(--product-raised-control-transition\),\s*border-color var\(--product-raised-control-transition\),\s*box-shadow var\(--product-raised-control-transition\),\s*background-color var\(--product-raised-control-transition\);/,
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-btn\s*\{[^}]*--product-control-height: var\(--course-demo-control-height\);[^}]*border: 0;[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*background: #fff;[^}]*font-size: var\(--course-demo-control-font-size\);[^}]*font-weight: var\(--course-demo-control-font-weight\);/,
+    /\.course-demo-shell \.product-btn\s*\{[^}]*--product-control-height: var\(--course-demo-control-height\);[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*background-color: #fff;[^}]*font-size: var\(--course-demo-control-font-size\);[^}]*font-weight: var\(--course-demo-control-font-weight\);/,
   );
   const courseProductStyles =
     /\.course-demo-shell \.product-btn\s*\{[^}]*\}/.exec(styles)?.[0] ?? "";
-  assert.doesNotMatch(courseProductStyles, /box-shadow|transform|transition/);
+  assert.doesNotMatch(
+    courseProductStyles,
+    /border:|box-shadow|transform|transition|background:/,
+  );
   assert.match(
     styles,
     /\.course-demo-shell \.product-btn svg\s*\{[^}]*width: var\(--course-demo-control-icon-size\);[^}]*color: currentColor;[^}]*opacity: 1;/,
@@ -504,11 +507,11 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
-    /\.product-btn:hover:not\(:disabled\):not\(\[aria-disabled="true"\]\)\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow-hover\);/,
+    /\.product-btn:hover:not\(:disabled\):not\(\[aria-disabled="true"\]\)\s*\{[^}]*background-color: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow-hover\);/,
   );
   assert.match(
     styles,
-    /\.product-btn:active:not\(:disabled\):not\(\[aria-disabled="true"\]\)\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);[^}]*transform: none;/,
+    /\.product-btn:active:not\(:disabled\):not\(\[aria-disabled="true"\]\)\s*\{[^}]*background-color: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);[^}]*transform: none;/,
   );
   assert.doesNotMatch(
     styles,
@@ -516,15 +519,23 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-btn-primary\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*color: var\(--course-demo-control-foreground\);/,
+    /\.course-demo-shell \.product-btn-primary\s*\{[^}]*background-color: #fff;[^}]*color: var\(--course-demo-control-foreground\);/,
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-btn-secondary\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*color: var\(--course-demo-control-foreground\);/,
+    /\.course-demo-shell \.product-btn-secondary\s*\{[^}]*background-color: #fff;[^}]*color: var\(--course-demo-control-foreground\);/,
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-btn-ghost\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*color: var\(--course-demo-control-foreground\);/,
+    /\.course-demo-shell \.product-btn-ghost\s*\{[^}]*background-color: #fff;[^}]*color: var\(--course-demo-control-foreground\);/,
+  );
+  assert.doesNotMatch(
+    styles,
+    /\.product-btn(?::hover|:active|-primary|-secondary|-ghost)[^{]*\{[^}]*border:\s*0;/,
+  );
+  assert.match(
+    styles,
+    /\.product-btn\.compact-toolbar-reset\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background: #fff;[^}]*background-clip: padding-box;/,
   );
   assert.match(
     productFocusStyles,
@@ -564,7 +575,7 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     teachingStyles,
-    /\.teaching-run-action-menu\s*\.product-btn\.action-menu-trigger:hover:not\(:disabled\),[\s\S]*?\.product-btn\.action-menu-trigger:active:not\(:disabled\)\s*\{[^}]*background: rgba\(20, 20, 20, 0\.07\);[^}]*box-shadow: none;/,
+    /\.teaching-run-action-menu\s*\.product-btn\.action-menu-trigger\s*\{[^}]*border: 0;[\s\S]*?\.teaching-run-action-menu\s*\.product-btn\.action-menu-trigger:hover:not\(:disabled\),[\s\S]*?\.product-btn\.action-menu-trigger:active:not\(:disabled\)\s*\{[^}]*background: rgba\(20, 20, 20, 0\.07\);[^}]*box-shadow: none;/,
   );
 
   assert.match(
@@ -1201,8 +1212,9 @@ test("component cards render content with accessible overlay actions and modal e
   );
   assert.doesNotMatch(cardStyles, /--course-demo-card-radius/);
   assert.match(cardStyles, /padding: 0/);
-  assert.match(cardStyles, /border: 0/);
+  assert.match(cardStyles, /border: var\(--product-surface-border\)/);
   assert.match(cardStyles, /background: #fff/);
+  assert.match(cardStyles, /background-clip: padding-box/);
   assert.match(
     cardStyles,
     /box-shadow: var\(--product-raised-surface-shadow\)/,

@@ -369,7 +369,11 @@ test("shared course controls preserve pressed-button and native-filter semantics
 test("course tables and filter CTA adopt canonical raised surfaces", () => {
   assert.match(
     globalStyles,
-    /:root\s*\{[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
+    /:root\s*\{[^}]*--product-surface-border: 1px solid oklch\(0 0 0 \/ 0\.1\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
+  );
+  assert.match(
+    globalStyles,
+    /\.product-table-wrap\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background-clip: padding-box;/,
   );
   assert.match(
     globalStyles,
@@ -383,4 +387,6 @@ test("course tables and filter CTA adopt canonical raised surfaces", () => {
     /\.course-filter-trigger\s*\{[^}]*\}/.exec(globalStyles)?.[0] ?? "",
     /border|background|box-shadow|transform|transition/,
   );
+  assert.doesNotMatch(ownedCoursesPanelSource, /border-white\/80/);
+  assert.doesNotMatch(courseCatalogPanelSource, /border-white\/80/);
 });

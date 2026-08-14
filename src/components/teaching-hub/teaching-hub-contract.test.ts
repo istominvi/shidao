@@ -335,7 +335,11 @@ test("schedule keeps the compact date control and dense one-line table contract"
 
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-run-table-wrap\s*\{[^}]*border:\s*0;[^}]*background:\s*#fff;/,
+    /\.teaching-run-table-wrap\s*\{[^}]*overflow-x:\s*auto;[^}]*background:\s*#fff;/,
+  );
+  assert.match(
+    globalStyleSource,
+    /\.product-table-wrap\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background-clip: padding-box;/,
   );
   assert.match(
     teachingHubStyleSource,
@@ -435,7 +439,7 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     teachingHubStyleSource,
-    /\.student-directory-table-wrap\s*\{[^}]*border:\s*0;[^}]*--course-demo-table-radius,[^}]*background:\s*#fff;/,
+    /\.student-directory-table-wrap\s*\{[^}]*--course-demo-table-radius,[^}]*background:\s*#fff;/,
   );
   assert.match(
     navigationStyleSource,
@@ -826,7 +830,7 @@ test("teaching hub inputs, filters, and data surfaces use canonical control toke
   }
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-hub-search\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
+    /\.teaching-hub-search\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background: #fff;[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
   assert.match(
     teachingHubStyleSource,
@@ -834,7 +838,7 @@ test("teaching hub inputs, filters, and data surfaces use canonical control toke
   );
   assert.match(
     teachingHubStyleSource,
-    /\.student-directory-picker-search input\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*color: var\(--product-entry-control-foreground\);[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
+    /\.student-directory-picker-search input\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background: #fff;[^}]*background-clip: padding-box;[^}]*color: var\(--product-entry-control-foreground\);[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
 
   for (const selector of [
@@ -852,5 +856,9 @@ test("teaching hub inputs, filters, and data surfaces use canonical control toke
   assert.match(
     teachingHubStyleSource,
     /\.course-demo-shell \.student-directory-card\s*\{[^}]*box-shadow: var\(--product-raised-surface-shadow\);/,
+  );
+  assert.match(
+    globalStyleSource,
+    /\.lesson-run-history-card,[\s\S]*?\.course-demo-shell \.student-directory-card,[\s\S]*?\.course-demo-shell \.store-product-card-surface\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background-clip: padding-box;/,
   );
 });

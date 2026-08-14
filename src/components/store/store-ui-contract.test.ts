@@ -56,7 +56,7 @@ test("Store is an Account page built from the shared product shell", () => {
 test("Store filters and cards adopt canonical raised surfaces", () => {
   assert.match(
     globalStyles,
-    /:root\s*\{[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
+    /:root\s*\{[^}]*--product-surface-border: 1px solid oklch\(0 0 0 \/ 0\.1\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
   );
   assert.match(
     globalStyles,
@@ -65,6 +65,10 @@ test("Store filters and cards adopt canonical raised surfaces", () => {
   assert.match(
     styles,
     /\.course-demo-shell \.store-product-card-surface\s*\{[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-surface-shadow\);/,
+  );
+  assert.match(
+    globalStyles,
+    /\.course-demo-shell \.store-product-card-surface\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background-clip: padding-box;/,
   );
   assert.match(
     styles,

@@ -24,6 +24,7 @@
   --product-raised-control-shadow: 0 1px 6px 0px oklch(0% 0 0 / 0.05);
   --product-raised-control-shadow-hover: 0 4px 10px -2px oklch(0% 0 0 / 0.16);
   --product-raised-control-shadow-pressed: 0 1px 3px 0px oklch(0% 0 0 / 0.14);
+  --product-surface-border: 1px solid oklch(0 0 0 / 0.1);
   --product-raised-control-hover-translate-y: -1px;
   --product-raised-control-transition: 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --product-raised-surface-shadow: var(--product-raised-control-shadow);
@@ -830,14 +831,24 @@ a {
 }
 
 .product-raised-surface {
+  background-clip: padding-box;
   box-shadow: var(--product-raised-surface-shadow);
+}
+
+.product-raised-surface:not(.border) {
+  border: var(--product-surface-border);
 }
 
 .surface-card {
   border-radius: 1.5rem;
   background: #fff;
+  background-clip: padding-box;
   padding: 1.25rem;
   box-shadow: var(--product-raised-surface-shadow);
+}
+
+.surface-card:not(.border) {
+  border: var(--product-surface-border);
 }
 
 .course-demo-shell .surface-card {
@@ -845,8 +856,13 @@ a {
     --course-demo-card-radius,
     var(--product-card-radius, 1.25rem)
   );
-  background: rgba(255, 255, 255, 0.82);
+  background-color: rgba(255, 255, 255, 0.82);
   padding: 0.75rem;
+}
+
+.product-table-wrap {
+  border: var(--product-surface-border);
+  background-clip: padding-box;
 }
 
 .course-demo-shell .product-table-wrap {
@@ -855,13 +871,19 @@ a {
   max-width: 100%;
   min-width: 0;
   overflow-x: auto;
-  border: 0;
   border-radius: var(
     --course-demo-table-radius,
     var(--product-element-radius, 0.75rem)
   );
-  background: #fff;
+  background-color: #fff;
   box-shadow: var(--product-raised-surface-shadow);
+}
+
+.lesson-run-history-card,
+.course-demo-shell .student-directory-card,
+.course-demo-shell .store-product-card-surface {
+  border: var(--product-surface-border);
+  background-clip: padding-box;
 }
 
 .course-demo-shell .product-table-wrap:focus-visible {
@@ -1635,8 +1657,9 @@ a {
 .field-input {
   width: 100%;
   border-radius: 0.95rem;
-  border: 1px solid rgba(20, 20, 20, 0.14);
+  border: var(--product-surface-border);
   background: rgba(255, 255, 255, 0.96);
+  background-clip: padding-box;
   padding: 0.78rem 0.9rem;
   transition:
     border-color 180ms ease,
@@ -1645,8 +1668,11 @@ a {
 }
 
 input.field-input {
-  border: 0;
+  height: var(--product-control-height, 2.5rem);
+  border: var(--product-surface-border);
   background: #fff;
+  background-clip: padding-box;
+  padding-block: 0;
   color: var(--product-entry-control-foreground);
   font-family: inherit;
   font-size: var(--product-entry-control-font-size);
@@ -1665,12 +1691,13 @@ input.field-input::placeholder {
 }
 
 .field-input:focus {
-  border-color: rgba(20, 20, 20, 0.32);
-  box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.08);
+  border: var(--product-surface-border);
+  outline: 2px solid var(--product-control-focus-halo);
+  outline-offset: 2px;
 }
 
 input.field-input:focus {
-  border: 0;
+  border: var(--product-surface-border);
   outline: 2px solid var(--product-control-focus-halo);
   outline-offset: 2px;
   box-shadow: var(--product-entry-control-shadow);
@@ -1732,8 +1759,9 @@ input.field-input:focus {
   --product-control-height: 2.5rem;
   height: var(--product-control-height);
   border-radius: 0.95rem;
-  border: 1px solid rgba(20, 20, 20, 0.14);
+  border: var(--product-surface-border);
   background: rgba(255, 255, 255, 0.96);
+  background-clip: padding-box;
   color: var(--product-entry-control-foreground);
   font-family: inherit;
   font-size: var(--product-entry-control-font-size);
@@ -1750,14 +1778,14 @@ input.field-input:focus {
 }
 
 .product-control:focus-visible {
-  outline: none;
-  border-color: rgba(20, 20, 20, 0.32);
-  box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.08);
+  border: var(--product-surface-border);
+  outline: 2px solid var(--product-control-focus-halo);
+  outline-offset: 2px;
 }
 
 input.product-control-input:focus,
 input.product-control-search:focus {
-  border: 0;
+  border: var(--product-surface-border);
   outline: 2px solid var(--product-control-focus-halo);
   outline-offset: 2px;
   box-shadow: var(--product-entry-control-shadow);
@@ -1775,8 +1803,9 @@ input.product-control-search:focus {
 
 input.product-control-input,
 input.product-control-search {
-  border: 0;
+  border: var(--product-surface-border);
   background: #fff;
+  background-clip: padding-box;
   box-shadow: var(--product-entry-control-shadow);
 }
 
@@ -1893,9 +1922,10 @@ input.product-control-search::placeholder {
   width: var(--course-demo-control-height, 2.5rem);
   min-width: var(--course-demo-control-height, 2.5rem);
   flex: 0 0 var(--course-demo-control-height, 2.5rem);
-  border: 0;
+  border: var(--product-surface-border);
   border-radius: var(--course-demo-control-radius, 0.75rem);
-  background: rgba(255, 255, 255, 0.94);
+  background: #fff;
+  background-clip: padding-box;
   padding: 0;
 }
 
@@ -2054,8 +2084,9 @@ input.product-control-search::placeholder {
   justify-content: center;
   gap: 0.45rem;
   border-radius: 0.95rem;
-  border: 0;
+  border: var(--product-surface-border);
   background: #fff;
+  background-clip: padding-box;
   padding: 0 0.9rem;
   color: #171717;
   font-size: 0.9rem;
@@ -2073,9 +2104,8 @@ input.product-control-search::placeholder {
 .course-demo-shell .product-btn {
   --product-control-height: var(--course-demo-control-height);
   gap: 0.42rem;
-  border: 0;
   border-radius: var(--course-demo-control-radius);
-  background: #fff;
+  background-color: #fff;
   padding-inline: var(--course-demo-control-padding-inline);
   color: var(--course-demo-control-foreground);
   font-size: var(--course-demo-control-font-size);
@@ -2092,14 +2122,12 @@ input.product-control-search::placeholder {
 }
 
 .product-btn:hover:not(:disabled):not([aria-disabled="true"]) {
-  border: 0;
-  background: #fff;
+  background-color: #fff;
   box-shadow: var(--product-raised-control-shadow-hover);
 }
 
 .product-btn:active:not(:disabled):not([aria-disabled="true"]) {
-  border: 0;
-  background: #fff;
+  background-color: #fff;
   box-shadow: var(--product-raised-control-shadow-pressed);
   transform: none;
 }
@@ -2115,54 +2143,45 @@ input.product-control-search::placeholder {
 }
 
 .product-btn-primary {
-  border: 0;
-  background: #fff;
+  background-color: #fff;
   color: #171717;
 }
 
 .product-btn-primary:hover:not(:disabled) {
-  border: 0;
-  background: #fff;
+  background-color: #fff;
 }
 
 .course-demo-shell .product-btn-primary {
-  border: 0;
-  background: #fff;
+  background-color: #fff;
   color: var(--course-demo-control-foreground);
 }
 
 .product-btn-secondary {
-  border: 0;
-  background: #fff;
+  background-color: #fff;
   color: #171717;
 }
 
 .course-demo-shell .product-btn-secondary {
-  border: 0;
-  background: #fff;
+  background-color: #fff;
   color: var(--course-demo-control-foreground);
 }
 
 .product-btn-secondary:hover:not(:disabled) {
-  border: 0;
-  background: #fff;
+  background-color: #fff;
 }
 
 .product-btn-ghost {
-  border: 0;
-  background: #fff;
+  background-color: #fff;
   color: #171717;
 }
 
 .course-demo-shell .product-btn-ghost {
-  border: 0;
-  background: #fff;
+  background-color: #fff;
   color: var(--course-demo-control-foreground);
 }
 
 .course-demo-shell .product-btn.compact-toolbar-reset {
-  border: 0;
-  background: #fff;
+  background-color: #fff;
   color: var(--course-demo-control-foreground);
 }
 
@@ -2171,12 +2190,12 @@ input.product-control-search::placeholder {
 }
 
 .product-btn.product-btn-danger:hover:not(:disabled) {
-  background: #fff;
+  background-color: #fff;
   color: #9f1239;
 }
 
 .product-btn-ghost:hover:not(:disabled) {
-  background: #fff;
+  background-color: #fff;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -2273,12 +2292,13 @@ input.product-control-search::placeholder {
 
 .lesson-component-card {
   position: relative;
-  border: 0;
+  border: var(--product-surface-border);
   border-radius: var(
     --course-demo-element-radius,
     var(--product-element-radius, 0.75rem)
   );
   background: #fff;
+  background-clip: padding-box;
   overflow: visible;
   padding: 0;
   box-shadow: var(--product-raised-surface-shadow);
@@ -2774,8 +2794,10 @@ input.product-control-search::placeholder {
     transform: none;
   }
 
+  .product-control,
   input.product-control-input,
   input.product-control-search,
+  .field-input,
   input.field-input,
   .teaching-hub-search,
   .student-directory-picker-search input {
@@ -2785,21 +2807,27 @@ input.product-control-search::placeholder {
     box-shadow: none;
   }
 
+  .product-control:focus-visible,
   input.product-control-input:focus,
   input.product-control-search:focus,
+  .field-input:focus,
   input.field-input:focus,
   .teaching-hub-search:focus-within,
   .student-directory-picker-search input:focus {
-    outline-color: Highlight;
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
     box-shadow: none;
   }
 
   .product-raised-surface,
+  .product-raised-surface:not(.border),
   .surface-card,
+  .surface-card:not(.border),
   .course-demo-shell .product-table-wrap,
   .lesson-component-card,
   .lesson-run-history-card,
   .course-demo-shell .student-directory-card {
+    border-color: CanvasText;
     outline: 1px solid CanvasText;
     outline-offset: -1px;
     box-shadow: none;

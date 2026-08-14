@@ -141,7 +141,7 @@ function CourseCard({
   return (
     <SurfaceCard
       as="article"
-      className="flex h-full flex-col border border-white/80"
+      className="flex h-full flex-col"
       title={
         <PageTransitionLink
           href={toCourseRoute(course.id)}

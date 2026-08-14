@@ -114,7 +114,7 @@ function CatalogCourseCard({
   return (
     <SurfaceCard
       as="article"
-      className="flex h-full flex-col border border-white/80"
+      className="flex h-full flex-col"
       title={
         <button
           type="button"

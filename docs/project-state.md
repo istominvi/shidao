@@ -380,8 +380,14 @@ trigger контекстного меню; buttons открываемого из
 
 **Next production canonical control elevation and muted-color refinement:** текущий source применяет
 один raised-surface contract ко всем каноническим `.product-btn`, а не только к
-actions заголовка. Обычная кнопка имеет белый surface, border `0` и exact
-однослойную тень `0 1px 6px 0px oklch(0% 0 0 / 0.05)`. Все ordinary buttons
+actions заголовка. Обычная кнопка имеет белый surface, общий
+`--product-surface-border: 1px solid oklch(0 0 0 / .1)`,
+`background-clip: padding-box` и exact однослойную тень
+`0 1px 6px 0px oklch(0% 0 0 / 0.05)`. Поэтому полупрозрачная рамка смешивается
+с непосредственным фоном страницы, а не с белой заливкой под ней. При
+`box-sizing: border-box` фиксированная внешняя высота остаётся `40 px`, а
+между двумя сторонами рамки остаётся `38 px` внутренней client-area. Все
+ordinary buttons
 получают rest/hover/pressed только из общего `.product-btn`, поэтому header и
 toolbar/filter controls не имеют контекстных fork. На fine-pointer hover тень
 становится `0 4px 10px -2px oklch(0% 0 0 / 0.16)`, а surface сдвигается через
@@ -390,9 +396,12 @@ toolbar/filter controls не имеют контекстных fork. На fine-p
 `0 1px 3px 0px oklch(0% 0 0 / 0.14)`. Danger actions
 сохраняют красный текст, keyboard focus —
 отдельный 2 px outline, forced-colors — системный контур, а
-`prefers-reduced-motion` отключает transition и вертикальный сдвиг. Плоские служебные icon-actions
-в строках таблиц и на Component cards намеренно остаются transparent/no-shadow.
-У составных тумблеров убрана постоянная внешняя inset-обводка; выбранная белая
+`prefers-reduced-motion` отключает transition и вертикальный сдвиг. Плоские
+служебные icon-actions
+в строках таблиц и на Component cards намеренно остаются
+transparent/borderless/no-shadow; contextual menu panels/items также не
+получают product surface border. У составных тумблеров убрана постоянная
+внешняя обводка; выбранная белая
 option использует только базовую тень без button hover/pressed states,
 сохраняет собственный focus outline, а фон compound shell задан отдельным
 `oklch(0.19 0 0 / 0.1)` token. Подзаголовок `AppPageHeader`, inactive text и
@@ -416,28 +425,38 @@ shared `Input`, а onboarding select — на shared `Select`. Disclosure-trigge
 меняет contextual menu items, flat row/component icon-actions, compound
 toggles или сами filter popover panels.
 
+Обычные кнопки, поля и plain статические surfaces используют один
+`--product-surface-border: 1px solid oklch(0 0 0 / .1)` вместе с
+`background-clip: padding-box`: белый background не рисуется под рамкой, и её
+10%-ный чёрный цвет композится с непосредственным ancestor/page background.
 Статические карточки и таблицы получают отдельный семантический alias
 `--product-raised-surface-shadow`, равный базовому
 `--product-raised-control-shadow`. Он применяется без hover/pressed lift,
 transform или shadow-transition к shared `SurfaceCard`, всем canonical
 `.product-table-wrap` (включая subject progress), Lesson Component и Run
 history cards, Students cards, Store product cards и progress-stat cards.
-Существующие background, radius, semantic/dashed border и row-hover состояния
-не унифицируются. Focus-within Component card и Store deep-link/focus highlight
-используют отдельный outline поверх неизменной базовой тени; в `forced-colors`
+Существующие background, radius, semantic/dashed `SurfaceCard` borders и
+row-hover состояния не унифицируются: общий border применяется к plain
+surfaces, но не перезаписывает смысловую или dashed-рамку. Focus-within
+Component card и Store deep-link/focus highlight используют отдельный outline
+поверх неизменной базовой тени; в `forced-colors`
 исчезающую тень заменяет системный outline.
 
-Канонические однострочные text/search entry controls имеют белый borderless
-surface и статический `--product-entry-control-shadow`, являющийся alias той же
-базовой тени `0 1px 6px 0px oklch(0% 0 0 / 0.05)`. Они не поднимаются и не
+Базовые `.product-control` и `.field-input`, включая select и textarea,
+получают общий surface border и `background-clip: padding-box`. Канонические
+однострочные text/search entry controls дополнительно имеют белый surface,
+внешнюю высоту `40 px`, внутреннюю client-area `38 px` и статический
+`--product-entry-control-shadow`, являющийся alias той же базовой тени
+`0 1px 6px 0px oklch(0% 0 0 / 0.05)`. Они не поднимаются и не
 меняют тень на hover/pressed, сохраняют общий foreground/типографику,
 непрозрачные placeholder и сопровождающие search/select icons через
 `currentColor`; click/keyboard focus добавляет отдельный 2 px halo и не меняет
-базовую тень или геометрию. В `forced-colors` декоративная тень убирается в пользу `Field` /
-`FieldText` и системной рамки. Select, textarea, checkbox, radio, file input,
-многострочные Component editors, dialog/menu/popover surfaces, Student Screen
-content renderers и utility-only raw panels не получают entry или static
-surface contract автоматически. Это UI-only current-source изменение без API,
+базовую тень, border или геометрию. В `forced-colors` декоративная тень и цвет
+рамки уступают `Field` / `FieldText` и системному focus indicator. Select и
+textarea сохраняют base boundary, но не получают single-line height или entry
+shadow. Checkbox, radio, file input, dialog/menu/popover surfaces, Student
+Screen content renderers и utility-only raw panels не получают entry или
+static surface contract автоматически. Это UI-only current-source изменение без API,
 schema или migrations; production rollout и deployed acceptance пока не
 заявлены.
 

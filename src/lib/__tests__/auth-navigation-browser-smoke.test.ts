@@ -83,6 +83,9 @@ const E2E_RAISED_CONTROL_HOVER_SHADOW = "oklch(0 0 0 / 0.16) 0px 4px 10px -2px";
 const E2E_RAISED_CONTROL_PRESSED_SHADOW = "oklch(0 0 0 / 0.14) 0px 1px 3px 0px";
 const E2E_RAISED_SURFACE_SHADOW = E2E_RAISED_CONTROL_SHADOW;
 const E2E_ENTRY_CONTROL_SHADOW = E2E_RAISED_SURFACE_SHADOW;
+const E2E_PRODUCT_SURFACE_BORDER_COLOR = "oklch(0 0 0 / 0.1)";
+const E2E_PRODUCT_SURFACE_BORDER_WIDTH = "1px";
+const E2E_PRODUCT_SURFACE_BACKGROUND_CLIP = "padding-box";
 const E2E_PRODUCT_HEADER_SHADOW = "oklch(0 0 0 / 0.05) 0px 6px 12px 0px";
 const E2E_RAISED_CONTROL_HOVER_TRANSFORM = "matrix(1, 0, 0, 1, 0, -1)";
 const E2E_FOCUS_HALO_COLOR = "rgba(20, 20, 20, 0.58)";
@@ -3032,11 +3035,22 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
       await storeProductSurface.evaluate((surface) => {
         const style = getComputedStyle(surface);
         return {
+          borderColor: style.borderTopColor,
+          borderStyle: style.borderTopStyle,
+          borderWidth: style.borderTopWidth,
+          backgroundClip: style.backgroundClip,
           boxShadow: style.boxShadow,
           transform: style.transform,
         };
       }),
-      { boxShadow: E2E_RAISED_SURFACE_SHADOW, transform: "none" },
+      {
+        borderColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
+        borderStyle: "solid",
+        borderWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+        backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+        boxShadow: E2E_RAISED_SURFACE_SHADOW,
+        transform: "none",
+      },
     );
     await storeProductSurface.hover();
     await runtime.page.waitForTimeout(220);
@@ -3044,11 +3058,18 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
       await storeProductSurface.evaluate((surface) => {
         const style = getComputedStyle(surface);
         return {
+          borderTopWidth: style.borderTopWidth,
+          backgroundClip: style.backgroundClip,
           boxShadow: style.boxShadow,
           transform: style.transform,
         };
       }),
-      { boxShadow: E2E_RAISED_SURFACE_SHADOW, transform: "none" },
+      {
+        borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+        backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+        boxShadow: E2E_RAISED_SURFACE_SHADOW,
+        transform: "none",
+      },
     );
 
     await runtime.page
@@ -3941,10 +3962,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         headerActionIconClass:
           headerActions.querySelector("svg")?.getAttribute("class") ?? "",
         headerPrimaryControl: {
+          height: primaryButtonStyle.height,
+          clientHeight: headerPrimaryButton.clientHeight,
           fontSize: primaryButtonStyle.fontSize,
           fontWeight: primaryButtonStyle.fontWeight,
           backgroundColor: primaryButtonStyle.backgroundColor,
           borderTopWidth: primaryButtonStyle.borderTopWidth,
+          borderTopStyle: primaryButtonStyle.borderTopStyle,
+          borderTopColor: primaryButtonStyle.borderTopColor,
+          backgroundClip: primaryButtonStyle.backgroundClip,
           color: primaryButtonStyle.color,
           boxShadow: primaryButtonStyle.boxShadow,
           transform: primaryButtonStyle.transform,
@@ -4013,10 +4039,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           ),
           iconStyles: navIcons.map((icon) => {
             const style = getComputedStyle(icon);
-            const pill = icon.closest<HTMLElement>(".site-header-nav-pill");
+            const content = icon.closest<HTMLElement>(".nav-pill-content");
+            const contentStyle = content ? getComputedStyle(content) : null;
             return {
               color: style.color,
-              parentColor: pill ? getComputedStyle(pill).color : "",
+              contentColor: contentStyle?.color ?? "",
+              mixBlendMode: contentStyle?.mixBlendMode ?? "",
               opacity: style.opacity,
             };
           }),
@@ -4065,10 +4093,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.equal(scheduleContract.headerActions, "Назначить урок");
     assert.match(scheduleContract.headerActionIconClass, /calendar-plus/);
     assert.deepEqual(scheduleContract.headerPrimaryControl, {
+      height: "40px",
+      clientHeight: 38,
       fontSize: "14.08px",
       fontWeight: "400",
       backgroundColor: "rgb(255, 255, 255)",
-      borderTopWidth: "0px",
+      borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+      borderTopStyle: "solid",
+      borderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
+      backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
       color: "rgb(20, 20, 20)",
       boxShadow: E2E_RAISED_CONTROL_SHADOW,
       transform: "none",
@@ -4102,12 +4135,16 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         const style = getComputedStyle(button);
         return {
           backgroundColor: style.backgroundColor,
+          borderTopWidth: style.borderTopWidth,
+          backgroundClip: style.backgroundClip,
           boxShadow: style.boxShadow,
           transform: style.transform,
         };
       }),
       {
         backgroundColor: "rgb(255, 255, 255)",
+        borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+        backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
         boxShadow: E2E_RAISED_CONTROL_HOVER_SHADOW,
         transform: E2E_RAISED_CONTROL_HOVER_TRANSFORM,
       },
@@ -4214,8 +4251,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     );
     assert.ok(
       scheduleContract.navigationControls.iconStyles.every(
-        ({ color, parentColor, opacity }) =>
-          color === parentColor && opacity === "1",
+        ({ color, contentColor, mixBlendMode, opacity }) =>
+          color === contentColor &&
+          mixBlendMode === "difference" &&
+          opacity === "1",
       ),
     );
     assert.deepEqual(scheduleContract.navigationControls.userControl, {
@@ -4469,6 +4508,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       return {
         surface: {
           wrapperBackgroundColor: wrapperStyle.backgroundColor,
+          wrapperBackgroundClip: wrapperStyle.backgroundClip,
           tableBackgroundColor: tableStyle.backgroundColor,
           firstBodyRowBorderTopWidth: getComputedStyle(bodyRow).borderTopWidth,
           wrapperBorderWidths: [
@@ -4478,6 +4518,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             wrapperStyle.borderLeftWidth,
           ],
           wrapperBorderRadius: wrapperStyle.borderRadius,
+          wrapperBorderStyle: wrapperStyle.borderTopStyle,
+          wrapperBorderColor: wrapperStyle.borderTopColor,
         },
         layout: {
           tableLayout: tableStyle.tableLayout,
@@ -4590,10 +4632,13 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     });
     assert.deepEqual(scheduleTableContract.surface, {
       wrapperBackgroundColor: "rgb(255, 255, 255)",
+      wrapperBackgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
       tableBackgroundColor: "rgb(255, 255, 255)",
       firstBodyRowBorderTopWidth: "0px",
-      wrapperBorderWidths: ["0px", "0px", "0px", "0px"],
+      wrapperBorderWidths: ["1px", "1px", "1px", "1px"],
       wrapperBorderRadius: "12px",
+      wrapperBorderStyle: "solid",
+      wrapperBorderColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
     });
     assert.equal(scheduleTableContract.layout.tableLayout, "auto");
     assert.equal(scheduleTableContract.layout.minWidth, "0px");
@@ -5085,6 +5130,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           return {
             backgroundColor: style.backgroundColor,
             borderTopWidth: style.borderTopWidth,
+            borderTopColor: style.borderTopColor,
+            backgroundClip: style.backgroundClip,
             color: style.color,
             fontSize: style.fontSize,
             fontWeight: style.fontWeight,
@@ -5100,7 +5147,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       {
         primary: {
           backgroundColor: "rgb(255, 255, 255)",
-          borderTopWidth: "0px",
+          borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+          borderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
+          backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
           color: "rgb(20, 20, 20)",
           fontSize: "14.08px",
           fontWeight: "400",
@@ -5109,7 +5158,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         },
         secondary: {
           backgroundColor: "rgb(255, 255, 255)",
-          borderTopWidth: "0px",
+          borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+          borderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
+          backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
           color: "rgb(20, 20, 20)",
           fontSize: "14.08px",
           fontWeight: "400",
@@ -5698,6 +5749,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           controlsEndInset: toolbarRect.right - toolbarControlsRect.right,
         },
         searchControl: {
+          height: toolbarSearchStyle.height,
+          clientHeight: toolbarSearch.clientHeight,
+          borderTopWidth: toolbarSearchStyle.borderTopWidth,
+          borderTopStyle: toolbarSearchStyle.borderTopStyle,
+          borderTopColor: toolbarSearchStyle.borderTopColor,
+          backgroundClip: toolbarSearchStyle.backgroundClip,
           boxShadow: toolbarSearchStyle.boxShadow,
           color: toolbarSearchInputStyle.color,
           fontSize: toolbarSearchInputStyle.fontSize,
@@ -5713,6 +5770,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           filterTriggerText: filterTrigger.textContent?.trim() ?? "",
           filterTriggerBackgroundColor: filterTriggerStyle.backgroundColor,
           filterTriggerBorderTopWidth: filterTriggerStyle.borderTopWidth,
+          filterTriggerBorderTopColor: filterTriggerStyle.borderTopColor,
+          filterTriggerBackgroundClip: filterTriggerStyle.backgroundClip,
+          filterTriggerClientHeight: filterTrigger.clientHeight,
           filterTriggerBoxShadow: filterTriggerStyle.boxShadow,
           filterTriggerTransform: filterTriggerStyle.transform,
           viewSwitchHeight: getComputedStyle(viewSwitch).height,
@@ -5730,6 +5790,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           ),
         },
         tableSurface: {
+          borderTopWidth: tableWrapperStyle.borderTopWidth,
+          borderTopColor: tableWrapperStyle.borderTopColor,
+          backgroundClip: tableWrapperStyle.backgroundClip,
           boxShadow: tableWrapperStyle.boxShadow,
           transform: tableWrapperStyle.transform,
         },
@@ -5857,6 +5920,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.ok(Math.abs(studentsVisual.toolbarAlignment.searchStartInset) < 0.5);
     assert.ok(Math.abs(studentsVisual.toolbarAlignment.controlsEndInset) < 0.5);
     assert.deepEqual(studentsVisual.searchControl, {
+      height: "40px",
+      clientHeight: 38,
+      borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+      borderTopStyle: "solid",
+      borderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
+      backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
       boxShadow: E2E_ENTRY_CONTROL_SHADOW,
       color: "rgb(20, 20, 20)",
       fontSize: "14.08px",
@@ -5880,6 +5949,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         const style = getComputedStyle(surface);
         const rect = surface.getBoundingClientRect();
         return {
+          borderTopWidth: style.borderTopWidth,
+          backgroundClip: style.backgroundClip,
           boxShadow: style.boxShadow,
           transform: style.transform,
           width: rect.width,
@@ -5887,6 +5958,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         };
       }),
       {
+        borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+        backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
         boxShadow: E2E_ENTRY_CONTROL_SHADOW,
         transform: "none",
         width: studentSearchRestRect.width,
@@ -5898,6 +5971,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       await studentSearchSurface.evaluate((surface) => {
         const style = getComputedStyle(surface);
         return {
+          borderTopWidth: style.borderTopWidth,
+          backgroundClip: style.backgroundClip,
           boxShadow: style.boxShadow,
           transform: style.transform,
           outlineColor: style.outlineColor,
@@ -5907,6 +5982,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         };
       }),
       {
+        borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+        backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
         boxShadow: E2E_ENTRY_CONTROL_SHADOW,
         transform: "none",
         outlineColor: E2E_FOCUS_HALO_COLOR,
@@ -5919,7 +5996,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       filterTriggerHeight: "40px",
       filterTriggerText: "Фильтр",
       filterTriggerBackgroundColor: "rgb(255, 255, 255)",
-      filterTriggerBorderTopWidth: "0px",
+      filterTriggerBorderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+      filterTriggerBorderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
+      filterTriggerBackgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+      filterTriggerClientHeight: 38,
       filterTriggerBoxShadow: E2E_RAISED_CONTROL_SHADOW,
       filterTriggerTransform: "none",
       viewSwitchHeight: "40px",
@@ -5931,6 +6011,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       filterBeforeViewSwitch: true,
     });
     assert.deepEqual(studentsVisual.tableSurface, {
+      borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+      borderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
+      backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
       boxShadow: E2E_RAISED_SURFACE_SHADOW,
       transform: "none",
     });
@@ -6093,11 +6176,20 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         const card = element as HTMLElement;
         const style = getComputedStyle(card);
         return {
+          borderTopWidth: style.borderTopWidth,
+          borderTopColor: style.borderTopColor,
+          backgroundClip: style.backgroundClip,
           boxShadow: style.boxShadow,
           transform: style.transform,
         };
       }),
-      { boxShadow: E2E_RAISED_SURFACE_SHADOW, transform: "none" },
+      {
+        borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+        borderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
+        backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+        boxShadow: E2E_RAISED_SURFACE_SHADOW,
+        transform: "none",
+      },
     );
     await learnerCardSurface.hover();
     await runtime.page.waitForTimeout(220);
@@ -6397,6 +6489,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         cellCount: archivedTableRow?.cells.length ?? 0,
         surface: {
           wrapperBackgroundColor: wrapperStyle.backgroundColor,
+          wrapperBackgroundClip: wrapperStyle.backgroundClip,
           tableBackgroundColor: tableStyle.backgroundColor,
           wrapperBorderWidths: [
             wrapperStyle.borderTopWidth,
@@ -6405,6 +6498,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             wrapperStyle.borderLeftWidth,
           ],
           wrapperBorderRadius: wrapperStyle.borderRadius,
+          wrapperBorderColor: wrapperStyle.borderTopColor,
         },
         actionWidth: actionRect.width,
         columnsDoNotOverlap: groupRect.right <= actionRect.left + 0.5,
@@ -6417,9 +6511,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     });
     assert.deepEqual(studentActionGeometry.surface, {
       wrapperBackgroundColor: "rgb(255, 255, 255)",
+      wrapperBackgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
       tableBackgroundColor: "rgb(255, 255, 255)",
-      wrapperBorderWidths: ["0px", "0px", "0px", "0px"],
+      wrapperBorderWidths: ["1px", "1px", "1px", "1px"],
       wrapperBorderRadius: "12px",
+      wrapperBorderColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
     });
     assert.equal(studentActionGeometry.cellCount, 6);
     assert.ok(studentActionGeometry.actionWidth >= 40);
@@ -6987,7 +7083,7 @@ test("browser smoke: observer settings accepts an incoming request and revokes o
           fontSize: "14.08px",
           fontWeight: "400",
           background: "rgb(255, 255, 255)",
-          borderTopWidth: "0px",
+          borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
           color: "rgb(20, 20, 20)",
           boxShadow: E2E_RAISED_CONTROL_SHADOW,
           transform: "none",
@@ -7096,7 +7192,7 @@ test("browser smoke: trusted adult resets child credentials and learner revokes 
           radius: "12px",
           fontWeight: "400",
           background: "rgb(255, 255, 255)",
-          borderTopWidth: "0px",
+          borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
           color: "rgb(20, 20, 20)",
           boxShadow: E2E_RAISED_CONTROL_SHADOW,
         },
@@ -7105,7 +7201,7 @@ test("browser smoke: trusted adult resets child credentials and learner revokes 
           radius: "12px",
           fontWeight: "400",
           background: "rgb(255, 255, 255)",
-          borderTopWidth: "0px",
+          borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
           color: "rgb(190, 18, 60)",
           boxShadow: E2E_RAISED_CONTROL_SHADOW,
         },
@@ -8367,7 +8463,7 @@ test("browser smoke: mobile Account menu exposes primary sections and account ac
     assert.equal(mobileContract.tableOverflowX, "auto");
     assert.deepEqual(mobileContract.tableSurface, {
       backgroundColor: "rgb(255, 255, 255)",
-      borderTopWidth: "0px",
+      borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
       borderRadius: "12px",
     });
     assert.equal(mobileContract.tableScrollIsContained, true);
@@ -9233,10 +9329,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       "rgb(255, 255, 255)",
     );
     assert.deepEqual(ownedCourseTableSurface.wrapperBorderWidths, [
-      "0px",
-      "0px",
-      "0px",
-      "0px",
+      "1px",
+      "1px",
+      "1px",
+      "1px",
     ]);
     assert.equal(ownedCourseTableSurface.wrapperBorderRadius, "12px");
     assert.equal(
@@ -9939,10 +10035,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       "rgb(255, 255, 255)",
     );
     assert.deepEqual(courseLessonsVisual.wrapperBorderWidths, [
-      "0px",
-      "0px",
-      "0px",
-      "0px",
+      "1px",
+      "1px",
+      "1px",
+      "1px",
     ]);
     assert.equal(courseLessonsVisual.wrapperBorderRadius, "12px");
     assert.equal(
@@ -10240,6 +10336,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         primaryAction: {
           label: primaryAction.textContent?.trim().replace(/\s+/g, " ") ?? "",
           height: primaryActionStyle.height,
+          clientHeight: primaryAction.clientHeight,
+          borderTopWidth: primaryActionStyle.borderTopWidth,
+          backgroundClip: primaryActionStyle.backgroundClip,
           backgroundColor: primaryActionStyle.backgroundColor,
           boxShadow: primaryActionStyle.boxShadow,
         },
@@ -10247,7 +10346,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           label: overflowAction.getAttribute("aria-label"),
           hasPopup: overflowAction.getAttribute("aria-haspopup"),
           height: overflowActionStyle.height,
+          clientHeight: overflowAction.clientHeight,
           width: overflowActionStyle.width,
+          borderTopWidth: overflowActionStyle.borderTopWidth,
+          backgroundClip: overflowActionStyle.backgroundClip,
           backgroundColor: overflowActionStyle.backgroundColor,
           boxShadow: overflowActionStyle.boxShadow,
           iconClass: overflowIcon.getAttribute("class"),
@@ -10320,6 +10422,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.deepEqual(lessonVisual.primaryAction, {
       label: "Назначить",
       height: "40px",
+      clientHeight: 38,
+      borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+      backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
       backgroundColor: "rgb(255, 255, 255)",
       boxShadow: E2E_RAISED_CONTROL_SHADOW,
     });
@@ -10332,7 +10437,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         label: `Другие действия с уроком «${E2E_LESSON_TITLE}»`,
         hasPopup: "menu",
         height: "40px",
+        clientHeight: 38,
         width: "40px",
+        borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+        backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
         backgroundColor: "rgb(255, 255, 255)",
         boxShadow: E2E_RAISED_CONTROL_SHADOW,
         iconClass: undefined,
@@ -11058,6 +11166,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           cardStyle.borderLeftWidth,
         ],
         cardBackground: cardStyle.backgroundColor,
+        cardBackgroundClip: cardStyle.backgroundClip,
+        cardBorderColor: cardStyle.borderTopColor,
         cardBoxShadow: cardStyle.boxShadow,
         cardTransform: cardStyle.transform,
         cardTransitionProperty: cardStyle.transitionProperty,
@@ -11097,12 +11207,20 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.ok(fileComponentCardVisual.accessibleLabelHeight <= 1);
     assert.equal(fileComponentCardVisual.cardPadding, "0px");
     assert.deepEqual(fileComponentCardVisual.cardBorderWidths, [
-      "0px",
-      "0px",
-      "0px",
-      "0px",
+      "1px",
+      "1px",
+      "1px",
+      "1px",
     ]);
     assert.equal(fileComponentCardVisual.cardBackground, "rgb(255, 255, 255)");
+    assert.equal(
+      fileComponentCardVisual.cardBackgroundClip,
+      E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+    );
+    assert.equal(
+      fileComponentCardVisual.cardBorderColor,
+      E2E_PRODUCT_SURFACE_BORDER_COLOR,
+    );
     assert.equal(
       fileComponentCardVisual.cardBoxShadow,
       E2E_RAISED_SURFACE_SHADOW,
@@ -11333,6 +11451,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
             };
           }),
           entryInput: {
+            height: entryInputStyle.height,
+            clientHeight: entryInput.clientHeight,
+            borderTopWidth: entryInputStyle.borderTopWidth,
+            borderTopColor: entryInputStyle.borderTopColor,
+            backgroundClip: entryInputStyle.backgroundClip,
             boxShadow: entryInputStyle.boxShadow,
             color: entryInputStyle.color,
             fontSize: entryInputStyle.fontSize,
@@ -11364,6 +11487,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       ),
     );
     assert.deepEqual(fileComponentDialogVisual.entryInput, {
+      height: "40px",
+      clientHeight: 38,
+      borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+      borderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
+      backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
       boxShadow: E2E_ENTRY_CONTROL_SHADOW,
       color: "rgb(20, 20, 20)",
       fontSize: "14.08px",

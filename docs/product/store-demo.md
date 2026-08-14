@@ -107,18 +107,26 @@ machine.
 Store product cards и canonical table wrapper используют статический
 `--product-raised-surface-shadow`, равный базовой тени кнопки
 `0 1px 6px 0px oklch(0% 0 0 / 0.05)`, без card hover/pressed lift, transform или
-shadow-transition. Deep-link и programmatic focus товара сохраняют отдельный
+shadow-transition. Plain cards/table также используют
+`--product-surface-border: 1px solid oklch(0 0 0 / .1)` и
+`background-clip: padding-box`, поэтому рамка смешивается с фоном каталога, а
+не с белой заливкой. Semantic/dashed `SurfaceCard` borders при этом не
+перезаписываются. Deep-link и programmatic focus товара сохраняют отдельный
 3 px outline поверх неизменной base-тени; existing white background, card/table
 radius, table row hover и horizontal scroll не меняются. В `forced-colors`
 surface shadow заменяется системным outline.
 
-Поиск каталога и однострочные поля checkout «Получатель / Телефон / Email»
-получают белый borderless surface и статическую тень
+Base `.product-control` / `.field-input`, включая filter select и многострочный
+адрес, получают общий border и clipped background. Поиск каталога и
+однострочные поля checkout «Получатель / Телефон / Email» дополнительно
+получают белый surface, внешние `40 px`, внутренние `38 px` и статическую тень
 `0 1px 6px 0px oklch(0% 0 0 / 0.05)`, canonical foreground/типографику,
 непрозрачные placeholder/icon и отдельный 2 px focus halo. Hover не меняет
-тень или геометрию. Select внутри filter popover и многострочный адрес доставки
-не получают entry shadow; dialog/menu/popover surfaces также исключены. Это UI-only
-acceptance без Product/Order/Inventory, API, persistence, schema, migration,
+тень, border или геометрию. Select внутри filter popover и многострочный адрес
+доставки сохраняют base boundary, но не получают single-line height/entry
+shadow; dialog/menu/popover surfaces также исключены. Compound toggles остаются
+borderless. Это UI-only acceptance без Product/Order/Inventory, API,
+persistence, schema, migration,
 оплаты или delivery integration; production rollout пока не заявлен.
 
 ## Next
