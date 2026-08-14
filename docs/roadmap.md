@@ -72,8 +72,9 @@
   выбранному primary button за `180 ms` до route navigation; собственный
   named/native pill transition удалён, поэтому серый ghost, второй чёрный слой
   и snapshot-scale не возникают. Glyphs визуально остаются `#000` вне pill и
-  `#fff` внутри, а единственным named native View Transition остаётся
-  `app-page-header`. Owner/published Course больше не подменяют готовый header
+  `#fff` внутри: isolated nav-track имеет непрозрачный белый backdrop, а
+  nav-list не создаёт отдельный stacking context. Единственным named native
+  View Transition остаётся `app-page-header`. Owner/published Course больше не подменяют готовый header
   текстовой loading-card; boundary bounded-временем ждёт real header.
   `prefers-reduced-motion` полностью отключает motion.
   Базовый follow-up был подтверждён в release `77870e3`; full-width

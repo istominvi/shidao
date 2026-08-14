@@ -644,7 +644,9 @@ Visual contract Course routes не меняет эту навигационну�
   `width/transform` к нажатому пункту. Поэтому browser не создаёт отдельные
   old/new pill snapshots, серый ghost, второй чёрный слой или snapshot-scale.
   Один glyph-layer визуально остаётся `#000` вне чёрного pill и `#fff` внутри
-  него без задержки цвета. Query-only tab changes не анимируют весь header.
+  него без задержки цвета. Его isolated nav-track даёт непрозрачный белый
+  backdrop, а nav-list намеренно не образует отдельный stacking context, чтобы
+  `mix-blend-mode` видел и белый track, и чёрный pill. Query-only tab changes не анимируют весь header.
   Boundary ждёт появления непустого готового header через bounded observer,
   поэтому owner/published Course не показывают промежуточную loading-card, а
   async metric не появляется после H1 отдельным скачком. При отсутствии API

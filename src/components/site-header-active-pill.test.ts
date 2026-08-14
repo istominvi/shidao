@@ -101,12 +101,9 @@ test("active pill preserves SSR fallback and uses one fast local motion layer", 
   assert.match(styles, /--header-pill-text: #000;/);
   assert.match(
     styles,
-    /\.site-header-nav-track\s*\{[^}]*--header-pill-active-bg: #000;/,
+    /\.site-header-nav-track\s*\{[^}]*--header-pill-active-bg: #000;[^}]*isolation: isolate;[^}]*background: #fff;/,
   );
-  assert.doesNotMatch(
-    styles,
-    /\.site-header-nav-track\s*\{[^}]*isolation:\s*isolate/,
-  );
+  assert.doesNotMatch(styles, /\.site-header-nav-list\s*\{[^}]*z-index:/);
   assert.match(
     styles,
     /\.site-header-nav-pill,[\s\S]*?\.site-header-nav-pill:hover,[\s\S]*?\.site-header-nav-pill:focus-visible\s*\{\s*color: #000;/,

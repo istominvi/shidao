@@ -942,7 +942,10 @@ ShiDao V2 application:
   `view-transition-name`. При click один локальный чёрный indicator должен за
   `180 ms` optimistic переместить `width/transform` к выбранному link до route
   navigation — без серого ghost, второго чёрного слоя и snapshot-scale. Glyphs
-  визуально остаются `#000` вне pill и `#fff` внутри даже во время handoff; при
+  визуально остаются `#000` вне pill и `#fff` внутри даже во время handoff.
+  Проверить computed `background: rgb(255, 255, 255)` и `isolation: isolate` у
+  nav-track, `z-index: auto` у nav-list и фактические тёмные пиксели inactive
+  glyphs; при
   `prefers-reduced-motion: reduce` pill меняется без перехода и navigation не
   ждёт эти `180 ms`, а page-header transition также отключён;
 - на сохранённом Course открыть **Уроки** и проверить, что общий `WorkspaceTabs`

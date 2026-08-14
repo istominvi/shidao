@@ -13,6 +13,7 @@ import net from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, test } from "node:test";
+import sharp from "sharp";
 import {
   buildAppSessionSupabaseTokens,
   createAppSessionPayload,
@@ -629,6 +630,7 @@ type PlaywrightLocator = {
   nth: (index: number) => PlaywrightLocator;
   isEnabled: () => Promise<boolean>;
   press: (key: string) => Promise<void>;
+  screenshot: () => Promise<Buffer>;
   getByRole: (
     role: string,
     options?: {
@@ -3407,6 +3409,28 @@ test("browser smoke: primary navigation uses one fast local handoff", async (t) 
       )
       .waitFor();
 
+    const inactiveStudentsPng = await runtime.page
+      .locator('.site-header-nav-pill[href="/students"] .nav-pill-content')
+      .screenshot();
+    const inactiveStudentsPixels = await sharp(inactiveStudentsPng)
+      .removeAlpha()
+      .raw()
+      .toBuffer();
+    let inactiveDarkPixelCount = 0;
+    for (let index = 0; index < inactiveStudentsPixels.length; index += 3) {
+      if (
+        inactiveStudentsPixels[index] < 128 &&
+        inactiveStudentsPixels[index + 1] < 128 &&
+        inactiveStudentsPixels[index + 2] < 128
+      ) {
+        inactiveDarkPixelCount += 1;
+      }
+    }
+    assert.ok(
+      inactiveDarkPixelCount >= 20,
+      "Inactive primary-nav glyphs must visibly render black on the white track",
+    );
+
     const start = await runtime.page.evaluate(() => {
       const track = document.querySelector<HTMLElement>(
         ".site-header-nav-track",
@@ -3484,6 +3508,7 @@ test("browser smoke: primary navigation uses one fast local handoff", async (t) 
         pillZIndex: pillStyle.zIndex,
         listZIndex: getComputedStyle(list).zIndex,
         trackIsolation: getComputedStyle(track).isolation,
+        trackBackgroundColor: getComputedStyle(track).backgroundColor,
         targetBackgroundColor: targetLinkStyle.backgroundColor,
         targetLinkColor: targetLinkStyle.color,
         targetContentColor: targetContentStyle.color,
@@ -3518,6 +3543,7 @@ test("browser smoke: primary navigation uses one fast local handoff", async (t) 
         pillZIndex: handoff.pillZIndex,
         listZIndex: handoff.listZIndex,
         trackIsolation: handoff.trackIsolation,
+        trackBackgroundColor: handoff.trackBackgroundColor,
         targetBackgroundColor: handoff.targetBackgroundColor,
         targetLinkColor: handoff.targetLinkColor,
         targetContentColor: handoff.targetContentColor,
@@ -3534,8 +3560,9 @@ test("browser smoke: primary navigation uses one fast local handoff", async (t) 
         pillBackgroundColor: "rgb(0, 0, 0)",
         pillViewTransitionName: "none",
         pillZIndex: "0",
-        listZIndex: "1",
-        trackIsolation: "auto",
+        listZIndex: "auto",
+        trackIsolation: "isolate",
+        trackBackgroundColor: "rgb(255, 255, 255)",
         targetBackgroundColor: "rgba(0, 0, 0, 0)",
         targetLinkColor: "rgb(0, 0, 0)",
         targetContentColor: "rgb(255, 255, 255)",

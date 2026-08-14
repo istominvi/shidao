@@ -170,7 +170,6 @@
 
 .site-header-nav-list {
   position: relative;
-  z-index: 1;
   display: flex;
   min-width: max-content;
   align-items: center;
@@ -180,6 +179,8 @@
 .site-header-nav-track {
   position: relative;
   --header-pill-active-bg: #000;
+  isolation: isolate;
+  background: #fff;
 }
 
 .site-header-nav-active-pill {

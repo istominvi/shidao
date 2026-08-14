@@ -26,7 +26,10 @@ primary navigation остаётся одним локальным измеряе
 отдельный named/native View Transition, поэтому параллельные серый ghost,
 второй чёрный слой и snapshot-scale отсутствуют; именованным native transition
 остаётся только `app-page-header`. Один слой glyphs визуально остаётся строго
-`#000` вне чёрного pill и `#fff` внутри него без запаздывающей смены цвета.
+`#000` вне чёрного pill и `#fff` внутри него без запаздывающей смены цвета:
+nav-track задаёт непрозрачный белый isolated backdrop, а nav-list не создаёт
+вложенный stacking context, который отрезал бы glyphs от backdrop и оставлял
+неактивный текст белым.
 Асинхронная метрика резервирует строку уже в первом frame, а H1, metric, meta и
 actions проявляются вместе; transition boundary по возможности ждёт готовый
 header в пределах bounded timeout. Фиксированный `min-height: 200px` удалён:
