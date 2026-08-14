@@ -12,6 +12,7 @@ const filters = source("src/components/store/store-filter-menu.tsx");
 const checkout = source("src/components/store/store-checkout-dialog.tsx");
 const catalog = source("src/components/store/store-catalog.ts");
 const styles = source("src/app/styles/store.css");
+const globalStyles = source("src/app/globals.css");
 
 test("Store is an Account page built from the shared product shell", () => {
   assert.match(page, /className="course-demo-shell store-shell pb-12"/);
@@ -36,6 +37,11 @@ test("Store is an Account page built from the shared product shell", () => {
   assert.match(workspace, /label: "Магазин"/);
 
   assert.match(filters, /aria-label="Фильтры товаров"/);
+  assert.match(filters, /Button, productButtonClassName/);
+  assert.match(
+    filters,
+    /className=\{productButtonClassName\(\s*"secondary",\s*"course-filter-trigger",?\s*\)\}/,
+  );
   assert.match(filters, /event\.key !== "Escape"/);
   assert.match(filters, /Для преподавателя/);
   assert.match(filters, /Только в наличии/);
@@ -45,6 +51,25 @@ test("Store is an Account page built from the shared product shell", () => {
   assert.match(catalog, /value: "cards", label: "Карточки"/);
   assert.match(catalog, /value: "stationery", label: "Канцелярия"/);
   assert.match(catalog, /value: "toys", label: "Игры и игрушки"/);
+});
+
+test("Store filters and cards adopt canonical raised surfaces", () => {
+  assert.match(
+    globalStyles,
+    /:root\s*\{[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
+  );
+  assert.match(
+    globalStyles,
+    /\.course-filter-trigger\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*transform: none;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.store-product-card-surface\s*\{[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-surface-shadow\);/,
+  );
+  assert.match(
+    styles,
+    /\.store-product-card:focus-visible \.store-product-card-surface,\s*\.store-product-highlighted \.store-product-card-surface\s*\{[^}]*outline: 3px solid rgba\(20, 20, 20, 0\.34\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-raised-surface-shadow\);/,
+  );
 });
 
 test("Store demo checkout is explicit, keyboard-closeable, and has no payment fields", () => {

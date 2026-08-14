@@ -40,6 +40,18 @@ test("product tables use the element radius instead of the card radius", () => {
     styles,
     /\.course-demo-shell \.product-table-wrap\s*\{[^}]*overflow-x: auto;[^}]*border: 0;[^}]*--course-demo-table-radius,[^}]*--product-element-radius,[^}]*background: #fff;/,
   );
+  assert.match(
+    styles,
+    /:root\s*\{[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-table-wrap\s*\{[^}]*box-shadow: var\(--product-raised-surface-shadow\);/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-table-wrap:focus-visible\s*\{[^}]*outline: 2px solid rgba\(20, 20, 20, 0\.34\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-raised-surface-shadow\);/,
+  );
   assert.match(productTableSource, /"product-table min-w-full table-fixed/);
   assert.match(
     productTableSource,
@@ -72,7 +84,7 @@ test("product tables use the element radius instead of the card radius", () => {
   );
   assert.match(
     progressSummarySource,
-    /<table className="product-table w-full min-w-\[620px\]/,
+    /className="product-table-wrap[^\"]*"[\s\S]*?<table className="product-table w-full min-w-\[620px\]/,
   );
 
   for (const consumer of [
@@ -87,7 +99,11 @@ test("product tables use the element radius instead of the card radius", () => {
 
   assert.match(
     styles,
-    /\.course-demo-shell \.surface-card\s*\{[^}]*--course-demo-card-radius,[^}]*--product-card-radius,/,
+    /\.surface-card\s*\{[^}]*box-shadow: var\(--product-raised-surface-shadow\);[\s\S]*?\.course-demo-shell \.surface-card\s*\{[^}]*--course-demo-card-radius,[^}]*--product-card-radius,/,
+  );
+  assert.doesNotMatch(
+    styles,
+    /\.(?:course-index-table-wrap)\s*\{[^}]*0 20px 52px/,
   );
 });
 

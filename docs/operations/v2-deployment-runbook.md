@@ -1059,6 +1059,35 @@ flow как permanent delete.
   shared Button contrast без raw Tailwind visual fork. Auth-кнопки, построенные
   на canonical `.product-btn`, следуют тому же контракту; raw Landing controls
   и non-product controls полноэкранного Student Screen не должны измениться;
+- для ещё не развёрнутого current-source follow-up выполнить отдельный
+  Next-acceptance; исторические deployed Component-shadow значения ниже до
+  rollout не переписываются. Проверить, что Auth recovery/check-email,
+  onboarding, identity invitation/completion и retry CTA используют shared
+  `Button`/`productButtonClassName`, а disclosure-trigger «Фильтры» в Course,
+  Students и Store имеет secondary `.product-btn`, сохраняя `summary`,
+  `aria-expanded`, Escape/focus-return и disabled boundary. Contextual menu
+  items, flat row/Component icon-actions, compound toggles и filter popover
+  panels не должны получить ordinary button lift;
+- в том же Next-acceptance сравнить computed `box-shadow` с
+  `oklch(0 0 0 / 0.2) 0px 1px 3px 0px` у shared `SurfaceCard`, Schedule,
+  Students/Groups, owned/catalog Course, Course Lessons, Store и subject
+  progress table wrappers, authored Component, Run-history, Students/Store и
+  progress-stat cards. У поверхности нет hover/pressed transform или
+  shadow-transition; после hover/focus Component card сохраняет ту же тень и
+  rect, но action overlay раскрывается. Component focus-within и Store
+  focus/deep-link highlight добавляют outline, не меняя base shadow. Existing
+  backgrounds, radius, semantic/dashed borders, row hover/focus и table scroll
+  сохраняются. В `forced-colors` shadow исчезает, а boundary остаётся видимой
+  через `CanvasText`/`Highlight` outline;
+- для canonical однострочных `Input`, `input.field-input`, product search,
+  Schedule/Students search и dialog picker search проверить computed inset
+  `oklch(0 0 0 / 0.3) 0px 1px 4px 0px inset`, scope typography/foreground,
+  непрозрачные placeholder/icons и отдельный 2 px focus outline без сброса
+  inset. Select, textarea, checkbox/radio/file, multiline Component editor,
+  dialog/menu/popover surfaces, Student Screen content renderers и raw utility
+  panels не должны получить recessed/static-surface contract автоматически. В
+  `forced-colors` entry control использует `Field`/`FieldText`, системную рамку
+  и `Highlight` focus без box-shadow;
 - `/students` показывает точный подзаголовок «Ученики и группы, с которыми вы
   работаете или за которыми наблюдаете»; вкладки «Ученики / Группы /
   Наблюдение» сохраняют общий edge-to-edge 40%-black 1.2 px baseline без

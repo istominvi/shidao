@@ -334,8 +334,21 @@ test("shared course controls preserve pressed-button and native-filter semantics
 
   assert.match(courseFilterMenuSource, /<details/);
   assert.match(courseFilterMenuSource, /<summary/);
+  assert.match(courseFilterMenuSource, /Button, productButtonClassName/);
+  assert.match(
+    courseFilterMenuSource,
+    /className=\{productButtonClassName\(\s*"secondary",\s*"course-filter-trigger",?\s*\)\}/,
+  );
   assert.match(courseFilterMenuSource, /aria-controls=\{panelId\}/);
   assert.match(courseFilterMenuSource, /aria-expanded=\{open\}/);
+  assert.match(
+    courseFilterMenuSource,
+    /aria-disabled=\{disabled \|\| undefined\}/,
+  );
+  assert.match(
+    courseFilterMenuSource,
+    /if \(disabled\) event\.preventDefault\(\)/,
+  );
   assert.match(courseFilterMenuSource, /role="group"/);
   assert.match(courseFilterMenuSource, /aria-label=\{label\}/);
   assert.match(
@@ -351,4 +364,23 @@ test("shared course controls preserve pressed-button and native-filter semantics
   assert.match(courseFilterMenuSource, /onContentChange\?\.\("all"\)/);
   assert.match(courseFilterMenuSource, /Сбросить фильтры/);
   assert.doesNotMatch(courseFilterMenuSource, /role="menu/);
+});
+
+test("course tables and filter CTA adopt canonical raised surfaces", () => {
+  assert.match(
+    globalStyles,
+    /:root\s*\{[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
+  );
+  assert.match(
+    globalStyles,
+    /\.course-index-table-wrap\s*\{[^}]*box-shadow: var\(--product-raised-surface-shadow\);/,
+  );
+  assert.match(
+    globalStyles,
+    /\.course-filter-trigger\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*transform: none;/,
+  );
+  assert.match(
+    globalStyles,
+    /\.course-filter-trigger:focus-visible\s*\{[^}]*outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
+  );
 });

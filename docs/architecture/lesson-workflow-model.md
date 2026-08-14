@@ -4,7 +4,7 @@
 
 **Дата решения:** 5 августа 2026 года
 
-**Актуально на:** 13 августа 2026 года
+**Актуально на:** 14 августа 2026 года
 
 **Область:** Course Builder / Lesson / Components / Student Screen / audience / scheduling / learning history / course materials / homework
 
@@ -642,6 +642,33 @@ Visual contract Course routes не меняет эту навигационну�
   text/icon используют `oklch(0.19 0 0 / 0.6)`, а независимый 1.2 px baseline —
   `oklch(0.19 0 0 / 0.4)`. API/schema/Lesson hierarchy не меняются, production
   rollout этого refinement пока не заявлен;
+- current source / next production acceptance расширяет shared visual contract
+  без изменения доменной модели. Обычные Auth recovery/check-email,
+  onboarding, identity invitation/completion и retry CTA используют
+  `Button`/`productButtonClassName`; disclosure-trigger «Фильтры» в Course,
+  Students и Store использует secondary `.product-btn`, сохраняя нативный
+  `summary`, `aria-expanded`, focus/Escape и disabled boundary. Contextual menu items,
+  row/Component icon-actions, compound toggles и filter popover panel не
+  становятся ordinary raised buttons;
+- статические content surfaces используют семантический
+  `--product-raised-surface-shadow`, являющийся alias базового
+  `--product-raised-control-shadow`. Shared `SurfaceCard`, canonical
+  `.product-table-wrap` вместе с subject progress, authored Component и Run
+  history cards, Students/Store cards и progress stats получают одну base-тень
+  без hover/pressed transform или shadow-transition. Их существующие
+  background, radius, semantic/dashed border и внутренние row hover/focus
+  состояния сохраняются. Component focus-within и Store focus/deep-link
+  highlight используют отдельный outline; `forced-colors` заменяет исчезающую
+  тень системным контуром;
+- canonical однострочные text/search entry controls получают
+  `--product-recessed-control-shadow: inset 0px 1px 4px oklch(0 0 0 / 0.3)`,
+  общий foreground/типографику и непрозрачные placeholder/icons через
+  `currentColor`. Focus остаётся отдельным 2 px outline и не сбрасывает inset;
+  forced colors использует `Field`/`FieldText` и системную рамку. Select,
+  textarea, checkbox/radio/file input, multiline Component editor,
+  dialog/menu/popover surfaces, Student Screen content renderers и raw utility
+  panels исключены. Этот current-source UI slice не меняет API, schema, Lesson
+  hierarchy или learner projection и пока не имеет production rollout;
 - в current production общий contextual `ActionMenu`, открываемый
   `MoreHorizontal`/`MoreVertical` в Course actions, Lesson rows, Schedule и
   Students, использует токенизированные белый surface, element-radius 12 px и

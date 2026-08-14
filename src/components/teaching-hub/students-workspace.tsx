@@ -587,6 +587,7 @@ export function StudentsWorkspace({
             {view === "learners" ? "Найти ученика" : "Найти группу"}
           </span>
           <input
+            type="search"
             value={activeQuery}
             disabled={!ready}
             onChange={(event) =>

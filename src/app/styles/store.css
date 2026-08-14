@@ -80,7 +80,7 @@
 .course-demo-shell .store-product-card-surface {
   height: 100%;
   background: #fff;
-  box-shadow: 0 10px 24px rgba(20, 20, 20, 0.06);
+  box-shadow: var(--product-raised-surface-shadow);
 }
 
 .store-product-card-inner {
@@ -92,9 +92,9 @@
 
 .store-product-card:focus-visible .store-product-card-surface,
 .store-product-highlighted .store-product-card-surface {
-  box-shadow:
-    0 0 0 3px rgba(20, 20, 20, 0.34),
-    0 12px 28px rgba(20, 20, 20, 0.1);
+  outline: 3px solid rgba(20, 20, 20, 0.34);
+  outline-offset: 2px;
+  box-shadow: var(--product-raised-surface-shadow);
 }
 
 .store-product-visual {

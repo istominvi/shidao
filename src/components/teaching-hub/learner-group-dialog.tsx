@@ -111,6 +111,7 @@ export function LearnerGroupDialog({
                 <label className="student-directory-picker-search">
                   <span className="sr-only">Найти ученика</span>
                   <input
+                    type="search"
                     value={profileQuery}
                     onChange={(event) => setProfileQuery(event.target.value)}
                     placeholder="Найти ученика"

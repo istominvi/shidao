@@ -432,6 +432,10 @@ test("product buttons share one animated raised-control elevation contract", () 
     styles,
     /:root\s*\{[^}]*--product-raised-control-shadow:\s*0 1px 3px 0px oklch\(0 0 0 \/ 0\.2\);[^}]*--product-raised-control-shadow-hover:\s*0 1px 6px 0px oklch\(0 0 0 \/ 0\.2\);[^}]*--product-raised-control-shadow-pressed:\s*0 1px 1px 0px oklch\(0 0 0 \/ 0\.2\);/,
   );
+  assert.match(
+    styles,
+    /:root\s*\{[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);[^}]*--product-recessed-control-shadow: inset 0px 1px 4px\s+oklch\(0 0 0 \/ 0\.3\);/,
+  );
   assert.doesNotMatch(styles, /--course-demo-header-action-border/);
   assert.match(
     styles,
@@ -495,6 +499,18 @@ test("product buttons share one animated raised-control elevation contract", () 
   assert.match(
     styles,
     /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.product-btn:hover:not\(:disabled\),[\s\S]*?\.course-demo-shell \.product-btn-primary:hover:not\(:disabled\)\s*\{[^}]*transform: translateY\(-1px\);[^}]*\}[\s\S]*?\.product-btn:active:not\(:disabled\),[\s\S]*?\.course-demo-shell \.product-btn:active:not\(:disabled\)\s*\{[^}]*transform: none;/,
+  );
+  assert.match(
+    studentFilter,
+    /className=\{productButtonClassName\(\s*"secondary",\s*"course-filter-trigger",?\s*\)\}/,
+  );
+  assert.match(
+    styles,
+    /\.course-filter-trigger\s*\{[^}]*border: 0;[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*transform: none;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-btn\.course-filter-trigger\[aria-disabled="true"\],[\s\S]*?box-shadow: var\(--product-raised-control-shadow\);[^}]*transform: none;/,
   );
   assert.match(reducedMotionStyles, /\.product-btn\.product-btn,/);
   assert.match(reducedMotionStyles, /transition: none;/);
@@ -583,6 +599,10 @@ test("product buttons share one animated raised-control elevation contract", () 
   assert.match(
     forcedColorsStyles,
     /border: 1px solid ButtonText;[^}]*background: ButtonFace;[^}]*color: ButtonText;[^}]*box-shadow: none;[^}]*transform: none;/,
+  );
+  assert.match(
+    forcedColorsStyles,
+    /\.course-demo-shell[\s\S]*?\.product-btn\.course-filter-trigger\[aria-disabled="true"\][\s\S]*?border: 1px solid GrayText;[^}]*box-shadow: none;[^}]*transform: none;/,
   );
   assert.match(
     forcedColorsStyles,
@@ -950,10 +970,6 @@ test("component cards render content with accessible overlay actions and modal e
   )?.[0];
   const cardFocusStyles =
     /\.lesson-component-card:focus-within\s*\{[^}]*\}/.exec(styles)?.[0];
-  const reducedMotionStyles =
-    /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.lesson-component-card,[\s\S]*?\.lesson-component-card-actions,[\s\S]*?\.component-card-action,[\s\S]*?\.component-card-visibility-action\s*\{[^}]*\}/.exec(
-      styles,
-    )?.[0];
   const cardActionStyles = /\.lesson-component-card-actions\s*\{[^}]*\}/.exec(
     styles,
   )?.[0];
@@ -1144,25 +1160,18 @@ test("component cards render content with accessible overlay actions and modal e
   assert.match(cardStyles, /padding: 0/);
   assert.match(cardStyles, /border: 0/);
   assert.match(cardStyles, /background: #fff/);
-  assert.match(cardStyles, /box-shadow: 0 3px 6px 0 #0000000d/);
-  assert.match(cardStyles, /transition: box-shadow 180ms ease/);
-  assert.doesNotMatch(cardStyles, /border-color/);
-  assert.ok(
-    cardHoverStyles,
-    "lesson component hover styles must remain present",
-  );
-  assert.match(cardHoverStyles, /box-shadow: 0 3px 12px 0 #0000001a/);
   assert.match(
-    styles,
-    /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.lesson-component-card:hover/,
+    cardStyles,
+    /box-shadow: var\(--product-raised-surface-shadow\)/,
   );
-  assert.ok(cardFocusStyles, "keyboard focus must lift the component card");
-  assert.match(cardFocusStyles, /box-shadow: 0 3px 12px 0 #0000001a/);
-  assert.ok(
-    reducedMotionStyles,
-    "card shadow animation must respect reduced motion",
+  assert.doesNotMatch(cardStyles, /transition|transform/);
+  assert.doesNotMatch(cardStyles, /border-color/);
+  assert.equal(cardHoverStyles, undefined);
+  assert.ok(cardFocusStyles, "keyboard focus must outline the component card");
+  assert.match(
+    cardFocusStyles,
+    /outline: 2px solid rgba\(20, 20, 20, 0\.34\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-raised-surface-shadow\);/,
   );
-  assert.match(reducedMotionStyles, /transition: none/);
   assert.ok(
     cardActionStyles,
     "component action rail styles must remain present",

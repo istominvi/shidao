@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ProductShell } from "@/components/product-shell";
+import { productButtonClassName } from "@/components/ui/button";
 import { ROUTES } from "@/lib/auth";
 import { afterLogin } from "@/lib/auth-redirects";
 
@@ -31,7 +32,7 @@ export default async function JoinCheckEmailPage({
           <div className="mt-6 flex justify-center">
             <Link
               href={`${ROUTES.login}?${loginSearch.toString()}`}
-              className="landing-btn landing-btn-primary min-h-12 px-8"
+              className={productButtonClassName("primary", "px-8")}
             >
               Перейти ко входу
             </Link>

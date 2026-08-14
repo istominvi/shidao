@@ -782,3 +782,59 @@ test("teaching hub never restores demo fixtures or local persistence", () => {
     /scheduleLessons|studentCards|demoCourses|Food around the world|Миша Орлов|Добрый день, Агата|2026-07-/,
   );
 });
+
+test("teaching hub inputs, filters, and data surfaces use canonical control tokens", () => {
+  assert.match(
+    studentDirectoryFilterMenuSource,
+    /Button, productButtonClassName/,
+  );
+  assert.match(
+    studentDirectoryFilterMenuSource,
+    /className=\{productButtonClassName\(\s*"secondary",\s*"course-filter-trigger",?\s*\)\}/,
+  );
+  assert.match(
+    studentDirectoryFilterMenuSource,
+    /aria-disabled=\{disabled \|\| undefined\}/,
+  );
+  assert.match(
+    studentsWorkspaceSource,
+    /<input\s+type="search"[\s\S]*?placeholder=\{view === "learners" \? "Найти ученика" : "Найти группу"\}/,
+  );
+  for (const searchSource of [
+    learnerCourseDialogSource,
+    learnerGroupDialogSource,
+    learnerProfileDialogSource,
+    courseAudienceEditorSource,
+  ]) {
+    assert.match(searchSource, /<input\s+[^>]*type="search"/);
+  }
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-hub-search\s*\{[^}]*box-shadow: var\(--product-recessed-control-shadow\);/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.teaching-hub-search\s*\{[^}]*color: var\(--product-entry-control-foreground\);[^}]*\}[\s\S]*?\.teaching-hub-search input\s*\{[^}]*color: currentColor;[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);/,
+  );
+  assert.match(
+    teachingHubStyleSource,
+    /\.student-directory-picker-search input\s*\{[^}]*color: var\(--product-entry-control-foreground\);[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*box-shadow: var\(--product-recessed-control-shadow\);/,
+  );
+
+  for (const selector of [
+    "lesson-run-history-card",
+    "teaching-run-table-wrap",
+    "student-directory-table-wrap",
+  ]) {
+    assert.match(
+      teachingHubStyleSource,
+      new RegExp(
+        `\\.${selector}\\s*\\{[^}]*box-shadow:\\s*var\\(--product-raised-surface-shadow\\);`,
+      ),
+    );
+  }
+  assert.match(
+    teachingHubStyleSource,
+    /\.course-demo-shell \.student-directory-card\s*\{[^}]*box-shadow: var\(--product-raised-surface-shadow\);/,
+  );
+});

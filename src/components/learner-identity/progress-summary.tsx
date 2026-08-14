@@ -45,7 +45,7 @@ export function ProgressSummary({ progress }: { progress: LearnerProgress }) {
         {cards.map((card) => (
           <div
             key={card.label}
-            className="rounded-2xl border border-neutral-200 bg-white p-4"
+            className="product-raised-surface rounded-2xl border border-neutral-200 bg-white p-4"
           >
             <card.icon
               className="h-5 w-5 text-neutral-500"
@@ -67,7 +67,7 @@ export function ProgressSummary({ progress }: { progress: LearnerProgress }) {
         проведений; неизвестное время не считается нулём.
       </p>
       {progress.subjects.length > 0 ? (
-        <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
+        <div className="product-table-wrap overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
           <table className="product-table w-full min-w-[620px] text-left text-sm">
             <caption className="sr-only">Прогресс по предметам</caption>
             <thead className="border-b border-neutral-200 bg-neutral-50 text-neutral-600">

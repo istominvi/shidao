@@ -2,7 +2,7 @@
 
 import { ChevronDown, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button, productButtonClassName } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
 import type { StoreFilters } from "@/components/store/store-catalog";
 
@@ -62,7 +62,7 @@ export function StoreFilterMenu({ filters, onChange }: StoreFilterMenuProps) {
     >
       <summary
         ref={summaryRef}
-        className="course-filter-trigger"
+        className={productButtonClassName("secondary", "course-filter-trigger")}
         aria-controls={panelId}
         aria-expanded={open}
       >

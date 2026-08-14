@@ -184,6 +184,7 @@ export function CourseAudienceEditor({
             <Search className="h-4 w-4" aria-hidden="true" />
             <span className="sr-only">Найти ученика или группу</span>
             <input
+              type="search"
               disabled={disabled}
               value={query}
               onChange={(event) => setQuery(event.target.value)}

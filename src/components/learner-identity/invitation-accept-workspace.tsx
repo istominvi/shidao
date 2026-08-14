@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
-import { Button } from "@/components/ui/button";
+import { Button, productButtonClassName } from "@/components/ui/button";
 import { useSessionView } from "@/components/use-session-view";
 import type {
   InvitationAcceptance,
@@ -350,13 +350,13 @@ export function InvitationAcceptWorkspace({
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Link
-              className="inline-flex rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white"
+              className={productButtonClassName("primary")}
               href={`/login?next=${encodeURIComponent(returnPath)}`}
             >
               Войти
             </Link>
             <Link
-              className="inline-flex rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-950"
+              className={productButtonClassName("secondary")}
               href={`/join?next=${encodeURIComponent(returnPath)}`}
             >
               Создать аккаунт
@@ -431,7 +431,7 @@ export function InvitationAcceptWorkspace({
           ) : null}
           <Link
             href={completed.childAccountLogin ? "/login" : "/learning-profile"}
-            className="mt-4 inline-flex rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white"
+            className={productButtonClassName("primary", "mt-4")}
           >
             {completed.childAccountLogin
               ? "Перейти ко входу"
@@ -456,7 +456,7 @@ export function InvitationAcceptWorkspace({
           </p>
           <Link
             href="/learning-profile"
-            className="mt-4 inline-flex rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white"
+            className={productButtonClassName("primary", "mt-4")}
           >
             Открыть учебный профиль
           </Link>

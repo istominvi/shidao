@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
 **Статус:** current / next / later priorities после production identity release
-**Актуально на:** 13 августа 2026 года
+**Актуально на:** 14 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -475,6 +475,32 @@ option получает только base shadow без динамических
 получают `oklch(0.19 0 0 / 0.6)`, а отдельный 1.2 px tab baseline —
 `oklch(0.19 0 0 / 0.4)`. Это UI-only follow-up без API/schema/migration и пока
 без production rollout evidence.
+
+**Current source / Next production acceptance:** обычные CTA Auth recovery,
+check-email, onboarding, identity invitation/completion и retry-state
+переиспользуют shared `Button`/`productButtonClassName`; disclosure-trigger
+«Фильтры» в Course, Students и Store становится обычной secondary
+`.product-btn`, не меняя семантику `summary`, popover или disabled/focus
+contract. Contextual menu
+items, row/Component icon-actions и compound toggles остаются отдельными
+плоскими controls.
+
+Для неинтерактивной глубины добавлен
+`--product-raised-surface-shadow: var(--product-raised-control-shadow)`: shared
+cards, canonical `ProductTable` wrappers вместе с subject progress, authored
+Component/Run-history/Students/Store cards и progress stats используют одну
+статическую базовую тень без hover/pressed transform или shadow-transition.
+Существующие radius/background/borders и внутренние row hover/focus состояния
+сохраняются; Component/Store focus обозначается отдельным outline, а
+`forced-colors` заменяет тень системным контуром.
+
+Shared `Input` и canonical однострочные text/search fields получают recessed
+inset `0px 1px 4px oklch(0 0 0 / 0.3)`, единые foreground/типографику и
+непрозрачные placeholder/icons; focus остаётся отдельным outline. Select,
+textarea, checkbox/radio/file, multiline editor, dialog/menu/popover surfaces,
+Student Screen content и raw utility panels исключены. Изменение остаётся
+UI-only, не меняет schema/API/Lesson hierarchy и ещё не имеет production
+rollout evidence.
 
 **Current production:** общий `WorkspaceTabs`
 уменьшает visual baseline с `1.5 px` до `1.2 px`, рисуя paint-layer высотой

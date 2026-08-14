@@ -9,6 +9,7 @@ import {
 } from "@/components/learner-identity/identity-client";
 import { SettingsShell } from "@/components/settings-shell";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import type {
   LearnerCredentialRecoveryOverview,
   LearnerCredentialResetResult,
@@ -198,20 +199,19 @@ export function SecuritySettingsForm({
           <span className="mb-2 block text-sm font-medium">
             Подтвердите текущим паролем{hasPin ? " или старым PIN" : ""}
           </span>
-          <input
+          <Input
             type="password"
             value={currentSecret}
             onChange={(e) => setCurrentSecret(e.target.value)}
             required
             autoComplete="current-password"
-            className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3"
           />
         </label>
         <label className="block">
           <span className="mb-2 block text-sm font-medium">
             Новый PIN (4–8 цифр)
           </span>
-          <input
+          <Input
             type="password"
             inputMode="numeric"
             pattern="[0-9]{4,8}"
@@ -221,7 +221,6 @@ export function SecuritySettingsForm({
             autoComplete="new-password"
             value={newPin}
             onChange={(e) => setNewPin(e.target.value)}
-            className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3"
           />
         </label>
 
@@ -298,8 +297,7 @@ export function SecuritySettingsForm({
                       <span className="mb-2 block text-sm font-medium">
                         Новый логин учащегося
                       </span>
-                      <input
-                        className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3"
+                      <Input
                         required
                         minLength={3}
                         maxLength={80}
@@ -315,8 +313,7 @@ export function SecuritySettingsForm({
                       <span className="mb-2 block text-sm font-medium">
                         Новый PIN учащегося (4–8 цифр)
                       </span>
-                      <input
-                        className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3"
+                      <Input
                         required
                         type="password"
                         inputMode="numeric"
@@ -333,8 +330,7 @@ export function SecuritySettingsForm({
                       <span className="mb-2 block text-sm font-medium">
                         Ваш текущий пароль или PIN
                       </span>
-                      <input
-                        className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3"
+                      <Input
                         required
                         type="password"
                         autoComplete="current-password"

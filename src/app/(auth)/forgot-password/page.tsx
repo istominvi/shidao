@@ -7,6 +7,7 @@ import {
   ProductShell,
   StatusMessage,
 } from "@/components/product-shell";
+import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/auth";
 
 export default function ForgotPasswordPage() {
@@ -77,13 +78,9 @@ export default function ForgotPasswordPage() {
             {error && <StatusMessage kind="error">{error}</StatusMessage>}
             {success && <StatusMessage kind="success">{success}</StatusMessage>}
 
-            <button
-              disabled={loading}
-              className="landing-btn landing-btn-primary min-h-12 w-full disabled:opacity-60"
-              type="submit"
-            >
+            <Button disabled={loading} className="w-full" type="submit">
               {loading ? "Отправляем…" : "Отправить письмо"}
-            </button>
+            </Button>
           </form>
 
           <p className="mt-5 text-sm text-neutral-600">

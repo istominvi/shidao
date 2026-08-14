@@ -55,6 +55,7 @@
   border: 1px solid var(--teaching-control-border);
   border-radius: var(--course-demo-control-radius);
   background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--product-recessed-control-shadow);
 }
 
 .teaching-date-navigator > button {
@@ -126,6 +127,8 @@
 .teaching-hub-search:focus-within {
   border-color: rgba(20, 20, 20, 0.2);
   background: #fff;
+  outline: 2px solid rgba(20, 20, 20, 0.58);
+  outline-offset: 2px;
 }
 
 .teaching-date-navigator > button:focus-visible,
@@ -322,11 +325,6 @@
   padding-inline: 0.5rem;
 }
 
-.teaching-hub-search:focus-within {
-  outline: 2px solid rgba(20, 20, 20, 0.24);
-  outline-offset: 2px;
-}
-
 .teaching-schedule-toolbar-actions,
 .teaching-schedule-view-toggle {
   display: flex;
@@ -406,7 +404,7 @@
   align-items: center;
   gap: 0.5rem;
   padding-inline: 0.75rem;
-  color: #737780;
+  color: var(--product-entry-control-foreground);
 }
 
 .teaching-hub-search input {
@@ -415,14 +413,21 @@
   border: 0;
   outline: 0;
   background: transparent;
-  color: #141414;
-  font: inherit;
-  font-size: 0.88rem;
-  font-weight: 500;
+  color: currentColor;
+  font-family: inherit;
+  font-size: var(--product-entry-control-font-size);
+  font-weight: var(--product-entry-control-font-weight);
+  line-height: var(--product-entry-control-line-height);
 }
 
 .teaching-hub-search input::placeholder {
-  color: #8b8e96;
+  color: currentColor;
+  opacity: 1;
+}
+
+.teaching-hub-search > svg {
+  color: currentColor;
+  opacity: 1;
 }
 
 .teaching-schedule-empty,
@@ -767,7 +772,7 @@
   border-radius: 1.15rem;
   background: rgba(255, 255, 255, 0.86);
   padding: 1rem;
-  box-shadow: 0 16px 38px rgba(23, 26, 32, 0.07);
+  box-shadow: var(--product-raised-surface-shadow);
 }
 
 .lesson-run-history-card > header {
@@ -1003,7 +1008,7 @@
     var(--course-demo-element-radius, var(--product-element-radius, 0.75rem))
   );
   background: #fff;
-  box-shadow: 0 20px 52px rgba(23, 26, 32, 0.07);
+  box-shadow: var(--product-raised-surface-shadow);
 }
 
 .teaching-run-table {
@@ -1409,7 +1414,7 @@
     var(--course-demo-element-radius, var(--product-element-radius, 0.75rem))
   );
   background: #fff;
-  box-shadow: 0 20px 52px rgba(23, 26, 32, 0.07);
+  box-shadow: var(--product-raised-surface-shadow);
 }
 
 .student-directory-table {
@@ -1650,7 +1655,7 @@
   );
   background: #fff;
   padding: 0.9rem;
-  box-shadow: 0 20px 52px rgba(23, 26, 32, 0.07);
+  box-shadow: var(--product-raised-surface-shadow);
 }
 
 .student-directory-card-header {
@@ -1847,13 +1852,21 @@ button.student-directory-card-person:focus-visible {
   border-radius: 0.75rem;
   background: #fff;
   padding-inline: 0.7rem;
-  color: #141414;
-  font: inherit;
-  font-size: 0.8rem;
+  color: var(--product-entry-control-foreground);
+  font-family: inherit;
+  font-size: var(--product-entry-control-font-size);
+  font-weight: var(--product-entry-control-font-weight);
+  line-height: var(--product-entry-control-line-height);
+  box-shadow: var(--product-recessed-control-shadow);
+}
+
+.student-directory-picker-search input::placeholder {
+  color: currentColor;
+  opacity: 1;
 }
 
 .student-directory-picker-search input:focus-visible {
-  outline: 2px solid rgba(20, 20, 20, 0.24);
+  outline: 2px solid rgba(20, 20, 20, 0.58);
   outline-offset: 2px;
 }
 

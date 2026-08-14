@@ -1,7 +1,7 @@
 # Текущее состояние ShiDao V2
 
 **Статус:** главный входной документ для разработки
-**Актуально на:** 13 августа 2026 года
+**Актуально на:** 14 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
 **Текущий functional application source / последний runtime release gate:**
@@ -337,6 +337,42 @@ option использует только базовую `3 px` тень без b
 `oklch(0.19 0 0 / 0.6)`, тогда как baseline остаётся визуально `1.2 px`, но
 получает независимый цвет `oklch(0.19 0 0 / 0.4)`. API, schema и migrations не
 меняются; production rollout этого follow-up пока не заявлен.
+
+**Current source / Next production ordinary-control, static-surface and
+entry-field refinement:** поверх этого ещё не развёрнутого raised-control
+контракта оставшиеся обычные CTA в Auth recovery/check-email, onboarding,
+identity invitation/completion и retry-state переведены на shared `Button` /
+`productButtonClassName`; raw text/password поля Account profile/security — на
+shared `Input`, а onboarding select — на shared `Select`. Disclosure-trigger
+«Фильтры» в Course, Students и Store также использует secondary `.product-btn`,
+сохраняя `summary`,
+`aria-expanded`, Escape/focus-return и отдельное disabled-состояние. Это не
+меняет contextual menu items, flat row/component icon-actions, compound
+toggles или сами filter popover panels.
+
+Статические карточки и таблицы получают отдельный семантический alias
+`--product-raised-surface-shadow`, равный базовому
+`--product-raised-control-shadow`. Он применяется без hover/pressed lift,
+transform или shadow-transition к shared `SurfaceCard`, всем canonical
+`.product-table-wrap` (включая subject progress), Lesson Component и Run
+history cards, Students cards, Store product cards и progress-stat cards.
+Существующие background, radius, semantic/dashed border и row-hover состояния
+не унифицируются. Focus-within Component card и Store deep-link/focus highlight
+используют отдельный outline поверх неизменной базовой тени; в `forced-colors`
+исчезающую тень заменяет системный outline.
+
+Канонические однострочные text/search entry controls используют
+`--product-recessed-control-shadow: inset 0px 1px 4px oklch(0 0 0 / 0.3)`, общий
+foreground/типографику и непрозрачные placeholder и сопровождающие
+search/select icons через `currentColor`; keyboard focus обозначается отдельным
+2 px outline и не
+сбрасывает inset. В `forced-colors` inset убирается в пользу `Field` /
+`FieldText` и системной рамки. Select, textarea, checkbox, radio, file input,
+многострочные Component editors, dialog/menu/popover surfaces, Student Screen
+content renderers и utility-only raw panels не получают recessed или static
+surface contract автоматически. Это UI-only current-source изменение без API,
+schema или migrations; production rollout и deployed acceptance пока не
+заявлены.
 
 **Current production WorkspaceTabs fractional-baseline refinement:** общий
 разделитель под вкладками уменьшен с прежнего baseline

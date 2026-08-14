@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { SettingsShell } from "@/components/settings-shell";
 import { StatusMessage } from "@/components/product-shell";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 function ProfileSettingsPageContent() {
   const searchParams = useSearchParams();
@@ -85,20 +86,18 @@ function ProfileSettingsPageContent() {
       <form onSubmit={onEmailSubmit} className="mt-6 space-y-4">
         <label className="block">
           <span className="mb-2 block text-sm font-medium">Новый email</span>
-          <input
+          <Input
             type="email"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
-            className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3"
           />
         </label>
         <label className="block">
           <span className="mb-2 block text-sm font-medium">Текущий пароль</span>
-          <input
+          <Input
             type="password"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
-            className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3"
           />
         </label>
 

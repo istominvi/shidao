@@ -3,7 +3,7 @@
 import { ChevronDown, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { CourseCatalogFilters } from "@/components/course-builder/course-catalog";
-import { Button } from "@/components/ui/button";
+import { Button, productButtonClassName } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
 
 type CourseFilterMenuProps = {
@@ -79,9 +79,13 @@ export function CourseFilterMenu({
     >
       <summary
         ref={summaryRef}
-        className="course-filter-trigger"
+        className={productButtonClassName("secondary", "course-filter-trigger")}
         aria-controls={panelId}
         aria-expanded={open}
+        aria-disabled={disabled || undefined}
+        onClick={(event) => {
+          if (disabled) event.preventDefault();
+        }}
       >
         <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
         <span>Фильтры</span>

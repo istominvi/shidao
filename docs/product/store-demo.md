@@ -1,7 +1,7 @@
 # Демо-магазин ShiDao
 
 **Статус:** current production UI-only demo
-**Актуально на:** 12 августа 2026 года
+**Актуально на:** 14 августа 2026 года
 
 ## Назначение
 
@@ -93,6 +93,32 @@ Production rollout подтверждён running source
 auth boundary (`307 → /login`). Полный authenticated checkout остаётся
 покрытым release browser suite; отдельный authenticated production order smoke
 не требуется, поскольку order/payment request в этом demo отсутствует.
+
+## Current source / Next production visual acceptance
+
+Ещё не развёрнутый current source переводит disclosure «Фильтры» на shared
+secondary `.product-btn`, сохраняя нативный `summary`, `aria-expanded`,
+Escape/focus-return и прежнюю filter-popover семантику. Сама popover panel,
+category tabs, cards/table segmented toggle, cart quantity icon-actions и
+`DialogShell` не становятся ordinary raised CTA. Обычные CTA магазина уже
+остаются на shared `Button`; этот follow-up не меняет cart/checkout state
+machine.
+
+Store product cards и canonical table wrapper используют статический
+`--product-raised-surface-shadow`, равный базовой тени кнопки
+`0 1px 3px 0px oklch(0 0 0 / 0.2)`, без card hover/pressed lift, transform или
+shadow-transition. Deep-link и programmatic focus товара сохраняют отдельный
+3 px outline поверх неизменной base-тени; existing white background, card/table
+radius, table row hover и horizontal scroll не меняются. В `forced-colors`
+surface shadow заменяется системным outline.
+
+Поиск каталога и однострочные поля checkout «Получатель / Телефон / Email»
+получают recessed inset `0px 1px 4px oklch(0 0 0 / 0.3)`, canonical
+foreground/типографику, непрозрачные placeholder/icon и отдельный 2 px focus
+outline. Select внутри filter popover и многострочный адрес доставки не
+получают inset; dialog/menu/popover surfaces также исключены. Это UI-only
+acceptance без Product/Order/Inventory, API, persistence, schema, migration,
+оплаты или delivery integration; production rollout пока не заявлен.
 
 ## Next
 

@@ -1,4 +1,5 @@
 import { AlertCircle, CheckCircle2, Clock3, LoaderCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type {
   AiConsentStatus,
   IdentityRequestStatus,
@@ -38,13 +39,14 @@ export function IdentityError({
         {message}
       </span>
       {onRetry ? (
-        <button
+        <Button
           type="button"
-          className="rounded-xl border border-rose-300 bg-white px-3 py-2 text-sm font-semibold text-rose-900"
+          variant="secondary"
+          className="product-btn-danger"
           onClick={onRetry}
         >
           Повторить
-        </button>
+        </Button>
       ) : null}
     </div>
   );

@@ -81,6 +81,8 @@ const E2E_PRIVATE_OBSERVED_COMMENT =
 const E2E_RAISED_CONTROL_SHADOW = "oklch(0 0 0 / 0.2) 0px 1px 3px 0px";
 const E2E_RAISED_CONTROL_HOVER_SHADOW = "oklch(0 0 0 / 0.2) 0px 1px 6px 0px";
 const E2E_RAISED_CONTROL_PRESSED_SHADOW = "oklch(0 0 0 / 0.2) 0px 1px 1px 0px";
+const E2E_RAISED_SURFACE_SHADOW = E2E_RAISED_CONTROL_SHADOW;
+const E2E_RECESSED_CONTROL_SHADOW = "oklch(0 0 0 / 0.3) 0px 1px 4px 0px inset";
 const E2E_RAISED_CONTROL_HOVER_TRANSFORM = "matrix(1, 0, 0, 1, 0, -1)";
 const E2E_MUTED_FOREGROUND = "oklch(0.19 0 0 / 0.6)";
 const E2E_WORKSPACE_TABS_DIVIDER = "oklch(0.19 0 0 / 0.4)";
@@ -2973,6 +2975,32 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
       await runtime.page.evaluate(() => document.activeElement?.id),
       "store-product-store-product-001",
     );
+    const storeProductSurface = runtime.page.locator(
+      "#store-product-store-product-001 .surface-card.store-product-card-surface",
+    );
+    await storeProductSurface.waitFor();
+    assert.deepEqual(
+      await storeProductSurface.evaluate((surface) => {
+        const style = getComputedStyle(surface);
+        return {
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+        };
+      }),
+      { boxShadow: E2E_RAISED_SURFACE_SHADOW, transform: "none" },
+    );
+    await storeProductSurface.hover();
+    await runtime.page.waitForTimeout(220);
+    assert.deepEqual(
+      await storeProductSurface.evaluate((surface) => {
+        const style = getComputedStyle(surface);
+        return {
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+        };
+      }),
+      { boxShadow: E2E_RAISED_SURFACE_SHADOW, transform: "none" },
+    );
 
     await runtime.page
       .getByRole("button", {
@@ -4862,6 +4890,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const toolbarSearch = toolbar?.querySelector<HTMLElement>(
         ".student-directory-search",
       );
+      const toolbarSearchInput =
+        toolbarSearch?.querySelector<HTMLInputElement>("input");
+      const toolbarSearchIcon = toolbarSearch?.querySelector<SVGElement>(
+        "svg[aria-hidden='true']",
+      );
       const toolbarControls = toolbar?.querySelector<HTMLElement>(
         ".student-directory-controls",
       );
@@ -4873,6 +4906,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       );
       const activeViewButton = viewSwitch?.querySelector<HTMLElement>(
         'button[aria-pressed="true"]',
+      );
+      const tableWrapper = document.querySelector<HTMLElement>(
+        ".student-directory-table-wrap",
       );
 
       if (
@@ -4889,10 +4925,13 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !headerActions ||
         !toolbar ||
         !toolbarSearch ||
+        !toolbarSearchInput ||
+        !toolbarSearchIcon ||
         !toolbarControls ||
         !filterTrigger ||
         !viewSwitch ||
-        !activeViewButton
+        !activeViewButton ||
+        !tableWrapper
       ) {
         throw new Error("Students visual contract is missing");
       }
@@ -4920,6 +4959,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const toolbarRect = toolbar.getBoundingClientRect();
       const toolbarSearchRect = toolbarSearch.getBoundingClientRect();
       const toolbarControlsRect = toolbarControls.getBoundingClientRect();
+      const toolbarSearchStyle = getComputedStyle(toolbarSearch);
+      const toolbarSearchInputStyle = getComputedStyle(toolbarSearchInput);
+      const toolbarSearchPlaceholderStyle = getComputedStyle(
+        toolbarSearchInput,
+        "::placeholder",
+      );
+      const toolbarSearchIconStyle = getComputedStyle(toolbarSearchIcon);
+      const filterTriggerStyle = getComputedStyle(filterTrigger);
+      const tableWrapperStyle = getComputedStyle(tableWrapper);
 
       return {
         headerLayout: {
@@ -5018,9 +5066,24 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           searchStartInset: toolbarSearchRect.left - toolbarRect.left,
           controlsEndInset: toolbarRect.right - toolbarControlsRect.right,
         },
+        searchControl: {
+          boxShadow: toolbarSearchStyle.boxShadow,
+          color: toolbarSearchInputStyle.color,
+          fontSize: toolbarSearchInputStyle.fontSize,
+          fontWeight: toolbarSearchInputStyle.fontWeight,
+          lineHeight: toolbarSearchInputStyle.lineHeight,
+          placeholderColor: toolbarSearchPlaceholderStyle.color,
+          placeholderOpacity: toolbarSearchPlaceholderStyle.opacity,
+          iconColor: toolbarSearchIconStyle.color,
+          iconOpacity: toolbarSearchIconStyle.opacity,
+        },
         controlGeometry: {
-          filterTriggerHeight: getComputedStyle(filterTrigger).height,
+          filterTriggerHeight: filterTriggerStyle.height,
           filterTriggerText: filterTrigger.textContent?.trim() ?? "",
+          filterTriggerBackgroundColor: filterTriggerStyle.backgroundColor,
+          filterTriggerBorderTopWidth: filterTriggerStyle.borderTopWidth,
+          filterTriggerBoxShadow: filterTriggerStyle.boxShadow,
+          filterTriggerTransform: filterTriggerStyle.transform,
           viewSwitchHeight: getComputedStyle(viewSwitch).height,
           viewSwitchBackgroundColor:
             getComputedStyle(viewSwitch).backgroundColor,
@@ -5034,6 +5097,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             filterTrigger.compareDocumentPosition(viewSwitch) &
             Node.DOCUMENT_POSITION_FOLLOWING,
           ),
+        },
+        tableSurface: {
+          boxShadow: tableWrapperStyle.boxShadow,
+          transform: tableWrapperStyle.transform,
         },
         viewButtons: Array.from(viewSwitch.querySelectorAll("button")).map(
           (button) => ({
@@ -5150,9 +5217,24 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     });
     assert.ok(Math.abs(studentsVisual.toolbarAlignment.searchStartInset) < 0.5);
     assert.ok(Math.abs(studentsVisual.toolbarAlignment.controlsEndInset) < 0.5);
+    assert.deepEqual(studentsVisual.searchControl, {
+      boxShadow: E2E_RECESSED_CONTROL_SHADOW,
+      color: "rgb(20, 20, 20)",
+      fontSize: "14.08px",
+      fontWeight: "400",
+      lineHeight: "16.896px",
+      placeholderColor: "rgb(20, 20, 20)",
+      placeholderOpacity: "1",
+      iconColor: "rgb(20, 20, 20)",
+      iconOpacity: "1",
+    });
     assert.deepEqual(studentsVisual.controlGeometry, {
       filterTriggerHeight: "40px",
       filterTriggerText: "Фильтр",
+      filterTriggerBackgroundColor: "rgb(255, 255, 255)",
+      filterTriggerBorderTopWidth: "0px",
+      filterTriggerBoxShadow: E2E_RAISED_CONTROL_SHADOW,
+      filterTriggerTransform: "none",
       viewSwitchHeight: "40px",
       viewSwitchBackgroundColor: E2E_SEGMENTED_CONTROL_BACKGROUND,
       viewSwitchBoxShadow: "none",
@@ -5161,12 +5243,68 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       viewSwitchInsideControls: true,
       filterBeforeViewSwitch: true,
     });
+    assert.deepEqual(studentsVisual.tableSurface, {
+      boxShadow: E2E_RAISED_SURFACE_SHADOW,
+      transform: "none",
+    });
     assert.deepEqual(studentsVisual.viewButtons, [
       { label: "Показать таблицей", pressed: "true" },
       { label: "Показать карточками", pressed: "false" },
     ]);
     assert.equal(studentsVisual.hasMembershipSwitch, true);
     assert.equal(studentsVisual.hasLegacySortOrGroupSelect, false);
+
+    const filterTriggerControl = runtime.page.locator(
+      ".student-directory-filter-menu .course-filter-trigger",
+    );
+    await filterTriggerControl.hover();
+    await runtime.page.waitForTimeout(220);
+    assert.deepEqual(
+      await filterTriggerControl.evaluate((trigger) => {
+        const style = getComputedStyle(trigger);
+        return {
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+        };
+      }),
+      {
+        boxShadow: E2E_RAISED_CONTROL_HOVER_SHADOW,
+        transform: E2E_RAISED_CONTROL_HOVER_TRANSFORM,
+      },
+    );
+    await runtime.page.mouse.down();
+    await runtime.page.waitForTimeout(220);
+    assert.deepEqual(
+      await filterTriggerControl.evaluate((trigger) => {
+        const style = getComputedStyle(trigger);
+        return {
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+        };
+      }),
+      {
+        boxShadow: E2E_RAISED_CONTROL_PRESSED_SHADOW,
+        transform: "none",
+      },
+    );
+    await runtime.page.mouse.move(0, 0);
+    await runtime.page.mouse.up();
+
+    const studentTableSurface = runtime.page.locator(
+      ".student-directory-table-wrap",
+    );
+    await studentTableSurface.hover();
+    await runtime.page.waitForTimeout(220);
+    assert.deepEqual(
+      await studentTableSurface.evaluate((surface) => {
+        const style = getComputedStyle(surface);
+        return {
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+        };
+      }),
+      { boxShadow: E2E_RAISED_SURFACE_SHADOW, transform: "none" },
+    );
 
     const activeLearnerViewButton = runtime.page.getByRole("button", {
       name: "Показать таблицей",
@@ -5231,6 +5369,34 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         name: /Действия с учеником.*Архивная Ольга/,
       })
       .waitFor();
+    const learnerCardSurface = learnerCards.locator(
+      ".student-directory-card:first-child",
+    );
+    await learnerCardSurface.waitFor();
+    assert.deepEqual(
+      await learnerCardSurface.evaluate((element) => {
+        const card = element as HTMLElement;
+        const style = getComputedStyle(card);
+        return {
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+        };
+      }),
+      { boxShadow: E2E_RAISED_SURFACE_SHADOW, transform: "none" },
+    );
+    await learnerCardSurface.hover();
+    await runtime.page.waitForTimeout(220);
+    assert.deepEqual(
+      await learnerCardSurface.evaluate((element) => {
+        const card = element as HTMLElement;
+        const style = getComputedStyle(card);
+        return {
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+        };
+      }),
+      { boxShadow: E2E_RAISED_SURFACE_SHADOW, transform: "none" },
+    );
     await learnerViewSwitch
       .getByRole("button", { name: "Показать таблицей", exact: true })
       .click();
@@ -7475,6 +7641,12 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const toolbarSearch = toolbar?.querySelector<HTMLElement>(
         ".compact-toolbar-search",
       );
+      const toolbarSearchInput = toolbarSearch?.querySelector<HTMLInputElement>(
+        "input.product-control-search",
+      );
+      const toolbarSearchIcon = toolbarSearch?.querySelector<SVGElement>(
+        ".product-search-icon",
+      );
       const toolbarRail = toolbar?.querySelector<HTMLElement>(
         ".compact-toolbar-rail",
       );
@@ -7498,6 +7670,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         !userTrigger ||
         !toolbar ||
         !toolbarSearch ||
+        !toolbarSearchInput ||
+        !toolbarSearchIcon ||
         !toolbarRail ||
         !viewSwitch ||
         !activeViewButton
@@ -7517,6 +7691,12 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const toolbarRect = toolbar.getBoundingClientRect();
       const toolbarSearchRect = toolbarSearch.getBoundingClientRect();
       const toolbarRailRect = toolbarRail.getBoundingClientRect();
+      const toolbarSearchInputStyle = getComputedStyle(toolbarSearchInput);
+      const toolbarSearchPlaceholderStyle = getComputedStyle(
+        toolbarSearchInput,
+        "::placeholder",
+      );
+      const toolbarSearchIconStyle = getComputedStyle(toolbarSearchIcon);
       const pageHeaderRect = pageHeader.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
 
@@ -7568,6 +7748,17 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           searchStartInset: toolbarSearchRect.left - toolbarRect.left,
           railEndInset: toolbarRect.right - toolbarRailRect.right,
         },
+        searchControl: {
+          boxShadow: toolbarSearchInputStyle.boxShadow,
+          color: toolbarSearchInputStyle.color,
+          fontSize: toolbarSearchInputStyle.fontSize,
+          fontWeight: toolbarSearchInputStyle.fontWeight,
+          lineHeight: toolbarSearchInputStyle.lineHeight,
+          placeholderColor: toolbarSearchPlaceholderStyle.color,
+          placeholderOpacity: toolbarSearchPlaceholderStyle.opacity,
+          iconColor: toolbarSearchIconStyle.color,
+          iconOpacity: toolbarSearchIconStyle.opacity,
+        },
         viewGeometry: {
           shellHeight: getComputedStyle(viewSwitch).height,
           activeButtonHeight: getComputedStyle(activeViewButton).height,
@@ -7608,6 +7799,17 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     });
     assert.ok(Math.abs(coursesVisual.toolbarAlignment.searchStartInset) < 0.5);
     assert.ok(Math.abs(coursesVisual.toolbarAlignment.railEndInset) < 0.5);
+    assert.deepEqual(coursesVisual.searchControl, {
+      boxShadow: E2E_RECESSED_CONTROL_SHADOW,
+      color: "rgb(20, 20, 20)",
+      fontSize: "14.08px",
+      fontWeight: "400",
+      lineHeight: "16.896px",
+      placeholderColor: "rgb(20, 20, 20)",
+      placeholderOpacity: "1",
+      iconColor: "rgb(20, 20, 20)",
+      iconOpacity: "1",
+    });
     assert.deepEqual(coursesVisual.viewGeometry, {
       shellHeight: "40px",
       activeButtonHeight: "32px",
@@ -8074,6 +8276,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         ],
         wrapperBorderRadius: wrapperStyle.borderRadius,
         wrapperBoxShadow: wrapperStyle.boxShadow,
+        wrapperTransform: wrapperStyle.transform,
         headerHeight: headerRow.getBoundingClientRect().height,
         rowHeights: Array.from(table.tBodies[0]?.rows ?? []).map(
           (row) => row.getBoundingClientRect().height,
@@ -8101,7 +8304,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       "0px",
     ]);
     assert.equal(ownedCourseTableSurface.wrapperBorderRadius, "12px");
-    assert.notEqual(ownedCourseTableSurface.wrapperBoxShadow, "none");
+    assert.equal(
+      ownedCourseTableSurface.wrapperBoxShadow,
+      E2E_RAISED_SURFACE_SHADOW,
+    );
+    assert.equal(ownedCourseTableSurface.wrapperTransform, "none");
     assert.ok(Math.abs(ownedCourseTableSurface.headerHeight - 40) < 0.5);
     assert.ok(
       ownedCourseTableSurface.rowHeights.every(
@@ -8115,6 +8322,21 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.equal(
       ownedCourseTableSurface.headerDivider,
       ownedCourseTableSurface.bodyDivider,
+    );
+    const ownedCourseTableWrapper = runtime.page.locator(
+      '[aria-label="Таблица курсов"].product-table-wrap',
+    );
+    await ownedCourseTableWrapper.hover();
+    await runtime.page.waitForTimeout(220);
+    assert.deepEqual(
+      await ownedCourseTableWrapper.evaluate((surface) => {
+        const style = getComputedStyle(surface);
+        return {
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+        };
+      }),
+      { boxShadow: E2E_RAISED_SURFACE_SHADOW, transform: "none" },
     );
     assert.equal(
       await runtime.page
@@ -8568,6 +8790,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         ],
         wrapperBorderRadius: wrapperStyle.borderRadius,
         wrapperBoxShadow: wrapperStyle.boxShadow,
+        wrapperTransform: wrapperStyle.transform,
         wrapperOverflowX: wrapperStyle.overflowX,
         tableBackgroundColor: getComputedStyle(table).backgroundColor,
         headerHeight: headerRow.getBoundingClientRect().height,
@@ -8611,7 +8834,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       "0px",
     ]);
     assert.equal(courseLessonsVisual.wrapperBorderRadius, "12px");
-    assert.notEqual(courseLessonsVisual.wrapperBoxShadow, "none");
+    assert.equal(
+      courseLessonsVisual.wrapperBoxShadow,
+      E2E_RAISED_SURFACE_SHADOW,
+    );
+    assert.equal(courseLessonsVisual.wrapperTransform, "none");
     assert.equal(courseLessonsVisual.wrapperOverflowX, "auto");
     assert.equal(
       courseLessonsVisual.tableBackgroundColor,
@@ -9601,6 +9828,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         ],
         cardBackground: cardStyle.backgroundColor,
         cardBoxShadow: cardStyle.boxShadow,
+        cardTransform: cardStyle.transform,
         cardTransitionProperty: cardStyle.transitionProperty,
         cardTransitionDuration: cardStyle.transitionDuration,
         cardRect: (() => {
@@ -9646,10 +9874,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.equal(fileComponentCardVisual.cardBackground, "rgb(255, 255, 255)");
     assert.equal(
       fileComponentCardVisual.cardBoxShadow,
-      "rgba(0, 0, 0, 0.05) 0px 3px 6px 0px",
+      E2E_RAISED_SURFACE_SHADOW,
     );
-    assert.equal(fileComponentCardVisual.cardTransitionProperty, "box-shadow");
-    assert.equal(fileComponentCardVisual.cardTransitionDuration, "0.18s");
+    assert.equal(fileComponentCardVisual.cardTransform, "none");
+    assert.equal(fileComponentCardVisual.cardTransitionProperty, "all");
+    assert.equal(fileComponentCardVisual.cardTransitionDuration, "0s");
     assert.equal(fileComponentCardVisual.cardOverflow, "visible");
     assert.equal(fileComponentCardVisual.actionsPosition, "absolute");
     assert.equal(fileComponentCardVisual.actionsTop, "4px");
@@ -9698,6 +9927,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           opacity: style.opacity,
           pointerEvents: style.pointerEvents,
           cardBoxShadow: getComputedStyle(card).boxShadow,
+          cardTransform: getComputedStyle(card).transform,
           cardRect: {
             top: cardRect.top,
             left: cardRect.left,
@@ -9709,7 +9939,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       {
         opacity: "1",
         pointerEvents: "auto",
-        cardBoxShadow: "rgba(0, 0, 0, 0.1) 0px 3px 12px 0px",
+        cardBoxShadow: E2E_RAISED_SURFACE_SHADOW,
+        cardTransform: "none",
         cardRect: fileComponentCardVisual.cardRect,
       },
     );
@@ -9728,11 +9959,13 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         return {
           opacity: getComputedStyle(actions).opacity,
           cardBoxShadow: getComputedStyle(card).boxShadow,
+          cardTransform: getComputedStyle(card).transform,
         };
       }),
       {
         opacity: "0",
-        cardBoxShadow: "rgba(0, 0, 0, 0.05) 0px 3px 6px 0px",
+        cardBoxShadow: E2E_RAISED_SURFACE_SHADOW,
+        cardTransform: "none",
       },
     );
     await componentTrigger.press("Tab");
@@ -9748,6 +9981,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           cardBoxShadow: getComputedStyle(
             actions.closest<HTMLElement>(".lesson-component-card")!,
           ).boxShadow,
+          cardTransform: getComputedStyle(
+            actions.closest<HTMLElement>(".lesson-component-card")!,
+          ).transform,
           editBorderWidths: (() => {
             const edit = actions.querySelector<HTMLElement>(
               '[aria-label="Редактировать «Файл»"]',
@@ -9784,7 +10020,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       {
         opacity: "1",
         pointerEvents: "auto",
-        cardBoxShadow: "rgba(0, 0, 0, 0.1) 0px 3px 12px 0px",
+        cardBoxShadow: E2E_RAISED_SURFACE_SHADOW,
+        cardTransform: "none",
         editBorderWidths: ["0px", "0px", "0px", "0px"],
         editBoxShadow: "none",
         editOutlineStyle: "solid",
@@ -9830,11 +10067,19 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
             "input.field-input:not([type='checkbox']), select.field-input:not([multiple])",
           ),
         );
-        if (!editor || controls.length === 0) {
+        const entryInput = dialog.querySelector<HTMLInputElement>(
+          "input.field-input:not([type='checkbox'])",
+        );
+        if (!editor || controls.length === 0 || !entryInput) {
           throw new Error("Modal component editor controls are missing");
         }
         const dialogRect = dialog.getBoundingClientRect();
         const editorStyle = getComputedStyle(editor);
+        const entryInputStyle = getComputedStyle(entryInput);
+        const entryInputPlaceholderStyle = getComputedStyle(
+          entryInput,
+          "::placeholder",
+        );
         return {
           ariaModal: dialog.getAttribute("aria-modal"),
           dialogWidth: dialogRect.width,
@@ -9856,6 +10101,15 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
               fontWeight: style.fontWeight,
             };
           }),
+          entryInput: {
+            boxShadow: entryInputStyle.boxShadow,
+            color: entryInputStyle.color,
+            fontSize: entryInputStyle.fontSize,
+            fontWeight: entryInputStyle.fontWeight,
+            lineHeight: entryInputStyle.lineHeight,
+            placeholderColor: entryInputPlaceholderStyle.color,
+            placeholderOpacity: entryInputPlaceholderStyle.opacity,
+          },
           bodyOverflow: document.body.style.overflow,
           documentClientWidth: document.documentElement.clientWidth,
           documentScrollWidth: document.documentElement.scrollWidth,
@@ -9878,6 +10132,15 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           fontWeight === "400",
       ),
     );
+    assert.deepEqual(fileComponentDialogVisual.entryInput, {
+      boxShadow: E2E_RECESSED_CONTROL_SHADOW,
+      color: "rgb(20, 20, 20)",
+      fontSize: "14.08px",
+      fontWeight: "400",
+      lineHeight: "16.896px",
+      placeholderColor: "rgb(20, 20, 20)",
+      placeholderOpacity: "1",
+    });
     assert.equal(fileComponentDialogVisual.bodyOverflow, "hidden");
     assert.equal(
       fileComponentDialogVisual.documentScrollWidth,

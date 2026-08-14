@@ -1,7 +1,7 @@
 # Каталог компонентов Course Builder
 
 **Статус:** current production registry + product decision
-**Актуально на:** 13 августа 2026 года
+**Актуально на:** 14 августа 2026 года
 
 Этот документ фиксирует проверенные публичные возможности ProgressMe,
 нашу продуктовую интерпретацию и фактическую границу ShiDao. Текущий
@@ -127,6 +127,30 @@ modal editor. Cancel/close не
 изменяют persisted payload/placement; существующий `PATCH` вызывается только по
 явному сохранению. Это presentation/editor orchestration, а не новый registry,
 API или storage contract.
+
+### Current source / Next production visual acceptance
+
+Ещё не развёрнутый current source заменяет прежнюю динамическую тень authored
+Component card на общий статический
+`--product-raised-surface-shadow: var(--product-raised-control-shadow)`. Белый
+12 px element surface остаётся без border, не получает hover/pressed transform
+или shadow-transition и сохраняет одну base-тень
+`0 1px 3px 0px oklch(0 0 0 / 0.2)` в rest, hover и focus-within. Focus-within
+добавляет отдельный outline, не меняя геометрию или тень; hover/focus по-прежнему
+раскрывает action overlay. Сам overlay и его 32 px icon-actions остаются
+transparent/borderless/shadowless, а `forced-colors` заменяет surface shadow
+системным контуром.
+
+Однострочные `input.field-input` в Component editor используют recessed inset
+`0px 1px 4px oklch(0 0 0 / 0.3)`, canonical foreground/типографику,
+непрозрачный placeholder и отдельный 2 px focus outline. `textarea`, `select`,
+checkbox/radio/file controls, preview/student content renderers,
+component-picker choice cards и `DialogShell` surface этим правилом не
+перекрашиваются и не получают static card shadow автоматически. Ordinary CTA и
+filter-trigger adoption относится к shared application controls, но не
+превращает Component overlay actions или picker cards в raised buttons. Это
+UI-only acceptance без registry, payload, API, schema, ordering, Slide или
+learner-projection изменений; production rollout пока не заявлен.
 
 Current production делает отдельное исключение для действия Student Screen.
 Вместо `Eye/EyeOff` оно использует тот же Lucide `MonitorPlay`, что и вкладка
