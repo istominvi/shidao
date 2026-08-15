@@ -61,6 +61,21 @@ glyphs без изменения геометрии: public production CSS
 Это public-bundle/HTTP postflight; он не подменяет matching-container evidence
 Profile/avatar release `4462da2`, зафиксированное ниже.
 
+**Current source / next production — TopNav и стабильный backlink rhythm:**
+product TopNav теперь остаётся в normal document flow, не использует
+`position: sticky` или `fixed` и уходит за верхнюю границу вместе с остальным
+контентом при scroll. Белый shell имеет внешнюю высоту ровно `64 px`: внутри
+сохраняются `40 px` logo/navigation/avatar controls и по `12 px` padding сверху
+и снизу. Неактивный пункт главной навигации на hover получает exact
+5%-black background `rgba(0, 0, 0, 0.05)` даже после готовности измеряемого
+active-pill; выбранный пункт сохраняет чёрный active surface. `AppPageHeader`
+всегда резервирует одну backlink-row и её вертикальный rhythm. При отсутствии
+`back` строка остаётся пустой и не создаёт фиктивные link, button или текст;
+поэтому heading начинается на той же высоте, что и на странице с настоящим
+backlink. Этот UI-only source contract supersede-ит только deployed
+`68 px`/sticky геометрию и условную backlink-row; API, schema, migrations и
+Lesson hierarchy не меняются.
+
 **Current source / next production — instant primary-section chrome:**
 protected Account shell заранее выполняет full RSC prefetch пяти главных
 маршрутов `/schedule`, `/students`, `/courses`, `/store` и `/profile` и в том
@@ -534,10 +549,13 @@ option использует только базовую тень без button h
 16 px иконки `WorkspaceTabs` используют отдельный foreground
 `oklch(0.19 0 0 / 0.6)`, тогда как baseline остаётся визуально `1.2 px`, но
 получает независимый цвет `oklch(0.19 0 0 / 0.4)`. API, schema и migrations не
-меняются. Белый sticky product TopNav сохраняет геометрию `68 px / 20 px`, но
-вместо прежнего многослойного эффекта использует одну exact-тень
-`0px 6px 12px oklch(0 0 0 / 0.05)`. Contract развёрнут и сохраняется в exact
-functional source `1d4e5deff83cbdc1b479b16e4220cf799327009f`.
+меняются. Deployed белый sticky product TopNav сохранял геометрию
+`68 px / 20 px`, но вместо прежнего многослойного эффекта использовал одну
+exact-тень `0px 6px 12px oklch(0 0 0 / 0.05)`. Этот production contract
+зафиксирован в exact functional source
+`1d4e5deff83cbdc1b479b16e4220cf799327009f`; его `68 px`/sticky геометрия
+является историческим evidence и superseded current-source normal-flow
+`64 px` contract, описанным выше.
 
 **Current production ordinary-control, static-surface and entry-field
 refinement:** поверх общего raised-control
@@ -1199,26 +1217,33 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - В текущем source страницы `/courses`, `/students`, `/schedule`, Course и
   Lesson используют один сплошной фон `#f5f1e8`; marketing noise и цветные page
   gradients на этих маршрутах отсутствуют.
-- Course header следует demo-контракту: sticky shell высотой 68 px, сплошная
-  белая поверхность без blur, радиус 20 px и контролы 40 px с радиусом 12 px.
+- В current source / next production Course header следует обновлённому
+  demo-контракту: normal-flow shell без sticky/fixed positioning имеет высоту
+  `64 px`, сплошную белую поверхность без blur, радиус `20 px`, `40 px`
+  logo/navigation/avatar controls с радиусом `12 px` и по `12 px` padding
+  сверху и снизу. Неактивный пункт main navigation на hover сохраняет exact
+  5%-black background `rgba(0, 0, 0, 0.05)` и при готовом measured active-pill.
   В current production персональное dropdown-меню также использует
   непрозрачный белый фон. В current source / next production этот dropdown
   остаётся только главным меню protected mobile burger; avatar на protected
   desktop и authenticated landing является прямой ссылкой `/profile`.
 - Один `AppPageHeader` задаёт прозрачную заголовочную секцию, единый H1 с
-  максимумом 48 px на desktop и 32 px на mobile, подзаголовок, optional
-  backlink и правую action-секцию для `/courses`, `/students`, `/schedule`, Course
-  и Lesson. Высота контейнера следует фактическому title/metric/meta/actions и
-  padding без искусственного minimum; actions вертикально центрированы в
-  собственной content-row. Заголовочная колонка занимает всё оставшееся место,
-  а actions имеют intrinsic ширину по содержимому и не растягивают кнопки даже
-  при узком viewport. Асинхронная метрика занимает будущую строку до ответа,
+  максимумом 48 px на desktop и 32 px на mobile, подзаголовок, всегда
+  зарезервированную backlink-row с optional интерактивным backlink и правую
+  action-секцию для `/courses`, `/students`, `/schedule`, Course и Lesson.
+  Высота контейнера следует фактическому title/metric/meta/actions и padding без
+  искусственного minimum; actions вертикально центрированы в собственной
+  content-row. Заголовочная колонка занимает всё оставшееся место, а actions
+  имеют intrinsic ширину по содержимому и не растягивают кнопки даже при узком
+  viewport. Асинхронная метрика занимает будущую строку до ответа,
   но весь header становится видимым только вместе с её финальным значением или
   error-state. В current production сам
   H1 заполняет эту колонку без прежнего лимита `24ch`; desktop column-gap равен
   24 px. Course/Lesson backlink и его стрелка непрозрачно чёрные, label
   однострочный с ellipsis, а вертикальные интервалы над и под ним равны
-  page-header inset. Top-level разделы не создают искусственную обратную ссылку.
+  page-header inset. В current source backlink-row сохраняет эту же высоту и
+  интервалы на top-level разделах, но без `back` не рендерит искусственные
+  link, button или текст.
 - Один `WorkspaceTabs` используется во всех product consumers, включая Courses
   index, owner/new/published Course, Lesson, Students, learning/observing profile
   и learner dialog,

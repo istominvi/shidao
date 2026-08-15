@@ -94,9 +94,18 @@ test("active pill preserves SSR fallback and uses one fast local motion layer", 
     /\.site-header-nav-active-pill\[data-ready="true"\]\s*\{\s*opacity: 1;/,
   );
   assert.doesNotMatch(styles, /app-primary-nav-active-pill/);
+  assert.match(styles, /--header-pill-hover-bg: rgba\(0, 0, 0, 0\.05\);/);
   assert.match(
     styles,
-    /\.site-header-nav-track\[data-active-pill-ready="true"\][\s\S]*?\.site-header-nav-pill[\s\S]*?background: transparent;/,
+    /\.site-header-nav-track\[data-active-pill-ready="true"\] \.site-header-nav-pill\s*\{\s*background: transparent;/,
+  );
+  assert.match(
+    styles,
+    /\.site-header-nav-track\[data-active-pill-ready="true"\][\s\S]*?\.site-header-nav-pill:not\(\.nav-pill-active\):hover,[\s\S]*?\.site-header-nav-pill:not\(\.nav-pill-active\):focus-visible\s*\{\s*background: var\(--header-pill-hover-bg\);/,
+  );
+  assert.doesNotMatch(
+    styles,
+    /\.site-header-nav-pill\.nav-pill-active[^,{]*\{[^}]*background: var\(--header-pill-hover-bg\);/,
   );
   assert.match(
     styles,

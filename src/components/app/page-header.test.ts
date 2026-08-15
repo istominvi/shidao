@@ -128,6 +128,15 @@ test("active V2 pages share one page header contract without visual modifiers", 
   assert.match(header, /back && "app-page-header-with-back"/);
   assert.match(header, /Boolean\(actions\) && "app-page-header-with-actions"/);
   assert.match(header, /className="app-page-header-content"/);
+  assert.match(
+    header,
+    /<div className="app-page-back-slot">[\s\S]*?\{back\?\.type === "link" \? \([\s\S]*?\) : back \? \([\s\S]*?\) : null\}[\s\S]*?<\/div>\s*<div className="app-page-heading">/,
+  );
+  assert.doesNotMatch(
+    header,
+    /className="app-page-back-slot"[^>]*(?:aria-label|role|tabIndex)=/,
+    "An empty backlink slot must not become an interactive or named control",
+  );
   assert.match(header, /className="app-page-back-link"/);
   assert.match(header, /className="app-page-back-link-label"/);
   assert.match(header, /className="app-page-actions"/);
@@ -254,7 +263,15 @@ test("active V2 pages share one page header contract without visual modifiers", 
   );
   assert.match(
     styles,
-    /\.app-page-header-with-back \.app-page-back-link\s*\{[^}]*margin-bottom: calc\([\s\S]*?var\(--app-page-header-back-gap\) - var\(--app-page-header-space\)[\s\S]*?\);/,
+    /\.app-page-back-slot\s*\{[^}]*display: flex;[^}]*min-width: 0;[^}]*min-block-size: 1lh;[^}]*margin-bottom: calc\([\s\S]*?var\(--app-page-header-back-gap\) - var\(--app-page-header-space\)[\s\S]*?\);/,
+  );
+  assert.match(
+    styles,
+    /\.app-page-back-slot,\s*\.app-page-back-link\s*\{[^}]*font-size: var\(--app-page-header-chip-text-size\);[^}]*line-height: 1\.25;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.app-page-back-slot,\s*\.course-demo-shell \.app-page-back-link\s*\{[^}]*font-size: var\(--course-demo-control-font-size\);[^}]*line-height: var\(--course-demo-control-line-height\);/,
   );
   assert.match(
     styles,

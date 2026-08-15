@@ -401,13 +401,19 @@ test("course routes use the flat demo background and unified visual controls", (
   assert.match(topNav, /container course-top-nav/);
   assert.match(
     navigationStyles,
-    /\.course-top-nav\s*\{[\s\S]*?position: sticky;[\s\S]*?top: 0;/,
+    /\.course-top-nav\s*\{[^}]*position: relative;[^}]*z-index: 60;[^}]*padding-top: 1rem;/,
+  );
+  assert.doesNotMatch(
+    navigationStyles,
+    /\.course-top-nav\s*\{[^}]*(?:position: sticky;|(?:^|\n)\s*top:)/,
   );
   assert.match(
     navigationStyles,
     /:root\s*\{[^}]*--product-header-shell-shadow: 0px 6px 12px oklch\(0 0 0 \/ 0\.05\);/,
   );
-  assert.match(productHeaderStyles, /height: 4\.25rem;/);
+  assert.match(productHeaderStyles, /height: 4rem;/);
+  assert.match(productHeaderStyles, /min-height: 4rem;/);
+  assert.match(productHeaderStyles, /padding: 0\.75rem;/);
   assert.match(
     productHeaderStyles,
     /border-radius: var\(--product-card-radius, 1\.25rem\);/,

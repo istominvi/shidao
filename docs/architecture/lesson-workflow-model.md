@@ -604,9 +604,15 @@ delete остаётся later policy, а не неявным поведение�
 Visual contract Course routes не меняет эту навигационную или доменную модель:
 
 - page background — сплошной `#f5f1e8` без цветных marketing gradients;
-- product header — sticky demo shell высотой 68 px с радиусом 20 px,
-  непрозрачным белым фоном без blur и одной тенью
-  `0px 6px 12px oklch(0 0 0 / 0.05)`. В current production Account dropdown
+- current source / next production product header — normal-flow demo shell без
+  sticky/fixed positioning высотой `64 px` с радиусом `20 px`, непрозрачным
+  белым фоном без blur и одной тенью
+  `0px 6px 12px oklch(0 0 0 / 0.05)`. Внутри остаются `40 px`
+  logo/navigation/avatar controls и по `12 px` padding сверху и снизу.
+  Неактивный main-navigation item на hover получает exact 5%-black background
+  `rgba(0, 0, 0, 0.05)` даже при готовом measured active-pill; active item
+  сохраняет чёрный surface. Deployed sticky `68 px` shell остаётся только
+  историческим production evidence. В current production Account dropdown
   использует тот же сплошной белый surface; в current source / next production
   dropdown остаётся только у protected mobile burger, а avatar protected
   desktop и authenticated landing ведёт напрямую в `/profile`;
@@ -614,12 +620,13 @@ Visual contract Course routes не меняет эту навигационну�
   `/schedule`, authenticated `/profile`, Course и Lesson: системный H1 веса
   400 с максимумом 48 px на desktop и 32 px на mobile, optional metric
   canonical цвета `rgba(20, 20, 20, 0.5)` через
-  `--app-page-header-description-color`, optional backlink и правую
-  action-секцию. Supporting line существует только для числового/статусного
-  измерения выбранной сущности; объяснение назначения страницы, инструкция,
-  tagline или private teacher comment туда не попадают. Header не имеет
-  искусственной минимальной высоты: размер задают только фактические
-  title/metric/meta/actions и block padding. Асинхронная metric заранее
+  `--app-page-header-description-color`, всегда зарезервированную backlink-row
+  с optional интерактивным backlink и правую action-секцию. Supporting line
+  существует только для числового/статусного измерения выбранной сущности;
+  объяснение назначения страницы, инструкция, tagline или private teacher
+  comment туда не попадают. Header не имеет искусственной минимальной высоты:
+  размер задают только фактические title/metric/meta/actions и block padding.
+  Асинхронная metric заранее
   резервирует ровно одну будущую строку `1lh`, но не является ready-gate для
   header: известные title/meta/actions и вкладки показываются сразу, а только
   metric мягко проявляется внутри зарезервированной строки после data/error
@@ -630,8 +637,10 @@ Visual contract Course routes не меняет эту навигационну�
   не имеет лимита `24ch` и заполняет heading-колонку; desktop column-gap равен
   24 px. Backlink и стрелка используют непрозрачный `#141414`, label остаётся в
   одной строке и обрезается ellipsis, а интервалы над и под backlink совпадают с
-  page-header block-inset (20 px desktop, 16 px mobile). Этот UI-only follow-up
-  не меняет Lesson hierarchy, API или schema.
+  page-header block-inset (20 px desktop, 16 px mobile). Backlink-row всегда
+  занимает ту же строку и сохраняет начало heading; если `back` отсутствует,
+  внутри нет фиктивного link/button или текста. Этот UI-only follow-up не меняет
+  Lesson hierarchy, API или schema.
   В current source / next production layout ниже `1280 px` становится
   content-aware wrapping row: content растёт, intrinsic action остаётся справа
   в той же строке, пока суммарная фактическая ширина помещается, и переносится

@@ -60,41 +60,43 @@ export function AppPageHeader({
       data-page-header-pending={metricIsPending ? "" : undefined}
     >
       <div className="app-page-header-content">
-        {back?.type === "link" ? (
-          <PageTransitionLink
-            href={back.href}
-            direction="back"
-            className="app-page-back-link"
-            aria-label={resolvedBackAriaLabel}
-          >
-            <span className="app-page-back-link-icon" aria-hidden="true">
-              ←
-            </span>
-            <span className="app-page-back-link-label">
-              {resolvedBackLabel}
-            </span>
-          </PageTransitionLink>
-        ) : back ? (
-          <button
-            type="button"
-            className="app-page-back-link"
-            aria-label={resolvedBackAriaLabel}
-            onClick={() => {
-              if (pageTransition) {
-                pageTransition.runUpdate("back", back.onClick);
-              } else {
-                back.onClick();
-              }
-            }}
-          >
-            <span className="app-page-back-link-icon" aria-hidden="true">
-              ←
-            </span>
-            <span className="app-page-back-link-label">
-              {resolvedBackLabel}
-            </span>
-          </button>
-        ) : null}
+        <div className="app-page-back-slot">
+          {back?.type === "link" ? (
+            <PageTransitionLink
+              href={back.href}
+              direction="back"
+              className="app-page-back-link"
+              aria-label={resolvedBackAriaLabel}
+            >
+              <span className="app-page-back-link-icon" aria-hidden="true">
+                ←
+              </span>
+              <span className="app-page-back-link-label">
+                {resolvedBackLabel}
+              </span>
+            </PageTransitionLink>
+          ) : back ? (
+            <button
+              type="button"
+              className="app-page-back-link"
+              aria-label={resolvedBackAriaLabel}
+              onClick={() => {
+                if (pageTransition) {
+                  pageTransition.runUpdate("back", back.onClick);
+                } else {
+                  back.onClick();
+                }
+              }}
+            >
+              <span className="app-page-back-link-icon" aria-hidden="true">
+                ←
+              </span>
+              <span className="app-page-back-link-label">
+                {resolvedBackLabel}
+              </span>
+            </button>
+          ) : null}
+        </div>
         <div className="app-page-heading">
           <h1
             ref={headingRef}

@@ -264,10 +264,19 @@ a {
   justify-content: flex-start;
 }
 
-.app-page-header-with-back .app-page-back-link {
+.app-page-back-slot {
+  display: flex;
+  min-width: 0;
+  min-block-size: 1lh;
   margin-bottom: calc(
     var(--app-page-header-back-gap) - var(--app-page-header-space)
   );
+}
+
+.app-page-back-slot,
+.app-page-back-link {
+  font-size: var(--app-page-header-chip-text-size);
+  line-height: 1.25;
 }
 
 .app-page-heading {
@@ -291,12 +300,10 @@ a {
   cursor: pointer;
   text-align: left;
   font-family: inherit;
-  font-size: var(--app-page-header-chip-text-size);
   font-weight: 600;
   letter-spacing: 0.012em;
   color: #141414;
   text-decoration: none;
-  line-height: 1.25;
   transition:
     color 180ms ease,
     text-decoration-color 180ms ease,
@@ -379,6 +386,7 @@ a {
   align-self: flex-start;
 }
 
+.course-demo-shell .app-page-back-slot,
 .course-demo-shell .app-page-back-link {
   min-width: 0;
   color: #141414;

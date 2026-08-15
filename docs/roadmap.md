@@ -23,6 +23,22 @@
 8. Нельзя расширять scope за счёт Auth, SMTP, JWT/API keys, базового Storage или
    recovery V1 без отдельного решения.
 
+## Current source / next production — TopNav и backlink rhythm
+
+- Product TopNav возвращён в normal document flow: он не sticky/fixed и при
+  scroll уходит вверх вместе с content.
+- Белый product shell имеет точную высоту `64 px`: `40 px` занимают
+  logo/navigation/avatar controls, ещё по `12 px` — padding сверху и снизу;
+  радиус и однослойная тень не меняются.
+- Hover неактивного пункта main navigation использует exact 5%-black background
+  `rgba(0, 0, 0, 0.05)` и остаётся видимым при готовом measured active-pill.
+- `AppPageHeader` всегда сохраняет backlink-row и одинаковую высоту начала
+  heading. Настоящий link/button/text появляется только при переданном `back`;
+  top-level page не получает фиктивный интерактивный элемент.
+- Slice UI-only: API, schema, migrations и Lesson hierarchy не меняются.
+  Следующий release step — UI gates, обычный Coolify rollout и authenticated
+  desktop/mobile scroll/hover postflight.
+
 ## Current source / next production — mobile responsive polish
 
 - `AppPageHeader` теперь оставляет короткий content и intrinsic action в одной
@@ -84,10 +100,11 @@
   отдельной draft-сущности или schema.
 - `/courses`, `/students`, `/schedule`, Course и Lesson используют один
   `AppPageHeader` с H1 не крупнее 48 px на desktop и 32 px на mobile,
-  optional entity-metric, optional backlink и правой action-секцией. Метрика
-  не заменяется пояснением назначения страницы; если честной метрики нет,
-  supporting line отсутствует. Высота Header определяется содержимым и padding
-  без искусственного minimum; actions центрируются относительно content-row.
+  optional entity-metric, всегда зарезервированной backlink-row с optional
+  интерактивным backlink и правой action-секцией. Метрика не заменяется
+  пояснением назначения страницы; если честной метрики нет, supporting line
+  отсутствует. Высота Header определяется содержимым и padding без
+  искусственного minimum; actions центрируются относительно content-row.
   Асинхронные метрики заранее резервируют одну строку `1lh`; title, meta,
   actions и известные вкладки становятся видимыми сразу и не ждут ни metric,
   ни page-content. Поздняя metric проявляется только внутри зарезервированной
@@ -96,7 +113,9 @@
   содержимого и не превращаются в full-width кнопки на mobile.
   Current production follow-up снимает внутренний лимит H1 `24ch`, сохраняет
   desktop gap 24 px и делает все backlinks непрозрачно чёрными, однострочными с
-  ellipsis и равным page-header inset сверху и снизу.
+  ellipsis и равным page-header inset сверху и снизу. Current source сохраняет
+  ту же backlink-row и начало heading даже без `back`, но не создаёт пустой
+  link/button или текст.
   Все product consumers, включая Courses index, owner/new/published Course,
   Lesson, Students, learning/observing profile и learner dialog, используют
   один `WorkspaceTabs`: 40 px, roving keyboard/ARIA, horizontal scroll,
@@ -600,11 +619,12 @@ transparent/borderless/no-shadow; contextual menu panels/items тоже искл
 option получает только base shadow без динамических button states; shell имеет
 фон `oklch(0.19 0 0 / 0.1)`. Подзаголовки страниц и inactive tab text/icon
 получают `oklch(0.19 0 0 / 0.6)`, а отдельный 1.2 px tab baseline —
-`oklch(0.19 0 0 / 0.4)`. Белый sticky product TopNav сохраняет
-`68 px / 20 px`, но получает одну тень
-`0px 6px 12px oklch(0 0 0 / 0.05)` без inset-слоёв. Это UI-only follow-up без
-API/schema/migration; contract развёрнут в release `10888d5` и сохраняется в
-текущем functional application source `1d4e5deff83cbdc1b479b16e4220cf799327009f`.
+`oklch(0.19 0 0 / 0.4)`. В deployed baseline белый sticky product TopNav
+сохранял `68 px / 20 px`, но получил одну тень
+`0px 6px 12px oklch(0 0 0 / 0.05)` без inset-слоёв. Этот UI-only production
+contract развёрнут в release `10888d5` и зафиксирован exact source
+`1d4e5deff83cbdc1b479b16e4220cf799327009f`; его `68 px`/sticky геометрия
+историческая и superseded current-source normal-flow `64 px` contract выше.
 
 **Current production acceptance:** обычные CTA Auth recovery,
 check-email, onboarding, identity invitation/completion и retry-state

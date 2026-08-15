@@ -945,6 +945,14 @@ ShiDao V2 application:
 ### Course Builder
 
 - `/courses` читает реальные данные;
+- current-source product TopNav находится в normal document flow: computed
+  position не равен `sticky` или `fixed`, а после вертикального scroll shell
+  действительно уходит за верхнюю границу viewport вместе с content.
+  `.site-header-shell-demo` имеет exact `64 px` внешней высоты, `12 px`
+  block-padding и `40 px` logo/navigation/avatar controls; радиус остаётся
+  `20 px`, тень — одна. На fine-pointer hover неактивный main-nav item получает
+  exact `rgba(0, 0, 0, 0.05)` background даже при
+  `data-active-pill-ready="true"`; active item остаётся чёрным;
 - `/courses`, Course и Lesson показывают одинаковые computed H1/optional metric
   через один `AppPageHeader`: H1 не крупнее 48 px на desktop и 32 px
   на mobile; искусственного `min-height` нет, высоту задают фактические
@@ -960,10 +968,13 @@ ShiDao V2 application:
   metric, когда она существует, получает один computed-цвет
   `oklch(0.19 0 0 / 0.6)` из canonical
   `--app-page-header-description-color`;
-  Course/Lesson сохраняют backlink: link/button, стрелка, normal/hover/focus
-  имеют computed `rgb(20, 20, 20)`, стрелка не сжимается, а расстояние от
-  верхней границы page header до backlink совпадает с расстоянием от backlink
-  до heading (`20 px` desktop, `16 px` mobile);
+  Каждый `AppPageHeader` сохраняет backlink-row. На Course/Lesson настоящий
+  backlink остаётся link/button: стрелка и normal/hover/focus имеют computed
+  `rgb(20, 20, 20)`, стрелка не сжимается, а расстояние от верхней границы page
+  header до backlink совпадает с расстоянием от backlink до heading (`20 px`
+  desktop, `16 px` mobile). На top-level page без `back` внутри row отсутствуют
+  link, button и текст, но heading начинается на той же высоте, что и при
+  заполненной backlink-row;
 - на Schedule/Students/Courses shared `ProductTableHead` имеет computed white
   background, а row dividers используют один
   `--product-table-divider-color`;
@@ -993,14 +1004,16 @@ ShiDao V2 application:
   во время motion.
   Проверить computed `background: rgb(255, 255, 255)` и `isolation: isolate` у
   nav-track, `z-index: auto` у nav-list и фактические тёмные пиксели inactive
-  glyphs. С задержанным RSC/data response быстро нажать два-три разных primary
-  links: каждый click должен отправить navigation синхронно, следующий intent —
-  немедленно перецелить pill и supersede-ить предыдущий pre-commit/pending
-  route. После завершения всех задержанных response только последний intent
-  может commit-ить URL; active link и pill обязаны совпасть с ним, а stale
-  response не должен кратко вернуть промежуточный route. В течение pill
-  motion/load links и keyboard focus остаются рабочими, cursor не меняется на
-  wait, а pointer-blocking overlay/disabled navigation не появляется.
+  glyphs. Hover неактивного link должен дать exact 5%-black
+  `rgba(0, 0, 0, 0.05)` surface и не исчезнуть из-за measured-pill ready
+  override. С задержанным RSC/data response быстро нажать два-три разных
+  primary links: каждый click должен отправить navigation синхронно, следующий
+  intent — немедленно перецелить pill и supersede-ить предыдущий
+  pre-commit/pending route. После завершения всех задержанных response только
+  последний intent может commit-ить URL; active link и pill обязаны совпасть с
+  ним, а stale response не должен кратко вернуть промежуточный route. В течение
+  pill motion/load links и keyboard focus остаются рабочими, cursor не меняется
+  на wait, а pointer-blocking overlay/disabled navigation не появляется.
   Зафиксировать, что async route load и ожидание ready header не находятся
   внутри native `document.startViewTransition`; native named element
   `app-page-header` используется только для синхронного update, а committed
@@ -1215,9 +1228,10 @@ flow как permanent delete.
   `.product-btn` state-contract и сохранять одинаковые width/height во всех
   состояниях: внешний control остаётся `40 px`, внутренняя client-area —
   `38 px`, border не исчезает на hover, active или focus. Белый
-  `.site-header-shell-demo` сохраняет `68 px / 20 px` и
-  имеет единственную computed shadow
-  `oklch(0 0 0 / 0.05) 0px 6px 12px 0px` без inset-слоёв. После завершения
+  Current-source `.site-header-shell-demo` имеет `64 px / 20 px`, `12 px`
+  block-padding, `40 px` internal controls и единственную computed shadow
+  `oklch(0 0 0 / 0.05) 0px 6px 12px 0px` без inset-слоёв. Прежний deployed
+  `68 px` sticky shell остаётся историческим release evidence. После завершения
   transition hover должен давать
   `oklch(0 0 0 / 0.16) 0px 4px 10px -2px` и
   `matrix(1, 0, 0, 1, 0, -1)` без scale, а pointer-down `:active` —

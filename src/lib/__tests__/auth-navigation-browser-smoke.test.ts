@@ -3756,6 +3756,19 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
       "Inactive primary-nav glyphs must visibly render black on the white track",
     );
 
+    const studentsLink = runtime.page.getByRole("link", {
+      name: "Ученики",
+      exact: true,
+    });
+    await studentsLink.hover();
+    await runtime.page.waitForTimeout(220);
+    assert.equal(
+      await studentsLink.evaluate(
+        (link) => getComputedStyle(link).backgroundColor,
+      ),
+      "rgba(0, 0, 0, 0.05)",
+    );
+
     const start = await runtime.page.evaluate(() => {
       const track = document.querySelector<HTMLElement>(
         ".site-header-nav-track",
@@ -3775,10 +3788,6 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
       };
     });
 
-    const studentsLink = runtime.page.getByRole("link", {
-      name: "Ученики",
-      exact: true,
-    });
     await studentsLink.click();
     await runtime.page.evaluate(
       () =>
@@ -3874,7 +3883,7 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
         listZIndex: "auto",
         trackIsolation: "isolate",
         trackBackgroundColor: "rgb(255, 255, 255)",
-        targetBackgroundColor: "rgba(0, 0, 0, 0)",
+        targetBackgroundColor: "rgba(0, 0, 0, 0.05)",
         targetLinkColor: "rgb(0, 0, 0)",
         targetContentColor: "rgb(255, 255, 255)",
         targetContentMixBlendMode: "difference",
@@ -9934,6 +9943,14 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const topNav = document.querySelector<HTMLElement>(".course-top-nav");
       const pageHeader =
         document.querySelector<HTMLElement>(".app-page-header");
+      const pageHeaderContent = pageHeader?.querySelector<HTMLElement>(
+        ".app-page-header-content",
+      );
+      const backSlot = pageHeader?.querySelector<HTMLElement>(
+        ".app-page-back-slot",
+      );
+      const pageHeading =
+        pageHeader?.querySelector<HTMLElement>(".app-page-heading");
       const header = document.querySelector<HTMLElement>(
         ".site-header-shell-demo",
       );
@@ -9978,6 +9995,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         !shell ||
         !topNav ||
         !pageHeader ||
+        !pageHeaderContent ||
+        !backSlot ||
+        !pageHeading ||
         !header ||
         !title ||
         !headerActions ||
@@ -9997,6 +10017,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
 
       const shellStyle = getComputedStyle(shell);
       const pageHeaderStyle = getComputedStyle(pageHeader);
+      const backSlotStyle = getComputedStyle(backSlot);
       const titleStyle = getComputedStyle(title);
       const buttonStyle = getComputedStyle(primaryButton);
       const headerStyle = getComputedStyle(header);
@@ -10013,6 +10034,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       );
       const toolbarSearchIconStyle = getComputedStyle(toolbarSearchIcon);
       const pageHeaderRect = pageHeader.getBoundingClientRect();
+      const backSlotRect = backSlot.getBoundingClientRect();
+      const pageHeadingRect = pageHeading.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
 
       return {
@@ -10020,6 +10043,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         shellBackgroundImage: shellStyle.backgroundImage,
         topNavPosition: getComputedStyle(topNav).position,
         headerHeight: headerStyle.height,
+        headerPaddingTop: headerStyle.paddingTop,
+        headerPaddingBottom: headerStyle.paddingBottom,
         headerRadius: headerStyle.borderRadius,
         headerBoxShadow: headerStyle.boxShadow,
         titleFontFamily: titleStyle.fontFamily,
@@ -10034,6 +10059,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
               headerActionsRect.height / 2 -
               (pageHeaderRect.top + pageHeaderRect.height / 2),
           ),
+          backSlotHeight: backSlotRect.height,
+          backSlotLineHeight: backSlotStyle.lineHeight,
+          backControlCount: backSlot.querySelectorAll("a, button").length,
+          headerToBackSlotGap: backSlotRect.top - pageHeaderRect.top,
+          backSlotToHeadingGap: pageHeadingRect.top - backSlotRect.bottom,
         },
         headerSignature: {
           titleFontFamily: titleStyle.fontFamily,
@@ -10047,6 +10077,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         buttonFontSize: buttonStyle.fontSize,
         buttonFontWeight: buttonStyle.fontWeight,
         navPillRadius: navPillStyle.borderRadius,
+        navPillHeight: navPillStyle.height,
         navPillFontWeight: navPillStyle.fontWeight,
         userTriggerRadius: userTriggerStyle.borderRadius,
         userTriggerFontWeight: userTriggerStyle.fontWeight,
@@ -10088,8 +10119,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
 
     assert.equal(coursesVisual.shellBackgroundColor, "rgb(245, 241, 232)");
     assert.equal(coursesVisual.shellBackgroundImage, "none");
-    assert.equal(coursesVisual.topNavPosition, "sticky");
-    assert.equal(coursesVisual.headerHeight, "68px");
+    assert.equal(coursesVisual.topNavPosition, "relative");
+    assert.equal(coursesVisual.headerHeight, "64px");
+    assert.equal(coursesVisual.headerPaddingTop, "12px");
+    assert.equal(coursesVisual.headerPaddingBottom, "12px");
     assert.equal(coursesVisual.headerRadius, "20px");
     assert.equal(coursesVisual.headerBoxShadow, E2E_PRODUCT_HEADER_SHADOW);
     assert.equal(coursesVisual.titleFontFamily, coursesVisual.bodyFontFamily);
@@ -10102,9 +10135,23 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.ok(coursesVisual.pageHeaderLayout.height > 0);
     assert.ok(coursesVisual.pageHeaderLayout.height < 200);
     assert.ok(coursesVisual.pageHeaderLayout.actionCenterDelta < 0.5);
+    assert.ok(
+      Math.abs(
+        coursesVisual.pageHeaderLayout.backSlotHeight -
+          Number.parseFloat(coursesVisual.pageHeaderLayout.backSlotLineHeight),
+      ) < 0.5,
+    );
+    assert.equal(coursesVisual.pageHeaderLayout.backControlCount, 0);
+    assert.ok(
+      Math.abs(coursesVisual.pageHeaderLayout.headerToBackSlotGap - 20) < 0.5,
+    );
+    assert.ok(
+      Math.abs(coursesVisual.pageHeaderLayout.backSlotToHeadingGap - 20) < 0.5,
+    );
     assert.equal(coursesVisual.buttonRadius, "12px");
     assert.equal(coursesVisual.buttonFontWeight, "400");
     assert.equal(coursesVisual.navPillRadius, "12px");
+    assert.equal(coursesVisual.navPillHeight, "40px");
     assert.equal(coursesVisual.navPillFontWeight, "400");
     assert.equal(coursesVisual.userTriggerRadius, "12px");
     assert.equal(coursesVisual.userTriggerFontWeight, "400");
@@ -10137,6 +10184,36 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       { label: "Показать таблицей", pressed: "true" },
       { label: "Показать карточками", pressed: "false" },
     ]);
+
+    const topNavScrollContract = await runtime.page.evaluate(async () => {
+      const topNav = document.querySelector<HTMLElement>(".course-top-nav");
+      if (!topNav) throw new Error("Product TopNav is missing");
+
+      const spacer = document.createElement("div");
+      spacer.style.height = "200vh";
+      spacer.setAttribute("data-e2e-scroll-spacer", "");
+      document.body.append(spacer);
+
+      const initialBottom = topNav.getBoundingClientRect().bottom;
+      window.scrollTo(0, initialBottom + window.scrollY + 1);
+      await new Promise<void>((resolve) =>
+        window.requestAnimationFrame(() =>
+          window.requestAnimationFrame(() => resolve()),
+        ),
+      );
+      const scrolledBottom = topNav.getBoundingClientRect().bottom;
+      const scrollY = window.scrollY;
+
+      window.scrollTo(0, 0);
+      spacer.remove();
+      return { initialBottom, scrolledBottom, scrollY };
+    });
+    assert.ok(topNavScrollContract.initialBottom > 0);
+    assert.ok(topNavScrollContract.scrollY > 0);
+    assert.ok(
+      topNavScrollContract.scrolledBottom < 0,
+      "Normal-flow product TopNav must leave the viewport with page content",
+    );
     assert.ok(
       Math.abs(Number.parseFloat(coursesVisual.buttonFontSize) - 14.08) < 0.1,
     );
