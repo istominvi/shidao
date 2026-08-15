@@ -90,14 +90,19 @@ cursor и вид. Его server-side `subject`/`level`/facet contract не уд�
 но текущий web UI эти параметры больше не отправляет. Store сохраняет category
 tabs, поиск, сортировку и виды; audience/price/availability filter menu и его
 client predicates удалены. Сортировка Store открывает не системный macOS
-`select`, а канонический product dropdown без focus halo на trigger.
+`select`, а канонический product dropdown без focus halo на trigger. Category
+tabs и сортировка применяются сразу и не создают toolbar-кнопку сброса;
+toolbar-action «Очистить поиск» появляется только при непустом запросе и не
+меняет выбранные category, sort или view.
 
 В `/students` прежний disclosure с status, Account и конкретной группой
 заменён видимым inline `SegmentedControl` **Все / В группе / Без группы**.
 Membership narrowing относится только к active teacher relations; режим
 «Все» по-прежнему оставляет в общем справочнике archived relations и pending
 requests с их restore/cancel actions. Поиск, sortable table headers и
-**Таблица / Карточки** не меняются. Canonical text/search inputs сохраняют
+**Таблица / Карточки** не меняются. Membership toggle обновляет projection
+сразу и не создаёт toolbar reset-action; «Очистить поиск» зависит только от текста и
+не возвращает toggle в «Все». Canonical text/search inputs сохраняют
 2 px focus halo, но он начинается сразу за control border (`outline-offset:
 0`); product dropdown triggers, включая Store sort, этот halo не получают.
 Schedule date navigator использует тот же product border, clipped white

@@ -3186,6 +3186,12 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
       await runtime.page.locator(".store-toolbar select").count(),
       0,
     );
+    assert.equal(
+      await runtime.page
+        .getByRole("button", { name: "Очистить поиск", exact: true })
+        .count(),
+      0,
+    );
 
     const storeSearch = runtime.page.getByRole("searchbox", {
       name: "Поиск товаров",
@@ -3292,6 +3298,12 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
       )?.trim(),
       "Тетрадь мицзыгэ для каллиграфии",
     );
+    assert.equal(
+      await runtime.page
+        .getByRole("button", { name: "Очистить поиск", exact: true })
+        .count(),
+      0,
+    );
     const updatedStoreSort = runtime.page.getByRole("combobox", {
       name: "Сортировка товаров: Сначала дешевле",
       exact: true,
@@ -3303,6 +3315,17 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
       .click();
     await runtime.page.getByRole("listbox").waitFor({ state: "detached" });
     assert.equal(await updatedStoreSort.getAttribute("aria-expanded"), "false");
+    await storeSearch.fill("каллиграфии");
+    const clearStoreSearch = runtime.page.getByRole("button", {
+      name: "Очистить поиск",
+      exact: true,
+    });
+    await clearStoreSearch.waitFor();
+    await clearStoreSearch.click();
+    assert.equal(await storeSearch.inputValue(), "");
+    assert.equal(await workbookTab.getAttribute("aria-selected"), "true");
+    await updatedStoreSort.waitFor();
+    assert.equal(await clearStoreSearch.count(), 0);
 
     const storeProductSurface = runtime.page.locator(
       "#store-product-store-product-001 .surface-card.store-product-card-surface",
@@ -7148,11 +7171,35 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       );
     await groupedMemberships.click();
     assert.equal(await groupedMemberships.getAttribute("aria-pressed"), "true");
+    assert.equal(
+      await runtime.page
+        .getByRole("button", { name: "Очистить поиск", exact: true })
+        .count(),
+      0,
+    );
     assert.deepEqual(await learnerRowNames(), [
       "Анна Петрова",
       "Борис Волков",
       "Клара Смирнова",
     ]);
+    const learnerToolbarSearch = runtime.page.locator(
+      'input[placeholder="Найти ученика"]',
+    );
+    await learnerToolbarSearch.fill("Анна");
+    const clearLearnerSearch = runtime.page.getByRole("button", {
+      name: "Очистить поиск",
+      exact: true,
+    });
+    await clearLearnerSearch.waitFor();
+    await clearLearnerSearch.click();
+    assert.equal(await learnerToolbarSearch.inputValue(), "");
+    assert.equal(await groupedMemberships.getAttribute("aria-pressed"), "true");
+    assert.deepEqual(await learnerRowNames(), [
+      "Анна Петрова",
+      "Борис Волков",
+      "Клара Смирнова",
+    ]);
+    assert.equal(await clearLearnerSearch.count(), 0);
     await ungroupedMemberships.click();
     assert.equal(
       await ungroupedMemberships.getAttribute("aria-pressed"),
@@ -7161,6 +7208,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     await learnerTable
       .getByText("Ничего не найдено", { exact: true })
       .waitFor();
+    assert.equal(
+      await runtime.page
+        .getByRole("button", { name: "Очистить поиск", exact: true })
+        .count(),
+      0,
+    );
     assert.deepEqual(await learnerRowNames(), []);
     await allMemberships.click();
     assert.equal(await allMemberships.getAttribute("aria-pressed"), "true");

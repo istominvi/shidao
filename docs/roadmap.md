@@ -50,9 +50,13 @@
 - Students вместо dropdown показывает один inline toggle **Все / В группе /
   Без группы**. Status, Account-state и concrete-group controls удаляются;
   archived/pending строки остаются доступны в режиме «Все» и через поиск.
+  Toggle применяет narrowing сразу и не вызывает toolbar reset-action; query-only
+  «Очистить поиск» не меняет выбранный membership mode.
 - Store sort становится канонической ShiDao-выпадашкой, а не native
   platform-select. Trigger не получает input halo; keyboard navigation,
-  selected state, Escape и focus return остаются обязательными.
+  selected state, Escape и focus return остаются обязательными. Category и
+  sort применяются сразу без toolbar reset-action; очистка появляется только для
+  непустого поиска и сохраняет остальные параметры каталога.
 - Focus halo text/search inputs прилегает к рамке (`outline-offset: 0`), а
   Schedule date navigator переиспользует общий product border/background-clip,
   radius и static base shadow без custom inset/двойной тени.

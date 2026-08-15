@@ -555,7 +555,33 @@ test("students manages one learner and group directory with durable history", ()
   );
   assert.match(
     studentsWorkspaceSource,
-    /Boolean\(normalizedQuery\) \|\| \(view === "learners" && groupFilter !== "all"\)/,
+    /const hasDirectoryFilters =\s*Boolean\(normalizedQuery\) \|\| \(view === "learners" && groupFilter !== "all"\)/,
+  );
+  assert.match(
+    studentsWorkspaceSource,
+    /const hasSearchQuery = Boolean\(normalizedQuery\);/,
+  );
+  const searchResetStart = studentsWorkspaceSource.indexOf(
+    "{hasSearchQuery ? (",
+  );
+  const searchResetEnd = studentsWorkspaceSource.indexOf(
+    "<SegmentedControl",
+    searchResetStart,
+  );
+  assert.ok(searchResetStart >= 0 && searchResetEnd > searchResetStart);
+  const searchResetSource = studentsWorkspaceSource.slice(
+    searchResetStart,
+    searchResetEnd,
+  );
+  assert.match(searchResetSource, /aria-label="Очистить поиск"/);
+  assert.match(searchResetSource, /setLearnerQuery\(""\)/);
+  assert.match(searchResetSource, /setGroupQuery\(""\)/);
+  assert.doesNotMatch(searchResetSource, /setGroupFilter/);
+  assert.doesNotMatch(studentsWorkspaceSource, /Сбросить параметры списка/);
+  assert.equal(
+    studentsWorkspaceSource.match(/hasFilters=\{hasDirectoryFilters\}/g)
+      ?.length,
+    4,
   );
   assert.doesNotMatch(
     studentsWorkspaceSource,

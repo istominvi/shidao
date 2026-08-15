@@ -1247,7 +1247,10 @@ flow как permanent delete.
   Store sort использует product dropdown с keyboard navigation, Escape,
   selected state и focus return, но без entry-field halo. Contextual menu
   items, flat row/Component icon-actions и compound toggles не должны получить
-  ordinary button lift;
+  ordinary button lift. После смены Students membership, Store category или
+  Store sort список обновляется сразу, а generic toolbar reset-action не появляется.
+  «Очистить поиск» существует только при непустом query и не сбрасывает
+  membership/category/sort/view;
 - в том же acceptance проверить общий computed border
   `1px solid oklch(0 0 0 / 0.1)` и `background-clip: padding-box`, затем
   сравнить computed `box-shadow` с

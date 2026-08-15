@@ -363,7 +363,8 @@ export function StudentsWorkspace({
     archivedDirectory !== null &&
     connections !== null;
   const busy = Boolean(busyLabel);
-  const hasFilters =
+  const hasSearchQuery = Boolean(normalizedQuery);
+  const hasDirectoryFilters =
     Boolean(normalizedQuery) || (view === "learners" && groupFilter !== "all");
   const cachedStudentsSummary = primaryHeaderSummary?.students ?? null;
   const headerMetric =
@@ -622,18 +623,17 @@ export function StudentsWorkspace({
             />
           ) : null}
 
-          {hasFilters ? (
+          {hasSearchQuery ? (
             <Button
               type="button"
               variant="ghost"
               className="compact-toolbar-reset"
               disabled={busy}
-              aria-label="Сбросить параметры списка"
-              title="Сбросить параметры списка"
+              aria-label="Очистить поиск"
+              title="Очистить поиск"
               onClick={() => {
                 if (view === "learners") {
                   setLearnerQuery("");
-                  setGroupFilter("all");
                 } else {
                   setGroupQuery("");
                 }
@@ -728,7 +728,7 @@ export function StudentsWorkspace({
               onSort={(key) =>
                 setLearnerSort((current) => nextProductTableSort(current, key))
               }
-              hasFilters={hasFilters}
+              hasFilters={hasDirectoryFilters}
               disabled={busy}
               onOpen={(profile, surface) => {
                 setMutationError(null);
@@ -749,7 +749,7 @@ export function StudentsWorkspace({
             <LearnersDirectoryCards
               entries={learnerEntries}
               sort={learnerSort}
-              hasFilters={hasFilters}
+              hasFilters={hasDirectoryFilters}
               disabled={busy}
               onOpen={(profile, surface) => {
                 setMutationError(null);
@@ -785,7 +785,7 @@ export function StudentsWorkspace({
               onSort={(key) =>
                 setGroupSort((current) => nextProductTableSort(current, key))
               }
-              hasFilters={hasFilters}
+              hasFilters={hasDirectoryFilters}
               disabled={busy}
               onOpen={(group) => {
                 setMutationError(null);
@@ -796,7 +796,7 @@ export function StudentsWorkspace({
             <LearnerGroupsDirectoryCards
               groups={visibleGroups}
               sort={groupSort}
-              hasFilters={hasFilters}
+              hasFilters={hasDirectoryFilters}
               disabled={busy}
               onOpen={(group) => {
                 setMutationError(null);

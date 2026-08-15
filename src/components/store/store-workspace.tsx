@@ -300,10 +300,7 @@ export function StoreWorkspace({
     [filters],
   );
   const cart = useMemo(() => deriveStoreCart(cartState), [cartState]);
-  const hasFilters =
-    filters.query.trim().length > 0 ||
-    filters.category !== "all" ||
-    filters.sort !== "popular";
+  const hasSearchQuery = filters.query.trim().length > 0;
   const initialName =
     session.kind === "account" ? (session.fullName ?? "") : "";
   const initialEmail =
@@ -412,13 +409,13 @@ export function StoreWorkspace({
                 onChange={(sort) => updateFilter("sort", sort)}
               />
 
-              {hasFilters ? (
+              {hasSearchQuery ? (
                 <Button
                   variant="ghost"
                   className="compact-toolbar-reset"
-                  aria-label="Сбросить параметры каталога"
-                  title="Сбросить параметры каталога"
-                  onClick={resetFilters}
+                  aria-label="Очистить поиск"
+                  title="Очистить поиск"
+                  onClick={() => updateFilter("query", "")}
                 >
                   <RotateCcw className="h-4 w-4" aria-hidden="true" />
                 </Button>

@@ -30,6 +30,19 @@ test("Store is an Account page built from the shared product shell", () => {
   assert.match(workspace, /<ProductSelect/);
   assert.match(workspace, /label="Сортировка товаров"/);
   assert.match(workspace, /options=\{STORE_SORT_OPTIONS\}/);
+  assert.match(
+    workspace,
+    /const hasSearchQuery = filters\.query\.trim\(\)\.length > 0;/,
+  );
+  assert.match(
+    workspace,
+    /\{hasSearchQuery \? \([\s\S]*?aria-label="Очистить поиск"[\s\S]*?onClick=\{\(\) => updateFilter\("query", ""\)\}/,
+  );
+  assert.doesNotMatch(workspace, /Сбросить параметры каталога/);
+  assert.doesNotMatch(
+    workspace,
+    /const hasFilters =[\s\S]*?filters\.category !== "all"[\s\S]*?filters\.sort !== "popular"/,
+  );
   assert.doesNotMatch(workspace, /StoreFilterMenu|<Select\b|<select\b/);
   assert.doesNotMatch(
     workspace,

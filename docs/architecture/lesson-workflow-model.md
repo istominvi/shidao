@@ -971,7 +971,9 @@ Current production делает `/schedule` и `/students` доступными
   и pending requests остаются в режиме «Все» и доступны поиском. Status,
   конкретная группа и Account connection больше не являются filter controls,
   но их фактические значения и допустимые row actions продолжают отображаться.
-  Table-header sorting и общий **Таблица / Карточки** contract сохраняются;
+  Toggle сразу обновляет общую projection и не показывает toolbar reset-action;
+  query-only «Очистить поиск» не меняет membership mode. Table-header sorting
+  и общий **Таблица / Карточки** contract сохраняются;
 - `/courses` использует общий edge-to-edge `WorkspaceTabs`; page supporting
   line отсутствует, пока route не владеет честной общей метрикой. Прежний
   instructional subtitle удалён. Controls обеих вкладок прозрачны и
@@ -996,6 +998,9 @@ actions`; пять data headers сортируют полную client-loaded pr
   заголовками таблицы; published catalog — поиск, направление обучения,
   server cursor и выбор вида. Backend subject/level/facet capability остаётся
   совместимым, но active web UI её не выставляет;
+- Store category tabs и custom sort сразу обновляют локальную projection и не
+  создают generic toolbar reset-action. Toolbar предлагает только query-dependent
+  «Очистить поиск», которое сохраняет category, sort и presentation mode;
 - клик по строке открывает dialog «Профиль / История»; membership допускает
   несколько групп, а history panel читает только LearningRecord, записанные
   текущим преподавателем;
