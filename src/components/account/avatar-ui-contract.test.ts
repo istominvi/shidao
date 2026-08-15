@@ -67,7 +67,7 @@ test("account settings keep avatar choices compact and require confirmation", ()
   assert.ok((form.match(/await refetchSession\(\)/g) ?? []).length >= 2);
 });
 
-test("protected mobile header uses a burger while desktop keeps the Account avatar", () => {
+test("only protected mobile navigation uses a menu; every avatar links to Profile", () => {
   const navigation = source("src/components/session-nav-actions.tsx");
   const navigationPrimitives = source(
     "src/components/navigation/primitives.tsx",
@@ -86,14 +86,20 @@ test("protected mobile header uses a burger while desktop keeps the Account avat
   assert.match(navigation, /const isProtectedTopNav = variant === "top-nav"/);
   assert.match(
     navigation,
-    /<Menu className="nav-main-menu-icon md:hidden" aria-hidden="true" \/>/,
+    /aria-label="Открыть меню аккаунта"[\s\S]*?className="nav-user-trigger nav-account-menu-trigger inline-flex cursor-pointer items-center justify-center md:hidden"[\s\S]*?<Menu className="nav-main-menu-icon" aria-hidden="true" \/>/,
   );
   assert.match(
     navigation,
-    /<span className="hidden md:inline-flex">\s*<AvatarImage/,
+    /<NavigationDropdownPanel[\s\S]*?aria-label="Меню аккаунта"[\s\S]*?className="[^"]*md:hidden"/,
   );
-  assert.match(navigation, /aria-label=\{accountMenuTriggerLabel\}/);
-  assert.match(navigation, /aria-label=\{accountMenuLabel\}/);
+  assert.match(
+    navigation,
+    /<PageTransitionLink\s+href=\{profileTabHref\("profile"\)\}[\s\S]*?aria-label="Открыть профиль"[\s\S]*?nav-profile-link[\s\S]*?isProtectedTopNav \? "hidden md:inline-flex" : "inline-flex"[\s\S]*?<AvatarImage/,
+  );
+  assert.doesNotMatch(
+    navigation,
+    /PROFILE_NAV_ITEMS|PROFILE_MENU_ICONS|handleSignOut|signOutViaServer|LogOut|portalMenu|createPortal/,
+  );
   assert.match(navigation, /<div className="nav-dropdown-profile">/);
   assert.doesNotMatch(
     navigation.match(

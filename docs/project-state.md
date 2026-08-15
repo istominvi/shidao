@@ -115,10 +115,11 @@ scrollbar во всех браузерах; доступное продолже�
 40 px chevron-кнопки с прокруткой, direction-aware состоянием и возвратом
 фокуса. Product shell клипует только transient document-level horizontal
 overflow route entrance, не внутренние scroll containers. В protected mobile
-header вместо аватара показан burger; его Account
-menu содержит имя, допустимый email и ровно «Расписание / Ученики / Курсы /
-Магазин / Профиль». Desktop protected header сохраняет avatar и полный
-profile dropdown, а landing не меняется. Изменение UI-only в
+header вместо аватара показан burger; он открывает единственный navigation
+dropdown в Account chrome с именем, допустимым email и ровно «Расписание /
+Ученики / Курсы / Магазин / Профиль». На protected desktop и authenticated
+landing выбранный avatar остаётся видимым, но является прямой ссылкой на
+`/profile`; прежний Account/avatar dropdown удалён. Изменение UI-only в
 `src/components/app/page-header.tsx`, `src/components/ui/workspace-tabs.tsx`,
 `src/components/session-nav-actions.tsx` и соответствующих styles/tests; API,
 session projection, schema, migrations и Lesson hierarchy не меняются.
@@ -254,6 +255,16 @@ redirects с переносом query; security redirect сохраняет `#se
 повторной тени. Настройка аватара компактна: текущий avatar и две кнопки;
 двадцать presets открываются в modal picker, а локальный файл — в отдельном
 preview dialog до явного сохранения.
+
+**Current source / next production navigation refinement:** Account/avatar
+dropdown удалён. Avatar в protected desktop header и на authenticated landing
+ведёт напрямую в `/profile`; он не открывает список profile tabs или `Выход`.
+На protected mobile avatar заменён burger-кнопкой, и только она открывает
+navigation dropdown: header содержит Account name и privacy-safe email, а
+список ограничен пятью пунктами «Расписание / Ученики / Курсы / Магазин /
+Профиль». Это presentation-only изменение без нового session field, API,
+schema или migration; production rollout и authenticated postflight ещё
+предстоят.
 
 Этот UI/routing slice развёрнут exact release
 `4462da2248dd97bf6ab5c0a35f9a781844473874`. Coolify deployment `960`
@@ -593,18 +604,19 @@ popovers и Account menu ещё были отдельным visual scope; это
 
 **Current source / next production universal dropdown refinement:** общий
 `.product-dropdown-surface` канонизирует active product panels: shared
-contextual `ActionMenu`, Account/profile menu, product selection dropdowns,
-включая Store sort, и Schedule calendar/date popover. Course/Students/Store
-filter popovers удалены. Каждая оставшаяся панель имеет ровно
+contextual `ActionMenu`, protected mobile navigation menu, product selection
+dropdowns, включая Store sort, и Schedule calendar/date popover.
+Course/Students/Store filter popovers удалены. Каждая оставшаяся панель имеет ровно
 `6 px` внутреннего inset (`--product-dropdown-inset: 0.375rem`), белый фон, общий
 element-radius `12 px`, обычный `border: 0`, `backdrop-filter: none` и одну
 тень `0 18px 46px rgba(20, 20, 20, 0.18)`. Внутренние separator/divider линии
-удалены также из profile menu и calendar footer; consumers не
+удалены также из mobile navigation menu и calendar footer; consumers не
 добавляют собственную рамку, blur, вторую тень или отличающийся panel padding.
 В forced-colors декоративная тень отключается, а границу панели восстанавливает
-системный `1px solid CanvasText` на `Canvas`. Item geometry, destructive/
-disabled states, native summary/date-picker semantics, portal/keyboard/focus
-contracts не меняются. Native `select`, самостоятельные modal dialogs и
+системный `1px solid CanvasText` на `Canvas`. Contextual `ActionMenu` сохраняет
+destructive/disabled states и portal positioning; selection/date panels — свои
+native semantics. Mobile navigation panel локально привязан к burger и
+сохраняет keyboard/Escape/focus-return contract. Native `select`, самостоятельные modal dialogs и
 reference/demo-only surfaces не получают universal dropdown class; calendar
 panel остаётся в contract как dropdown, хотя использует dialog semantics. Это
 UI-only изменение без API, schema или migrations.
@@ -992,6 +1004,10 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   содержит «Расписание / Ученики / Курсы / Магазин»; «Профиль» находится в
   меню Account вместе с остальными вкладками раздела, а observer projection —
   третьей вкладкой «Наблюдение» внутри «Ученики».
+- В current source / next production Account/avatar menu удалено: protected
+  desktop и authenticated landing используют avatar как прямую ссылку
+  `/profile`, а единственный navigation dropdown открывается burger-кнопкой
+  protected mobile header и содержит name/email плюс пять основных маршрутов.
 - Существующая app-session поддерживает глобальную и пользовательскую
   инвалидизацию; destructive identity/credential flows дополнительно требуют
   recent reauthentication из sealed session.
@@ -1180,7 +1196,10 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   gradients на этих маршрутах отсутствуют.
 - Course header следует demo-контракту: sticky shell высотой 68 px, сплошная
   белая поверхность без blur, радиус 20 px и контролы 40 px с радиусом 12 px.
-  Персональное dropdown-меню также использует непрозрачный белый фон.
+  В current production персональное dropdown-меню также использует
+  непрозрачный белый фон. В current source / next production этот dropdown
+  остаётся только главным меню protected mobile burger; avatar на protected
+  desktop и authenticated landing является прямой ссылкой `/profile`.
 - Один `AppPageHeader` задаёт прозрачную заголовочную секцию, единый H1 с
   максимумом 48 px на desktop и 32 px на mobile, подзаголовок, optional
   backlink и правую action-секцию для `/courses`, `/students`, `/schedule`, Course
@@ -1223,6 +1242,12 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - В current production основная навигация любого Account содержит «Расписание /
   Ученики / Курсы / Магазин» без role switch. Персональное меню справа содержит
   «Профиль / История / Аттестация / Наблюдатели / Настройки / Выход».
+- В current source / next production это персональное Account/avatar menu
+  удалено. Protected desktop и authenticated landing открывают `/profile`
+  прямым нажатием на avatar. Protected mobile скрывает desktop primary rail и
+  показывает burger — единственный navigation dropdown с Account name,
+  privacy-safe email и пунктами «Расписание / Ученики / Курсы / Магазин /
+  Профиль».
 - «Магазин» остаётся тем же universal Account route и не вводит роль продавца
   или покупателя.
 - `/schedule` и `/students` filesystem-совместимо остаются под прежним route

@@ -135,7 +135,7 @@ export function LandingPage({
           return null;
         }
 
-        return <SessionNavActions state={state} variant="landing" portalMenu />;
+        return <SessionNavActions state={state} variant="landing" />;
       case "skeleton":
         return (
           <div

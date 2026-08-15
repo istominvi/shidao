@@ -3062,7 +3062,7 @@ test("browser smoke: restored standalone demo navigates across its local views",
   }
 });
 
-test("browser smoke: authenticated user on / sees auth-aware header", async (t) => {
+test("browser smoke: authenticated landing avatar links directly to Profile", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
     return;
@@ -3096,6 +3096,33 @@ test("browser smoke: authenticated user on / sees auth-aware header", async (t) 
     const html = await runtime.page.content();
 
     assert.match(html, /E2E Adult/);
+    const profileLink = runtime.page.getByRole("link", {
+      name: "Открыть профиль",
+      exact: true,
+    });
+    await profileLink.waitFor();
+    assert.equal(await profileLink.getAttribute("href"), "/profile");
+    assert.equal(await profileLink.getAttribute("aria-haspopup"), null);
+    assert.equal(
+      await runtime.page
+        .getByRole("button", { name: /Открыть меню пользователя/ })
+        .count(),
+      0,
+    );
+    assert.equal(
+      await runtime.page
+        .getByRole("menu", { name: /Меню пользователя/ })
+        .count(),
+      0,
+    );
+
+    await Promise.all([
+      runtime.page.waitForURL(/\/profile$/),
+      profileLink.click(),
+    ]);
+    await runtime.page
+      .getByRole("heading", { name: "E2E Adult", exact: true, level: 1 })
+      .waitFor();
   } finally {
     await runtime.close();
   }
@@ -4744,7 +4771,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         siteHeader?.querySelectorAll<SVGElement>(".nav-pill-icon") ?? [],
       );
       const userTrigger =
-        siteHeader?.querySelector<HTMLElement>(".nav-user-trigger");
+        siteHeader?.querySelector<HTMLElement>(".nav-profile-link");
       const userAvatar = userTrigger?.querySelector<HTMLElement>(
         ".nav-user-trigger-avatar",
       );
@@ -5944,86 +5971,28 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       true,
     );
 
-    const userMenuTrigger = runtime.page.getByRole("button", {
-      name: "Открыть меню аккаунта",
+    const desktopProfileLink = runtime.page.getByRole("link", {
+      name: "Открыть профиль",
       exact: true,
     });
-    await userMenuTrigger.click();
-    const profileDropdown = runtime.page.locator(".nav-dropdown-panel");
-    await profileDropdown.waitFor();
-    await assertCanonicalProductDropdownSurface(
-      profileDropdown,
-      "Account profile menu",
-    );
-    await profileDropdown.locator(".nav-dropdown-item:focus").waitFor();
+    await desktopProfileLink.waitFor();
+    assert.equal(await desktopProfileLink.getAttribute("href"), "/profile");
+    assert.equal(await desktopProfileLink.getAttribute("aria-haspopup"), null);
     assert.equal(
-      await runtime.page.evaluate(
-        () => document.activeElement?.textContent?.trim() ?? "",
-      ),
-      "Профиль",
+      await runtime.page
+        .getByRole("button", {
+          name: "Открыть меню аккаунта",
+          exact: true,
+        })
+        .count(),
+      0,
     );
-    await runtime.page
-      .getByRole("menu", { name: "Меню аккаунта", exact: true })
-      .waitFor();
-    assert.deepEqual(
-      await runtime.page.evaluate(() => {
-        const panel = document.querySelector<HTMLElement>(
-          ".nav-dropdown-panel",
-        );
-        if (!panel) throw new Error("Profile dropdown is missing");
-        const style = getComputedStyle(panel);
-        const items = Array.from(
-          panel.querySelectorAll<HTMLElement>(".nav-dropdown-item"),
-        ).filter((item) => item.offsetParent !== null);
-        return {
-          backgroundColor: style.backgroundColor,
-          backgroundImage: style.backgroundImage,
-          backdropFilter: style.backdropFilter,
-          opacity: style.opacity,
-          items: items.map((item) => {
-            const itemStyle = getComputedStyle(item);
-            const icon = item.querySelector<SVGElement>("svg");
-            const iconStyle = icon ? getComputedStyle(icon) : null;
-            return {
-              label: item.textContent?.trim() ?? "",
-              borderWidths: [
-                itemStyle.borderTopWidth,
-                itemStyle.borderRightWidth,
-                itemStyle.borderBottomWidth,
-                itemStyle.borderLeftWidth,
-              ],
-              fontWeight: itemStyle.fontWeight,
-              color: itemStyle.color,
-              iconColor: iconStyle?.color ?? "",
-              iconOpacity: iconStyle?.opacity ?? "",
-            };
-          }),
-        };
-      }),
-      {
-        backgroundColor: "rgb(255, 255, 255)",
-        backgroundImage: "none",
-        backdropFilter: "none",
-        opacity: "1",
-        items: [
-          "Профиль",
-          "История",
-          "Аттестация",
-          "Наблюдатели",
-          "Настройки",
-          "Выход",
-        ].map((label) => ({
-          label,
-          borderWidths: ["0px", "0px", "0px", "0px"],
-          fontWeight: "400",
-          color: "rgb(23, 23, 23)",
-          iconColor: "rgb(23, 23, 23)",
-          iconOpacity: "1",
-        })),
-      },
+    assert.equal(
+      await runtime.page
+        .getByRole("menu", { name: "Меню аккаунта", exact: true })
+        .count(),
+      0,
     );
-    await userMenuTrigger.press("Escape");
-    await profileDropdown.waitFor({ state: "detached" });
 
     await runtime.page
       .getByRole("button", { name: "Показать карточками", exact: true })
@@ -8296,7 +8265,7 @@ test("browser smoke: observer settings accepts an incoming request and revokes o
           ".site-header-shell-demo",
         );
         const userTrigger =
-          header?.querySelector<HTMLElement>(".nav-user-trigger");
+          header?.querySelector<HTMLElement>(".nav-profile-link");
         const userAvatar = userTrigger?.querySelector<HTMLElement>(
           ".nav-user-trigger-avatar",
         );
@@ -9446,8 +9415,9 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
 
     assert.deepEqual(
       await runtime.page.evaluate(() => {
-        const trigger =
-          document.querySelector<HTMLElement>(".nav-user-trigger");
+        const trigger = document.querySelector<HTMLElement>(
+          ".nav-account-menu-trigger",
+        );
         const burger = trigger?.querySelector<SVGElement>(
           ".nav-main-menu-icon",
         );
@@ -9927,7 +9897,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         ".site-header-shell-demo .site-header-nav-pill",
       );
       const userTrigger = document.querySelector<HTMLElement>(
-        ".site-header-shell-demo .nav-user-trigger",
+        ".site-header-shell-demo .nav-profile-link",
       );
       const toolbar = document.querySelector<HTMLElement>(
         ".course-index-toolbar",

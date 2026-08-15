@@ -33,7 +33,9 @@
   ленту, не выбирая вкладку, а keyboard/ARIA/indicator остаются прежними.
 - Protected mobile header использует burger и короткое главное меню
   «Расписание / Ученики / Курсы / Магазин / Профиль» с именем и допустимым
-  email. Desktop Account dropdown и landing avatar contract не меняются.
+  email. Это единственный navigation dropdown: прежний Account/avatar dropdown
+  удалён, а avatar на protected desktop и authenticated landing ведёт напрямую
+  в `/profile`.
 - Следующий release step — обычный Coolify rollout и authenticated postflight
   на мобильной ширине; API, schema и migration work для этого среза не нужны.
 
@@ -264,6 +266,15 @@ initials. Preset fallback
 server-side image normalization, API/UI, schema snapshot и regression tests;
 он не превращает avatar в learner/observer capability и не расширяет Course
 access.
+
+**Current source / next production navigation follow-up:** avatar сохраняет
+то же Account-owned изображение, но перестаёт быть dropdown-trigger на
+protected desktop и authenticated landing: обе поверхности используют прямую
+ссылку `/profile`. Единственный navigation dropdown остаётся в protected
+mobile header за burger-кнопкой и содержит только Account name/privacy-safe
+email и пять основных маршрутов. Sign-out и адресуемые profile tabs остаются
+внутри `/profile`; rollout и authenticated production postflight ещё не
+заявлены.
 
 Согласованный target:
 
@@ -642,20 +653,22 @@ functional source `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`.
 
 **Current source / next production:** один universal dropdown surface
 обслуживает active product panels: contextual `ActionMenu` для Course, Lesson
-rows, Schedule и Students; Account/profile menu; product selection dropdowns,
-включая Store sort; Schedule calendar/date popover. Course/Students/Store
-filter popovers удалены. Панель использует общий
+rows, Schedule и Students; protected mobile navigation menu; product selection
+dropdowns, включая Store sort; Schedule calendar/date popover.
+Course/Students/Store filter popovers удалены. Панель использует общий
 внутренний inset `6 px`, белый фон, element-radius `12 px`, обычный `border: 0`,
 ровно одну
 тень `0 18px 46px rgba(20, 20, 20, 0.18)` и `backdrop-filter: none`.
-Separator/divider линии отсутствуют во всех этих panels, включая profile menu
-и calendar footer; локальные padding, border, blur
+Separator/divider линии отсутствуют во всех этих panels, включая mobile
+navigation menu и calendar footer; локальные padding, border, blur
 и дополнительные shadow forks удалены. Forced-colors отключает тень и
 возвращает системную границу `1px solid CanvasText` на `Canvas`. Native
 `select`, самостоятельные modal dialogs и reference/demo-only surfaces
 исключены; calendar panel остаётся dropdown surface независимо от своей dialog
-семантики. Item geometry, destructive/disabled states, summary/portal/
-keyboard/focus contracts и API/schema/migrations не меняются. Исторический
+семантики. Contextual `ActionMenu` сохраняет destructive/disabled states и
+portal positioning; mobile navigation panel остаётся локально привязанным к
+burger и сохраняет keyboard/Escape/focus return. API/schema/migrations не
+меняются. Исторический
 ActionMenu-only baseline впервые был развёрнут exact release
 `8e5d169dab72dc285c0fdfe8991646152d9904c7`; universal follow-up расширяет его
 scope без ретроспективного изменения этого release.

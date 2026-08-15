@@ -19,6 +19,13 @@ functional application source
 selection/upload. Точные deployed SHA и migration stage сверяются по
 [`docs/project-state.md`](../project-state.md).
 
+Current source / next production упрощает только header presentation: прежний
+Account/avatar dropdown удалён; avatar protected desktop и authenticated
+landing является прямой ссылкой `/profile`, а единственный navigation dropdown
+остаётся за burger-кнопкой protected mobile header. Это не меняет Account,
+LearnerProfile, session projection или authorization boundary и ещё не
+заявляется deployed behavior.
+
 ## Product decision
 
 `Account` — единственная login identity. «Преподаватель», «учащийся» и
@@ -355,12 +362,14 @@ UI surfaces:
   `/settings/security` и `/settings/observers` — только compatibility redirects
   в этот раздел;
 - current source / next production protected mobile navigation открывается
-  burger-кнопкой вместо avatar-trigger. Menu header использует browser-safe
-  Account projection: trimmed имя с fallback и email только если он не скрыт
-  internal-auth boundary. Visible destinations ограничены пунктами «Расписание /
-  Ученики / Курсы / Магазин / Профиль»; desktop сохраняет полный profile menu,
-  включая sign-out, а landing avatar/dropdown остаётся прежним. Account/Auth IDs
-  и private Storage path в browser projection для этого не добавляются.
+  burger-кнопкой вместо avatar. Это единственный navigation dropdown: menu
+  header использует browser-safe Account projection — trimmed имя с fallback и
+  email только если он не скрыт internal-auth boundary, — а visible
+  destinations ограничены пунктами «Расписание / Ученики / Курсы / Магазин /
+  Профиль». На protected desktop и authenticated landing avatar ведёт напрямую
+  в `/profile`; прежний Account/avatar dropdown, включая shortcuts и sign-out,
+  удалён. Account/Auth IDs и private Storage path в browser projection для
+  этого не добавляются.
 
 ## Subject-only unlink и erasure
 
@@ -514,6 +523,12 @@ authenticated self/observer/security navigation, удаление disposable fix
 management и Account settings объединены в адресуемые вкладки `/profile`;
 compact avatar card открывает отдельные preset и upload dialogs. Это не меняет
 observer, consent, credential или subject-lifecycle authorization boundaries.
+
+**Current source / next production navigation:** protected desktop и
+authenticated landing используют avatar как прямую ссылку `/profile` без
+dropdown. Protected mobile burger открывает единственный navigation dropdown с
+Account name/privacy-safe email и пятью основными маршрутами. Profile tabs и
+sign-out остаются в самом `/profile`; production rollout ещё не заявлен.
 
 **Current outside identity:** Account-scoped self-learning approved educator
 publication хранит собственные revision progress и аттестацию; это не является

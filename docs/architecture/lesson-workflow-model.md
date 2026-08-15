@@ -606,8 +606,10 @@ Visual contract Course routes не меняет эту навигационну�
 - page background — сплошной `#f5f1e8` без цветных marketing gradients;
 - product header — sticky demo shell высотой 68 px с радиусом 20 px,
   непрозрачным белым фоном без blur и одной тенью
-  `0px 6px 12px oklch(0 0 0 / 0.05)`; Account dropdown использует тот же
-  сплошной белый surface;
+  `0px 6px 12px oklch(0 0 0 / 0.05)`. В current production Account dropdown
+  использует тот же сплошной белый surface; в current source / next production
+  dropdown остаётся только у protected mobile burger, а avatar protected
+  desktop и authenticated landing ведёт напрямую в `/profile`;
 - `AppPageHeader` задаёт один прозрачный layout для `/courses`, `/students`,
   `/schedule`, authenticated `/profile`, Course и Lesson: системный H1 веса
   400 с максимумом 48 px на desktop и 32 px на mobile, optional metric
@@ -781,18 +783,19 @@ Visual contract Course routes не меняет эту навигационну�
   второй тени. Calendar panel остаётся отдельной dropdown surface;
 - в current source / next production общий `.product-dropdown-surface`
   канонизирует активные product panels: contextual `ActionMenu`, открываемый
-  `MoreHorizontal`/`MoreVertical`; Account/profile menu; product selection
-  dropdowns, включая Store sort; Schedule calendar/date popover. Все панели используют
+  `MoreHorizontal`/`MoreVertical`; protected mobile navigation menu; product
+  selection dropdowns, включая Store sort; Schedule calendar/date popover. Все панели используют
   внутренний panel inset `6 px`, белый фон, element-radius `12 px`, обычный
   `border: 0`,
   одну тень `0 18px 46px rgba(20, 20, 20, 0.18)` и не используют backdrop blur.
   `separatorBefore`, divider/separator DOM и визуальные линии отсутствуют в
-  `ActionMenu`, между profile groups и над calendar footer. В forced-colors
+  `ActionMenu`, в mobile navigation menu и над calendar footer. В forced-colors
   тень отключается, а системные `Canvas`/
-  `1px solid CanvasText` возвращают различимую границу. Состав/порядок действий,
-  item geometry, destructive/disabled states, native summary/date-picker
-  semantics, portal positioning, keyboard navigation и focus restore
-  сохраняются. Native `select`, самостоятельные modal dialogs и
+  `1px solid CanvasText` возвращают различимую границу. Contextual `ActionMenu`
+  сохраняет состав/порядок действий, destructive/disabled states и portal
+  positioning; selection/date panels — свои native semantics. Protected mobile
+  navigation panel локально привязан к burger и сохраняет keyboard/Escape/
+  focus restore. Native `select`, самостоятельные modal dialogs и
   reference/demo-only surfaces исключены; calendar panel входит в contract как
   dropdown, несмотря на dialog semantics. Этот UI slice не меняет
   API/schema/migrations;
@@ -1014,10 +1017,11 @@ Current production primary navigation для roleless Account содержит
 «Расписание / Ученики / Курсы / Магазин». «Профиль» находится в Account menu, а
 «Наблюдение» — третья вкладка `/students`; `/observing` служит compatibility redirect.
 В current source / next production protected mobile header скрывает desktop
-primary rail и заменяет avatar-trigger на burger. Его menu header показывает
-Account name и только допустимый публичный email, а visible items ограничены
-«Расписание / Ученики / Курсы / Магазин / Профиль». Desktop сохраняет avatar и
-полный profile menu; landing contract не меняется. Пустой
+primary rail и заменяет avatar на burger. Это единственный navigation dropdown:
+его header показывает Account name и только допустимый публичный email, а
+visible items ограничены «Расписание / Ученики / Курсы / Магазин / Профиль».
+На protected desktop и authenticated landing avatar является прямой ссылкой
+`/profile`; прежний Account/avatar dropdown удалён. Пустой
 `/courses` позволяет начать authoring; он не является Course enrollment
 учащегося. Owner-scoped CourseSummary поддерживает поиск, subject/level/content
 filters, сортировку и режимы «Карточки / Таблица» без второй модели; current

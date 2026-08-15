@@ -68,6 +68,7 @@ test("active request validation has no role or school-switch contract", () => {
 test("Account navigation has no role switch client or teacher-only guard", () => {
   const sessionMenu = source("src/components/session-nav-actions.tsx");
   const topNav = source("src/components/top-nav.tsx");
+  const landing = source("src/components/landing-page.tsx");
   const accountNav = source("src/lib/navigation/primary-nav.ts");
   const profileNav = source("src/lib/navigation/profile-nav.ts");
   const teacherGroup = source("src/app/(app)/(teacher-required)/layout.tsx");
@@ -82,36 +83,44 @@ test("Account navigation has no role switch client or teacher-only guard", () =>
     [...primaryNavIndices].sort((left, right) => left - right),
   );
   assert.doesNotMatch(accountNav, /Мой учебный профиль|label: "Наблюдение"/);
-  const profileMenuIndices = [
+  const profileTabIndices = [
     "Профиль",
     "История",
     "Аттестация",
     "Наблюдатели",
     "Настройки",
   ].map((label) => profileNav.indexOf(`label: "${label}"`));
-  assert.ok(profileMenuIndices.every((index) => index >= 0));
+  assert.ok(profileTabIndices.every((index) => index >= 0));
   assert.deepEqual(
-    profileMenuIndices,
-    [...profileMenuIndices].sort((left, right) => left - right),
-  );
-  assert.match(sessionMenu, /PROFILE_NAV_ITEMS\.map/);
-  assert.match(sessionMenu, /profileTabHref\(item\.id\)/);
-  assert.ok(
-    sessionMenu.indexOf("PROFILE_NAV_ITEMS.map") < sessionMenu.indexOf("Выход"),
+    profileTabIndices,
+    [...profileTabIndices].sort((left, right) => left - right),
   );
   assert.match(topNav, /mobileNavItems=\{navItems\}/);
+  assert.match(landing, /variant="landing"/);
+  assert.doesNotMatch(landing, /portalMenu/);
   assert.match(
     sessionMenu,
-    /\{isProtectedTopNav \? \(\s*<div className="md:hidden">[\s\S]*?\{mobileNavItems\.map[\s\S]*?profileTabHref\("profile"\)[\s\S]*?Профиль[\s\S]*?<\/div>\s*\) : null\}/,
+    /<NavigationDropdownPanel[\s\S]*?aria-label="Меню аккаунта"[\s\S]*?md:hidden[\s\S]*?\{mobileNavItems\.map[\s\S]*?profileTabHref\("profile"\)[\s\S]*?Профиль/,
   );
   assert.match(
     sessionMenu,
-    /<div className=\{isProtectedTopNav \? "hidden md:block" : undefined\}>[\s\S]*?PROFILE_NAV_ITEMS\.map[\s\S]*?handleSignOut/,
+    /aria-label="Открыть меню аккаунта"[\s\S]*?nav-account-menu-trigger[\s\S]*?md:hidden[\s\S]*?<Menu className="nav-main-menu-icon"/,
   );
-  assert.match(sessionMenu, /const accountMenuLabel = isProtectedTopNav/);
   assert.match(
     sessionMenu,
-    /const accountMenuTriggerLabel = isProtectedTopNav/,
+    /<PageTransitionLink\s+href=\{profileTabHref\("profile"\)\}\s+aria-label="Открыть профиль"[\s\S]*?nav-profile-link[\s\S]*?isProtectedTopNav \? "hidden md:inline-flex" : "inline-flex"/,
+  );
+  assert.match(
+    sessionMenu,
+    /window\.matchMedia\("\(min-width: 768px\)"\)[\s\S]*?setOpen\(false\)/,
+  );
+  assert.match(
+    sessionMenu,
+    /\{isProtectedTopNav && open \? mobileMenu : null\}/,
+  );
+  assert.doesNotMatch(
+    sessionMenu,
+    /PROFILE_NAV_ITEMS|PROFILE_MENU_ICONS|profileTabHref\(item\.id\)|handleSignOut|signOutViaServer|refetchSession|actionLoading|actionError|LogOut|History|Settings|BadgeCheck|UsersRound|portalMenu|createPortal|menuPosition/,
   );
   assert.doesNotMatch(sessionMenu, /nav-user-trigger-name/);
   assert.doesNotMatch(teacherGroup, /activeProfile|teacher/);
