@@ -949,9 +949,13 @@ ShiDao V2 application:
   position не равен `sticky` или `fixed`, а после вертикального scroll shell
   действительно уходит за верхнюю границу viewport вместе с content.
   `.site-header-shell-demo` имеет exact `64 px` внешней высоты, `12 px`
-  block-padding и `40 px` logo/navigation/avatar controls; радиус остаётся
-  `20 px`, тень — одна. На fine-pointer hover неактивный main-nav item получает
-  exact `rgba(0, 0, 0, 0.05)` background даже при
+  block-padding и общий inner container-row brand/navigation/actions-avatar
+  exact высотой `40 px`; его top/bottom gaps равны `12 px`. Через
+  `getBoundingClientRect()` проверить, что brand, navigation и actions/avatar
+  имеют одну вертикальную centerline, а nav-scroll/track/list и action wrappers
+  не увеличивают высоту ряда. Радиус shell остаётся `20 px`, тень — одна. На
+  fine-pointer hover неактивный main-nav item получает exact
+  `rgba(0, 0, 0, 0.05)` background даже при
   `data-active-pill-ready="true"`; active item остаётся чёрным;
 - `/courses`, Course и Lesson показывают одинаковые computed H1/optional metric
   через один `AppPageHeader`: H1 не крупнее 48 px на desktop и 32 px
@@ -1229,9 +1233,11 @@ flow как permanent delete.
   состояниях: внешний control остаётся `40 px`, внутренняя client-area —
   `38 px`, border не исчезает на hover, active или focus. Белый
   Current-source `.site-header-shell-demo` имеет `64 px / 20 px`, `12 px`
-  block-padding, `40 px` internal controls и единственную computed shadow
-  `oklch(0 0 0 / 0.05) 0px 6px 12px 0px` без inset-слоёв. Прежний deployed
-  `68 px` sticky shell остаётся историческим release evidence. После завершения
+  block-padding, exact `40 px` inner container-row с общей vertical centerline
+  для brand/navigation/actions-avatar и единственную computed shadow
+  `oklch(0 0 0 / 0.05) 0px 6px 12px 0px` без inset-слоёв. Nav/action wrappers
+  не должны увеличивать высоту ряда. Прежний deployed `68 px` sticky shell
+  остаётся историческим release evidence. После завершения
   transition hover должен давать
   `oklch(0 0 0 / 0.16) 0px 4px 10px -2px` и
   `matrix(1, 0, 0, 1, 0, -1)` без scale, а pointer-down `:active` —

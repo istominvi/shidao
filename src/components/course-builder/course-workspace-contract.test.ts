@@ -336,6 +336,7 @@ test("lesson metadata moves into a transparent page header and remains editable"
 test("course routes use the flat demo background and unified visual controls", () => {
   const styles = source("src/app/globals.css");
   const navigationStyles = source("src/app/styles/navigation.css");
+  const siteHeader = source("src/components/site-header.tsx");
   const topNav = source("src/components/top-nav.tsx");
   const routeSources = [
     source("src/app/(app)/courses/page.tsx"),
@@ -350,6 +351,10 @@ test("course routes use the flat demo background and unified visual controls", (
   const productHeaderStyles = /\.site-header-shell-demo\s*\{[^}]*\}/.exec(
     navigationStyles,
   )?.[0];
+  const productHeaderRowStyles =
+    /\.site-header-shell-demo \.site-header-content-row\s*\{[^}]*\}/.exec(
+      navigationStyles,
+    )?.[0];
 
   assert.ok(courseShellStyles, "Course shell styles must remain discoverable");
   assert.ok(
@@ -359,6 +364,10 @@ test("course routes use the flat demo background and unified visual controls", (
   assert.ok(
     productHeaderStyles,
     "Product header styles must remain discoverable",
+  );
+  assert.ok(
+    productHeaderRowStyles,
+    "Product header content-row styles must remain discoverable",
   );
   assert.match(courseShellStyles, /background: #f5f1e8;/);
   assert.doesNotMatch(courseShellStyles, /gradient/i);
@@ -424,6 +433,36 @@ test("course routes use the flat demo background and unified visual controls", (
     /box-shadow: var\(--product-header-shell-shadow\);/,
   );
   assert.doesNotMatch(productHeaderStyles, /inset|20px 44px/);
+  assert.match(
+    siteHeader,
+    /<NavigationHeaderShell[\s\S]*?>\s*<div className="site-header-content-row">/,
+  );
+  assert.match(
+    siteHeader,
+    /<div className="site-header-actions">\{actions\}<\/div>\s*<\/div>\s*<\/NavigationHeaderShell>/,
+  );
+  assert.match(
+    navigationStyles,
+    /\.site-header-content-row\s*\{[^}]*display: flex;[^}]*width: 100%;[^}]*min-width: 0;[^}]*align-items: center;/,
+  );
+  assert.match(productHeaderRowStyles, /box-sizing: border-box;/);
+  assert.match(productHeaderRowStyles, /height: var\(--header-pill-height\);/);
+  assert.match(
+    productHeaderRowStyles,
+    /min-height: var\(--header-pill-height\);/,
+  );
+  assert.match(
+    productHeaderRowStyles,
+    /max-height: var\(--header-pill-height\);/,
+  );
+  assert.match(
+    navigationStyles,
+    /@media \(min-width: 768px\)\s*\{[\s\S]*?\.site-header-content-row\s*\{[^}]*display: grid;[^}]*grid-template-columns: auto 1fr auto;[^}]*align-items: center;[^}]*\}[\s\S]*?\.site-header-shell-demo \.site-header-content-row\s*\{[^}]*grid-template-rows: minmax\(0, var\(--header-pill-height\)\);[^}]*align-content: center;/,
+  );
+  assert.match(
+    navigationStyles,
+    /\.site-header-shell-demo \.site-header-brand,[\s\S]*?\.site-header-shell-demo \.site-header-actions > \*\s*\{[^}]*box-sizing: border-box;[^}]*height: var\(--header-pill-height\);[^}]*min-height: var\(--header-pill-height\);[^}]*max-height: var\(--header-pill-height\);/,
+  );
   assert.match(
     styles,
     /\.product-dropdown-surface\s*\{[^}]*border: 0;[^}]*border-radius: var\([^}]*--product-dropdown-radius,[^}]*background: var\(--product-dropdown-background, #fff\);[^}]*padding: var\(--product-dropdown-inset, 0\.375rem\);/,

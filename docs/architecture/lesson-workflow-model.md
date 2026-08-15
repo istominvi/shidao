@@ -607,8 +607,10 @@ Visual contract Course routes не меняет эту навигационну�
 - current source / next production product header — normal-flow demo shell без
   sticky/fixed positioning высотой `64 px` с радиусом `20 px`, непрозрачным
   белым фоном без blur и одной тенью
-  `0px 6px 12px oklch(0 0 0 / 0.05)`. Внутри остаются `40 px`
-  logo/navigation/avatar controls и по `12 px` padding сверху и снизу.
+  `0px 6px 12px oklch(0 0 0 / 0.05)`. Общий inner container-row с brand,
+  navigation и actions/avatar имеет exact высоту `40 px`, вертикально
+  центрирован с `12 px` сверху и снизу и задаёт всем трём зонам одну centerline;
+  nav/action wrappers не увеличивают его высоту.
   Неактивный main-navigation item на hover получает exact 5%-black background
   `rgba(0, 0, 0, 0.05)` даже при готовом measured active-pill; active item
   сохраняет чёрный surface. Deployed sticky `68 px` shell остаётся только

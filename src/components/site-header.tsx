@@ -205,80 +205,84 @@ export function SiteHeader({
           shellClassName,
         )}
       >
-        <Link
-          href={brandHref}
-          className="site-header-brand text-xl font-black tracking-tight"
-        >
-          {brandLabel}
-        </Link>
-
-        {hasNav ? (
-          <div
-            className={classNames(
-              "site-header-nav-scroll md:justify-self-center",
-              variant === "product" && "site-header-nav-scroll-product",
-            )}
+        <div className="site-header-content-row">
+          <Link
+            href={brandHref}
+            className="site-header-brand text-xl font-black tracking-tight"
           >
-            <nav
-              ref={navTrackRef}
-              className={movingActivePill ? "site-header-nav-track" : undefined}
-              aria-label={navAriaLabel}
-              data-active-pill-ready={activePill.ready || undefined}
-            >
-              {movingActivePill ? (
-                <span
-                  className="site-header-nav-active-pill"
-                  aria-hidden="true"
-                  data-ready={activePill.ready || undefined}
-                  data-motion-ready={
-                    (activePill.ready && activePillMotionReady) || undefined
-                  }
-                  style={{
-                    width: `${activePill.width}px`,
-                    transform: `translate3d(${activePill.left}px, 0, 0)`,
-                  }}
-                />
-              ) : null}
-              <ul className="site-header-nav-list">
-                {navItems.map((item) => (
-                  <li
-                    key={item.id}
-                    ref={(node) => {
-                      if (node) navItemRefs.current.set(item.id, node);
-                      else navItemRefs.current.delete(item.id);
-                    }}
-                  >
-                    <NavPillLink
-                      href={item.href}
-                      active={item.active}
-                      ariaCurrent={item.active ? "page" : undefined}
-                      className="site-header-nav-pill text-sm font-semibold"
-                      scroll={item.scroll}
-                      prefetch={movingActivePill ? true : undefined}
-                      onClick={(event) => handleNavClick(event, item.href)}
-                      onNavigate={(event) => handleNavNavigate(event, item)}
-                    >
-                      <span className="nav-pill-content">
-                        {item.icon ? (
-                          <item.icon
-                            size={15}
-                            className="nav-pill-icon"
-                            aria-hidden="true"
-                          />
-                        ) : null}
-                        <span>{item.label}</span>
-                      </span>
-                    </NavPillLink>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </div>
-        ) : (
-          <div className="hidden md:block" aria-hidden="true" />
-        )}
+            {brandLabel}
+          </Link>
 
-        <div className="site-header-actions">{actions}</div>
+          {hasNav ? (
+            <div
+              className={classNames(
+                "site-header-nav-scroll md:justify-self-center",
+                variant === "product" && "site-header-nav-scroll-product",
+              )}
+            >
+              <nav
+                ref={navTrackRef}
+                className={
+                  movingActivePill ? "site-header-nav-track" : undefined
+                }
+                aria-label={navAriaLabel}
+                data-active-pill-ready={activePill.ready || undefined}
+              >
+                {movingActivePill ? (
+                  <span
+                    className="site-header-nav-active-pill"
+                    aria-hidden="true"
+                    data-ready={activePill.ready || undefined}
+                    data-motion-ready={
+                      (activePill.ready && activePillMotionReady) || undefined
+                    }
+                    style={{
+                      width: `${activePill.width}px`,
+                      transform: `translate3d(${activePill.left}px, 0, 0)`,
+                    }}
+                  />
+                ) : null}
+                <ul className="site-header-nav-list">
+                  {navItems.map((item) => (
+                    <li
+                      key={item.id}
+                      ref={(node) => {
+                        if (node) navItemRefs.current.set(item.id, node);
+                        else navItemRefs.current.delete(item.id);
+                      }}
+                    >
+                      <NavPillLink
+                        href={item.href}
+                        active={item.active}
+                        ariaCurrent={item.active ? "page" : undefined}
+                        className="site-header-nav-pill text-sm font-semibold"
+                        scroll={item.scroll}
+                        prefetch={movingActivePill ? true : undefined}
+                        onClick={(event) => handleNavClick(event, item.href)}
+                        onNavigate={(event) => handleNavNavigate(event, item)}
+                      >
+                        <span className="nav-pill-content">
+                          {item.icon ? (
+                            <item.icon
+                              size={15}
+                              className="nav-pill-icon"
+                              aria-hidden="true"
+                            />
+                          ) : null}
+                          <span>{item.label}</span>
+                        </span>
+                      </NavPillLink>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            </div>
+          ) : (
+            <div className="hidden md:block" aria-hidden="true" />
+          )}
+
+          <div className="site-header-actions">{actions}</div>
+        </div>
       </NavigationHeaderShell>
     </header>
   );

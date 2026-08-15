@@ -27,9 +27,11 @@
 
 - Product TopNav возвращён в normal document flow: он не sticky/fixed и при
   scroll уходит вверх вместе с content.
-- Белый product shell имеет точную высоту `64 px`: `40 px` занимают
-  logo/navigation/avatar controls, ещё по `12 px` — padding сверху и снизу;
-  радиус и однослойная тень не меняются.
+- Белый product shell имеет точную высоту `64 px`. Общий inner container-row с
+  brand, navigation и actions/avatar имеет exact высоту `40 px`, вертикально
+  центрирован с `12 px` сверху и снизу и задаёт всем трём зонам одну centerline;
+  nav/action wrappers не увеличивают высоту ряда. Радиус и однослойная тень не
+  меняются.
 - Hover неактивного пункта main navigation использует exact 5%-black background
   `rgba(0, 0, 0, 0.05)` и остаётся видимым при готовом measured active-pill.
 - `AppPageHeader` всегда сохраняет backlink-row и одинаковую высоту начала
@@ -37,7 +39,8 @@
   top-level page не получает фиктивный интерактивный элемент.
 - Slice UI-only: API, schema, migrations и Lesson hierarchy не меняются.
   Следующий release step — UI gates, обычный Coolify rollout и authenticated
-  desktop/mobile scroll/hover postflight.
+  desktop/mobile scroll/hover postflight с проверкой `64 px` shell, `40 px`
+  inner row, равных `12 px` отступов и общей вертикальной centerline.
 
 ## Current source / next production — mobile responsive polish
 

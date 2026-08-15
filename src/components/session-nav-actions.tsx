@@ -160,7 +160,7 @@ export function SessionNavActions({
       role="menu"
       aria-label="Меню аккаунта"
       onKeyDown={handleMenuKeyDown}
-      className="absolute right-0 z-[120] mt-2 w-[18rem] max-w-[calc(100vw-16px)] md:hidden"
+      className="absolute top-full right-0 z-[120] mt-2 w-[18rem] max-w-[calc(100vw-16px)] md:hidden"
     >
       <div className="nav-dropdown-profile">
         <div className="min-w-0">

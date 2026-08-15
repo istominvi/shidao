@@ -3688,7 +3688,10 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
     return;
   }
 
-  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+  const runtime = await openPage({
+    cookie: authenticatedCookieValue(),
+    viewport: { width: 1056, height: 720 },
+  });
   let resolveStudentsRscGate: (() => void) | null = null;
   let markStudentsRscObserved: (() => void) | null = null;
   const studentsRscGate = new Promise<void>((resolve) => {
@@ -3733,6 +3736,120 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
         '.site-header-nav-active-pill[data-ready="true"][data-motion-ready="true"]',
       )
       .waitFor();
+
+    const headerGeometry = await runtime.page.evaluate(() => {
+      const shell = document.querySelector<HTMLElement>(
+        ".site-header-shell-demo",
+      );
+      const row = shell?.querySelector<HTMLElement>(
+        ":scope > .site-header-content-row",
+      );
+      const brand = row?.querySelector<HTMLElement>(".site-header-brand");
+      const navScroll = row?.querySelector<HTMLElement>(
+        ".site-header-nav-scroll",
+      );
+      const navTrack = navScroll?.querySelector<HTMLElement>(
+        ".site-header-nav-track",
+      );
+      const navList = navTrack?.querySelector<HTMLElement>(
+        ".site-header-nav-list",
+      );
+      const navItems = Array.from(
+        navList?.querySelectorAll<HTMLElement>(":scope > li") ?? [],
+      );
+      const navPills = Array.from(
+        navList?.querySelectorAll<HTMLElement>(".site-header-nav-pill") ?? [],
+      );
+      const activePill = navTrack?.querySelector<HTMLElement>(
+        ".site-header-nav-active-pill",
+      );
+      const actions = row?.querySelector<HTMLElement>(".site-header-actions");
+      const actionsWrapper = actions?.firstElementChild as HTMLElement | null;
+      const profileTrigger =
+        actions?.querySelector<HTMLElement>(".nav-profile-link");
+      const avatar = profileTrigger?.querySelector<HTMLElement>(
+        ".nav-user-trigger-avatar",
+      );
+
+      if (
+        !shell ||
+        !row ||
+        !brand ||
+        !navScroll ||
+        !navTrack ||
+        !navList ||
+        navItems.length === 0 ||
+        navPills.length === 0 ||
+        !activePill ||
+        !actions ||
+        !actionsWrapper ||
+        !profileTrigger ||
+        !avatar
+      ) {
+        throw new Error("Product header geometry elements are missing");
+      }
+
+      const shellRect = shell.getBoundingClientRect();
+      const rowRect = row.getBoundingClientRect();
+      const rowCenter = rowRect.top + rowRect.height / 2;
+      const measuredElements: Array<[string, HTMLElement]> = [
+        ["brand", brand],
+        ["nav-scroll", navScroll],
+        ["nav-track", navTrack],
+        ["nav-list", navList],
+        ...navItems.map(
+          (item, index) => [`nav-item-${index}`, item] as [string, HTMLElement],
+        ),
+        ...navPills.map(
+          (pill, index) => [`nav-pill-${index}`, pill] as [string, HTMLElement],
+        ),
+        ["active-pill", activePill],
+        ["actions", actions],
+        ["actions-wrapper", actionsWrapper],
+        ["profile-trigger", profileTrigger],
+        ["avatar", avatar],
+      ];
+
+      return {
+        ownsPrimarySections:
+          row.parentElement === shell &&
+          brand.parentElement === row &&
+          navScroll.parentElement === row &&
+          actions.parentElement === row,
+        shellHeight: shellRect.height,
+        rowHeight: rowRect.height,
+        rowTopInset: rowRect.top - shellRect.top,
+        rowBottomInset: shellRect.bottom - rowRect.bottom,
+        rowCenterDelta: Math.abs(
+          rowCenter - (shellRect.top + shellRect.height / 2),
+        ),
+        elements: measuredElements.map(([name, element]) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            name,
+            height: rect.height,
+            centerDelta: Math.abs(rect.top + rect.height / 2 - rowCenter),
+          };
+        }),
+      };
+    });
+
+    assert.equal(headerGeometry.ownsPrimarySections, true);
+    assert.ok(Math.abs(headerGeometry.shellHeight - 64) < 0.5);
+    assert.ok(Math.abs(headerGeometry.rowHeight - 40) < 0.5);
+    assert.ok(Math.abs(headerGeometry.rowTopInset - 12) < 0.5);
+    assert.ok(Math.abs(headerGeometry.rowBottomInset - 12) < 0.5);
+    assert.ok(headerGeometry.rowCenterDelta < 0.5);
+    for (const element of headerGeometry.elements) {
+      assert.ok(
+        element.height <= 40.5,
+        `${element.name} must not exceed the 40px product-header row; received ${element.height}px`,
+      );
+      assert.ok(
+        element.centerDelta < 0.5,
+        `${element.name} must share the product-header row center; delta was ${element.centerDelta}px`,
+      );
+    }
 
     const inactiveStudentsPng = await runtime.page
       .locator('.site-header-nav-pill[href="/students"] .nav-pill-content')
@@ -9527,6 +9644,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
             leftDelta: Math.abs(itemsRect.left - menuRect.left),
             rightDelta: Math.abs(itemsRect.right - menuRect.right),
           },
+          menuTopGap: menuRect.top - triggerRect.bottom,
           visibleMenuItems: visibleMenuItems.map(
             (item) => item.textContent?.trim() ?? "",
           ),
@@ -9549,6 +9667,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
           leftDelta: 6,
           rightDelta: 6,
         },
+        menuTopGap: 8,
         visibleMenuItems: [
           "Расписание",
           "Ученики",

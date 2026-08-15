@@ -64,9 +64,11 @@ Profile/avatar release `4462da2`, зафиксированное ниже.
 **Current source / next production — TopNav и стабильный backlink rhythm:**
 product TopNav теперь остаётся в normal document flow, не использует
 `position: sticky` или `fixed` и уходит за верхнюю границу вместе с остальным
-контентом при scroll. Белый shell имеет внешнюю высоту ровно `64 px`: внутри
-сохраняются `40 px` logo/navigation/avatar controls и по `12 px` padding сверху
-и снизу. Неактивный пункт главной навигации на hover получает exact
+контентом при scroll. Белый shell имеет внешнюю высоту ровно `64 px`. Его общий
+внутренний container-row с brand, navigation и actions/avatar имеет exact
+высоту `40 px`, вертикально центрирован с `12 px` сверху и снизу и задаёт всем
+трём зонам одну centerline; nav/action wrappers не увеличивают высоту ряда.
+Неактивный пункт главной навигации на hover получает exact
 5%-black background `rgba(0, 0, 0, 0.05)` даже после готовности измеряемого
 active-pill; выбранный пункт сохраняет чёрный active surface. `AppPageHeader`
 всегда резервирует одну backlink-row и её вертикальный rhythm. При отсутствии
@@ -1219,10 +1221,12 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   gradients на этих маршрутах отсутствуют.
 - В current source / next production Course header следует обновлённому
   demo-контракту: normal-flow shell без sticky/fixed positioning имеет высоту
-  `64 px`, сплошную белую поверхность без blur, радиус `20 px`, `40 px`
-  logo/navigation/avatar controls с радиусом `12 px` и по `12 px` padding
-  сверху и снизу. Неактивный пункт main navigation на hover сохраняет exact
-  5%-black background `rgba(0, 0, 0, 0.05)` и при готовом measured active-pill.
+  `64 px`, сплошную белую поверхность без blur и радиус `20 px`. Общий
+  container-row с brand, navigation и actions/avatar имеет exact высоту `40 px`
+  и по `12 px` сверху и снизу; все три зоны лежат на одной вертикальной
+  centerline, а nav/action wrappers не раздувают ряд. Controls сохраняют радиус
+  `12 px`. Неактивный пункт main navigation на hover сохраняет exact 5%-black
+  background `rgba(0, 0, 0, 0.05)` и при готовом measured active-pill.
   В current production персональное dropdown-меню также использует
   непрозрачный белый фон. В current source / next production этот dropdown
   остаётся только главным меню protected mobile burger; avatar на protected

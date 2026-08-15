@@ -90,7 +90,7 @@ test("only protected mobile navigation uses a menu; every avatar links to Profil
   );
   assert.match(
     navigation,
-    /<NavigationDropdownPanel[\s\S]*?aria-label="Меню аккаунта"[\s\S]*?className="[^"]*md:hidden"/,
+    /<NavigationDropdownPanel[\s\S]*?aria-label="Меню аккаунта"[\s\S]*?className="[^"]*absolute top-full[^"]*md:hidden"/,
   );
   assert.match(
     navigation,
