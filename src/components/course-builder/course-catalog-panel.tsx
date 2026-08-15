@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { courseBuilderRequest } from "@/components/course-builder/course-builder-client";
-import { CourseFilterMenu } from "@/components/course-builder/course-filter-menu";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { Input } from "@/components/ui/input";
@@ -44,7 +43,6 @@ type CourseCatalogPanelProps = {
 
 type CatalogPage = {
   courses: CourseCatalogEntry[];
-  facets: { subjects: string[]; levels: string[] };
   nextCursor: string | null;
 };
 
@@ -83,14 +81,10 @@ function CatalogLearningAudienceControl({
 
 function catalogRequestPath({
   query,
-  subject,
-  level,
   learningAudience,
   cursor,
 }: {
   query: string;
-  subject: string;
-  level: string;
   learningAudience: CourseLearningAudience;
   cursor?: string | null;
 }) {
@@ -98,8 +92,6 @@ function catalogRequestPath({
   params.set("learningAudience", learningAudience);
   const normalizedQuery = query.trim().replace(/\s+/g, " ");
   if (normalizedQuery) params.set("q", normalizedQuery);
-  if (subject !== "all") params.set("subject", subject);
-  if (level !== "all") params.set("level", level);
   if (cursor) params.set("cursor", cursor);
   return `/api/v2/course-catalog?${params.toString()}`;
 }
@@ -493,10 +485,6 @@ export function CourseCatalogPanel({
   const [reloadKey, setReloadKey] = useState(0);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [subject, setSubject] = useState("all");
-  const [level, setLevel] = useState("all");
-  const [subjects, setSubjects] = useState<string[]>([]);
-  const [levels, setLevels] = useState<string[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [view, setView] = useState<CourseCatalogView>("table");
   const [loadingCatalog, setLoadingCatalog] = useState(false);
@@ -504,8 +492,6 @@ export function CourseCatalogPanel({
   const requestContextRef = useRef("");
   requestContextRef.current = JSON.stringify([
     debouncedQuery,
-    subject,
-    level,
     learningAudience,
     reloadKey,
   ]);
@@ -525,8 +511,6 @@ export function CourseCatalogPanel({
     void courseBuilderRequest<CatalogPage>(
       catalogRequestPath({
         query: debouncedQuery,
-        subject,
-        level,
         learningAudience,
       }),
       { cache: "no-store" },
@@ -535,8 +519,6 @@ export function CourseCatalogPanel({
         if (!mounted) return;
         setCourses(payload.courses);
         setNextCursor(payload.nextCursor);
-        setSubjects(payload.facets.subjects);
-        setLevels(payload.facets.levels);
         setError(null);
       })
       .catch((caught: unknown) => {
@@ -553,7 +535,7 @@ export function CourseCatalogPanel({
     return () => {
       mounted = false;
     };
-  }, [active, debouncedQuery, learningAudience, level, reloadKey, subject]);
+  }, [active, debouncedQuery, learningAudience, reloadKey]);
 
   async function loadMoreCourses() {
     if (!nextCursor || loadingMore) return;
@@ -564,8 +546,6 @@ export function CourseCatalogPanel({
       const payload = await courseBuilderRequest<CatalogPage>(
         catalogRequestPath({
           query: debouncedQuery,
-          subject,
-          level,
           learningAudience,
           cursor: nextCursor,
         }),
@@ -581,8 +561,6 @@ export function CourseCatalogPanel({
         for (const course of payload.courses) byId.set(course.id, course);
         return Array.from(byId.values());
       });
-      setSubjects(payload.facets.subjects);
-      setLevels(payload.facets.levels);
       setNextCursor(payload.nextCursor);
     } catch (caught) {
       if (requestContextRef.current !== requestContext) return;
@@ -598,17 +576,12 @@ export function CourseCatalogPanel({
     }
   }
 
-  const hasFilters =
-    query.trim().length > 0 || subject !== "all" || level !== "all";
+  const hasFilters = query.trim().length > 0;
 
   function changeLearningAudience(nextAudience: CourseLearningAudience) {
     if (nextAudience === learningAudience) return;
     setQuery("");
     setDebouncedQuery("");
-    setSubject("all");
-    setLevel("all");
-    setSubjects([]);
-    setLevels([]);
     setCourses(null);
     setNextCursor(null);
     setLoadingCatalog(true);
@@ -655,27 +628,13 @@ export function CourseCatalogPanel({
         </div>
 
         <div className="compact-toolbar-rail">
-          <CourseFilterMenu
-            subjects={subjects}
-            levels={levels}
-            subject={subject}
-            level={level}
-            onSubjectChange={setSubject}
-            onLevelChange={setLevel}
-            label="Фильтры каталога курсов"
-          />
-
           {hasFilters ? (
             <Button
               variant="ghost"
               className="compact-toolbar-reset"
-              aria-label="Сбросить фильтры"
-              title="Сбросить фильтры"
-              onClick={() => {
-                setQuery("");
-                setSubject("all");
-                setLevel("all");
-              }}
+              aria-label="Очистить поиск"
+              title="Очистить поиск"
+              onClick={() => setQuery("")}
             >
               <RotateCcw className="h-4 w-4" aria-hidden="true" />
             </Button>
@@ -755,20 +714,16 @@ export function CourseCatalogPanel({
           </h3>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-neutral-600">
             {hasFilters
-              ? "Измените запрос или сбросьте фильтры."
+              ? "Измените запрос или очистите поиск."
               : "Опубликованные курсы появятся здесь."}
           </p>
           {hasFilters ? (
             <Button
               variant="secondary"
               className="mt-5"
-              onClick={() => {
-                setQuery("");
-                setSubject("all");
-                setLevel("all");
-              }}
+              onClick={() => setQuery("")}
             >
-              Показать все курсы
+              Очистить поиск
             </Button>
           ) : null}
         </SurfaceCard>

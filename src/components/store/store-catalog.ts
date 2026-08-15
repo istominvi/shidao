@@ -5,10 +5,6 @@ export type StoreProductCategory = Exclude<StoreCategory, "all">;
 
 export type StoreAudience = "learner" | "teacher";
 
-export type StorePriceFilter = "all" | "under-500" | "500-1000" | "over-1000";
-
-export type StoreAvailability = "all" | "in-stock";
-
 export type StoreSort = "popular" | "price-asc" | "price-desc" | "title";
 
 export type StoreProductVisualKey =
@@ -39,9 +35,6 @@ export type StoreProduct = {
 export type StoreFilters = {
   category: StoreCategory;
   query: string;
-  audience: "all" | StoreAudience;
-  price: StorePriceFilter;
-  availability: StoreAvailability;
   sort: StoreSort;
 };
 
@@ -78,9 +71,6 @@ export const STORE_CATEGORIES = [
 export const DEFAULT_STORE_FILTERS: StoreFilters = {
   category: "all",
   query: "",
-  audience: "all",
-  price: "all",
-  availability: "all",
   sort: "popular",
 };
 
@@ -232,15 +222,6 @@ function normalizeStoreSearchValue(value: string) {
     .replace(/\s+/g, " ");
 }
 
-function matchesStorePrice(priceKopeks: number, filter: StorePriceFilter) {
-  if (filter === "under-500") return priceKopeks < 50000;
-  if (filter === "500-1000") {
-    return priceKopeks >= 50000 && priceKopeks <= 100000;
-  }
-  if (filter === "over-1000") return priceKopeks > 100000;
-  return true;
-}
-
 export function filterAndSortStoreProducts(
   products: readonly StoreProduct[],
   filters: StoreFilters,
@@ -257,10 +238,7 @@ export function filterAndSortStoreProducts(
 
     return (
       matchesQuery &&
-      (filters.category === "all" || product.category === filters.category) &&
-      (filters.audience === "all" || product.audience === filters.audience) &&
-      matchesStorePrice(product.priceKopeks, filters.price) &&
-      (filters.availability === "all" || product.stock > 0)
+      (filters.category === "all" || product.category === filters.category)
     );
   });
 

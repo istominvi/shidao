@@ -449,9 +449,6 @@ test("product buttons share one animated raised-control elevation contract", () 
   const navigationStyles = source("src/app/styles/navigation.css");
   const teachingStyles = source("src/app/styles/teaching-hub.css");
   const segmentedControl = source("src/components/ui/segmented-control.tsx");
-  const studentFilter = source(
-    "src/components/teaching-hub/student-directory-filter-menu.tsx",
-  );
   const learningProfile = source(
     "src/components/learner-identity/learning-profile-workspace.tsx",
   );
@@ -505,7 +502,7 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.course-filter-trigger svg,[\s\S]*?\.course-demo-shell \.compact-toolbar-rail \[role="group"\] button svg\s*\{[^}]*color: currentColor;[^}]*opacity: 1;/,
+    /\.course-demo-shell \.compact-toolbar-rail \[role="group"\] button svg\s*\{[^}]*color: currentColor;[^}]*opacity: 1;/,
   );
   assert.match(
     styles,
@@ -548,21 +545,7 @@ test("product buttons share one animated raised-control elevation contract", () 
     styles,
     /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.product-btn:hover:not\(:disabled\):not\(\[aria-disabled="true"\]\)\s*\{[^}]*transform: translateY\(var\(--product-raised-control-hover-translate-y\)\);[^}]*\}[\s\S]*?\.product-btn:active:not\(:disabled\):not\(\[aria-disabled="true"\]\)\s*\{[^}]*transform: none;/,
   );
-  assert.match(
-    studentFilter,
-    /className=\{productButtonClassName\(\s*"secondary",\s*"course-filter-trigger",?\s*\)\}/,
-  );
-  assert.match(styles, /\.course-filter-trigger\s*\{[^}]*list-style: none;/);
-  const filterTriggerStyles =
-    /\.course-filter-trigger\s*\{[^}]*\}/.exec(styles)?.[0] ?? "";
-  assert.doesNotMatch(
-    filterTriggerStyles,
-    /height|border|background|box-shadow|transform|transition/,
-  );
-  assert.match(
-    styles,
-    /\.course-demo-shell \.product-btn\.course-filter-trigger\[aria-disabled="true"\],[\s\S]*?box-shadow: var\(--product-raised-control-shadow\);[^}]*transform: none;/,
-  );
+  assert.doesNotMatch(styles, /\.course-filter-(?:trigger|popover|actions)/);
   assert.match(reducedMotionStyles, /\.product-btn\.product-btn,/);
   assert.match(reducedMotionStyles, /transition: none;/);
   assert.match(reducedMotionStyles, /transform: none;/);
@@ -609,19 +592,6 @@ test("product buttons share one animated raised-control elevation contract", () 
     segmentedControl,
     /bg-neutral-950\/\[0\.05\]|shadow-\[inset|shadow-\[0_1px_3px|focus-visible:ring|focus-visible:outline-none|product-raised-control-shadow-hover|product-raised-control-shadow-pressed/,
   );
-  assert.match(studentFilter, /product-segmented-control grid/);
-  assert.match(
-    studentFilter,
-    /product-segmented-control-option-selected bg-white text-neutral-950/,
-  );
-  assert.equal(
-    studentFilter.match(
-      /product-segmented-control-option-selected bg-white text-neutral-950/g,
-    )?.length,
-    3,
-  );
-  assert.doesNotMatch(studentFilter, /shadow-sm/);
-  assert.doesNotMatch(studentFilter, /bg-neutral-100/);
   assert.match(
     learningProfile,
     /variant="secondary"\s+className="product-btn-danger mt-4"[\s\S]*?>\s*Проверить, что будет удалено/,
@@ -650,10 +620,6 @@ test("product buttons share one animated raised-control elevation contract", () 
   assert.match(
     forcedColorsStyles,
     /border: 1px solid ButtonText;[^}]*background: ButtonFace;[^}]*color: ButtonText;[^}]*box-shadow: none;[^}]*transform: none;/,
-  );
-  assert.match(
-    forcedColorsStyles,
-    /\.course-demo-shell[\s\S]*?\.product-btn\.course-filter-trigger\[aria-disabled="true"\][\s\S]*?border: 1px solid GrayText;[^}]*box-shadow: none;[^}]*transform: none;/,
   );
   assert.match(
     forcedColorsStyles,

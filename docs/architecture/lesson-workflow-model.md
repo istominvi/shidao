@@ -742,22 +742,35 @@ Visual contract Course routes не меняет эту навигационну�
   `0 1px 6px 0px oklch(0% 0 0 / 0.05)`, общий foreground/типографику и
   непрозрачные placeholder/icons через `currentColor`. Hover не меняет shadow
   или transform; click/keyboard focus добавляет отдельный 2 px halo и сохраняет
-  border/геометрию. Forced colors использует `Field`/`FieldText` и системную
+  border/геометрию. В current source / next production halo прилегает к
+  control border через `outline-offset: 0`, без промежуточного зазора. Forced
+  colors использует `Field`/`FieldText` и системную
   рамку. Select и textarea сохраняют base boundary, но не получают single-line
   height/entry shadow; checkbox/radio/file input, dialog/menu/popover surfaces,
   Student Screen content renderers и raw utility
   panels исключены. Этот current production UI slice не меняет API, schema,
   Lesson hierarchy или learner projection;
+- current source / next production удаляет disclosure «Фильтры» и связанные
+  advanced-filter predicates из Course и Store. `/students` вместо disclosure
+  показывает inline `SegmentedControl` **Все / В группе / Без группы**;
+  status, Account-state и concrete-group controls больше не являются частью
+  directory toolbar. Published Course catalog сохраняет server-side
+  subject/level/facet capability, но active web UI отправляет только поиск,
+  направление обучения и cursor. Store sort реализуется каноническим product
+  dropdown, а не native `select`; его trigger не получает entry-field halo.
+  Schedule date navigator использует общий product border, clipped white
+  background, element radius и static base shadow без custom inset border или
+  второй тени. Calendar panel остаётся отдельной dropdown surface;
 - в current source / next production общий `.product-dropdown-surface`
-  канонизирует четыре активных семейства: contextual `ActionMenu`, открываемый
-  `MoreHorizontal`/`MoreVertical`; Account/profile menu; Course/Students/Store
-  filter popovers; Schedule calendar/date popover. Все панели используют
+  канонизирует активные product panels: contextual `ActionMenu`, открываемый
+  `MoreHorizontal`/`MoreVertical`; Account/profile menu; product selection
+  dropdowns, включая Store sort; Schedule calendar/date popover. Все панели используют
   внутренний panel inset `6 px`, белый фон, element-radius `12 px`, обычный
   `border: 0`,
   одну тень `0 18px 46px rgba(20, 20, 20, 0.18)` и не используют backdrop blur.
-  `separatorBefore`, divider/separator DOM и визуальные линии отсутствуют не
-  только в `ActionMenu`, но и между profile groups, filter actions и calendar
-  footer. В forced-colors тень отключается, а системные `Canvas`/
+  `separatorBefore`, divider/separator DOM и визуальные линии отсутствуют в
+  `ActionMenu`, между profile groups и над calendar footer. В forced-colors
+  тень отключается, а системные `Canvas`/
   `1px solid CanvasText` возвращают различимую границу. Состав/порядок действий,
   item geometry, destructive/disabled states, native summary/date-picker
   semantics, portal positioning, keyboard navigation и focus restore
@@ -930,6 +943,14 @@ Current production делает `/schedule` и `/students` доступными
   actions; trigger/menu не превращаются в неявный row click. Это current
   production UI/application refinement поверх существующих Group/Course
   audience boundaries без новой schema или migration;
+- current source / next production упрощает Students toolbar: прежний
+  disclosure удалён, а единственным membership control становится постоянно
+  видимый `SegmentedControl` **Все / В группе / Без группы**. Membership
+  narrowing применяется только к active teacher relations; archived relations
+  и pending requests остаются в режиме «Все» и доступны поиском. Status,
+  конкретная группа и Account connection больше не являются filter controls,
+  но их фактические значения и допустимые row actions продолжают отображаться.
+  Table-header sorting и общий **Таблица / Карточки** contract сохраняются;
 - `/courses` использует общий edge-to-edge `WorkspaceTabs`; page supporting
   line отсутствует, пока route не владеет честной общей метрикой. Прежний
   instructional subtitle удалён. Controls обеих вкладок прозрачны и
@@ -949,6 +970,11 @@ actions`; пять data headers сортируют полную client-loaded pr
   publication states сохраняют update/open/unpublish actions. «Удалить»
   destructive только по оформлению и требует подтверждения; технически это
   описанный выше soft archive с published/open-Run guards;
+- current source / next production удаляет Course filter disclosure и его
+  subject/level/content client state. Owned list сохраняет поиск и сортировку
+  заголовками таблицы; published catalog — поиск, направление обучения,
+  server cursor и выбор вида. Backend subject/level/facet capability остаётся
+  совместимым, но active web UI её не выставляет;
 - клик по строке открывает dialog «Профиль / История»; membership допускает
   несколько групп, а history panel читает только LearningRecord, записанные
   текущим преподавателем;

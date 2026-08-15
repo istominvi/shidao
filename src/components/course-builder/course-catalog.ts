@@ -1,23 +1,14 @@
 import type { CourseSummary } from "@/modules/course-builder/domain";
 
-export type CourseCatalogContentFilter =
-  "all" | "empty" | "with-lessons" | "assembled";
-
 export type CourseCatalogSort = "updated-desc" | "updated-asc" | "title-asc";
 
 export type CourseCatalogFilters = {
   query: string;
-  subject: string;
-  level: string;
-  content: CourseCatalogContentFilter;
   sort: CourseCatalogSort;
 };
 
 export const DEFAULT_COURSE_CATALOG_FILTERS: CourseCatalogFilters = {
   query: "",
-  subject: "all",
-  level: "all",
-  content: "all",
   sort: "updated-desc",
 };
 
@@ -28,16 +19,6 @@ const courseTitleCollator = new Intl.Collator("ru", {
 
 function normalizeSearchValue(value: string) {
   return value.trim().replace(/\s+/g, " ").toLocaleLowerCase("ru-RU");
-}
-
-function matchesContentFilter(
-  course: CourseSummary,
-  filter: CourseCatalogContentFilter,
-) {
-  if (filter === "empty") return course.lessonCount === 0;
-  if (filter === "with-lessons") return course.lessonCount > 0;
-  if (filter === "assembled") return course.assembledAt !== null;
-  return true;
 }
 
 export function filterAndSortCourses(
@@ -52,12 +33,7 @@ export function filterAndSortCourses(
         normalizeSearchValue(value).includes(normalizedQuery),
       );
 
-    return (
-      matchesQuery &&
-      (filters.subject === "all" || course.subject === filters.subject) &&
-      (filters.level === "all" || course.level === filters.level) &&
-      matchesContentFilter(course, filters.content)
-    );
+    return matchesQuery;
   });
 
   return filtered.sort((left, right) => {
@@ -84,24 +60,8 @@ export function filterAndSortCourses(
   });
 }
 
-export function getCourseCatalogOptions(courses: CourseSummary[]) {
-  const subjects = Array.from(
-    new Set(courses.map((course) => course.subject)),
-  ).sort(courseTitleCollator.compare);
-  const levels = Array.from(
-    new Set(courses.map((course) => course.level)),
-  ).sort(courseTitleCollator.compare);
-
-  return { subjects, levels };
-}
-
 export function hasActiveCourseCatalogFilters(filters: CourseCatalogFilters) {
-  return (
-    normalizeSearchValue(filters.query).length > 0 ||
-    filters.subject !== "all" ||
-    filters.level !== "all" ||
-    filters.content !== "all"
-  );
+  return normalizeSearchValue(filters.query).length > 0;
 }
 
 export function courseCountLabel(count: number) {

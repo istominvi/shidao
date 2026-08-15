@@ -1,7 +1,8 @@
 # Демо-магазин ShiDao
 
-**Статус:** current production UI-only demo
-**Актуально на:** 14 августа 2026 года
+**Статус:** current production UI-only demo; compact-toolbar follow-up готовится
+к следующему production rollout
+**Актуально на:** 15 августа 2026 года
 
 ## Назначение
 
@@ -18,10 +19,12 @@
   «Ученики» и «Курсы»; пункт использует простую иконку `ShoppingBag`.
 - Страница использует общий `AppPageHeader`; кнопка «Корзина» с количеством
   позиций находится в его action-секции.
-- Источник товаров — статический demo-каталог в application code. Категории,
-  поиск, аудитория, цена, наличие и сортировка работают только над этим
-  локальным набором. Один и тот же отфильтрованный результат можно смотреть
-  как карточки или таблицу.
+- Источник товаров — статический demo-каталог в application code. Current
+  source оставляет category tabs, поиск и сортировку над этим локальным
+  набором; прежняя отдельная filter-кнопка и audience/price/availability
+  predicates удалены. Один и тот же результат можно смотреть как карточки или
+  таблицу. Сортировка открывает product dropdown ShiDao, а не системный native
+  `select` платформы.
 - У каждого товара есть стабильный в текущем demo-каталоге человекочитаемый
   `slug`. Ссылка
   `/store?product=<slug>` открывает тот же каталог и переводит внимание к
@@ -73,9 +76,10 @@ Checkout запрашивает только имя, телефон, email и а
 
 1. Гость при открытии `/store` попадает в действующий auth flow; Account видит
    четвёртый nav item «Магазин» с active state на странице магазина.
-2. Категории, поиск, аудитория, цена, наличие и сортировка дают
-   детерминированный результат, а «Карточки / Таблица» показывают один и тот же
-   набор товаров.
+2. Категории, поиск и сортировка дают детерминированный результат, а
+   «Карточки / Таблица» показывают один и тот же набор товаров. Отдельной
+   кнопки фильтров нет; сортировка использует product dropdown ShiDao вместо
+   native platform `select`.
 3. Добавление, изменение количества и удаление синхронно обновляют badge,
    состав корзины и итог; пустая корзина имеет понятное empty state.
 4. Checkout валидирует имя, телефон, email и адрес. Платёжная заглушка не
@@ -94,21 +98,19 @@ auth boundary (`307 → /login`). Полный authenticated checkout остаё
 покрытым release browser suite; отдельный authenticated production order smoke
 не требуется, поскольку order/payment request в этом demo отсутствует.
 
-## Current production visual acceptance
+## Current source / next production visual acceptance
 
-Current production переводит disclosure «Фильтры» на shared secondary
-`.product-btn`, сохраняя нативный `summary`, `aria-expanded`, Escape/focus-return
-и прежнюю filter-popover семантику. В current source / next production сама
-filter panel входит в universal dropdown contract вместе с Course/Students filters, Account menu, contextual
-`ActionMenu` и Schedule calendar: внутренний panel inset ровно `6 px`, белый фон,
-element-radius `12 px`, обычный `border: 0`, одна тень
-`0 18px 46px rgba(20, 20, 20, 0.18)` и `backdrop-filter: none`. Разделитель над
-filter actions удалён; локальные panel padding, border, blur и дополнительные
-тени не возвращаются. В forced-colors тень заменяется системной границей
-`1px solid CanvasText` на `Canvas`. Category tabs, cards/table segmented toggle,
-cart quantity icon-actions и `DialogShell` не становятся ordinary raised CTA
-или dropdown surfaces. Обычные CTA магазина остаются на shared `Button`; этот
-follow-up не меняет cart/checkout state machine.
+Отдельных filter trigger/panel в Store больше нет. Sort trigger использует
+каноническую 40 px product-control геометрию, но не entry-field focus halo; его
+список входит в universal `.product-dropdown-surface`: внутренний inset ровно
+`6 px`, белый фон, element-radius `12 px`, обычный `border: 0`, одна тень
+`0 18px 46px rgba(20, 20, 20, 0.18)` и `backdrop-filter: none`. Выбранное
+значение, keyboard navigation, Escape и focus return сохраняются, а системное
+macOS menu больше не используется. В forced-colors тень заменяется системной
+границей `1px solid CanvasText` на `Canvas`. Category tabs, cards/table
+segmented toggle, cart quantity icon-actions и `DialogShell` не становятся
+ordinary raised CTA или dropdown surfaces. Обычные CTA магазина остаются на
+shared `Button`; follow-up не меняет cart/checkout state machine.
 
 Store product cards и canonical table wrapper используют статический
 `--product-raised-surface-shadow`, равный базовой тени кнопки
@@ -122,21 +124,22 @@ shadow-transition. Plain cards/table также используют
 radius, table row hover и horizontal scroll не меняются. В `forced-colors`
 surface shadow заменяется системным outline.
 
-Base `.product-control` / `.field-input`, включая filter select и многострочный
-адрес, получают общий border и clipped background. Поиск каталога и
+Base `.product-control` / `.field-input`, включая многострочный адрес,
+получают общий border и clipped background. Поиск каталога и
 однострочные поля checkout «Получатель / Телефон / Email» дополнительно
 получают белый surface, внешние `40 px`, внутренние `38 px` и статическую тень
 `0 1px 6px 0px oklch(0% 0 0 / 0.05)`, canonical foreground/типографику,
-непрозрачные placeholder/icon и отдельный 2 px focus halo. Hover не меняет
-тень, border или геометрию. Select внутри filter popover и многострочный адрес
-доставки сохраняют base boundary, но не получают single-line height/entry
+непрозрачные placeholder/icon и отдельный 2 px focus halo с
+`outline-offset: 0`: halo начинается сразу за рамкой, не создавая визуального
+зазора. Hover не меняет тень, border или геометрию. Многострочный адрес
+доставки сохраняет base boundary, но не получает single-line height/entry
 shadow. Native `select`, standalone `DialogShell` и demo-only surfaces исключены
-из universal dropdown contract; сама filter panel отдельно получает описанный
-выше dropdown surface, но не entry/static-surface shadow. Compound toggles
+из universal dropdown contract; Store sort намеренно использует product
+dropdown вместо native `select`. Compound toggles
 остаются borderless. Это UI-only acceptance без Product/Order/Inventory, API,
 persistence, schema, migration,
-оплаты или delivery integration. Visual rollout входит в exact current
-functional application source `1d4e5deff83cbdc1b479b16e4220cf799327009f`.
+оплаты или delivery integration. Этот follow-up является current source / next
+production и ещё не подменяет historical rollout evidence выше.
 
 ## Next
 

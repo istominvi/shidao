@@ -263,17 +263,20 @@ physical merge не обещается.
 «Ученики / Группы» и отдельную learner-safe вкладку «Наблюдение» по active
 observer grants. Active и archived relations, а также исходящие pending
 connection requests находятся в одном teacher directory list: состояние
-показывается inline, а поиск и единый disclosure «Фильтр» не переключаются и
-не сбрасываются статусом. «Фильтр» объединяет relation status, membership «В
-группе / Без группы», конкретную группу и Account connection. Отдельного sort
-select нет: headers таблиц Students и Groups переключают ascending/descending
+показывается inline и не скрывается самим lifecycle status. Current source /
+next production оставляет рядом с поиском один постоянно видимый membership
+toggle **Все / В группе / Без группы**. `В группе` и `Без группы` применяются
+только к active teacher relations; archived relations и pending requests
+остаются в режиме `Все` и доступны поиском. Прежний disclosure, status,
+concrete-group и Account-state filter controls удалены. Отдельного sort select
+нет: headers таблиц Students и Groups переключают ascending/descending
 повторным кликом. Full-width Students controls используют
 `padding-inline: 0`, а 40 px table показывает
 `Ученик / Статус / Аккаунт / Группы / Добавлен / actions`. Это UI-only
-presentation над теми же actor-scoped rows. Справа от «Фильтр» расположен
-icon-only presentation control: **Таблица** слева и выбрана изначально,
-**Карточки** справа. Табличный и карточный виды используют одну
-filtered/sorted выборку, одинаковые identity/status labels и тот же набор
+presentation над теми же actor-scoped rows. Рядом расположен icon-only
+presentation control: **Таблица** слева и выбрана изначально, **Карточки**
+справа. Табличный и карточный виды используют одну narrowed/sorted выборку,
+одинаковые identity/status labels и тот же набор
 допустимых contextual actions; на вкладке «Группы» переключатель работает над
 тем же `LearnerGroup[]`. Выбор вида не создаёт persisted preference или
 отдельный API.

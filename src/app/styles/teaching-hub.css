@@ -1,5 +1,4 @@
 .teaching-hub-shell {
-  --teaching-control-border: rgba(20, 20, 20, 0.1);
   --teaching-muted: #646873;
 }
 
@@ -43,11 +42,11 @@
     var(--course-demo-control-height) minmax(0, 1fr)
     var(--course-demo-control-height);
   overflow: hidden;
+  border: var(--product-surface-border);
   border-radius: var(--course-demo-control-radius);
   background: #fff;
-  box-shadow:
-    inset 0 0 0 1px var(--teaching-control-border),
-    0 8px 24px rgba(20, 20, 20, 0.05);
+  background-clip: padding-box;
+  box-shadow: var(--product-entry-control-shadow);
 }
 
 .teaching-hub-search {
@@ -80,8 +79,8 @@
   justify-content: center;
   gap: 0.45rem;
   border: 0;
-  border-right: 1px solid var(--teaching-control-border);
-  border-left: 1px solid var(--teaching-control-border);
+  border-right: var(--product-surface-border);
+  border-left: var(--product-surface-border);
   background: transparent;
   padding-inline: var(--course-demo-control-padding-inline);
   color: #141414;
@@ -129,7 +128,7 @@
   border: var(--product-surface-border);
   background-color: #fff;
   outline: 2px solid var(--product-control-focus-halo);
-  outline-offset: 2px;
+  outline-offset: 0;
   box-shadow: var(--product-entry-control-shadow);
 }
 
@@ -1400,11 +1399,6 @@
   flex: 0 0 auto;
 }
 
-.student-directory-filter-menu .course-filter-popover {
-  right: 0;
-  left: auto;
-}
-
 .student-directory-table-wrap {
   position: relative;
   width: 100%;
@@ -1870,7 +1864,7 @@ button.student-directory-card-person:focus-visible {
 
 .student-directory-picker-search input:focus {
   outline: 2px solid var(--product-control-focus-halo);
-  outline-offset: 2px;
+  outline-offset: 0;
   box-shadow: var(--product-entry-control-shadow);
 }
 
@@ -2016,11 +2010,6 @@ button.student-directory-card-person:focus-visible {
     overflow: visible;
     flex-wrap: wrap;
     padding: 0;
-  }
-
-  .student-directory-filter-menu .course-filter-popover {
-    right: auto;
-    left: 0;
   }
 
   .teaching-learner-grid {

@@ -1100,7 +1100,9 @@ flow как permanent delete.
   menu в порядке `Профиль`, `История`, `Аттестация`, `Наблюдатели`, `Настройки`,
   `Выход`. Guest на
   каждом private route уходит в login;
-- `/store` открывает каталог, categories/search/filters/sort и оба вида; cart →
+- `/store` открывает каталог, category tabs/search/custom product sort и оба
+  вида; отдельной кнопки «Фильтры» и audience/price/availability predicates
+  нет. Sort trigger не является native `select`; cart →
   delivery → payment-demo → success работает без unsafe network request,
   банковских полей или утверждения о созданном заказе. На 375 px нет
   document-level overflow; Guest `/store` уходит в login;
@@ -1116,7 +1118,10 @@ flow как permanent delete.
   сдвигают назад/вперёд активный целый день, неделю либо месяц. Проверить
   desktop width date control ровно 300 px, короткие русские подписи вроде
   `Неделя · 10–16 авг` без завершающей точки у сокращения месяца и полное
-  доступное имя. Проверить закрытие Escape с
+  доступное имя. Весь navigator должен иметь общий product border,
+  `background-clip: padding-box`, element radius и static base shadow без
+  прежней inset-рамки или второй тени; внутренние arrow/trigger сегменты не
+  получают button lift. Проверить закрытие Escape с
   возвратом focus, клавиатурную навигацию календаря, local timezone и отсутствие
   document-level overflow на 375 и 320 px. Рядом должны оставаться оба
   icon-only вида «Таблица / Карточки». Header показывает только фактическую
@@ -1155,16 +1160,17 @@ flow как permanent delete.
   dialog текущего Run сразу в edit mode, confirmation перед cancel,
   arrows/Escape/focus restore и отсутствие
   неявного row-click при взаимодействии с меню; других action-кнопок в строке
-  нет. Проверить единый `.product-dropdown-surface` на представителе каждого
-  из четырёх активных семейств: contextual `ActionMenu` Course/Lesson/
-  Schedule/Students, Account/profile menu, Course/Students/Store filter
-  popover и Schedule calendar/date popover. Во всех случаях computed panel
+  нет. Проверить единый `.product-dropdown-surface` на representative active
+  panels: contextual `ActionMenu` Course/Lesson/Schedule/Students,
+  Account/profile menu, Store sort и Schedule calendar/date popover. Course,
+  Students и Store не должны содержать прежние filter popovers. Во всех
+  случаях computed panel
   padding должен быть ровно `6 px`, фон — `rgb(255, 255, 255)`, radius —
   `12 px`, normal-mode border — `0`, `backdrop-filter` — `none`, а
   box-shadow — единственной
   `rgba(20, 20, 20, 0.18) 0px 18px 46px 0px`. Ни одно из четырёх семейств не
   содержит separator line/DOM: дополнительно проверить отсутствие линии после
-  profile header, над filter actions и над calendar footer. Consumer не должен
+  profile header и над calendar footer. Consumer не должен
   возвращать локальные panel padding, border, blur или вторую тень. В
   forced-colors тень отключается, а panel получает `Canvas` и системную рамку
   `1px solid CanvasText`. Native `select`, самостоятельный modal dialog и
@@ -1181,7 +1187,7 @@ flow как permanent delete.
   computed base shadow
   `oklch(0 0 0 / 0.05) 0px 1px 6px 0px`, что selected button переключателя
   вида Расписания. Alpha-border должен смешиваться с ancestor/page background,
-  а не с белым button background. Header и toolbar/filter CTA должны
+  а не с белым button background. Header и ordinary toolbar CTA должны
   использовать один
   `.product-btn` state-contract и сохранять одинаковые width/height во всех
   состояниях: внешний control остаётся `40 px`, внутренняя client-area —
@@ -1211,13 +1217,14 @@ flow как permanent delete.
   вкладку и не рендерить отдельный side-nav. Auth-кнопки, построенные
   на canonical `.product-btn`, следуют тому же контракту; raw Landing controls
   и non-product controls полноэкранного Student Screen не должны измениться;
-- для current production surface follow-up проверить, что Auth recovery/check-email,
-  onboarding, identity invitation/completion и retry CTA используют shared
-  `Button`/`productButtonClassName`, а disclosure-trigger «Фильтры» в Course,
-  Students и Store имеет secondary `.product-btn`, сохраняя `summary`,
-  `aria-expanded`, Escape/focus-return и disabled boundary. Contextual menu
-  items, flat row/Component icon-actions, compound toggles и filter popover
-  panels не должны получить ordinary button lift;
+- для current source compact-toolbar follow-up проверить, что Course и Store
+  не рендерят filter trigger/panel и не применяют удалённые advanced-filter
+  predicates. Students рендерит один inline membership control **Все / В
+  группе / Без группы**, без status, Account-state или concrete-group selects.
+  Store sort использует product dropdown с keyboard navigation, Escape,
+  selected state и focus return, но без entry-field halo. Contextual menu
+  items, flat row/Component icon-actions и compound toggles не должны получить
+  ordinary button lift;
 - в том же acceptance проверить общий computed border
   `1px solid oklch(0 0 0 / 0.1)` и `background-clip: padding-box`, затем
   сравнить computed `box-shadow` с
@@ -1240,7 +1247,8 @@ flow как permanent delete.
   `oklch(0 0 0 / 0.05) 0px 1px 6px 0px`, scope
   typography/foreground и непрозрачные placeholder/icons. Hover не должен
   менять shadow, transform или rect; click/keyboard focus добавляет отдельный
-  2 px halo, сохраняя base shadow, border и геометрию. Select и textarea
+  2 px halo с computed `outline-offset: 0`, сохраняя base shadow, border и
+  геометрию. Select и textarea
   сохраняют base boundary, но не получают single-line height или entry shadow.
   Checkbox/radio/file, dialog/menu/popover surfaces, Student Screen content
   renderers и raw utility
@@ -1255,17 +1263,19 @@ flow как permanent delete.
   наблюдаемых профилей «Наблюдение» показывает их фактическое число и обновляет
   его после отказа от доступа;
 - directory toolbar остаётся прозрачной, без outer card и без горизонтального
-  inset. Поиск и единый disclosure «Фильтр» заменяют отдельные group/sort
-  select: внутри доступны status, membership «Все / В группе / Без группы»,
-  конкретная группа и состояние аккаунта, active-count/reset, Escape и
-  возврат focus. Active/archive/pending остаются в одной таблице с
-  contextual restore/cancel actions; сортировка выполняется кнопками в
-  заголовках, первый клик включает ascending, повторный — descending, а
-  `aria-sort` отражает направление;
-- справа от Students «Фильтр» проверить icon-only control в порядке **Таблица /
-  Карточки**: таблица активна при первом открытии, карточки показывают ту же
-  filtered выборку и те же contextual actions; повторить переключение на
-  вкладке «Группы»;
+  inset. Рядом с поиском постоянно виден один membership
+  `SegmentedControl` **Все / В группе / Без группы**; filter disclosure,
+  status, Account-state и concrete-group controls отсутствуют. `В группе` и
+  `Без группы` narrowing применяются только к active relations, а режим «Все»
+  сохраняет active/archive/pending в одной таблице с contextual
+  restore/cancel actions. Сортировка выполняется кнопками в заголовках, первый
+  клик включает ascending, повторный — descending, а `aria-sort` отражает
+  направление;
+- рядом с Students membership control проверить icon-only control в порядке
+  **Таблица / Карточки**: таблица активна при первом открытии, карточки
+  показывают ту же narrowed выборку и те же contextual actions; повторить
+  переключение на вкладке «Группы». На 375 px controls могут переноситься, но
+  не создают document-level horizontal overflow;
 - Students table имеет exact 40 px header/data rows и колонки `Ученик / Статус
 / Аккаунт / Группы / Добавлен / Действия`. В конце каждой строки расположен
   keyboard/touch-доступный `MoreVertical` portal-menu; для active learner он
@@ -1282,13 +1292,15 @@ flow как permanent delete.
   controls обеих вкладок лежат прямо на page background без toolbar-card и без
   horizontal inset. В обеих вкладках icon-only control идёт **Таблица /
   Карточки** слева направо, и при первом открытии активна таблица;
-  поиск и disclosure subject/level/content
-  меняют только client projection owner-scoped списка, icon-only view control
-  имеет доступные имена, reset возвращает все курсы, filtered-empty не
-  подменяется пустым persisted каталогом. Во вкладке published «Каталог» отдельно
-  проверяются только реальные server-side search/subject/level и cursor, такой
-  же icon-only cards/table presentation, отсутствие повторного заголовка,
-  пояснения и видимого result count; client-only sort/content не добавляются.
+  Отдельного filter trigger/panel нет ни в **Мои**, ни в **Каталог**. Owned
+  поиск меняет только client projection owner-scoped списка, icon-only view
+  control имеет доступные имена, reset очищает поиск, а search-empty не
+  подменяется пустым persisted каталогом. Во вкладке published «Каталог» web UI
+  проверяет server-side search, audience direction и cursor, такой же
+  icon-only cards/table presentation, отсутствие повторного заголовка,
+  пояснения и видимого result count. Subject/level/facet capability остаётся
+  backend contract, но active UI не отправляет эти параметры; client-only
+  sort/content не добавляются.
   В **Мои** отдельного sort select нет: headers `Курс / Предмет / Уроки /
 Публикация / Обновлён` переключают ascending/descending и публикуют
   `aria-sort`; action heading остаётся пустым и несортируемым. Проверить, что

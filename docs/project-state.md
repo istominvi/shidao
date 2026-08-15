@@ -59,6 +59,30 @@ glyphs без изменения геометрии: public production CSS
 Это public-bundle/HTTP postflight; он не подменяет matching-container evidence
 Profile/avatar release `4462da2`, зафиксированное ниже.
 
+**Current source / next production — compact toolbar controls:** Course и
+Store больше не показывают disclosure-кнопку «Фильтры» и не сохраняют скрытое
+advanced-filter state. В owned Course остаются поиск, table-header sorting и
+переключатель вида; published catalog сохраняет поиск, направление обучения,
+cursor и вид. Его server-side `subject`/`level`/facet contract не удаляется,
+но текущий web UI эти параметры больше не отправляет. Store сохраняет category
+tabs, поиск, сортировку и виды; audience/price/availability filter menu и его
+client predicates удалены. Сортировка Store открывает не системный macOS
+`select`, а канонический product dropdown без focus halo на trigger.
+
+В `/students` прежний disclosure с status, Account и конкретной группой
+заменён видимым inline `SegmentedControl` **Все / В группе / Без группы**.
+Membership narrowing относится только к active teacher relations; режим
+«Все» по-прежнему оставляет в общем справочнике archived relations и pending
+requests с их restore/cancel actions. Поиск, sortable table headers и
+**Таблица / Карточки** не меняются. Canonical text/search inputs сохраняют
+2 px focus halo, но он начинается сразу за control border (`outline-offset:
+0`); product dropdown triggers, включая Store sort, этот halo не получают.
+Schedule date navigator использует тот же product border, clipped white
+background, radius и base shadow, что остальные статичные controls, без
+прежней inset-рамки и отдельной двухслойной тени. Calendar panel продолжает
+использовать universal dropdown surface. Slice UI-only: API authorization,
+schema, migrations, Lesson hierarchy и learner identity relations не меняются.
+
 **Current source / next production — mobile responsive polish:** общий
 `AppPageHeader` ниже `1280 px` использует content-aware wrapping row: короткие
 title/metric и intrinsic action остаются в одной строке, action прижат к правому
@@ -514,7 +538,9 @@ Component card и Store deep-link/focus highlight используют отде�
 меняют тень на hover/pressed, сохраняют общий foreground/типографику,
 непрозрачные placeholder и сопровождающие search/select icons через
 `currentColor`; click/keyboard focus добавляет отдельный 2 px halo и не меняет
-базовую тень, border или геометрию. В `forced-colors` декоративная тень и цвет
+базовую тень, border или геометрию. Current source задаёт ему
+`outline-offset: 0`, поэтому halo прилегает к рамке без дополнительного зазора.
+В `forced-colors` декоративная тень и цвет
 рамки уступают `Field` / `FieldText` и системному focus indicator. Select и
 textarea сохраняют base boundary, но не получают single-line height или entry
 shadow. Checkbox, radio, file input, dialog/menu/popover surfaces, Student
@@ -543,13 +569,14 @@ popovers и Account menu ещё были отдельным visual scope; это
 исторического release не описывает текущий universal contract ниже.
 
 **Current source / next production universal dropdown refinement:** общий
-`.product-dropdown-surface` теперь канонизирует четыре активных семейства:
-shared contextual `ActionMenu`, Account/profile menu, Course/Students/Store
-filter popovers и Schedule calendar/date popover. Каждая панель имеет ровно
+`.product-dropdown-surface` канонизирует active product panels: shared
+contextual `ActionMenu`, Account/profile menu, product selection dropdowns,
+включая Store sort, и Schedule calendar/date popover. Course/Students/Store
+filter popovers удалены. Каждая оставшаяся панель имеет ровно
 `6 px` внутреннего inset (`--product-dropdown-inset: 0.375rem`), белый фон, общий
 element-radius `12 px`, обычный `border: 0`, `backdrop-filter: none` и одну
 тень `0 18px 46px rgba(20, 20, 20, 0.18)`. Внутренние separator/divider линии
-удалены также из profile menu, filter actions и calendar footer; consumers не
+удалены также из profile menu и calendar footer; consumers не
 добавляют собственную рамку, blur, вторую тень или отличающийся panel padding.
 В forced-colors декоративная тень отключается, а границу панели восстанавливает
 системный `1px solid CanvasText` на `Canvas`. Item geometry, destructive/
@@ -950,9 +977,11 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 - **Current production:** `/store` — Account-level UI-only
   demo учебного магазина. Каталог содержит учебники и методические книги,
-  прописи и тетради, карточки, канцелярию и обучающие игры. Категории, поиск,
-  audience/price/availability filters, сортировка и режимы «Карточки / Таблица»
-  вычисляются над типизированными fixtures в application code.
+  прописи и тетради, карточки, канцелярию и обучающие игры. Current source
+  вычисляет category tabs, поиск, сортировку и режимы «Карточки / Таблица» над
+  типизированными fixtures в application code; отдельные
+  audience/price/availability filters удалены. Sort использует product
+  dropdown ShiDao вместо native platform `select`.
 - Кнопка «Корзина» находится в action-секции общего `AppPageHeader`. В одном
   `DialogShell` можно менять количество и удалять позиции, затем заполнить имя,
   телефон, email и адрес. Платёжный экран — честная заглушка без card fields и
@@ -1034,19 +1063,21 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   вкладки: **Мои** показывает owner-scoped
   рабочие Course, **Каталог** — только current published revisions.
   В UI нет отдельной сущности «шаблон».
-- Вкладка **Мои** сохраняет поиск по открытым Course fields,
-  динамические фильтры по предмету/уровню/наполнению, сортировку и
-  режимы «Карточки / Таблица». В current production эти controls собраны в одну
-  компактную строку прямо на page background: три категориальных поля находятся
-  в disclosure «Фильтры», view выбирается icon-only segmented control, а
-  видимый счётчик результатов не занимает место между ними.
+- Вкладка **Мои** сохраняет поиск по открытым Course fields, сортировку
+  заголовками таблицы и режимы «Карточки / Таблица». Current source удаляет
+  subject/level/content disclosure и его client state; оставшиеся controls
+  лежат в одной компактной строке прямо на page background, а view выбирается
+  icon-only segmented control.
   Приватные пожелания преподавателя в поиск не входят.
-- **Каталог** имеет server-side audience/search/subject/level filtering.
+- **Каталог** имеет server-side audience/search/subject/level filtering
+  capability.
   Карточка и строка списка показывают компактные публичные метаданные, автора и
   counts; Lesson outline, описание и материалы открываются в отдельном
   published workspace, а не разворачиваются внутри списка. Current production
-  показывает search и реальные subject/level facets без внешней toolbar-card,
-  повторного заголовка/пояснения и видимого count. Presentation переключается
+  Current source показывает search и audience direction без отдельной
+  filter-кнопки; subject/level facets остаются backend contract, но active web
+  UI их не отправляет. Внешней toolbar-card, повторного заголовка/пояснения и
+  видимого count нет. Presentation переключается
   между карточками и таблицей для уже загруженной cursor-последовательности;
   content filter и произвольная сортировка не заявляются, потому что их нет в
   paginated catalog API/RPC.
@@ -1187,7 +1218,10 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   переключателя периода на
   странице больше нет: календарный popover объединяет выбор опорной даты и
   режимы «День / Неделя / Месяц», а стрелки date control двигают именно
-  выбранный период.
+  выбранный период. В current source сам navigator использует общий product
+  border, `background-clip: padding-box`, element radius и static base shadow
+  без прежней inset-рамки и дополнительной тени; calendar panel сохраняет
+  universal dropdown surface.
   Непустой результат начинается сразу с выбранного вида, без повторного
   «Выбранная неделя / Занятия» и count-chip. Table projection — сплошная белая
   поверхность с общим product border, `background-clip: padding-box`,
@@ -1215,10 +1249,12 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   compatibility redirect. Подзаголовок страницы — «Ученики и группы, с
   которыми вы работаете или за которыми наблюдаете». Active profiles,
   archived relations и исходящие pending connection requests находятся в
-  одной таблице, поэтому controls не исчезают и не сбрасываются из-за смены
-  статуса. Поиск остаётся отдельным, а status, membership «В группе / Без
-  группы», конкретная группа и связь с Account собраны в disclosure «Фильтр».
-  Separate sort select удалён: sortable headers таблиц Students и Groups
+  одной таблице. Поиск остаётся отдельным, а current source показывает один
+  inline membership control **Все / В группе / Без группы**. `В группе` и
+  `Без группы` применяются только к active relations; archived и pending
+  остаются в режиме «Все» и доступны поиском. Прежний disclosure, status,
+  concrete-group и Account-state filter controls удалены. Separate sort select
+  отсутствует: sortable headers таблиц Students и Groups
   переключают ascending/descending повторным кликом. Students table имеет
   40 px header/rows и колонки
   `Ученик / Статус / Аккаунт / Группы / Добавлен / actions`. «Статус»
@@ -1226,7 +1262,8 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   connection, а «Добавлен» — teacher-local дату relation или запроса. Архив и
   ожидание ответа отмечены прямо в строке. Вся compact
   toolbar расположена на page background во всю ширину без horizontal inset;
-  справа от «Фильтр» находится icon-only переключатель **Таблица / Карточки**.
+  рядом с membership control находится icon-only переключатель **Таблица /
+  Карточки**.
   Таблица расположена слева и выбрана изначально; обе проекции используют одну
   filtered/sorted выборку и одинаковые contextual actions. На вкладке «Группы»
   тот же выбор переключает таблицу и карточки групп. Обе Course toolbars
@@ -1253,7 +1290,8 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   получают только допустимые restore/permanent-delete или cancel actions.
   Видимое имя принадлежит relation текущего преподавателя, а не глобальной identity.
 - Header action на `/students` следует выбранной вкладке: «Новый ученик» или
-  «Новая группа»; поиск и единый «Фильтр» остаются в full-width directory toolbar.
+  «Новая группа»; поиск и inline-тумблер **Все / В группе / Без группы**
+  остаются в full-width directory toolbar.
 - «Убрать из списка» архивирует только `teacher_learner` текущего Account:
   relation остаётся в общей таблице с чипом «В архиве», но исчезает из групп и
   будущих Course audiences; canonical LearnerProfile, его LearningRecord и
@@ -1918,7 +1956,7 @@ positions, а плотность поддерживают текущие service
 | Course attestation domain/API        | `src/modules/course-attestations/`, `src/app/api/v2/course-catalog/[publicationId]/attestation/`, `src/app/api/v2/courses/[courseId]/attestation/`, `src/app/api/v2/me/attestations/`                                                                                             |
 | Course consumption progress          | `src/modules/course-consumption/`, `src/app/api/v2/course-catalog/[publicationId]/progress/`                                                                                                                                                                                      |
 | Course catalog/publication API       | `src/app/api/v2/course-catalog/`, `src/app/api/v2/courses/[courseId]/publication/`, `duplicate/`                                                                                                                                                                                  |
-| Course catalog/owned UI              | `src/components/course-builder/courses-index.tsx`, `owned-courses-panel.tsx`, `course-catalog-panel.tsx`, `course-filter-menu.tsx`, `course-actions.tsx`, `src/components/ui/segmented-control.tsx`                                                                               |
+| Course catalog/owned UI              | `src/components/course-builder/courses-index.tsx`, `owned-courses-panel.tsx`, `course-catalog-panel.tsx`, `course-actions.tsx`, `src/components/ui/segmented-control.tsx`                                                                                                         |
 | Published Course workspace           | `src/app/(app)/courses/catalog/[publicationId]/`, `src/components/course-builder/published-course-workspace.tsx`, `published-course-progress-queue.ts`                                                                                                                            |
 | New Course flow                      | `src/components/course-builder/new-course-form.tsx`                                                                                                                                                                                                                               |
 | Course workspace                     | `src/components/course-builder/course-workspace.tsx`                                                                                                                                                                                                                              |

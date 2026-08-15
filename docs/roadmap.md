@@ -37,6 +37,26 @@
 - Следующий release step — обычный Coolify rollout и authenticated postflight
   на мобильной ширине; API, schema и migration work для этого среза не нужны.
 
+## Current source / next production — compact toolbar controls
+
+- Course и Store удаляют disclosure «Фильтры» вместе с неиспользуемым
+  advanced-filter state. Поиск, category/audience direction, сортировка,
+  cursor и представления сохраняются в тех разделах, где они уже являются
+  отдельными controls. Catalog RPC по-прежнему умеет server-side
+  subject/level filtering и facets, но current web UI не выставляет эти
+  параметры.
+- Students вместо dropdown показывает один inline toggle **Все / В группе /
+  Без группы**. Status, Account-state и concrete-group controls удаляются;
+  archived/pending строки остаются доступны в режиме «Все» и через поиск.
+- Store sort становится канонической ShiDao-выпадашкой, а не native
+  platform-select. Trigger не получает input halo; keyboard navigation,
+  selected state, Escape и focus return остаются обязательными.
+- Focus halo text/search inputs прилегает к рамке (`outline-offset: 0`), а
+  Schedule date navigator переиспользует общий product border/background-clip,
+  radius и static base shadow без custom inset/двойной тени.
+- Release step — UI gates, desktop/mobile browser acceptance, normal Coolify
+  rollout и authenticated postflight. Новая schema или migration не нужны.
+
 ## Выполненный фундамент
 
 - V1 зафиксирована в immutable Git refs и private recovery snapshot.
@@ -566,6 +586,10 @@ contract. Contextual menu
 items, row/Component icon-actions и compound toggles остаются отдельными
 плоскими controls.
 
+Current source / next production supersedes только filter часть этого
+acceptance: Course/Store disclosures удалены, Students использует inline
+membership toggle, а Store sort — product dropdown без native-select UI.
+
 Кнопки, поля и plain content surfaces разделяют
 `--product-surface-border: 1px solid oklch(0 0 0 / .1)` и
 `background-clip: padding-box`, поэтому border смешивается с фоном под
@@ -587,7 +611,8 @@ text/search fields дополнительно получают белый surfac
 базовым `0 1px 6px 0px oklch(0% 0 0 / 0.05)`, единые foreground/типографику и
 непрозрачные placeholder/icons. Hover не меняет shadow/transform, а click или
 keyboard focus добавляет отдельный 2 px halo без изменения border или
-геометрии. Select и textarea сохраняют base boundary, но не получают
+геометрии; current source задаёт `outline-offset: 0`, чтобы halo прилегал к
+рамке. Select и textarea сохраняют base boundary, но не получают
 single-line height/entry shadow; checkbox/radio/file, dialog/menu/popover
 surfaces, Student Screen content и raw utility panels исключены. Изменение
 остаётся UI-only, не меняет schema/API/Lesson hierarchy и входит в текущий
@@ -602,14 +627,15 @@ product consumers. API/schema/migrations не меняются; rollout вход
 functional source `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`.
 
 **Current source / next production:** один universal dropdown surface
-обслуживает четыре активных семейства: contextual `ActionMenu` для Course,
-Lesson rows, Schedule и Students; Account/profile menu; Course/Students/Store
-filter popovers; Schedule calendar/date popover. Панель использует общий
+обслуживает active product panels: contextual `ActionMenu` для Course, Lesson
+rows, Schedule и Students; Account/profile menu; product selection dropdowns,
+включая Store sort; Schedule calendar/date popover. Course/Students/Store
+filter popovers удалены. Панель использует общий
 внутренний inset `6 px`, белый фон, element-radius `12 px`, обычный `border: 0`,
 ровно одну
 тень `0 18px 46px rgba(20, 20, 20, 0.18)` и `backdrop-filter: none`.
-Separator/divider линии отсутствуют во всех четырёх семействах, включая
-profile menu, filter actions и calendar footer; локальные padding, border, blur
+Separator/divider линии отсутствуют во всех этих panels, включая profile menu
+и calendar footer; локальные padding, border, blur
 и дополнительные shadow forks удалены. Forced-colors отключает тень и
 возвращает системную границу `1px solid CanvasText` на `Canvas`. Native
 `select`, самостоятельные modal dialogs и reference/demo-only surfaces
@@ -869,8 +895,8 @@ Definition of Done текущего demo:
 
 - guest `/store` fail-closed следует действующему login flow, Account видит
   четвёртый nav item и active state;
-- каталог, фильтры, сортировка и оба вида используют один детерминированный
-  набор;
+- category tabs, поиск, custom product sort и оба вида используют один
+  детерминированный набор; отдельной filter-кнопки нет;
 - cart quantity/subtotal и checkout validation работают с клавиатуры и на
   mobile без page-level overflow;
 - UI не запрашивает банковские реквизиты, не выполняет order/payment request и

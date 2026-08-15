@@ -61,16 +61,18 @@ test("Schedule, Students, Courses, and Course Lessons toolbars are full-width", 
   );
   assert.match(
     ownedCoursesPanel,
-    /className="compact-page-toolbar course-index-toolbar"[\s\S]*?className="compact-toolbar-search product-search-wrap"[\s\S]*?className="compact-toolbar-rail"[\s\S]*?<CourseFilterMenu[\s\S]*?<SegmentedControl[\s\S]*?ariaLabel="Вид списка курсов"/,
+    /className="compact-page-toolbar course-index-toolbar"[\s\S]*?className="compact-toolbar-search product-search-wrap"[\s\S]*?className="compact-toolbar-rail"[\s\S]*?<SegmentedControl[\s\S]*?ariaLabel="Вид списка курсов"/,
   );
+  assert.doesNotMatch(ownedCoursesPanel, /CourseFilterMenu|course-filter/);
   assert.match(
     courseCatalogPanel,
     /className="compact-page-toolbar course-catalog-toolbar"/,
   );
   assert.match(
     courseCatalogPanel,
-    /className="course-catalog-toolbar-main"[\s\S]*?className="compact-toolbar-search product-search-wrap"[\s\S]*?className="compact-toolbar-rail"[\s\S]*?<CourseFilterMenu[\s\S]*?\{learningAudienceControl\}[\s\S]*?<SegmentedControl[\s\S]*?ariaLabel="Вид каталога курсов"/,
+    /className="course-catalog-toolbar-main"[\s\S]*?className="compact-toolbar-search product-search-wrap"[\s\S]*?className="compact-toolbar-rail"[\s\S]*?\{learningAudienceControl\}[\s\S]*?<SegmentedControl[\s\S]*?ariaLabel="Вид каталога курсов"/,
   );
+  assert.doesNotMatch(courseCatalogPanel, /CourseFilterMenu|course-filter/);
   assert.match(
     globalStyles,
     /\.course-catalog-toolbar-main\s*\{[^}]*display: flex;[^}]*min-width: 0;[^}]*flex: 1 1 auto;[^}]*align-items: center;/,

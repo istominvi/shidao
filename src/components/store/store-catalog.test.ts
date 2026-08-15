@@ -120,7 +120,7 @@ test("store search normalizes Cyrillic case, yo, punctuation, and whitespace", (
   assert.deepEqual(filtered({ query: "несуществующий товар" }), []);
 });
 
-test("store filters category, audience, price, and availability independently", () => {
+test("store filters by category", () => {
   assert.deepEqual(
     filtered({ category: "cards" }).map((product) => product.slug),
     [
@@ -128,46 +128,12 @@ test("store filters category, audience, price, and availability independently", 
       "kartochki-kliuchi-kitaiskikh-ieroglifov",
     ],
   );
-  assert.deepEqual(
-    filtered({ audience: "teacher" }).map((product) => product.slug),
-    [
-      "metodika-igrovykh-urokov-kitaiskogo",
-      "kartochki-kliuchi-kitaiskikh-ieroglifov",
-    ],
-  );
-  assert.deepEqual(
-    filtered({ price: "under-500", sort: "price-asc" }).map(
-      (product) => product.priceKopeks,
-    ),
-    [39000, 49000],
-  );
-  assert.deepEqual(
-    filtered({ price: "500-1000", sort: "price-asc" }).map(
-      (product) => product.priceKopeks,
-    ),
-    [59000, 69000, 75000, 89000],
-  );
-  assert.deepEqual(
-    filtered({ price: "over-1000", sort: "price-asc" }).map(
-      (product) => product.priceKopeks,
-    ),
-    [109000, 129000, 149000],
-  );
-  assert.equal(filtered({ availability: "in-stock" }).length, 8);
-  assert.ok(
-    filtered({ availability: "in-stock" }).every(
-      (product) => product.stock > 0,
-    ),
-  );
 });
 
-test("store combines filters with AND semantics", () => {
+test("store combines category and query with AND semantics", () => {
   assert.deepEqual(
     filtered({
       category: "books",
-      audience: "teacher",
-      price: "over-1000",
-      availability: "in-stock",
       query: "сценарии детскими",
     }).map((product) => product.slug),
     ["metodika-igrovykh-urokov-kitaiskogo"],
@@ -175,10 +141,9 @@ test("store combines filters with AND semantics", () => {
   assert.deepEqual(
     filtered({
       category: "stationery",
-      availability: "in-stock",
       query: "маркеры",
-    }),
-    [],
+    }).map((product) => product.slug),
+    ["markery-kistochki-dlya-kalligrafii"],
   );
 });
 

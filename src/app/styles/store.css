@@ -55,11 +55,6 @@
   flex: 1 1 20rem;
 }
 
-.store-filter-menu .course-filter-popover {
-  right: 0;
-  left: auto;
-}
-
 .store-product-grid {
   display: grid;
   min-width: 0;
@@ -619,11 +614,6 @@
 
   .store-toolbar-rail {
     flex-wrap: wrap;
-  }
-
-  .store-filter-menu .course-filter-popover {
-    right: auto;
-    left: 0;
   }
 }
 

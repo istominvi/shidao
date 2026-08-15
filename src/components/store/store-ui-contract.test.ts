@@ -8,7 +8,7 @@ function source(path: string) {
 
 const page = source("src/app/(app)/store/page.tsx");
 const workspace = source("src/components/store/store-workspace.tsx");
-const filters = source("src/components/store/store-filter-menu.tsx");
+const productSelect = source("src/components/ui/product-select.tsx");
 const checkout = source("src/components/store/store-checkout-dialog.tsx");
 const catalog = source("src/components/store/store-catalog.ts");
 const styles = source("src/app/styles/store.css");
@@ -27,8 +27,14 @@ test("Store is an Account page built from the shared product shell", () => {
   assert.match(workspace, /<WorkspaceTabs/);
   assert.match(workspace, /ariaLabel="Категории магазина"/);
   assert.match(workspace, /type="search"/);
-  assert.match(workspace, /<StoreFilterMenu/);
-  assert.match(workspace, /aria-label="Сортировка товаров"/);
+  assert.match(workspace, /<ProductSelect/);
+  assert.match(workspace, /label="Сортировка товаров"/);
+  assert.match(workspace, /options=\{STORE_SORT_OPTIONS\}/);
+  assert.doesNotMatch(workspace, /StoreFilterMenu|<Select\b|<select\b/);
+  assert.doesNotMatch(
+    workspace,
+    /audienceFilter|priceFilter|availabilityFilter|filterAudience|filterPrice|filterAvailability/,
+  );
   assert.match(workspace, /<SegmentedControl/);
   assert.match(workspace, /ariaLabel="Вид товаров"/);
   assert.match(workspace, /<StoreProductTable/);
@@ -36,19 +42,14 @@ test("Store is an Account page built from the shared product shell", () => {
   assert.match(workspace, /surface: "other"/);
   assert.match(workspace, /label: "Магазин"/);
 
-  assert.match(filters, /aria-label="Фильтры товаров"/);
-  assert.match(filters, /Button, productButtonClassName/);
+  assert.match(productSelect, /role="combobox"/);
+  assert.match(productSelect, /aria-haspopup="listbox"/);
+  assert.match(productSelect, /role="listbox"/);
+  assert.match(productSelect, /role="option"/);
   assert.match(
-    filters,
-    /className=\{productButtonClassName\(\s*"secondary",\s*"course-filter-trigger",?\s*\)\}/,
+    productSelect,
+    /className="product-dropdown-surface product-select-panel"/,
   );
-  assert.match(
-    filters,
-    /className="product-dropdown-surface course-filter-popover"/,
-  );
-  assert.match(filters, /event\.key !== "Escape"/);
-  assert.match(filters, /Для преподавателя/);
-  assert.match(filters, /Только в наличии/);
 
   assert.match(catalog, /value: "books", label: "Книги"/);
   assert.match(catalog, /value: "workbooks", label: "Прописи и тетради"/);
@@ -57,7 +58,7 @@ test("Store is an Account page built from the shared product shell", () => {
   assert.match(catalog, /value: "toys", label: "Игры и игрушки"/);
 });
 
-test("Store filters and cards adopt canonical raised surfaces", () => {
+test("Store sort menu and cards adopt canonical raised surfaces", () => {
   assert.match(
     globalStyles,
     /:root\s*\{[^}]*--product-dropdown-inset: 0\.375rem;[^}]*--product-dropdown-shadow: 0 18px 46px rgba\(20, 20, 20, 0\.18\);/,
@@ -72,7 +73,11 @@ test("Store filters and cards adopt canonical raised surfaces", () => {
   );
   assert.match(
     globalStyles,
-    /\.course-filter-trigger\s*\{[^}]*list-style: none;/,
+    /\.product-select-trigger:focus-visible\s*\{[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: -2px;/,
+  );
+  assert.doesNotMatch(
+    globalStyles,
+    /\.course-filter-(?:trigger|popover|actions)/,
   );
   assert.match(
     styles,
@@ -104,7 +109,9 @@ test("Store demo checkout is explicit, keyboard-closeable, and has no payment fi
   assert.match(checkout, /Заказ не создан — это была демонстрация/);
   assert.match(checkout, /dispatchCart\(\{ type: "clear" \}\)/);
 
-  const localOnlySource = [workspace, filters, checkout, catalog].join("\n");
+  const localOnlySource = [workspace, productSelect, checkout, catalog].join(
+    "\n",
+  );
   assert.doesNotMatch(localOnlySource, /\bfetch\s*\(/);
   assert.doesNotMatch(localOnlySource, /localStorage|sessionStorage/);
   assert.doesNotMatch(checkout, /cc-number|card-number|cvv|cvc/i);

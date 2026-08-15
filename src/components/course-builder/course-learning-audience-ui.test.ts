@@ -34,8 +34,9 @@ test("catalog learning audience is shareable, server-filtered, and resets list s
   assert.match(catalog, /label: "Обучение педагогов"/);
   assert.match(
     catalog,
-    /className="compact-page-toolbar course-catalog-toolbar"[\s\S]*?className="course-catalog-toolbar-main"[\s\S]*?className="compact-toolbar-search product-search-wrap"[\s\S]*?className="compact-toolbar-rail"[\s\S]*?<CourseFilterMenu[\s\S]*?\{learningAudienceControl\}[\s\S]*?<SegmentedControl[\s\S]*?ariaLabel="Вид каталога курсов"/,
+    /className="compact-page-toolbar course-catalog-toolbar"[\s\S]*?className="course-catalog-toolbar-main"[\s\S]*?className="compact-toolbar-search product-search-wrap"[\s\S]*?className="compact-toolbar-rail"[\s\S]*?\{learningAudienceControl\}[\s\S]*?<SegmentedControl[\s\S]*?ariaLabel="Вид каталога курсов"/,
   );
+  assert.doesNotMatch(catalog, /CourseFilterMenu/);
   assert.equal(
     catalog.match(/\{learningAudienceControl\}/g)?.length,
     1,
@@ -45,8 +46,9 @@ test("catalog learning audience is shareable, server-filtered, and resets list s
   assert.match(catalog, /params\.set\("learningAudience", learningAudience\)/);
   assert.match(
     catalog,
-    /function changeLearningAudience[\s\S]*?setQuery\(""\)[\s\S]*?setDebouncedQuery\(""\)[\s\S]*?setSubject\("all"\)[\s\S]*?setLevel\("all"\)[\s\S]*?setCourses\(null\)[\s\S]*?setNextCursor\(null\)[\s\S]*?onLearningAudienceChange\(nextAudience\)/,
+    /function changeLearningAudience[\s\S]*?setQuery\(""\)[\s\S]*?setDebouncedQuery\(""\)[\s\S]*?setCourses\(null\)[\s\S]*?setNextCursor\(null\)[\s\S]*?onLearningAudienceChange\(nextAudience\)/,
   );
+  assert.doesNotMatch(catalog, /setSubject|setLevel/);
 });
 
 test("only authorized creators choose educator audience and persisted audience is immutable", () => {

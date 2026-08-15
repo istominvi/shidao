@@ -184,7 +184,9 @@ Trigger Account menu не показывает имя: только avatar `40 �
 `12 px`. Dropdown header показывает ФИО и публичный email без avatar;
 разделителя под ним или между группами пунктов нет. Account menu входит в общий
 dropdown surface contract вместе с contextual `ActionMenu`,
-Course/Students/Store filters и Schedule calendar. Панель имеет ровно `6 px`
+Store sort и Schedule calendar. Course/Students/Store filter popovers в
+current source удалены; Students использует inline membership toggle. Панель
+имеет ровно `6 px`
 внутреннего inset, белый фон, radius `12 px`, обычный `border: 0`, одну тень
 `0 18px 46px rgba(20, 20, 20, 0.18)` и не использует blur. В forced-colors тень
 уступает системной границе `1px solid CanvasText` на `Canvas`. Native `select`,

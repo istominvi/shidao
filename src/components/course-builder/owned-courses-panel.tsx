@@ -10,7 +10,6 @@ import {
   Plus,
   RotateCcw,
   Search,
-  SlidersHorizontal,
   Table2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -19,12 +18,10 @@ import {
   CoursePublicationBadges,
 } from "@/components/course-builder/course-actions";
 import { courseBuilderRequest } from "@/components/course-builder/course-builder-client";
-import { CourseFilterMenu } from "@/components/course-builder/course-filter-menu";
 import { PageTransitionLink } from "@/components/navigation/page-transition-link";
 import {
   DEFAULT_COURSE_CATALOG_FILTERS,
   filterAndSortCourses,
-  getCourseCatalogOptions,
   hasActiveCourseCatalogFilters,
   type CourseCatalogFilters,
 } from "@/components/course-builder/course-catalog";
@@ -351,10 +348,6 @@ export function OwnedCoursesPanel({ onOpenCatalog }: OwnedCoursesPanelProps) {
     };
   }, [reloadKey]);
 
-  const options = useMemo(
-    () => getCourseCatalogOptions(courses ?? []),
-    [courses],
-  );
   const visibleCourses = useMemo(
     () => filterAndSortCourses(courses ?? [], filters),
     [courses, filters],
@@ -468,23 +461,12 @@ export function OwnedCoursesPanel({ onOpenCatalog }: OwnedCoursesPanelProps) {
         </label>
 
         <div className="compact-toolbar-rail">
-          <CourseFilterMenu
-            subjects={options.subjects}
-            levels={options.levels}
-            subject={filters.subject}
-            level={filters.level}
-            content={filters.content}
-            onSubjectChange={(value) => updateFilter("subject", value)}
-            onLevelChange={(value) => updateFilter("level", value)}
-            onContentChange={(value) => updateFilter("content", value)}
-          />
-
           {hasFilters ? (
             <Button
               variant="ghost"
               className="compact-toolbar-reset"
-              aria-label="Сбросить фильтры"
-              title="Сбросить фильтры"
+              aria-label="Очистить поиск"
+              title="Очистить поиск"
               onClick={resetFilters}
             >
               <RotateCcw className="h-4 w-4" aria-hidden="true" />
@@ -514,7 +496,7 @@ export function OwnedCoursesPanel({ onOpenCatalog }: OwnedCoursesPanelProps) {
 
           <p className="sr-only" role="status" aria-live="polite">
             {hasFilters
-              ? "Список курсов отфильтрован."
+              ? "Показаны курсы по поисковому запросу."
               : "Показаны все ваши курсы."}
           </p>
         </div>
@@ -523,17 +505,17 @@ export function OwnedCoursesPanel({ onOpenCatalog }: OwnedCoursesPanelProps) {
       {visibleCourses.length === 0 ? (
         <SurfaceCard className="mt-4 border border-dashed border-neutral-300 text-center">
           <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-neutral-100 text-neutral-700">
-            <SlidersHorizontal className="h-6 w-6" aria-hidden="true" />
+            <Search className="h-6 w-6" aria-hidden="true" />
           </div>
           <h3 className="mt-4 text-xl font-bold text-neutral-950">
             Ничего не найдено
           </h3>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-neutral-600">
-            Измените запрос или сбросьте фильтры, чтобы снова увидеть все курсы.
+            Измените запрос или очистите поиск, чтобы снова увидеть все курсы.
           </p>
           <Button variant="secondary" className="mt-5" onClick={resetFilters}>
             <RotateCcw className="h-4 w-4" aria-hidden="true" />
-            Показать все курсы
+            Очистить поиск
           </Button>
         </SurfaceCard>
       ) : view === "grid" ? (

@@ -51,10 +51,6 @@ const studentDirectoryTableSource = readFileSync(
   "src/components/teaching-hub/student-directory-table.tsx",
   "utf8",
 );
-const studentDirectoryFilterMenuSource = readFileSync(
-  "src/components/teaching-hub/student-directory-filter-menu.tsx",
-  "utf8",
-);
 const learnerProfileDialogSource = readFileSync(
   "src/components/teaching-hub/learner-profile-dialog.tsx",
   "utf8",
@@ -231,6 +227,10 @@ test("schedule projects persisted LessonRun appointments without a parallel even
 });
 
 test("schedule keeps the compact date control and dense one-line table contract", () => {
+  const dateNavigatorRule =
+    /\.teaching-date-navigator\s*\{[^}]*\}/.exec(teachingHubStyleSource)?.[0] ??
+    "";
+
   assert.match(globalStyleSource, /--product-row-height: 2\.5rem;/);
   assert.match(schedulePeriodSource, /month: "short"/);
   assert.match(schedulePeriodSource, /formatToParts\(value\)/);
@@ -247,6 +247,15 @@ test("schedule keeps the compact date control and dense one-line table contract"
   assert.match(
     teachingHubStyleSource,
     /\.teaching-hub-toolbar\s*\{[^}]*padding-inline:\s*0;/,
+  );
+  assert.match(
+    dateNavigatorRule,
+    /border:\s*var\(--product-surface-border\);[^}]*border-radius:\s*var\(--course-demo-control-radius\);[^}]*background:\s*#fff;[^}]*background-clip:\s*padding-box;[^}]*box-shadow:\s*var\(--product-entry-control-shadow\);/,
+  );
+  assert.doesNotMatch(dateNavigatorRule, /inset|box-shadow:[^;]*,/);
+  assert.match(
+    globalStyleSource,
+    /@media \(forced-colors: active\)[\s\S]*?\.teaching-date-navigator\s*\{[^}]*border: 1px solid ButtonText;[^}]*background: ButtonFace;[^}]*box-shadow: none;/,
   );
   assert.match(
     teachingHubStyleSource,
@@ -534,52 +543,25 @@ test("students manages one learner and group directory with durable history", ()
   );
   assert.match(studentDirectoryTableSource, /aria-label="Карточки учеников"/);
   assert.match(studentDirectoryTableSource, /aria-label="Карточки групп"/);
-  assert.equal(
-    studentsWorkspaceSource.match(/<StudentDirectoryFilterMenu/g)?.length,
-    1,
+  assert.match(
+    studentsWorkspaceSource,
+    /type LearnerGroupFilter = "all" \| "grouped" \| "ungrouped";/,
   );
   assert.match(
     studentsWorkspaceSource,
-    /status=\{statusFilter\}[\s\S]*?group=\{groupFilter\}[\s\S]*?account=\{accountFilter\}/,
+    /className="student-directory-membership-control"[\s\S]*?ariaLabel="Принадлежность к группе"[\s\S]*?value=\{groupFilter\}[\s\S]*?onChange=\{setGroupFilter\}[\s\S]*?value: "all", label: "Все"[\s\S]*?value: "grouped", label: "В группе"[\s\S]*?value: "ungrouped", label: "Без группы"/,
+  );
+  assert.match(
+    studentsWorkspaceSource,
+    /Boolean\(normalizedQuery\) \|\| \(view === "learners" && groupFilter !== "all"\)/,
+  );
+  assert.doesNotMatch(
+    studentsWorkspaceSource,
+    /StudentDirectoryFilterMenu|student-directory-filter-menu|statusFilter|accountFilter/,
   );
   assert.doesNotMatch(
     studentsWorkspaceSource,
     /aria-label="Сортировка"|<Select\b/,
-  );
-  assert.match(studentDirectoryFilterMenuSource, /<span>Фильтр<\/span>/);
-  assert.match(
-    studentDirectoryFilterMenuSource,
-    /className="product-dropdown-surface course-filter-popover"/,
-  );
-  assert.match(
-    studentDirectoryFilterMenuSource,
-    /role="group"[\s\S]*?aria-label="Принадлежность к группе"/,
-  );
-  for (const label of [
-    "Состояние",
-    "Все",
-    "Активные",
-    "Ожидают ответа",
-    "В архиве",
-    "В группе",
-    "Без группы",
-    "Аккаунт",
-    "Подключён",
-    "Без аккаунта",
-    "Ожидает подключения",
-  ]) {
-    assert.match(
-      studentDirectoryFilterMenuSource,
-      new RegExp(`>\\s*${label}\\s*<`),
-    );
-  }
-  assert.match(
-    studentDirectoryFilterMenuSource,
-    /aria-pressed=\{grouped\}[\s\S]*?>\s*В группе\s*</,
-  );
-  assert.match(
-    studentDirectoryFilterMenuSource,
-    /aria-pressed=\{group === "ungrouped"\}[\s\S]*?>\s*Без группы\s*</,
   );
   assert.match(studentsWorkspaceSource, /archivedDirectory/);
   assert.match(studentsWorkspaceSource, /pendingConnections/);
@@ -820,18 +802,10 @@ test("teaching hub never restores demo fixtures or local persistence", () => {
   );
 });
 
-test("teaching hub inputs, filters, and data surfaces use canonical control tokens", () => {
+test("teaching hub inputs, membership control, and data surfaces use canonical tokens", () => {
   assert.match(
-    studentDirectoryFilterMenuSource,
-    /Button, productButtonClassName/,
-  );
-  assert.match(
-    studentDirectoryFilterMenuSource,
-    /className=\{productButtonClassName\(\s*"secondary",\s*"course-filter-trigger",?\s*\)\}/,
-  );
-  assert.match(
-    studentDirectoryFilterMenuSource,
-    /aria-disabled=\{disabled \|\| undefined\}/,
+    studentsWorkspaceSource,
+    /<SegmentedControl[\s\S]*?className="student-directory-membership-control"[\s\S]*?disabled=\{!ready \|\| busy\}/,
   );
   assert.match(
     studentsWorkspaceSource,

@@ -52,12 +52,6 @@ import {
   type LearnerGroupDirectorySortKey,
   type LearnerDirectoryEntry,
 } from "@/components/teaching-hub/student-directory-table";
-import {
-  StudentDirectoryFilterMenu,
-  type StudentDirectoryAccountFilter,
-  type StudentDirectoryGroupFilter,
-  type StudentDirectoryStatusFilter,
-} from "@/components/teaching-hub/student-directory-filter-menu";
 import { Button } from "@/components/ui/button";
 import {
   nextProductTableSort,
@@ -82,6 +76,7 @@ import { ROUTES } from "@/lib/auth";
 
 type DirectoryView = "learners" | "groups" | "observing";
 type DirectoryLayout = "table" | "cards";
+type LearnerGroupFilter = "all" | "grouped" | "ungrouped";
 
 const STUDENTS_DIRECTORY_TABS_ID = "students-directory";
 
@@ -142,12 +137,7 @@ export function StudentsWorkspace({
   const [layout, setLayout] = useState<DirectoryLayout>("table");
   const [learnerQuery, setLearnerQuery] = useState("");
   const [groupQuery, setGroupQuery] = useState("");
-  const [statusFilter, setStatusFilter] =
-    useState<StudentDirectoryStatusFilter>("all");
-  const [groupFilter, setGroupFilter] =
-    useState<StudentDirectoryGroupFilter>("all");
-  const [accountFilter, setAccountFilter] =
-    useState<StudentDirectoryAccountFilter>("all");
+  const [groupFilter, setGroupFilter] = useState<LearnerGroupFilter>("all");
   const [learnerSort, setLearnerSort] = useState<
     ProductTableSortState<LearnerDirectorySortKey>
   >({ key: "name", direction: "asc" });
@@ -275,18 +265,6 @@ export function StudentsWorkspace({
     setAddLearnerOpen(true);
   }, []);
 
-  useEffect(() => {
-    if (
-      groups &&
-      groupFilter !== "all" &&
-      groupFilter !== "grouped" &&
-      groupFilter !== "ungrouped" &&
-      !groups.some((group) => group.id === groupFilter)
-    ) {
-      setGroupFilter("all");
-    }
-  }, [groupFilter, groups]);
-
   const activeQuery = view === "learners" ? learnerQuery : groupQuery;
   const normalizedQuery = activeQuery.trim().toLocaleLowerCase("ru-RU");
 
@@ -346,32 +324,17 @@ export function StudentsWorkspace({
         (activeProfile &&
           (groupFilter === "grouped"
             ? entry.groups.length > 0
-            : groupFilter === "ungrouped"
-              ? entry.groups.length === 0
-              : entry.groups.some((group) => group.id === groupFilter)));
-      const matchesStatus =
-        statusFilter === "all" || entry.status === statusFilter;
-      const accountState =
-        entry.kind === "request"
-          ? "pending"
-          : entry.identity.identityState === "claimed" ||
-              entry.identity.identityState === "merged"
-            ? "connected"
-            : entry.identity.identityState;
-      const matchesAccount =
-        accountFilter === "all" || accountState === accountFilter;
-      return matchesQuery && matchesGroup && matchesStatus && matchesAccount;
+            : entry.groups.length === 0));
+      return matchesQuery && matchesGroup;
     });
     return filtered;
   }, [
-    accountFilter,
     activeDirectory,
     archivedDirectory,
     groupFilter,
     groups,
     normalizedQuery,
     pendingConnections,
-    statusFilter,
   ]);
 
   const visibleGroups = useMemo(() => {
@@ -396,11 +359,7 @@ export function StudentsWorkspace({
     connections !== null;
   const busy = Boolean(busyLabel);
   const hasFilters =
-    Boolean(normalizedQuery) ||
-    (view === "learners" &&
-      (statusFilter !== "all" ||
-        groupFilter !== "all" ||
-        accountFilter !== "all"));
+    Boolean(normalizedQuery) || (view === "learners" && groupFilter !== "all");
   const headerMetricPending =
     view === "learners"
       ? loadError === null &&
@@ -630,16 +589,17 @@ export function StudentsWorkspace({
 
         <div className="student-directory-controls compact-toolbar-rail">
           {view === "learners" ? (
-            <StudentDirectoryFilterMenu
-              groups={groups ?? []}
-              status={statusFilter}
-              group={groupFilter}
-              account={accountFilter}
-              onStatusChange={setStatusFilter}
-              onGroupChange={setGroupFilter}
-              onAccountChange={setAccountFilter}
+            <SegmentedControl
+              className="student-directory-membership-control"
+              ariaLabel="Принадлежность к группе"
+              value={groupFilter}
+              onChange={setGroupFilter}
               disabled={!ready || busy}
-              className="student-directory-filter-menu"
+              items={[
+                { value: "all", label: "Все" },
+                { value: "grouped", label: "В группе" },
+                { value: "ungrouped", label: "Без группы" },
+              ]}
             />
           ) : null}
 
@@ -649,14 +609,12 @@ export function StudentsWorkspace({
               variant="ghost"
               className="compact-toolbar-reset"
               disabled={busy}
-              aria-label="Сбросить фильтры"
-              title="Сбросить фильтры"
+              aria-label="Сбросить параметры списка"
+              title="Сбросить параметры списка"
               onClick={() => {
                 if (view === "learners") {
                   setLearnerQuery("");
-                  setStatusFilter("all");
                   setGroupFilter("all");
-                  setAccountFilter("all");
                 } else {
                   setGroupQuery("");
                 }

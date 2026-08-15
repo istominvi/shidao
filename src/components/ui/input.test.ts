@@ -106,7 +106,7 @@ test("input focus and forced colors preserve an accessible indicator", () => {
   );
   assert.match(
     productInputFocus,
-    /border: var\(--product-surface-border\);[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
+    /border: var\(--product-surface-border\);[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: 0;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
   assert.match(
     genericFieldFocus,
@@ -114,11 +114,11 @@ test("input focus and forced colors preserve an accessible indicator", () => {
   );
   assert.match(
     fieldInputFocus,
-    /border: var\(--product-surface-border\);[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
+    /border: var\(--product-surface-border\);[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: 0;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
   assert.match(
     teachingStyles,
-    /\.teaching-hub-search:focus-within\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background-color: #fff;[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
+    /\.teaching-hub-search:focus-within\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background-color: #fff;[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: 0;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
   assert.equal(
     (teachingStyles.match(/\.teaching-hub-search:focus-within\s*\{/g) ?? [])
@@ -128,7 +128,7 @@ test("input focus and forced colors preserve an accessible indicator", () => {
   );
   assert.match(
     teachingStyles,
-    /\.student-directory-picker-search input:focus\s*\{[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
+    /\.student-directory-picker-search input:focus\s*\{[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: 0;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
   assert.match(
     forcedColors,
@@ -136,6 +136,14 @@ test("input focus and forced colors preserve an accessible indicator", () => {
   );
   assert.match(
     forcedColors,
-    /\.product-control:focus-visible,\s*input\.product-control-input:focus,\s*input\.product-control-search:focus,\s*\.field-input:focus,\s*input\.field-input:focus,\s*\.teaching-hub-search:focus-within,\s*\.student-directory-picker-search input:focus\s*\{[^}]*outline: 2px solid Highlight;[^}]*outline-offset: 2px;[^}]*box-shadow: none;/,
+    /\.product-control:focus-visible,\s*input\.product-control-input:focus,\s*input\.product-control-search:focus,\s*\.field-input:focus,\s*input\.field-input:focus,\s*\.teaching-hub-search:focus-within,\s*\.student-directory-picker-search input:focus\s*\{[^}]*outline: 2px solid Highlight;[^}]*box-shadow: none;/,
+  );
+  assert.match(
+    forcedColors,
+    /\.product-control:focus-visible,\s*\.field-input:focus\s*\{[^}]*outline-offset: 2px;/,
+  );
+  assert.match(
+    forcedColors,
+    /input\.product-control-input:focus,\s*input\.product-control-search:focus,\s*input\.field-input:focus,\s*\.teaching-hub-search:focus-within,\s*\.student-directory-picker-search input:focus\s*\{[^}]*outline-offset: 0;/,
   );
 });

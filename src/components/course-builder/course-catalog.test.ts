@@ -6,7 +6,6 @@ import {
   DEFAULT_COURSE_CATALOG_FILTERS,
   courseCountLabel,
   filterAndSortCourses,
-  getCourseCatalogOptions,
   hasActiveCourseCatalogFilters,
 } from "./course-catalog";
 
@@ -20,10 +19,6 @@ const ownedCoursesPanelSource = readFileSync(
 );
 const courseCatalogPanelSource = readFileSync(
   "src/components/course-builder/course-catalog-panel.tsx",
-  "utf8",
-);
-const courseFilterMenuSource = readFileSync(
-  "src/components/course-builder/course-filter-menu.tsx",
   "utf8",
 );
 const segmentedControlSource = readFileSync(
@@ -101,37 +96,7 @@ test("course catalog searches visible metadata and excludes private preferences"
   );
 });
 
-test("course catalog combines subject, level, and content filters", () => {
-  assert.deepEqual(
-    filterAndSortCourses(COURSES, {
-      ...DEFAULT_COURSE_CATALOG_FILTERS,
-      subject: "Китайский язык",
-      level: "Начальный",
-      content: "assembled",
-    }).map((item) => item.id),
-    ["course-1"],
-  );
-  assert.deepEqual(
-    filterAndSortCourses(COURSES, {
-      ...DEFAULT_COURSE_CATALOG_FILTERS,
-      content: "empty",
-    }).map((item) => item.id),
-    ["course-3"],
-  );
-  assert.deepEqual(
-    filterAndSortCourses(COURSES, {
-      ...DEFAULT_COURSE_CATALOG_FILTERS,
-      content: "with-lessons",
-    }).map((item) => item.id),
-    ["course-1", "course-2"],
-  );
-});
-
-test("course catalog derives stable options and deterministic sorts", () => {
-  assert.deepEqual(getCourseCatalogOptions(COURSES), {
-    subjects: ["Английский язык", "Китайский язык"],
-    levels: ["Начальный", "Продвинутый"],
-  });
+test("course catalog applies deterministic sorts", () => {
   assert.deepEqual(
     filterAndSortCourses(COURSES, {
       ...DEFAULT_COURSE_CATALOG_FILTERS,
@@ -169,7 +134,7 @@ test("course catalog reports active filters and Russian result labels", () => {
   assert.equal(courseCountLabel(12), "12 курсов");
 });
 
-test("course catalog UI exposes accessible search, filters, views, and states", () => {
+test("course catalog UI exposes accessible search, views, and states without filter menus", () => {
   const source = `${coursesIndexSource}\n${ownedCoursesPanelSource}\n${courseCatalogPanelSource}`;
 
   for (const panelSource of [
@@ -178,15 +143,22 @@ test("course catalog UI exposes accessible search, filters, views, and states", 
   ]) {
     assert.match(panelSource, /type="search"/);
     assert.match(panelSource, /className="compact-page-toolbar/);
-    assert.match(panelSource, /<CourseFilterMenu/);
+    assert.match(panelSource, /aria-label="Очистить поиск"/);
+    assert.doesNotMatch(panelSource, /CourseFilterMenu|course-filter/);
     assert.match(panelSource, /Ничего не найдено/);
     assert.doesNotMatch(panelSource, /className="compact-toolbar-result"/);
     assert.match(panelSource, /className="sr-only" role="status"/);
     assert.match(panelSource, /aria-live="polite"/);
   }
 
-  assert.match(ownedCoursesPanelSource, /content=\{filters\.content\}/);
-  assert.match(ownedCoursesPanelSource, /onContentChange=/);
+  assert.doesNotMatch(
+    ownedCoursesPanelSource,
+    /filters\.(?:content|subject|level)|setContent|setSubject|setLevel/,
+  );
+  assert.doesNotMatch(
+    courseCatalogPanelSource,
+    /filters\.(?:content|subject|level)|setContent|setSubject|setLevel/,
+  );
   assert.match(
     ownedCoursesPanelSource,
     /useState<CourseCatalogView>\("table"\)/,
@@ -286,7 +258,7 @@ test("course catalog UI exposes accessible search, filters, views, and states", 
   assert.doesNotMatch(source, /localStorage|sessionStorage/);
 });
 
-test("shared course controls preserve pressed-button and native-filter semantics", () => {
+test("shared course controls preserve pressed-button semantics", () => {
   assert.match(segmentedControlSource, /role="group"/);
   assert.match(segmentedControlSource, /aria-label=\{ariaLabel\}/);
   assert.match(segmentedControlSource, /aria-pressed=\{isSelected\}/);
@@ -331,54 +303,9 @@ test("shared course controls preserve pressed-button and native-filter semantics
     segmentedControlSource,
     /!iconOnly && item\.count !== undefined/,
   );
-
-  assert.match(courseFilterMenuSource, /<details/);
-  assert.match(courseFilterMenuSource, /<summary/);
-  assert.match(courseFilterMenuSource, /Button, productButtonClassName/);
-  assert.match(
-    courseFilterMenuSource,
-    /className=\{productButtonClassName\(\s*"secondary",\s*"course-filter-trigger",?\s*\)\}/,
-  );
-  assert.match(courseFilterMenuSource, /aria-controls=\{panelId\}/);
-  assert.match(courseFilterMenuSource, /aria-expanded=\{open\}/);
-  assert.match(
-    courseFilterMenuSource,
-    /aria-disabled=\{disabled \|\| undefined\}/,
-  );
-  assert.match(
-    courseFilterMenuSource,
-    /if \(disabled\) event\.preventDefault\(\)/,
-  );
-  assert.match(courseFilterMenuSource, /role="group"/);
-  assert.match(courseFilterMenuSource, /aria-label=\{label\}/);
-  assert.match(
-    courseFilterMenuSource,
-    /className="product-dropdown-surface course-filter-popover"/,
-  );
-  assert.match(
-    courseFilterMenuSource,
-    /<label className="course-filter-field">/,
-  );
-  assert.match(courseFilterMenuSource, /<Select/);
-  assert.match(courseFilterMenuSource, /event\.key !== "Escape"/);
-  assert.match(courseFilterMenuSource, /summaryRef\.current\?\.focus\(\)/);
-  assert.match(courseFilterMenuSource, /contains\(event\.target as Node\)/);
-  assert.match(courseFilterMenuSource, /onSubjectChange\("all"\)/);
-  assert.match(courseFilterMenuSource, /onLevelChange\("all"\)/);
-  assert.match(courseFilterMenuSource, /onContentChange\?\.\("all"\)/);
-  assert.match(courseFilterMenuSource, /Сбросить фильтры/);
-  assert.doesNotMatch(courseFilterMenuSource, /role="menu/);
-  assert.doesNotMatch(
-    /\.course-filter-popover\s*\{[^}]*\}/.exec(globalStyles)?.[0] ?? "",
-    /border(?:-radius)?:|background:|padding:|box-shadow:|backdrop-filter:/,
-  );
-  assert.match(
-    globalStyles,
-    /\.course-filter-actions\s*\{[^}]*border-top: 0;[^}]*padding-top: 0;/,
-  );
 });
 
-test("course tables and filter CTA adopt canonical raised surfaces", () => {
+test("course tables adopt canonical raised surfaces", () => {
   assert.match(
     globalStyles,
     /:root\s*\{[^}]*--product-surface-border: 1px solid oklch\(0 0 0 \/ 0\.1\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
@@ -391,13 +318,9 @@ test("course tables and filter CTA adopt canonical raised surfaces", () => {
     globalStyles,
     /\.course-index-table-wrap\s*\{[^}]*box-shadow: var\(--product-raised-surface-shadow\);/,
   );
-  assert.match(
-    globalStyles,
-    /\.course-filter-trigger\s*\{[^}]*list-style: none;/,
-  );
   assert.doesNotMatch(
-    /\.course-filter-trigger\s*\{[^}]*\}/.exec(globalStyles)?.[0] ?? "",
-    /border|background|box-shadow|transform|transition/,
+    globalStyles,
+    /\.course-filter-(?:trigger|popover|actions)/,
   );
   assert.doesNotMatch(ownedCoursesPanelSource, /border-white\/80/);
   assert.doesNotMatch(courseCatalogPanelSource, /border-white\/80/);

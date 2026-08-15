@@ -4,7 +4,6 @@ import {
   Blocks,
   BookOpenText,
   Brush,
-  ChevronDown,
   GalleryHorizontalEnd,
   GraduationCap,
   LayoutGrid,
@@ -24,7 +23,8 @@ import { AppPageHeader } from "@/components/app/page-header";
 import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
 import { useSessionView } from "@/components/use-session-view";
 import { Button } from "@/components/ui/button";
-import { Input, Select } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
+import { ProductSelect } from "@/components/ui/product-select";
 import {
   ProductTable,
   ProductTableActionCell,
@@ -63,11 +63,17 @@ import {
   StoreCheckoutDialog,
   type StoreCheckoutStep,
 } from "@/components/store/store-checkout-dialog";
-import { StoreFilterMenu } from "@/components/store/store-filter-menu";
 
 type StoreView = "grid" | "table";
 
 const STORE_TABS_ID = "store-categories";
+
+const STORE_SORT_OPTIONS = [
+  { value: "popular", label: "Сначала популярные" },
+  { value: "price-asc", label: "Сначала дешевле" },
+  { value: "price-desc", label: "Сначала дороже" },
+  { value: "title", label: "По названию" },
+] as const;
 
 const STORE_CATEGORY_ICONS: Record<StoreCategory, LucideIcon> = {
   all: PackageOpen,
@@ -297,9 +303,6 @@ export function StoreWorkspace({
   const hasFilters =
     filters.query.trim().length > 0 ||
     filters.category !== "all" ||
-    filters.audience !== "all" ||
-    filters.price !== "all" ||
-    filters.availability !== "all" ||
     filters.sort !== "popular";
   const initialName =
     session.kind === "account" ? (session.fullName ?? "") : "";
@@ -401,37 +404,20 @@ export function StoreWorkspace({
             </label>
 
             <div className="compact-toolbar-rail store-toolbar-rail">
-              <StoreFilterMenu filters={filters} onChange={updateFilter} />
-
-              <label className="product-select-wrap compact-toolbar-sort">
-                <span className="sr-only">Сортировка товаров</span>
-                <Select
-                  value={filters.sort}
-                  onChange={(event) =>
-                    updateFilter(
-                      "sort",
-                      event.target.value as StoreFilters["sort"],
-                    )
-                  }
-                  aria-label="Сортировка товаров"
-                >
-                  <option value="popular">Сначала популярные</option>
-                  <option value="price-asc">Сначала дешевле</option>
-                  <option value="price-desc">Сначала дороже</option>
-                  <option value="title">По названию</option>
-                </Select>
-                <ChevronDown
-                  className="product-select-icon h-4 w-4"
-                  aria-hidden="true"
-                />
-              </label>
+              <ProductSelect
+                className="compact-toolbar-sort"
+                label="Сортировка товаров"
+                value={filters.sort}
+                options={STORE_SORT_OPTIONS}
+                onChange={(sort) => updateFilter("sort", sort)}
+              />
 
               {hasFilters ? (
                 <Button
                   variant="ghost"
                   className="compact-toolbar-reset"
-                  aria-label="Сбросить поиск и фильтры"
-                  title="Сбросить поиск и фильтры"
+                  aria-label="Сбросить параметры каталога"
+                  title="Сбросить параметры каталога"
                   onClick={resetFilters}
                 >
                   <RotateCcw className="h-4 w-4" aria-hidden="true" />

@@ -68,8 +68,8 @@ test("catalog list opens a full read-only published-course workspace", () => {
   assert.doesNotMatch(catalog, /Добавьте курс себе и измените уроки/);
   assert.match(catalog, /new URLSearchParams\(\{ limit: "50" \}\)/);
   assert.match(catalog, /params\.set\("q", normalizedQuery\)/);
-  assert.match(catalog, /params\.set\("subject", subject\)/);
-  assert.match(catalog, /params\.set\("level", level\)/);
+  assert.doesNotMatch(catalog, /params\.set\("subject"/);
+  assert.doesNotMatch(catalog, /params\.set\("level"/);
   assert.match(catalog, /params\.set\("cursor", cursor\)/);
   assert.match(
     catalog,
