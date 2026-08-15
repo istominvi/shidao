@@ -115,8 +115,9 @@ test("teaching hub pages share the demo shell and canonical page header", () => 
   assert.match(scheduleWorkspaceSource, /<AppPageHeader/);
   assert.match(
     scheduleWorkspaceSource,
-    /metric=\{[\s\S]*?formatSchedulePeriodLabel[\s\S]*?visibleRuns\.length/,
+    /const headerMetric =[\s\S]*?formatSchedulePeriodLabel[\s\S]*?visibleRuns\.length[\s\S]*?metric=\{headerMetric\}/,
   );
+  assert.match(scheduleWorkspaceSource, /usePrimaryHeaderSummary\(\)/);
   assert.match(
     scheduleWorkspaceSource,
     /headerMetricPending[\s\S]*?metricPending=\{headerMetricPending\}/,
@@ -132,8 +133,9 @@ test("teaching hub pages share the demo shell and canonical page header", () => 
   assert.match(studentsWorkspaceSource, /title="Ученики"/);
   assert.match(
     studentsWorkspaceSource,
-    /metric=\{[\s\S]*?Активных:[\s\S]*?Групп:[\s\S]*?Профилей:/,
+    /const headerMetric =[\s\S]*?Активных:[\s\S]*?Групп:[\s\S]*?Профилей:[\s\S]*?metric=\{headerMetric\}/,
   );
+  assert.match(studentsWorkspaceSource, /usePrimaryHeaderSummary\(\)/);
   assert.match(
     studentsWorkspaceSource,
     /observingCountPending[\s\S]*?headerMetricPending[\s\S]*?metricPending=\{headerMetricPending\}/,

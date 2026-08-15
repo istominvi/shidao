@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode, type Ref } from "react";
+import { type ReactNode, type Ref } from "react";
 import { PageTransitionLink } from "@/components/navigation/page-transition-link";
 import { usePageTransition } from "@/components/navigation/page-transition-provider";
 import { classNames } from "@/lib/ui/classnames";
@@ -39,20 +39,15 @@ export function AppPageHeader({
   headingRef,
 }: AppPageHeaderProps) {
   const pageTransition = usePageTransition();
-  const [hasRevealed, setHasRevealed] = useState(metricPending !== true);
   const usesAsyncMetric = metricPending !== undefined;
-  const firstRevealPending = metricPending === true && !hasRevealed;
   const hasMetric = metric !== null && metric !== undefined && metric !== false;
+  const metricIsPending = metricPending === true && !hasMetric;
   const resolvedBackLabel = back?.label ?? "Назад";
   const resolvedBackAriaLabel =
     back?.ariaLabel ??
     (typeof resolvedBackLabel === "string"
       ? `Вернуться: ${resolvedBackLabel}`
       : undefined);
-
-  useEffect(() => {
-    if (!metricPending) setHasRevealed(true);
-  }, [metricPending]);
 
   return (
     <header
@@ -62,8 +57,7 @@ export function AppPageHeader({
         Boolean(actions) && "app-page-header-with-actions",
       )}
       data-page-header-async-metric={usesAsyncMetric ? "" : undefined}
-      data-page-header-pending={firstRevealPending ? "" : undefined}
-      aria-busy={metricPending || undefined}
+      data-page-header-pending={metricIsPending ? "" : undefined}
     >
       <div className="app-page-header-content">
         {back?.type === "link" ? (
@@ -113,7 +107,9 @@ export function AppPageHeader({
             <p
               className="app-page-description app-page-metric"
               data-page-header-metric-placeholder={hasMetric ? undefined : ""}
-              aria-hidden={hasMetric ? undefined : true}
+              aria-busy={metricIsPending || undefined}
+              aria-live={usesAsyncMetric ? "polite" : undefined}
+              title={typeof metric === "string" ? metric : undefined}
             >
               {hasMetric ? metric : "\u00a0"}
             </p>

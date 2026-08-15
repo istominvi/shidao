@@ -1059,6 +1059,14 @@ function json(response: ServerResponse, statusCode: number, payload: unknown) {
   response.end(JSON.stringify(payload));
 }
 
+function exactCountHead(response: ServerResponse, count: number) {
+  response.writeHead(200, {
+    "Content-Range": count === 0 ? "*/0" : `0-${count - 1}/${count}`,
+    "Range-Unit": "items",
+  });
+  response.end();
+}
+
 function readUserId(requestUrl: URL) {
   return readEqFilter(requestUrl, "user_id");
 }
@@ -2348,17 +2356,21 @@ async function handleMockSupabase(
     const requestedTeacherId = readEqFilter(requestUrl, "teacher_account_id");
     const requestedId = readEqFilter(requestUrl, "learner_profile_id");
     const requestedIds = readInFilter(requestUrl, "learner_profile_id");
-    json(
-      response,
-      200,
-      E2E_TEACHER_LEARNER_ROWS.filter(
-        (row) =>
-          (!requestedTeacherId ||
-            row.teacher_account_id === requestedTeacherId) &&
-          (!requestedId || row.learner_profile_id === requestedId) &&
-          (!requestedIds || requestedIds.includes(row.learner_profile_id)),
-      ),
+    const archivedFilter = requestUrl.searchParams.get("archived_at");
+    const rows = E2E_TEACHER_LEARNER_ROWS.filter(
+      (row) =>
+        (!requestedTeacherId ||
+          row.teacher_account_id === requestedTeacherId) &&
+        (!requestedId || row.learner_profile_id === requestedId) &&
+        (!requestedIds || requestedIds.includes(row.learner_profile_id)) &&
+        (archivedFilter !== "is.null" || row.archived_at === null) &&
+        (archivedFilter !== "not.is.null" || row.archived_at !== null),
     );
+    if (request.method === "HEAD") {
+      exactCountHead(response, rows.length);
+      return;
+    }
+    json(response, 200, rows);
     return;
   }
 
@@ -2503,22 +2515,23 @@ async function handleMockSupabase(
     const scheduledTo = readComparisonFilter(requestUrl, "scheduled_at", "lt");
     const endedFilter = requestUrl.searchParams.get("ended_at");
     const cancelledFilter = requestUrl.searchParams.get("cancelled_at");
-    json(
-      response,
-      200,
-      e2eCompletionRunRows().filter(
-        (row) =>
-          (!requestedId || row.id === requestedId) &&
-          (!requestedLessonId || row.lesson_id === requestedLessonId) &&
-          (!requestedLessonIds || requestedLessonIds.includes(row.lesson_id)) &&
-          (!scheduledFrom || row.scheduled_at >= scheduledFrom) &&
-          (!scheduledTo || row.scheduled_at < scheduledTo) &&
-          (endedFilter !== "is.null" || row.ended_at === null) &&
-          (endedFilter !== "not.is.null" || row.ended_at !== null) &&
-          (cancelledFilter !== "is.null" || row.cancelled_at === null) &&
-          (cancelledFilter !== "not.is.null" || row.cancelled_at !== null),
-      ),
+    const rows = e2eCompletionRunRows().filter(
+      (row) =>
+        (!requestedId || row.id === requestedId) &&
+        (!requestedLessonId || row.lesson_id === requestedLessonId) &&
+        (!requestedLessonIds || requestedLessonIds.includes(row.lesson_id)) &&
+        (!scheduledFrom || row.scheduled_at >= scheduledFrom) &&
+        (!scheduledTo || row.scheduled_at < scheduledTo) &&
+        (endedFilter !== "is.null" || row.ended_at === null) &&
+        (endedFilter !== "not.is.null" || row.ended_at !== null) &&
+        (cancelledFilter !== "is.null" || row.cancelled_at === null) &&
+        (cancelledFilter !== "not.is.null" || row.cancelled_at !== null),
     );
+    if (request.method === "HEAD") {
+      exactCountHead(response, rows.length);
+      return;
+    }
+    json(response, 200, rows);
     return;
   }
 
@@ -4240,6 +4253,181 @@ test("browser smoke: Store supersedes a pre-commit Courses RSC navigation", asyn
   }
 });
 
+test("browser smoke: warmed Students header summary survives delayed content and a revisit", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+  let summaryRequestCount = 0;
+  let releaseDelayedStudentsContent: (() => void) | null = null;
+
+  const releaseStudentsContent = () => {
+    releaseDelayedStudentsContent?.();
+    releaseDelayedStudentsContent = null;
+  };
+
+  try {
+    await runtime.page.route("**/api/v2/app-header-summary*", async (route) => {
+      summaryRequestCount += 1;
+      await route.continue();
+    });
+    await runtime.page.clock.setFixedTime("2026-08-11T00:00:00.000Z");
+    await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
+    await runtime.page
+      .getByRole("heading", { name: "Расписание", exact: true, level: 1 })
+      .waitFor();
+    assert.ok(
+      summaryRequestCount >= 1,
+      "Schedule must warm the shared primary-header summary",
+    );
+    const warmedSummaryRequestCount = summaryRequestCount;
+
+    const studentsContentObserved = new Promise<void>((resolve) => {
+      e2eStudentDirectoryRpcObserved = resolve;
+    });
+    e2eStudentDirectoryRpcGate = new Promise<void>((resolve) => {
+      releaseDelayedStudentsContent = resolve;
+    });
+
+    const assertCachedStudentsChrome = async (context: string) => {
+      const contract = await runtime.page.evaluate(() => {
+        const header = document.querySelector<HTMLElement>(".app-page-header");
+        const title = header?.querySelector<HTMLElement>(".app-page-title");
+        const metric = header?.querySelector<HTMLElement>(".app-page-metric");
+        const actions = header?.querySelector<HTMLElement>(".app-page-actions");
+        const tabLabels = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            "#students-directory-tablist [role=tab] .workspace-tab-label",
+          ),
+        ).map((label) => label.textContent?.trim().replace(/\s+/g, " ") ?? "");
+        if (!header || !title || !metric || !actions) {
+          throw new Error("Cached Students route chrome is missing");
+        }
+        return {
+          pathname: window.location.pathname,
+          pending: header.hasAttribute("data-page-header-pending"),
+          ariaBusy: header.getAttribute("aria-busy"),
+          title: title.textContent?.trim() ?? "",
+          metric: metric.textContent?.trim() ?? "",
+          action: actions.textContent?.trim().replace(/\s+/g, " ") ?? "",
+          metricPlaceholder: metric.hasAttribute(
+            "data-page-header-metric-placeholder",
+          ),
+          titleVisibility: getComputedStyle(title).visibility,
+          metricVisibility: getComputedStyle(metric).visibility,
+          actionsVisibility: getComputedStyle(actions).visibility,
+          staticTabLabels: tabLabels.map((label) =>
+            label.replace(/\s+\d+$/u, ""),
+          ),
+          studentsTabLabel: tabLabels[0] ?? "",
+          loadingContentPresent:
+            document.body.textContent?.includes(
+              "Загружаем учеников и группы…",
+            ) ?? false,
+          tablePresent: Boolean(
+            document.querySelector(
+              '[aria-label="Ученики, их статусы и группы"]',
+            ),
+          ),
+        };
+      });
+
+      assert.deepEqual(
+        contract,
+        {
+          pathname: "/students",
+          pending: false,
+          ariaBusy: null,
+          title: "Ученики",
+          metric: "Активных: 4 · в архиве: 0 · ожидают: 1",
+          action: "Новый ученик",
+          metricPlaceholder: false,
+          titleVisibility: "visible",
+          metricVisibility: "visible",
+          actionsVisibility: "visible",
+          staticTabLabels: ["Ученики", "Группы", "Наблюдение"],
+          studentsTabLabel: "Ученики 5",
+          loadingContentPresent: true,
+          tablePresent: false,
+        },
+        context,
+      );
+    };
+
+    await Promise.all([
+      runtime.page.waitForURL(/\/students$/),
+      runtime.page.getByRole("link", { name: "Ученики", exact: true }).click(),
+    ]);
+
+    let studentsContentTimeout: ReturnType<typeof setTimeout> | null = null;
+    try {
+      await Promise.race([
+        studentsContentObserved,
+        new Promise<void>((_, reject) => {
+          studentsContentTimeout = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  "Students revisit test did not reach the gated content request",
+                ),
+              ),
+            5_000,
+          );
+        }),
+      ]);
+    } finally {
+      if (studentsContentTimeout) clearTimeout(studentsContentTimeout);
+    }
+    await runtime.page
+      .getByText("Загружаем учеников и группы…", { exact: true })
+      .waitFor();
+    await assertCachedStudentsChrome(
+      "First Students visit must not wait for route content",
+    );
+
+    await Promise.all([
+      runtime.page.waitForURL(/\/store$/),
+      runtime.page.getByRole("link", { name: "Магазин", exact: true }).click(),
+    ]);
+    await runtime.page
+      .getByRole("heading", { name: "Магазин", exact: true, level: 1 })
+      .waitFor();
+
+    await Promise.all([
+      runtime.page.waitForURL(/\/students$/),
+      runtime.page.getByRole("link", { name: "Ученики", exact: true }).click(),
+    ]);
+    await runtime.page
+      .getByText("Загружаем учеников и группы…", { exact: true })
+      .waitFor();
+    await assertCachedStudentsChrome(
+      "Revisited Students header must use the warm summary",
+    );
+    assert.equal(
+      summaryRequestCount,
+      warmedSummaryRequestCount,
+      "Primary navigation within the TTL must not request the header summary again",
+    );
+
+    releaseStudentsContent();
+    e2eStudentDirectoryRpcGate = null;
+    e2eStudentDirectoryRpcObserved = null;
+    await runtime.page
+      .getByRole("table", {
+        name: "Ученики, их статусы и группы",
+        exact: true,
+      })
+      .waitFor();
+  } finally {
+    releaseStudentsContent();
+    e2eStudentDirectoryRpcGate = null;
+    e2eStudentDirectoryRpcObserved = null;
+    await runtime.close();
+  }
+});
+
 test("browser smoke: Account navigates Schedule → Students with honest V2 states", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
@@ -4249,6 +4437,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
   e2eAiConsentRequested = false;
   const teacherCookie = authenticatedCookieValue();
   const runtime = await openPage({ cookie: teacherCookie });
+  let releaseDelayedStudentsContent: (() => void) | null = null;
+
+  const releaseStudentsContent = () => {
+    releaseDelayedStudentsContent?.();
+    releaseDelayedStudentsContent = null;
+  };
 
   try {
     await runtime.page.clock.setFixedTime("2026-08-11T00:00:00.000Z");
@@ -5995,8 +6189,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.ok(scheduleNavActivePill.widthDelta < 0.5);
     assert.ok(scheduleNavActivePill.heightDelta < 0.5);
 
-    e2eStudentDirectoryRpcDelayMs = 450;
-    e2eStudentDirectoryRpcReleaseAt = 0;
+    const studentsContentObserved = new Promise<void>((resolve) => {
+      e2eStudentDirectoryRpcObserved = resolve;
+    });
+    e2eStudentDirectoryRpcGate = new Promise<void>((resolve) => {
+      releaseDelayedStudentsContent = resolve;
+    });
     const studentsLink = runtime.page.getByRole("link", {
       name: "Ученики",
       exact: true,
@@ -6010,11 +6208,43 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       primaryForwardPageTransition.waitFor(),
       studentsLink.click(),
     ]);
-    const pendingStudentsHeader = runtime.page.locator(
-      ".app-page-header[data-page-header-pending]",
+    let studentsContentTimeout: ReturnType<typeof setTimeout> | null = null;
+    try {
+      await Promise.race([
+        studentsContentObserved,
+        new Promise<void>((_, reject) => {
+          studentsContentTimeout = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  "Students navigation did not reach the gated directory content request",
+                ),
+              ),
+            5_000,
+          );
+        }),
+      ]);
+    } finally {
+      if (studentsContentTimeout) clearTimeout(studentsContentTimeout);
+    }
+
+    const readyStudentsHeader = runtime.page.locator(
+      ".app-page-header:not([data-page-header-pending])",
     );
-    await pendingStudentsHeader.waitFor({ state: "attached" });
-    const pendingStudentsHeaderFrame = await pendingStudentsHeader.evaluate(
+    await readyStudentsHeader.waitFor({ state: "visible" });
+    await runtime.page
+      .getByText("Загружаем учеников и группы…", { exact: true })
+      .waitFor();
+    await primaryForwardPageTransition.waitFor({ state: "detached" });
+    await runtime.page.evaluate(async () => {
+      const header = document.querySelector<HTMLElement>(".app-page-header");
+      await Promise.all(
+        (header?.getAnimations({ subtree: true }) ?? []).map((animation) =>
+          animation.finished.catch(() => undefined),
+        ),
+      );
+    });
+    const cachedStudentsHeaderFrame = await readyStudentsHeader.evaluate(
       (element) => {
         const header = element as HTMLElement;
         const content = header.querySelector<HTMLElement>(
@@ -6024,15 +6254,20 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         const actions = header.querySelector<HTMLElement>(".app-page-actions");
         const title = header.querySelector<HTMLElement>(".app-page-title");
         if (!content || !metric || !actions || !title) {
-          throw new Error("Pending Students header contract is missing");
+          throw new Error("Cached Students header contract is missing");
         }
         const rect = header.getBoundingClientRect();
+        const tabLabels = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            "#students-directory-tablist [role=tab] .workspace-tab-label",
+          ),
+        ).map((label) => label.textContent?.trim().replace(/\s+/g, " ") ?? "");
         return {
           pending: header.hasAttribute("data-page-header-pending"),
           ariaBusy: header.getAttribute("aria-busy"),
           title: title.textContent?.trim() ?? "",
           action: actions.textContent?.trim().replace(/\s+/g, " ") ?? "",
-          metricText: metric.textContent?.trim() ?? "",
+          metric: metric.textContent?.trim() ?? "",
           metricPlaceholder: metric.hasAttribute(
             "data-page-header-metric-placeholder",
           ),
@@ -6041,6 +6276,19 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           actionsOpacity: getComputedStyle(actions).opacity,
           contentVisibility: getComputedStyle(content).visibility,
           actionsVisibility: getComputedStyle(actions).visibility,
+          tabLabels,
+          staticTabLabels: tabLabels.map((label) =>
+            label.replace(/\s+\d+$/u, ""),
+          ),
+          loadingContentPresent:
+            document.body.textContent?.includes(
+              "Загружаем учеников и группы…",
+            ) ?? false,
+          tablePresent: Boolean(
+            document.querySelector(
+              '[aria-label="Ученики, их статусы и группы"]',
+            ),
+          ),
           top: rect.top,
           height: rect.height,
         };
@@ -6048,35 +6296,46 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     );
     assert.deepEqual(
       {
-        pending: pendingStudentsHeaderFrame.pending,
-        ariaBusy: pendingStudentsHeaderFrame.ariaBusy,
-        title: pendingStudentsHeaderFrame.title,
-        action: pendingStudentsHeaderFrame.action,
-        metricText: pendingStudentsHeaderFrame.metricText,
-        metricPlaceholder: pendingStudentsHeaderFrame.metricPlaceholder,
-        metricAriaHidden: pendingStudentsHeaderFrame.metricAriaHidden,
-        contentOpacity: pendingStudentsHeaderFrame.contentOpacity,
-        actionsOpacity: pendingStudentsHeaderFrame.actionsOpacity,
-        contentVisibility: pendingStudentsHeaderFrame.contentVisibility,
-        actionsVisibility: pendingStudentsHeaderFrame.actionsVisibility,
+        pending: cachedStudentsHeaderFrame.pending,
+        ariaBusy: cachedStudentsHeaderFrame.ariaBusy,
+        title: cachedStudentsHeaderFrame.title,
+        action: cachedStudentsHeaderFrame.action,
+        metric: cachedStudentsHeaderFrame.metric,
+        metricPlaceholder: cachedStudentsHeaderFrame.metricPlaceholder,
+        metricAriaHidden: cachedStudentsHeaderFrame.metricAriaHidden,
+        contentOpacity: cachedStudentsHeaderFrame.contentOpacity,
+        actionsOpacity: cachedStudentsHeaderFrame.actionsOpacity,
+        contentVisibility: cachedStudentsHeaderFrame.contentVisibility,
+        actionsVisibility: cachedStudentsHeaderFrame.actionsVisibility,
+        staticTabLabels: cachedStudentsHeaderFrame.staticTabLabels,
+        studentsTabLabel: cachedStudentsHeaderFrame.tabLabels[0],
+        loadingContentPresent: cachedStudentsHeaderFrame.loadingContentPresent,
+        tablePresent: cachedStudentsHeaderFrame.tablePresent,
       },
       {
-        pending: true,
-        ariaBusy: "true",
+        pending: false,
+        ariaBusy: null,
         title: "Ученики",
         action: "Новый ученик",
-        metricText: "",
-        metricPlaceholder: true,
-        metricAriaHidden: "true",
-        contentOpacity: "0",
-        actionsOpacity: "0",
-        contentVisibility: "hidden",
-        actionsVisibility: "hidden",
+        metric: "Активных: 4 · в архиве: 0 · ожидают: 1",
+        metricPlaceholder: false,
+        metricAriaHidden: null,
+        contentOpacity: "1",
+        actionsOpacity: "1",
+        contentVisibility: "visible",
+        actionsVisibility: "visible",
+        staticTabLabels: ["Ученики", "Группы", "Наблюдение"],
+        studentsTabLabel: "Ученики 5",
+        loadingContentPresent: true,
+        tablePresent: false,
       },
     );
-    assert.ok(pendingStudentsHeaderFrame.height > 0);
-    assert.ok(pendingStudentsHeaderFrame.height < 200);
+    assert.ok(cachedStudentsHeaderFrame.height > 0);
+    assert.ok(cachedStudentsHeaderFrame.height < 200);
 
+    releaseStudentsContent();
+    e2eStudentDirectoryRpcGate = null;
+    e2eStudentDirectoryRpcObserved = null;
     await runtime.page
       .getByRole("heading", { name: "Ученики", exact: true, level: 1 })
       .waitFor();
@@ -6086,10 +6345,6 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         exact: true,
       })
       .waitFor();
-    await pendingStudentsHeader.waitFor({ state: "detached" });
-    await primaryForwardPageTransition.waitFor({ state: "detached" });
-    e2eStudentDirectoryRpcDelayMs = 0;
-    e2eStudentDirectoryRpcReleaseAt = 0;
     await runtime.page.evaluate(async () => {
       await new Promise<void>((resolve) =>
         window.requestAnimationFrame(() => resolve()),
@@ -6157,18 +6412,18 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         actionsVisibility: "visible",
       },
     );
-    assert.match(
+    assert.equal(
       resolvedStudentsHeaderFrame.metric,
-      /^Активных: \d+ · в архиве: \d+ · ожидают: \d+$/,
+      "Активных: 3 · в архиве: 1 · ожидают: 1",
     );
     assert.ok(
       Math.abs(
-        resolvedStudentsHeaderFrame.top - pendingStudentsHeaderFrame.top,
+        resolvedStudentsHeaderFrame.top - cachedStudentsHeaderFrame.top,
       ) < 0.5,
     );
     assert.ok(
       Math.abs(
-        resolvedStudentsHeaderFrame.height - pendingStudentsHeaderFrame.height,
+        resolvedStudentsHeaderFrame.height - cachedStudentsHeaderFrame.height,
       ) < 0.5,
     );
     assert.ok(
@@ -7399,6 +7654,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     );
     assert.equal(primaryTransitionDirections.at(-1), "back");
   } finally {
+    releaseStudentsContent();
+    e2eStudentDirectoryRpcGate = null;
+    e2eStudentDirectoryRpcObserved = null;
     e2eCompletionPhase = null;
     e2eScheduleFixtureVisible = false;
     e2eScheduleFixtureRunCount = 1;

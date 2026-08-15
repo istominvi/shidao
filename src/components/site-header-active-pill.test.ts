@@ -48,6 +48,11 @@ test("Account TopNav alone enables one measured desktop active pill", () => {
     /pageTransition\.navigate\(item\.href, \{\s*scroll: item\.scroll,/,
   );
   assert.match(header, /pageTransition\.isNavigationPending\(\)/);
+  assert.match(header, /prefetch=\{movingActivePill \? true : undefined\}/);
+  assert.match(
+    source("src/components/navigation/primitives.tsx"),
+    /prefetch\?: boolean \| null;[\s\S]*?prefetch=\{prefetch\}/,
+  );
   assert.match(
     header,
     /updateActivePillForItem\(item\.id\);[\s\S]*?pageTransition\.navigate\(item\.href/,

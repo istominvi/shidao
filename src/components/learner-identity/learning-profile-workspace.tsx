@@ -18,6 +18,7 @@ import {
 } from "@/components/account/account-settings-panel";
 import { AppPageHeader } from "@/components/app/page-header";
 import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
+import { usePrimaryHeaderSummary } from "@/components/navigation/primary-header-summary-provider";
 import { useSessionView } from "@/components/use-session-view";
 import { Button } from "@/components/ui/button";
 import { ProfileSurface } from "@/components/profile/profile-surface";
@@ -112,6 +113,10 @@ export function LearningProfileWorkspace({
   const [destructiveMode, setDestructiveMode] = useState<
     "unlink" | "erasure" | null
   >(null);
+  const {
+    summary: primaryHeaderSummary,
+    refresh: refreshPrimaryHeaderSummary,
+  } = usePrimaryHeaderSummary();
 
   useEffect(() => {
     setSurface(initialSurface);
@@ -247,6 +252,7 @@ export function LearningProfileWorkspace({
     try {
       await action();
       await load();
+      refreshPrimaryHeaderSummary();
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -335,16 +341,21 @@ export function LearningProfileWorkspace({
     }
   }
 
+  const cachedProfileSummary = primaryHeaderSummary?.profile ?? null;
   const headerMetric = (() => {
     switch (surface) {
       case "profile":
         return progress
           ? `Завершённых занятий: ${progress.finalizedRunCount} · предметов: ${progress.subjects.length}`
-          : undefined;
+          : cachedProfileSummary
+            ? `Завершённых занятий: ${cachedProfileSummary.finalizedRunCount} · предметов: ${cachedProfileSummary.subjectCount}`
+            : undefined;
       case "history":
         return progress
           ? `Записей: ${progress.finalizedRunCount} · посещено: ${progress.attendedRunCount}`
-          : undefined;
+          : cachedProfileSummary
+            ? `Записей: ${cachedProfileSummary.finalizedRunCount} · посещено: ${cachedProfileSummary.attendedRunCount}`
+            : undefined;
       case "attestation":
         return attestations ? `Аттестаций: ${attestations.length}` : undefined;
       case "observers":
@@ -363,23 +374,25 @@ export function LearningProfileWorkspace({
       }
     }
   })();
-  const headerMetricPending = (() => {
-    switch (surface) {
-      case "profile":
-      case "history":
-        return loading && error === null;
-      case "attestation":
-        return attestations === null && attestationsError === null;
-      case "observers":
-        return observerSummaryPending;
-      case "settings":
-        return false;
-      default: {
-        const _exhaustive: never = surface;
-        return _exhaustive;
+  const headerMetricPending =
+    headerMetric === undefined &&
+    (() => {
+      switch (surface) {
+        case "profile":
+        case "history":
+          return loading && error === null;
+        case "attestation":
+          return attestations === null && attestationsError === null;
+        case "observers":
+          return observerSummaryPending;
+        case "settings":
+          return false;
+        default: {
+          const _exhaustive: never = surface;
+          return _exhaustive;
+        }
       }
-    }
-  })();
+    })();
 
   const profileTitle =
     session.kind === "account"
@@ -415,7 +428,14 @@ export function LearningProfileWorkspace({
             value: "history",
             label: "История",
             icon: History,
-            ...(progress === null ? {} : { count: progress.finalizedRunCount }),
+            ...(progress === null && cachedProfileSummary === null
+              ? {}
+              : {
+                  count:
+                    progress?.finalizedRunCount ??
+                    cachedProfileSummary?.finalizedRunCount ??
+                    0,
+                }),
           },
           {
             value: "attestation",

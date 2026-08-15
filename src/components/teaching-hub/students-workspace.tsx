@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
+import { usePrimaryHeaderSummary } from "@/components/navigation/primary-header-summary-provider";
 import { ObservingWorkspace } from "@/components/learner-identity/observing-workspace";
 import {
   createLearnerGroup,
@@ -162,6 +163,10 @@ export function StudentsWorkspace({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [observingCount, setObservingCount] = useState<number | null>(null);
   const [observingCountPending, setObservingCountPending] = useState(true);
+  const {
+    summary: primaryHeaderSummary,
+    refresh: refreshPrimaryHeaderSummary,
+  } = usePrimaryHeaderSummary();
 
   useSystemAssistantPageContext({
     surface: "students",
@@ -360,15 +365,30 @@ export function StudentsWorkspace({
   const busy = Boolean(busyLabel);
   const hasFilters =
     Boolean(normalizedQuery) || (view === "learners" && groupFilter !== "all");
+  const cachedStudentsSummary = primaryHeaderSummary?.students ?? null;
+  const headerMetric =
+    view === "learners" &&
+    activeDirectory !== null &&
+    archivedDirectory !== null &&
+    connections !== null
+      ? `Активных: ${activeDirectory.length} · в архиве: ${archivedDirectory.length} · ожидают: ${pendingConnections.length}`
+      : view === "learners" && cachedStudentsSummary
+        ? `Активных: ${cachedStudentsSummary.activeCount} · в архиве: ${cachedStudentsSummary.archivedCount} · ожидают: ${cachedStudentsSummary.pendingCount}`
+        : view === "groups" && groups !== null
+          ? `Групп: ${groups.length}`
+          : view === "observing" && observingCount !== null
+            ? `Профилей: ${observingCount}`
+            : undefined;
   const headerMetricPending =
-    view === "learners"
+    headerMetric === undefined &&
+    (view === "learners"
       ? loadError === null &&
         (activeDirectory === null ||
           archivedDirectory === null ||
           connections === null)
       : view === "groups"
         ? loadError === null && groups === null
-        : observingCountPending;
+        : observingCountPending);
 
   async function mutate(
     label: string,
@@ -383,6 +403,7 @@ export function StudentsWorkspace({
     try {
       await action();
       await reloadDirectory();
+      refreshPrimaryHeaderSummary();
       onSuccess();
       setStatusMessage(successMessage);
     } catch (caught) {
@@ -490,17 +511,7 @@ export function StudentsWorkspace({
     <div className="teaching-hub-stack">
       <AppPageHeader
         title="Ученики"
-        metric={
-          view === "learners" &&
-          activeDirectory !== null &&
-          archivedDirectory !== null
-            ? `Активных: ${activeDirectory.length} · в архиве: ${archivedDirectory.length} · ожидают: ${pendingConnections.length}`
-            : view === "groups" && groups !== null
-              ? `Групп: ${groups.length}`
-              : view === "observing" && observingCount !== null
-                ? `Профилей: ${observingCount}`
-                : undefined
-        }
+        metric={headerMetric}
         metricPending={headerMetricPending}
         actions={
           view === "learners" ? (
@@ -542,9 +553,17 @@ export function StudentsWorkspace({
             value: "learners",
             label: "Ученики",
             count:
-              (activeDirectory?.length ?? 0) +
-              (archivedDirectory?.length ?? 0) +
-              pendingConnections.length,
+              activeDirectory !== null &&
+              archivedDirectory !== null &&
+              connections !== null
+                ? activeDirectory.length +
+                  archivedDirectory.length +
+                  pendingConnections.length
+                : cachedStudentsSummary
+                  ? cachedStudentsSummary.activeCount +
+                    cachedStudentsSummary.archivedCount +
+                    cachedStudentsSummary.pendingCount
+                  : 0,
             icon: GraduationCap,
           },
           {
@@ -876,12 +895,14 @@ export function StudentsWorkspace({
             setMutationError(null);
             await createLearnerProfile(displayName, learnerGroupIds);
             await reloadDirectory();
+            refreshPrimaryHeaderSummary();
             setAddLearnerOpen(false);
             setInitialShareCode("");
             setStatusMessage("Профиль без аккаунта создан.");
           }}
           onPendingCreated={async () => {
             await reloadDirectory();
+            refreshPrimaryHeaderSummary();
           }}
         />
       ) : null}

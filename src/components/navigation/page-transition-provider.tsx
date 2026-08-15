@@ -46,8 +46,7 @@ const PageTransitionContext = createContext<PageTransitionContextValue | null>(
 
 const TRANSITION_TIMEOUT_MS = 1_600;
 const FALLBACK_DURATION_MS = 420;
-const READY_PAGE_HEADER_SELECTOR =
-  ".app-page-header:not([data-page-header-pending])";
+const READY_PAGE_HEADER_SELECTOR = ".app-page-header";
 
 function reducedMotionRequested() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -87,8 +86,6 @@ function observeReadyPageHeader(onReady: () => void) {
     onReady();
   });
   observer.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ["data-page-header-pending"],
     childList: true,
     subtree: true,
   });
@@ -198,8 +195,8 @@ export function PageTransitionProvider({ children }: { children: ReactNode }) {
       pendingFallbackRouteRef.current = null;
       if (transitionTokenRef.current !== pendingFallback.token) return;
 
-      // The ready route header is committed at this point, so the fallback
-      // animation is applied only to the incoming header.
+      // The route chrome is committed at this point. Its async metric may
+      // still be warming, but that must never delay the title or actions.
       setTransitionState(pendingFallback.direction, "enter");
       scheduleFallbackStateClear(pendingFallback.token);
     });

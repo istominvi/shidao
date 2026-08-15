@@ -41,9 +41,11 @@ pill и становится единственным актуальным targe
 не создаёт вложенный stacking context, который отрезал бы glyphs от backdrop и
 оставлял неактивный текст белым. Handoff и route load не создают блокирующий
 overlay: cursor, links, keyboard focus и повторные клики остаются интерактивными.
-Асинхронная метрика резервирует строку уже в первом frame, а H1, metric, meta и
-actions проявляются вместе; bounded observer ожидает готовый header вне native
-View Transition и игнорирует superseded intent. Фиксированный
+Асинхронная метрика резервирует строку уже в первом frame. Current source
+follow-up сразу показывает известные H1, meta, actions и вкладки, а только
+metric мягко проявляется внутри зарезервированной строки `1lh`; bounded observer
+ожидает committed header, не блокируется metric/content и игнорирует
+superseded intent. Фиксированный
 `min-height: 200px` удалён:
 высота `AppPageHeader` определяется только фактическим содержимым и padding.
 Временные owner/published Course loading cards удалены, error surfaces
@@ -58,6 +60,27 @@ glyphs без изменения геометрии: public production CSS
 `z-index`. Guest `/profile` продолжает fail closed через `307 → /login`.
 Это public-bundle/HTTP postflight; он не подменяет matching-container evidence
 Profile/avatar release `4462da2`, зафиксированное ниже.
+
+**Current source / next production — instant primary-section chrome:**
+protected Account shell заранее выполняет full RSC prefetch пяти главных
+маршрутов `/schedule`, `/students`, `/courses`, `/store` и `/profile` и в том
+же persistent boundary прогревает компактные header summaries. Известные
+`title`, `meta`, actions и вкладки не зависят от metric или page-content;
+поздний summary не меняет высоту и не сдвигает H1/actions. Account-scoped
+summary хранится только в памяти текущей app session, дедуплицирует
+параллельный warmup, использует bounded TTL со stale-while-revalidate и
+очищается при смене или завершении session. Schedule и Students считаются
+лёгкими RLS-backed `HEAD`/`count=exact` проекциями без гидратации полных
+LessonRun и directory rows. Он ускоряет повторный вход в раздел, но не
+подменяет page-content: Schedule, Students, Courses и Profile продолжают
+независимо читать актуальный content через свои `no-store` loaders; mutations
+Schedule, Students, Profile и LessonRun schedule/reschedule/cancel/complete из
+Course обновляют summary.
+Store metric остаётся
+синхронной производной статического demo-каталога и локальной корзины; честная
+отсутствующая metric Courses не изобретается ради заполнения строки. Это
+application-only contract: database schema, migrations, Storage, Auth и Lesson
+hierarchy не меняются.
 
 **Current source / next production — compact toolbar controls:** Course и
 Store больше не показывают disclosure-кнопку «Фильтры» и не сохраняют скрытое

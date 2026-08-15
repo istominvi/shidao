@@ -10,29 +10,18 @@
   pointer-events: none;
 }
 
-.app-page-header[data-page-header-async-metric] > .app-page-header-content,
-.app-page-header[data-page-header-async-metric] > .app-page-actions {
+.app-page-header[data-page-header-async-metric] .app-page-metric {
+  min-block-size: 1lh;
+  overflow: hidden;
   opacity: 1;
-  transform: translate3d(0, 0, 0);
-  transition:
-    opacity 280ms ease,
-    transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity 180ms ease;
 }
 
-.app-page-header[data-page-header-pending] > .app-page-header-content,
-.app-page-header[data-page-header-pending] > .app-page-actions {
-  visibility: hidden;
+.app-page-header[data-page-header-async-metric]
+  .app-page-metric[data-page-header-metric-placeholder] {
   opacity: 0;
-  transform: translate3d(0, 6px, 0);
-}
-
-:root[data-page-transition-direction]
-  .app-page-header[data-page-header-async-metric]
-  > .app-page-header-content,
-:root[data-page-transition-direction]
-  .app-page-header[data-page-header-async-metric]
-  > .app-page-actions {
-  transition: none;
 }
 
 ::view-transition-old(root),
@@ -167,8 +156,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app-page-header[data-page-header-async-metric] > .app-page-header-content,
-  .app-page-header[data-page-header-async-metric] > .app-page-actions {
+  .app-page-header[data-page-header-async-metric] .app-page-metric {
     transition: none;
   }
 

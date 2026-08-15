@@ -82,8 +82,10 @@
   не заменяется пояснением назначения страницы; если честной метрики нет,
   supporting line отсутствует. Высота Header определяется содержимым и padding
   без искусственного minimum; actions центрируются относительно content-row.
-  Асинхронные метрики заранее резервируют одну строку, но title, metric, meta и
-  actions становятся видимыми одним готовым frame. В current production
+  Асинхронные метрики заранее резервируют одну строку `1lh`; title, meta,
+  actions и известные вкладки становятся видимыми сразу и не ждут ни metric,
+  ни page-content. Поздняя metric проявляется только внутри зарезервированной
+  строки без layout jump. В current production
   heading занимает всю оставшуюся ширину, а actions — только intrinsic ширину
   содержимого и не превращаются в full-width кнопки на mobile.
   Current production follow-up снимает внутренний лимит H1 `24ch`, сохраняет
@@ -116,6 +118,18 @@
   pill и синхронно dispatch-ит новый URL; stale response не может commit-ить
   старый target. Ожидание данных не блокирует cursor, links, focus или следующие
   клики.
+  Current source follow-up дополнительно прогревает full RSC payload пяти
+  главных Account routes (`/schedule`, `/students`, `/courses`, `/store`,
+  `/profile`) и их компактные header summaries из persistent protected shell.
+  Account-scoped in-memory cache использует request dedupe, bounded TTL и
+  stale-while-revalidate, поэтому повторное открытие раздела не возвращает
+  header в пустое pending-состояние. Это не cache содержимого страницы:
+  content loaders остаются независимыми `no-store`, а mutations Schedule,
+  Students, Profile и LessonRun schedule/reschedule/cancel/complete из Course
+  инвалидируют соответствующий summary. Schedule/Students warmup использует
+  лёгкие owner-scoped exact-count projections и не гидратирует полные списки.
+  Store сохраняет синхронную локальную metric, а
+  необязательная metric Courses не создаётся без честного измерения.
   Owner/published Course больше не подменяют готовый header текстовой
   loading-card; boundary bounded-временем ждёт real header.
   `prefers-reduced-motion` полностью отключает motion.

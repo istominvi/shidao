@@ -86,6 +86,7 @@ type LessonAuthoringWorkspaceProps = {
   disabled: boolean;
   mutationError: string | null;
   runMutation: CourseBuilderMutationRunner;
+  onScheduleSummaryChanged?: () => void;
   runs: LessonRun[];
   learners: LearnerProfile[];
 };
@@ -945,6 +946,7 @@ export function LessonAuthoringWorkspace({
   disabled,
   mutationError,
   runMutation,
+  onScheduleSummaryChanged,
   runs,
   learners,
 }: LessonAuthoringWorkspaceProps) {
@@ -1186,6 +1188,7 @@ export function LessonAuthoringWorkspace({
           disabled={disabled}
           mutationError={mutationError}
           runMutation={runMutation}
+          onScheduleSummaryChanged={onScheduleSummaryChanged}
           onClose={() => setLessonRunDialogOpen(false)}
         />
       ) : null}

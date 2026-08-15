@@ -23,6 +23,13 @@
 
 V2 deployment не создаёт новый repository или Supabase project.
 
+Primary-header warmup не создаёт schema или migration: Schedule/Students
+counts читаются через owner-scoped RLS `HEAD`/`count=exact`, а canonical content
+по-прежнему загружается отдельными `no-store` routes. После Schedule/Students/
+Profile mutations и LessonRun schedule/reschedule/cancel/complete из Course
+acceptance должна подтверждать обновление cached metric без перезагрузки app
+shell.
+
 Current deployed contour закрывает прежний host debt explicit allowlist:
 app-routed non-root `brand`/`model`, unknown hosts и mismatched
 Host/X-Forwarded-Host получают `421`; unrouteable unknown/deep landing hosts
@@ -944,8 +951,9 @@ ShiDao V2 application:
   title/metric/meta/actions и block padding. Actions вертикально центрированы,
   занимают только ширину содержимого и оставляют всю свободную ширину heading
   и H1; desktop gap между heading и actions равен 24 px. Асинхронная metric
-  резервирует одну строку до ответа, но H1, metric, meta и actions впервые
-  становятся видимыми вместе без изменения геометрии header. На 1120
+  резервирует одну строку `1lh` до ответа; H1, meta, actions и известные
+  вкладки должны быть видимы сразу, а только metric проявляется позже внутри
+  этой строки без изменения геометрии header. На 1120
   px Lesson с одной primary и одним square overflow складывается без document overflow,
   непрерывные title/metric переносятся, а back-label остаётся в одной
   строке и обрезается ellipsis;
@@ -1000,6 +1008,21 @@ ShiDao V2 application:
   должен срабатывать позже. При `prefers-reduced-motion: reduce` pill меняется
   без перехода, route dispatch остаётся синхронным, а page-header transition
   также отключён;
+- на первой authenticated Account page проверить background warmup пяти
+  canonical routes: `/schedule`, `/students`, `/courses`, `/store` и
+  `/profile` получают full RSC prefetch до обычного повторного перехода, а
+  compact header-summary запросы дедуплицируются в persistent protected shell.
+  Задержать content API выбранного раздела и подтвердить, что его H1, actions и
+  вкладки уже commit-ились, placeholder metric занимает ровно `1lh`, header не
+  меняет высоту после ответа, а content loading/error остаётся ниже и
+  независимым. После перехода в другой раздел и возврата cached summary должен
+  появиться без пустого header frame; stale entry можно показать сразу, но он
+  обязан background revalidate-иться по bounded TTL (SWR). Content GET при этом
+  остаются `no-store` и не должны ошибочно обслуживаться summary-cache. После
+  mutation проверить targeted invalidation/refresh, а после logout или смены
+  session — полное очищение Account-scoped memory cache. Store сохраняет
+  синхронную local metric, Courses не получает выдуманную supporting line.
+  Этот smoke не требует и не допускает schema/migration/Storage изменений;
 - на сохранённом Course открыть **Уроки** и проверить, что общий `WorkspaceTabs`
   не получил route-specific fork. Сразу под ним прозрачная toolbar поиска и
   «Добавить урок» занимает всю content-row: computed horizontal padding `0`,

@@ -254,6 +254,7 @@ export function SiteHeader({
                       ariaCurrent={item.active ? "page" : undefined}
                       className="site-header-nav-pill text-sm font-semibold"
                       scroll={item.scroll}
+                      prefetch={movingActivePill ? true : undefined}
                       onClick={(event) => handleNavClick(event, item.href)}
                       onNavigate={(event) => handleNavNavigate(event, item)}
                     >

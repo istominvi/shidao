@@ -19,6 +19,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
 import { PageTransitionLink } from "@/components/navigation/page-transition-link";
+import { usePrimaryHeaderSummary } from "@/components/navigation/primary-header-summary-provider";
 import {
   cancelLessonRun,
   loadSchedule,
@@ -258,6 +259,11 @@ export function ScheduleWorkspace() {
   const [error, setError] = useState<string | null>(null);
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
   const mutationInFlightRef = useRef(false);
+  const {
+    summary: primaryHeaderSummary,
+    pending: primaryHeaderSummaryPending,
+    refresh: refreshPrimaryHeaderSummary,
+  } = usePrimaryHeaderSummary();
 
   useSystemAssistantPageContext({
     surface: "schedule",
@@ -315,6 +321,7 @@ export function ScheduleWorkspace() {
       try {
         await action();
         await reload(selectedDate, period);
+        refreshPrimaryHeaderSummary();
         return true;
       } catch (caught) {
         setError(
@@ -328,7 +335,7 @@ export function ScheduleWorkspace() {
         setBusyLabel(null);
       }
     },
-    [period, reload, selectedDate],
+    [period, refreshPrimaryHeaderSummary, reload, selectedDate],
   );
 
   const openRun = useCallback(
@@ -375,18 +382,31 @@ export function ScheduleWorkspace() {
       : period === "week"
         ? "выбранную неделю"
         : "выбранный месяц";
+  const selectedScheduleRange = selectedDate
+    ? schedulePeriodRange(selectedDate, period)
+    : null;
+  const cachedScheduleSummary =
+    selectedScheduleRange &&
+    primaryHeaderSummary?.schedule?.from === selectedScheduleRange.from &&
+    primaryHeaderSummary.schedule.to === selectedScheduleRange.to
+      ? primaryHeaderSummary.schedule
+      : null;
+  const headerMetric =
+    selectedDate && runs
+      ? `${formatSchedulePeriodLabel(selectedDate, period)} · ${runs.length >= SCHEDULE_RESULT_LIMIT ? "показано" : "занятий"}: ${visibleRuns.length}`
+      : selectedDate && cachedScheduleSummary
+        ? `${formatSchedulePeriodLabel(selectedDate, period)} · ${cachedScheduleSummary.limited ? "показано" : "занятий"}: ${cachedScheduleSummary.visibleRunCount}`
+        : undefined;
   const headerMetricPending =
-    error === null && (selectedDate === null || runs === null);
+    headerMetric === undefined &&
+    error === null &&
+    (selectedDate === null || runs === null || primaryHeaderSummaryPending);
 
   return (
     <div className="teaching-hub-stack">
       <AppPageHeader
         title="Расписание"
-        metric={
-          selectedDate && runs
-            ? `${formatSchedulePeriodLabel(selectedDate, period)} · ${runs.length >= SCHEDULE_RESULT_LIMIT ? "показано" : "занятий"}: ${visibleRuns.length}`
-            : undefined
-        }
+        metric={headerMetric}
         metricPending={headerMetricPending}
         actions={
           <PageTransitionLink
@@ -403,12 +423,14 @@ export function ScheduleWorkspace() {
         aria-label="Навигация по расписанию"
       >
         <div className="teaching-schedule-toolbar-actions">
-          <ScheduleDatePicker
-            selectedDate={selectedDate ?? atLocalNoon(new Date())}
-            period={period}
-            onDateChange={setSelectedDate}
-            onPeriodChange={setPeriod}
-          />
+          {selectedDate ? (
+            <ScheduleDatePicker
+              selectedDate={selectedDate}
+              period={period}
+              onDateChange={setSelectedDate}
+              onPeriodChange={setPeriod}
+            />
+          ) : null}
           <div
             className="teaching-schedule-view-toggle"
             role="group"

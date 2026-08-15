@@ -29,6 +29,7 @@ type NavPillLinkProps = {
   className?: string;
   ariaCurrent?: "page";
   scroll?: boolean;
+  prefetch?: boolean | null;
   onClick?: MouseEventHandler<HTMLAnchorElement>;
   onNavigate?: ComponentPropsWithoutRef<
     typeof PageTransitionLink
@@ -42,6 +43,7 @@ export function NavPillLink({
   className,
   ariaCurrent,
   scroll,
+  prefetch,
   onClick,
   onNavigate,
 }: NavPillLinkProps) {
@@ -50,6 +52,7 @@ export function NavPillLink({
       href={href}
       aria-current={ariaCurrent}
       scroll={scroll}
+      prefetch={prefetch}
       className={classNames(
         "nav-pill",
         active ? "nav-pill-active" : "nav-pill-inactive",

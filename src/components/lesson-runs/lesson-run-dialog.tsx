@@ -157,6 +157,7 @@ export function LessonRunDialog({
   disabled,
   mutationError,
   runMutation,
+  onScheduleSummaryChanged,
   initialMode = "default",
   onClose,
 }: {
@@ -166,6 +167,7 @@ export function LessonRunDialog({
   disabled: boolean;
   mutationError?: string | null;
   runMutation: LessonRunMutationRunner;
+  onScheduleSummaryChanged?: () => void;
   initialMode?: "default" | "edit";
   onClose: () => void;
 }) {
@@ -298,7 +300,10 @@ export function LessonRunDialog({
           ? updateLessonRun(run.id, input)
           : scheduleLessonRun(lesson.id, input),
     );
-    if (saved) onClose();
+    if (saved) {
+      onScheduleSummaryChanged?.();
+      onClose();
+    }
   }
 
   async function start() {
@@ -318,7 +323,10 @@ export function LessonRunDialog({
     const saved = await runDialogMutation("Отменяем проведение…", () =>
       cancelLessonRun(run.id),
     );
-    if (saved) onClose();
+    if (saved) {
+      onScheduleSummaryChanged?.();
+      onClose();
+    }
   }
 
   async function complete() {
@@ -345,7 +353,10 @@ export function LessonRunDialog({
         }),
       }),
     );
-    if (saved) onClose();
+    if (saved) {
+      onScheduleSummaryChanged?.();
+      onClose();
+    }
   }
 
   return (

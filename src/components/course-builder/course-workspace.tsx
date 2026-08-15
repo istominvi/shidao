@@ -42,6 +42,7 @@ import {
 } from "@/components/course-builder/course-workspace-navigation";
 import { LessonAuthoringWorkspace } from "@/components/course-builder/lesson-authoring-workspace";
 import { usePageTransition } from "@/components/navigation/page-transition-provider";
+import { usePrimaryHeaderSummary } from "@/components/navigation/primary-header-summary-provider";
 import { CourseAudienceEditor } from "@/components/lesson-runs/course-audience-dialog";
 import {
   loadCourseAudience,
@@ -423,6 +424,7 @@ function CourseLessonsPanel({
   mutationError,
   onSelect,
   runMutation,
+  onScheduleSummaryChanged,
   courseId,
   focusLessonId,
   onFocusRestored,
@@ -435,6 +437,7 @@ function CourseLessonsPanel({
   mutationError: string | null;
   onSelect: (lessonId: string) => void;
   runMutation: RunMutation;
+  onScheduleSummaryChanged: () => void;
   courseId: string;
   focusLessonId: string | null;
   onFocusRestored: () => void;
@@ -944,6 +947,7 @@ function CourseLessonsPanel({
           disabled={disabled}
           mutationError={mutationError}
           runMutation={runMutation}
+          onScheduleSummaryChanged={onScheduleSummaryChanged}
           onClose={() => setScheduledLessonId(null)}
         />
       ) : null}
@@ -1063,6 +1067,7 @@ export function CourseWorkspaceClient({
   courseId,
 }: CourseWorkspaceClientProps) {
   const pageTransition = usePageTransition();
+  const { refresh: refreshPrimaryHeaderSummary } = usePrimaryHeaderSummary();
   const [course, setCourse] = useState<CourseWorkspace | null>(null);
   const [courseRuns, setCourseRuns] = useState<LessonRun[]>([]);
   const [courseAudience, setCourseAudience] = useState<CourseAudience>(
@@ -1324,6 +1329,7 @@ export function CourseWorkspaceClient({
           disabled={Boolean(busyLabel)}
           mutationError={error}
           runMutation={runMutation}
+          onScheduleSummaryChanged={refreshPrimaryHeaderSummary}
           runs={courseRuns.filter((run) => run.lessonId === selectedLesson.id)}
           learners={courseAudience.effectiveLearners}
         />
@@ -1388,6 +1394,7 @@ export function CourseWorkspaceClient({
                 mutationError={error}
                 onSelect={openLesson}
                 runMutation={runMutation}
+                onScheduleSummaryChanged={refreshPrimaryHeaderSummary}
                 courseId={course.id}
                 focusLessonId={returnFocusLessonId}
                 onFocusRestored={() => setReturnFocusLessonId(null)}

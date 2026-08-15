@@ -134,8 +134,18 @@ test("active V2 pages share one page header contract without visual modifiers", 
   assert.match(header, /data-page-header-pending=/);
   assert.match(header, /data-page-header-async-metric=/);
   assert.match(header, /data-page-header-metric-placeholder=/);
-  assert.match(header, /metricPending === true && !hasRevealed/);
-  assert.match(header, /if \(!metricPending\) setHasRevealed\(true\)/);
+  assert.match(header, /metricPending === true && !hasMetric/);
+  assert.doesNotMatch(header, /hasRevealed|setHasRevealed/);
+  assert.doesNotMatch(
+    header,
+    /<header[^>]*aria-busy=/,
+    "Metric loading must not make the known title and actions busy",
+  );
+  assert.match(
+    header,
+    /className="app-page-description app-page-metric"[\s\S]*?aria-busy=/,
+  );
+  assert.match(header, /aria-live=\{usesAsyncMetric \? "polite" : undefined\}/);
   assert.doesNotMatch(header, /className\?: string/);
   assert.doesNotMatch(header, /eyebrow/i);
   assert.doesNotMatch(styles, /\.app-page-eyebrow/);
@@ -165,14 +175,23 @@ test("active V2 pages share one page header contract without visual modifiers", 
     /::view-transition\s*\{[^}]*pointer-events: none;/,
   );
   assert.match(motionStyles, /prefers-reduced-motion: reduce/);
-  assert.match(
+  assert.doesNotMatch(
     motionStyles,
-    /data-page-header-pending[\s\S]*?visibility: hidden;[\s\S]*?opacity: 0;/,
+    /data-page-header-pending[\s\S]*?visibility:\s*hidden/,
+    "An unresolved metric must not hide the known title or actions",
   );
   assert.match(
     motionStyles,
-    /:root\[data-page-transition-direction\][\s\S]*?data-page-header-async-metric[\s\S]*?transition: none;/,
-    "Native route snapshots must capture resolved header content at full opacity",
+    /data-page-header-async-metric[\s\S]*?\.app-page-metric\s*\{[^}]*opacity: 1;[^}]*transition: opacity 180ms ease;/,
+  );
+  assert.match(
+    motionStyles,
+    /data-page-header-async-metric[\s\S]*?\.app-page-metric\s*\{[^}]*min-block-size: 1lh;[^}]*overflow: hidden;[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/,
+    "An async metric stays one reserved line when its real value appears",
+  );
+  assert.match(
+    motionStyles,
+    /data-page-header-metric-placeholder[\s\S]*?opacity: 0;/,
   );
 
   for (const consumer of productHeaderApiConsumers) {
@@ -313,6 +332,7 @@ test("page headers reserve optional supporting copy for entity metrics and colla
   }
   for (const consumer of [schedule, students, learningProfile]) {
     assert.match(consumer, /metricPending=\{headerMetricPending\}/);
+    assert.match(consumer, /usePrimaryHeaderSummary\(\)/);
   }
 });
 

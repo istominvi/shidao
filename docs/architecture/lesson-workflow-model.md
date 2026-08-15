@@ -618,9 +618,12 @@ Visual contract Course routes не меняет эту навигационну�
   tagline или private teacher comment туда не попадают. Header не имеет
   искусственной минимальной высоты: размер задают только фактические
   title/metric/meta/actions и block padding. Асинхронная metric заранее
-  резервирует ровно одну будущую строку, а весь header раскрывается одним
-  готовым frame после data/error resolution. Heading получает всю оставшуюся
-  ширину, а actions вертикально центрированы и имеют intrinsic ширину по
+  резервирует ровно одну будущую строку `1lh`, но не является ready-gate для
+  header: известные title/meta/actions и вкладки показываются сразу, а только
+  metric мягко проявляется внутри зарезервированной строки после data/error
+  resolution. Поэтому поздний ответ не меняет геометрию header. Heading
+  получает всю оставшуюся ширину, а actions вертикально центрированы и имеют
+  intrinsic ширину по
   содержимому с ограничением шириной контейнера. В current production сам H1 больше
   не имеет лимита `24ch` и заполняет heading-колонку; desktop column-gap равен
   24 px. Backlink и стрелка используют непрозрачный `#141414`, label остаётся в
@@ -651,6 +654,20 @@ Visual contract Course routes не меняет эту навигационну�
   используется только для синхронного native update. Движение вправо по primary
   order и drill-in уводят old header влево и вводят new справа; движение влево
   и backlink зеркальны.
+  Persistent protected shell при первой Account page загрузке выполняет full
+  prefetch маршрутов `/schedule`, `/students`, `/courses`, `/store` и
+  `/profile`, а также прогревает их компактные header summaries. Summary cache
+  ограничен текущей Account session и browser memory, дедуплицирует одинаковые
+  запросы и использует bounded TTL + stale-while-revalidate; logout/session
+  change очищает его. Он обслуживает только header metric/counts и не
+  подменяет canonical page data. Schedule/Students/Courses/Profile content
+  loaders сохраняют `no-store` и загружаются независимо после chrome;
+  Schedule/Students/Profile и LessonRun schedule/reschedule/cancel/complete из
+  Course обновляют соответствующий summary после mutation. Schedule/Students
+  warmup использует лёгкие RLS-backed exact-count projections вместо
+  гидратации полных списков, а Store остаётся статическим
+  client-state demo. Этот prefetch/cache contract не добавляет authored
+  сущность, API persistence, schema или migration;
   Primary order: `Расписание`, `Ученики`, `Курсы`, `Магазин`. Primary-nav
   active-pill намеренно не является named/native View Transition. Это один
   локальный измеряемый слой: каждый click синхронно dispatch-ит route navigation
@@ -669,7 +686,8 @@ Visual contract Course routes не меняет эту навигационну�
   links, keyboard focus и повторные intents остаются интерактивными. Query-only
   tab changes не анимируют весь header. Bounded observer принимает только
   latest intent, поэтому owner/published Course не показывают промежуточную
-  loading-card, а async metric не появляется после H1 отдельным скачком.
+  loading-card, а async metric появляется в заранее зарезервированной строке
+  без скачка H1/actions.
   Superseded observer/navigation/entrance state отменяется и не может позже вернуть
   устаревший URL или animation. При отсутствии API остаётся безопасный entrance
   fallback, а `prefers-reduced-motion` выполняет навигацию и локальный
