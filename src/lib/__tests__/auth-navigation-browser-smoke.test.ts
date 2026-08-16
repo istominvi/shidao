@@ -4866,6 +4866,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         document.querySelector<HTMLElement>(".app-page-header");
       const pageHeading =
         pageHeader?.querySelector<HTMLElement>(".app-page-heading");
+      const titleRow = pageHeading?.querySelector<HTMLElement>(
+        ".app-page-title-row",
+      );
       const title = document.querySelector<HTMLElement>(".app-page-title");
       const description = document.querySelector<HTMLElement>(
         ".app-page-description",
@@ -4929,6 +4932,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !shell ||
         !pageHeader ||
         !pageHeading ||
+        !titleRow ||
         !title ||
         !description ||
         !headerActions ||
@@ -4962,6 +4966,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const primaryIconStyle = getComputedStyle(headerPrimaryIcon);
       const pageHeaderRect = pageHeader.getBoundingClientRect();
       const pageHeadingRect = pageHeading.getBoundingClientRect();
+      const titleRowRect = titleRow.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
+      const descriptionRect = description.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
       const headerActionContentRect =
         headerActions.firstElementChild?.getBoundingClientRect();
@@ -4994,10 +5001,23 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
               Number.parseFloat(pageHeaderStyle.paddingRight) -
               headerActionsRect.right,
           ),
-          actionCenterDelta: Math.abs(
-            headerActionsRect.top +
-              headerActionsRect.height / 2 -
-              (pageHeaderRect.top + pageHeaderRect.height / 2),
+          actionsShareTitleRow:
+            title.parentElement === titleRow &&
+            headerActions.parentElement === titleRow &&
+            headerActionsRect.top < titleRect.bottom &&
+            headerActionsRect.bottom > titleRect.top,
+          titleActionBottomDelta: Math.abs(
+            headerActionsRect.bottom - titleRect.bottom,
+          ),
+          actionControlBottomDelta: Math.abs(
+            headerPrimaryButton.getBoundingClientRect().bottom -
+              titleRect.bottom,
+          ),
+          metricBelowTitleRow: descriptionRect.top >= titleRowRect.bottom - 0.5,
+          metricGapDelta: Math.abs(
+            descriptionRect.top -
+              titleRowRect.bottom -
+              Number.parseFloat(pageHeadingStyle.rowGap),
           ),
         },
         headerSignature: {
@@ -5143,7 +5163,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.ok(scheduleContract.headerLayout.actionContentWidth > 0);
     assert.ok(scheduleContract.headerLayout.actionsFitContentDelta < 0.5);
     assert.ok(scheduleContract.headerLayout.actionsRightDelta < 0.5);
-    assert.ok(scheduleContract.headerLayout.actionCenterDelta < 0.5);
+    assert.equal(scheduleContract.headerLayout.actionsShareTitleRow, true);
+    assert.ok(scheduleContract.headerLayout.titleActionBottomDelta < 0.5);
+    assert.ok(scheduleContract.headerLayout.actionControlBottomDelta < 0.5);
+    assert.equal(scheduleContract.headerLayout.metricBelowTitleRow, true);
+    assert.ok(scheduleContract.headerLayout.metricGapDelta < 0.5);
     assert.equal(scheduleContract.headerSignature.titleFontWeight, "400");
     assert.equal(
       scheduleContract.headerSignature.descriptionColor,
@@ -6617,6 +6641,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     const studentsVisual = await runtime.page.evaluate(() => {
       const pageHeader =
         document.querySelector<HTMLElement>(".app-page-header");
+      const pageHeading =
+        pageHeader?.querySelector<HTMLElement>(".app-page-heading");
+      const titleRow = pageHeading?.querySelector<HTMLElement>(
+        ".app-page-title-row",
+      );
       const title = document.querySelector<HTMLElement>(".app-page-title");
       const description = document.querySelector<HTMLElement>(
         ".app-page-description",
@@ -6645,6 +6674,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       );
       const headerActions =
         document.querySelector<HTMLElement>(".app-page-actions");
+      const headerAction =
+        headerActions?.querySelector<HTMLElement>(".product-btn");
       const toolbar = document.querySelector<HTMLElement>(
         ".student-directory-toolbar",
       );
@@ -6678,6 +6709,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
 
       if (
         !pageHeader ||
+        !pageHeading ||
+        !titleRow ||
         !title ||
         !description ||
         !activeTab ||
@@ -6689,6 +6722,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !indicator ||
         !tabsScroll ||
         !headerActions ||
+        !headerAction ||
         !toolbar ||
         !toolbarSearch ||
         !toolbarSearchInput ||
@@ -6704,6 +6738,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       }
 
       const pageHeaderStyle = getComputedStyle(pageHeader);
+      const pageHeadingStyle = getComputedStyle(pageHeading);
       const titleStyle = getComputedStyle(title);
       const descriptionStyle = getComputedStyle(description);
       const tabsStyle = getComputedStyle(tabs);
@@ -6717,6 +6752,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const baselineStyle = getComputedStyle(tabs, "::before");
       const baselineScaleY = new DOMMatrixReadOnly(baselineStyle.transform).m22;
       const pageHeaderRect = pageHeader.getBoundingClientRect();
+      const titleRowRect = titleRow.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
+      const descriptionRect = description.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
       const tabsScrollRect = tabsScroll.getBoundingClientRect();
       const tabsRect = tabs.getBoundingClientRect();
@@ -6745,10 +6783,22 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         headerLayout: {
           minHeight: pageHeaderStyle.minHeight,
           height: pageHeaderRect.height,
-          actionCenterDelta: Math.abs(
-            headerActionsRect.top +
-              headerActionsRect.height / 2 -
-              (pageHeaderRect.top + pageHeaderRect.height / 2),
+          actionsShareTitleRow:
+            title.parentElement === titleRow &&
+            headerActions.parentElement === titleRow &&
+            headerActionsRect.top < titleRect.bottom &&
+            headerActionsRect.bottom > titleRect.top,
+          titleActionBottomDelta: Math.abs(
+            headerActionsRect.bottom - titleRect.bottom,
+          ),
+          actionControlBottomDelta: Math.abs(
+            headerAction.getBoundingClientRect().bottom - titleRect.bottom,
+          ),
+          metricBelowTitleRow: descriptionRect.top >= titleRowRect.bottom - 0.5,
+          metricGapDelta: Math.abs(
+            descriptionRect.top -
+              titleRowRect.bottom -
+              Number.parseFloat(pageHeadingStyle.rowGap),
           ),
         },
         headerSignature: {
@@ -6925,7 +6975,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.ok(["auto", "0px"].includes(studentsVisual.headerLayout.minHeight));
     assert.ok(studentsVisual.headerLayout.height > 0);
     assert.ok(studentsVisual.headerLayout.height < 200);
-    assert.ok(studentsVisual.headerLayout.actionCenterDelta < 0.5);
+    assert.equal(studentsVisual.headerLayout.actionsShareTitleRow, true);
+    assert.ok(studentsVisual.headerLayout.titleActionBottomDelta < 0.5);
+    assert.ok(studentsVisual.headerLayout.actionControlBottomDelta < 0.5);
+    assert.equal(studentsVisual.headerLayout.metricBelowTitleRow, true);
+    assert.ok(studentsVisual.headerLayout.metricGapDelta < 0.5);
     assert.deepEqual(studentsVisual.tabSignature, {
       height: "40px",
       radius: "12px 12px 0px 0px",
@@ -7950,40 +8004,68 @@ test("browser smoke: self profile exposes only learner-safe history and controls
       const content = header?.querySelector<HTMLElement>(
         ".app-page-header-content",
       );
+      const heading = header?.querySelector<HTMLElement>(".app-page-heading");
+      const titleRow = heading?.querySelector<HTMLElement>(
+        ".app-page-title-row",
+      );
+      const title = titleRow?.querySelector<HTMLElement>(".app-page-title");
+      const description = heading?.querySelector<HTMLElement>(
+        ".app-page-description",
+      );
       const actions = header?.querySelector<HTMLElement>(".app-page-actions");
       const action = actions?.querySelector<HTMLElement>(".product-btn");
-      if (!header || !content || !actions || !action) {
+      if (
+        !header ||
+        !content ||
+        !heading ||
+        !titleRow ||
+        !title ||
+        !description ||
+        !actions ||
+        !action
+      ) {
         throw new Error("Compact Profile header contract is missing");
       }
 
       const headerStyle = getComputedStyle(header);
+      const headingStyle = getComputedStyle(heading);
+      const titleRowStyle = getComputedStyle(titleRow);
       const headerRect = header.getBoundingClientRect();
-      const contentRect = content.getBoundingClientRect();
+      const titleRowRect = titleRow.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
+      const descriptionRect = description.getBoundingClientRect();
       const actionsRect = actions.getBoundingClientRect();
       const actionRect = action.getBoundingClientRect();
       return {
         clientWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
-        direction: headerStyle.flexDirection,
-        wrap: headerStyle.flexWrap,
+        direction: titleRowStyle.flexDirection,
+        wrap: titleRowStyle.flexWrap,
         actionLabel: action.textContent?.trim() ?? "",
         actionIntrinsicWidthDelta: Math.abs(
           actionsRect.width - actionRect.width,
         ),
-        actionCenterDelta: Math.abs(
-          actionsRect.top +
-            actionsRect.height / 2 -
-            (contentRect.top + contentRect.height / 2),
+        titleActionBottomDelta: Math.abs(actionsRect.bottom - titleRect.bottom),
+        actionControlBottomDelta: Math.abs(
+          actionRect.bottom - titleRect.bottom,
         ),
         actionRightInsetDelta: Math.abs(
           headerRect.right -
             Number.parseFloat(headerStyle.paddingRight) -
             actionsRect.right,
         ),
-        contentActionGap: actionsRect.left - contentRect.right,
-        actionsShareContentRow:
-          actionsRect.top < contentRect.bottom &&
-          actionsRect.bottom > contentRect.top,
+        titleActionGap: actionsRect.left - titleRect.right,
+        actionsShareTitleRow:
+          title.parentElement === titleRow &&
+          actions.parentElement === titleRow &&
+          actionsRect.top < titleRect.bottom &&
+          actionsRect.bottom > titleRect.top,
+        metricBelowTitleRow: descriptionRect.top >= titleRowRect.bottom - 0.5,
+        metricGapDelta: Math.abs(
+          descriptionRect.top -
+            titleRowRect.bottom -
+            Number.parseFloat(headingStyle.rowGap),
+        ),
       };
     });
     assert.deepEqual(
@@ -7993,7 +8075,8 @@ test("browser smoke: self profile exposes only learner-safe history and controls
         direction: compactProfileHeader.direction,
         wrap: compactProfileHeader.wrap,
         actionLabel: compactProfileHeader.actionLabel,
-        actionsShareContentRow: compactProfileHeader.actionsShareContentRow,
+        actionsShareTitleRow: compactProfileHeader.actionsShareTitleRow,
+        metricBelowTitleRow: compactProfileHeader.metricBelowTitleRow,
       },
       {
         clientWidth: 484,
@@ -8001,13 +8084,16 @@ test("browser smoke: self profile exposes only learner-safe history and controls
         direction: "row",
         wrap: "wrap",
         actionLabel: "Выход",
-        actionsShareContentRow: true,
+        actionsShareTitleRow: true,
+        metricBelowTitleRow: true,
       },
     );
     assert.ok(compactProfileHeader.actionIntrinsicWidthDelta < 0.5);
-    assert.ok(compactProfileHeader.actionCenterDelta < 0.5);
+    assert.ok(compactProfileHeader.titleActionBottomDelta < 0.5);
+    assert.ok(compactProfileHeader.actionControlBottomDelta < 0.5);
     assert.ok(compactProfileHeader.actionRightInsetDelta < 0.5);
-    assert.ok(Math.abs(compactProfileHeader.contentActionGap - 24) < 0.5);
+    assert.ok(Math.abs(compactProfileHeader.titleActionGap - 24) < 0.5);
+    assert.ok(compactProfileHeader.metricGapDelta < 0.5);
 
     const initialProfileTabs = await runtime.page.evaluate(() => {
       const rail = document.querySelector<HTMLElement>(".workspace-tabs-rail");
@@ -10070,6 +10156,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       );
       const pageHeading =
         pageHeader?.querySelector<HTMLElement>(".app-page-heading");
+      const titleRow = pageHeading?.querySelector<HTMLElement>(
+        ".app-page-title-row",
+      );
       const header = document.querySelector<HTMLElement>(
         ".site-header-shell-demo",
       );
@@ -10117,6 +10206,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         !pageHeaderContent ||
         !backSlot ||
         !pageHeading ||
+        !titleRow ||
         !header ||
         !title ||
         !headerActions ||
@@ -10155,7 +10245,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const pageHeaderRect = pageHeader.getBoundingClientRect();
       const backSlotRect = backSlot.getBoundingClientRect();
       const pageHeadingRect = pageHeading.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
+      const primaryButtonRect = primaryButton.getBoundingClientRect();
 
       return {
         shellBackgroundColor: shellStyle.backgroundColor,
@@ -10173,10 +10265,16 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         pageHeaderLayout: {
           minHeight: pageHeaderStyle.minHeight,
           height: pageHeaderRect.height,
-          actionCenterDelta: Math.abs(
-            headerActionsRect.top +
-              headerActionsRect.height / 2 -
-              (pageHeaderRect.top + pageHeaderRect.height / 2),
+          actionsShareTitleRow:
+            title.parentElement === titleRow &&
+            headerActions.parentElement === titleRow &&
+            headerActionsRect.top < titleRect.bottom &&
+            headerActionsRect.bottom > titleRect.top,
+          titleActionBottomDelta: Math.abs(
+            headerActionsRect.bottom - titleRect.bottom,
+          ),
+          actionControlBottomDelta: Math.abs(
+            primaryButtonRect.bottom - titleRect.bottom,
           ),
           backSlotHeight: backSlotRect.height,
           backSlotLineHeight: backSlotStyle.lineHeight,
@@ -10253,7 +10351,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     );
     assert.ok(coursesVisual.pageHeaderLayout.height > 0);
     assert.ok(coursesVisual.pageHeaderLayout.height < 200);
-    assert.ok(coursesVisual.pageHeaderLayout.actionCenterDelta < 0.5);
+    assert.equal(coursesVisual.pageHeaderLayout.actionsShareTitleRow, true);
+    assert.ok(coursesVisual.pageHeaderLayout.titleActionBottomDelta < 0.5);
+    assert.ok(coursesVisual.pageHeaderLayout.actionControlBottomDelta < 0.5);
     assert.ok(
       Math.abs(
         coursesVisual.pageHeaderLayout.backSlotHeight -
@@ -11056,6 +11156,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         document.querySelector<HTMLElement>(".app-page-header");
       const pageHeading =
         pageHeader?.querySelector<HTMLElement>(".app-page-heading");
+      const titleRow = pageHeading?.querySelector<HTMLElement>(
+        ".app-page-title-row",
+      );
       const pageHeaderContent = pageHeader?.querySelector<HTMLElement>(
         ".app-page-header-content",
       );
@@ -11089,6 +11192,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       if (
         !pageHeader ||
         !pageHeading ||
+        !titleRow ||
         !pageHeaderContent ||
         !title ||
         !description ||
@@ -11105,6 +11209,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         const missing = [
           ["pageHeader", pageHeader],
           ["pageHeading", pageHeading],
+          ["titleRow", titleRow],
           ["pageHeaderContent", pageHeaderContent],
           ["title", title],
           ["description", description],
@@ -11140,13 +11245,18 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const pageHeaderRect = pageHeader.getBoundingClientRect();
       const pageHeaderContentRect = pageHeaderContent.getBoundingClientRect();
       const pageHeadingRect = pageHeading.getBoundingClientRect();
+      const titleRowRect = titleRow.getBoundingClientRect();
       const titleRect = title.getBoundingClientRect();
+      const descriptionRect = description.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
       const backLinkRect = backLink.getBoundingClientRect();
       const siteHeaderRect = siteHeader.getBoundingClientRect();
       const actionChildRects = Array.from(headerActions.children)
         .map((child) => child.getBoundingClientRect())
         .filter((rect) => rect.width > 0 && rect.height > 0);
+      const actionControlRects = Array.from(
+        headerActions.querySelectorAll<HTMLElement>(".product-btn"),
+      ).map((control) => control.getBoundingClientRect());
       const actionsContentWidth = actionChildRects.length
         ? Math.max(...actionChildRects.map((rect) => rect.right)) -
           Math.min(...actionChildRects.map((rect) => rect.left))
@@ -11162,7 +11272,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           height: pageHeaderRect.height,
           headingMinWidth: headingStyle.minWidth,
           headingWidth: pageHeadingRect.width,
-          titleWidthDelta: Math.abs(titleRect.width - pageHeadingRect.width),
+          titleRowOwnsContentWidth: Math.abs(
+            titleRowRect.width - pageHeaderContentRect.width,
+          ),
           actionsWidth: headerActionsRect.width,
           actionsContentWidth,
           actionsFitContentDelta: Math.abs(
@@ -11173,19 +11285,27 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
               Number.parseFloat(headerStyle.paddingRight) -
               headerActionsRect.right,
           ),
-          columnGap: headerActionsRect.left - pageHeaderContentRect.right,
+          columnGap: headerActionsRect.left - titleRect.right,
           remainingWidthDelta: Math.abs(
-            pageHeaderContentRect.width -
-              (pageHeaderRect.width -
-                Number.parseFloat(headerStyle.paddingLeft) -
-                Number.parseFloat(headerStyle.paddingRight) -
-                headerActionsRect.width -
-                24),
+            titleRect.width -
+              (titleRowRect.width - headerActionsRect.width - 24),
           ),
-          actionCenterDelta: Math.abs(
-            headerActionsRect.top +
-              headerActionsRect.height / 2 -
-              (pageHeaderRect.top + pageHeaderRect.height / 2),
+          actionsShareTitleRow:
+            title.parentElement === titleRow &&
+            headerActions.parentElement === titleRow &&
+            headerActionsRect.top < titleRect.bottom &&
+            headerActionsRect.bottom > titleRect.top,
+          titleActionBottomDelta: Math.abs(
+            headerActionsRect.bottom - titleRect.bottom,
+          ),
+          actionControlBottomDeltas: actionControlRects.map((rect) =>
+            Math.abs(rect.bottom - titleRect.bottom),
+          ),
+          metricBelowTitleRow: descriptionRect.top >= titleRowRect.bottom - 0.5,
+          metricGapDelta: Math.abs(
+            descriptionRect.top -
+              titleRowRect.bottom -
+              Number.parseFloat(headingStyle.rowGap),
           ),
           backLink: {
             color: getComputedStyle(backLink).color,
@@ -11257,7 +11377,16 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.ok(["auto", "0px"].includes(courseVisual.headerLayout.minHeight));
     assert.ok(courseVisual.headerLayout.height > 0);
     assert.ok(courseVisual.headerLayout.height < 200);
-    assert.ok(courseVisual.headerLayout.actionCenterDelta < 0.5);
+    assert.equal(courseVisual.headerLayout.actionsShareTitleRow, true);
+    assert.ok(courseVisual.headerLayout.titleActionBottomDelta < 0.5);
+    assert.equal(
+      courseVisual.headerLayout.actionControlBottomDeltas.every(
+        (delta) => delta < 0.5,
+      ),
+      true,
+    );
+    assert.equal(courseVisual.headerLayout.metricBelowTitleRow, true);
+    assert.ok(courseVisual.headerLayout.metricGapDelta < 0.5);
     assert.equal(courseVisual.headerLayout.headingMinWidth, "0px");
     assert.ok(
       courseVisual.headerLayout.headingWidth >
@@ -11266,7 +11395,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.ok(courseVisual.headerLayout.actionsContentWidth > 0);
     assert.ok(courseVisual.headerLayout.actionsFitContentDelta < 0.5);
     assert.ok(courseVisual.headerLayout.actionsRightDelta < 0.5);
-    assert.ok(courseVisual.headerLayout.titleWidthDelta < 0.5);
+    assert.ok(courseVisual.headerLayout.titleRowOwnsContentWidth < 0.5);
     assert.ok(courseVisual.headerLayout.remainingWidthDelta < 0.5);
     assert.ok(Math.abs(courseVisual.headerLayout.columnGap - 24) < 0.5);
     assert.deepEqual(
@@ -11663,6 +11792,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const shell = document.querySelector<HTMLElement>(".course-demo-shell");
       const pageHeader =
         document.querySelector<HTMLElement>(".app-page-header");
+      const pageHeading =
+        pageHeader?.querySelector<HTMLElement>(".app-page-heading");
+      const titleRow = pageHeading?.querySelector<HTMLElement>(
+        ".app-page-title-row",
+      );
       const title = pageHeader?.querySelector<HTMLElement>(".app-page-title");
       const description = pageHeader?.querySelector<HTMLElement>(
         ".app-page-description",
@@ -11688,6 +11822,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       if (
         !shell ||
         !pageHeader ||
+        !pageHeading ||
+        !titleRow ||
         !title ||
         !description ||
         !headerActions ||
@@ -11703,6 +11839,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       }
 
       const pageHeaderStyle = getComputedStyle(pageHeader);
+      const pageHeadingStyle = getComputedStyle(pageHeading);
       const titleStyle = getComputedStyle(title);
       const descriptionStyle = getComputedStyle(description);
       const tabsStyle = getComputedStyle(tabs);
@@ -11713,7 +11850,12 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const baselineStyle = getComputedStyle(tabs, "::before");
       const baselineScaleY = new DOMMatrixReadOnly(baselineStyle.transform).m22;
       const pageHeaderRect = pageHeader.getBoundingClientRect();
+      const titleRowRect = titleRow.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
+      const descriptionRect = description.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
+      const primaryActionRect = primaryAction.getBoundingClientRect();
+      const overflowActionRect = overflowAction.getBoundingClientRect();
       const primaryActionStyle = getComputedStyle(primaryAction);
       const overflowActionStyle = getComputedStyle(overflowAction);
       const overflowIconStyle = getComputedStyle(overflowIcon);
@@ -11722,10 +11864,23 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         headerLayout: {
           minHeight: pageHeaderStyle.minHeight,
           height: pageHeaderRect.height,
-          actionCenterDelta: Math.abs(
-            headerActionsRect.top +
-              headerActionsRect.height / 2 -
-              (pageHeaderRect.top + pageHeaderRect.height / 2),
+          actionsShareTitleRow:
+            title.parentElement === titleRow &&
+            headerActions.parentElement === titleRow &&
+            headerActionsRect.top < titleRect.bottom &&
+            headerActionsRect.bottom > titleRect.top,
+          titleActionBottomDelta: Math.abs(
+            headerActionsRect.bottom - titleRect.bottom,
+          ),
+          actionControlBottomDeltas: [
+            Math.abs(primaryActionRect.bottom - titleRect.bottom),
+            Math.abs(overflowActionRect.bottom - titleRect.bottom),
+          ],
+          metricBelowTitleRow: descriptionRect.top >= titleRowRect.bottom - 0.5,
+          metricGapDelta: Math.abs(
+            descriptionRect.top -
+              titleRowRect.bottom -
+              Number.parseFloat(pageHeadingStyle.rowGap),
           ),
         },
         headerSignature: {
@@ -11812,7 +11967,16 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.ok(["auto", "0px"].includes(lessonVisual.headerLayout.minHeight));
     assert.ok(lessonVisual.headerLayout.height > 0);
     assert.ok(lessonVisual.headerLayout.height < 200);
-    assert.ok(lessonVisual.headerLayout.actionCenterDelta < 0.5);
+    assert.equal(lessonVisual.headerLayout.actionsShareTitleRow, true);
+    assert.ok(lessonVisual.headerLayout.titleActionBottomDelta < 0.5);
+    assert.equal(
+      lessonVisual.headerLayout.actionControlBottomDeltas.every(
+        (delta) => delta < 0.5,
+      ),
+      true,
+    );
+    assert.equal(lessonVisual.headerLayout.metricBelowTitleRow, true);
+    assert.ok(lessonVisual.headerLayout.metricGapDelta < 0.5);
     assert.deepEqual(
       {
         titleFontFamily: lessonVisual.headerSignature.titleFontFamily,
@@ -11958,6 +12122,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         document.querySelector<HTMLElement>(".app-page-header");
       const pageHeading =
         pageHeader?.querySelector<HTMLElement>(".app-page-heading");
+      const titleRow = pageHeading?.querySelector<HTMLElement>(
+        ".app-page-title-row",
+      );
       const pageHeaderContent = pageHeader?.querySelector<HTMLElement>(
         ".app-page-header-content",
       );
@@ -11979,6 +12146,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       if (
         !pageHeader ||
         !pageHeading ||
+        !titleRow ||
         !pageHeaderContent ||
         !title ||
         !description ||
@@ -11998,12 +12166,15 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       backLabel.textContent = "КурсБезПробелов".repeat(25);
 
       const headerStyle = getComputedStyle(pageHeader);
+      const headingStyle = getComputedStyle(pageHeading);
       const titleStyle = getComputedStyle(title);
       const descriptionStyle = getComputedStyle(description);
       const backLabelStyle = getComputedStyle(backLabel);
       const pageHeaderRect = pageHeader.getBoundingClientRect();
-      const pageHeaderContentRect = pageHeaderContent.getBoundingClientRect();
       const pageHeadingRect = pageHeading.getBoundingClientRect();
+      const titleRowRect = titleRow.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
+      const descriptionRect = description.getBoundingClientRect();
       const backLinkRect = backLink.getBoundingClientRect();
       const backLabelRect = backLabel.getBoundingClientRect();
       const actionsRect = actions.getBoundingClientRect();
@@ -12018,6 +12189,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         headerDirection: headerStyle.flexDirection,
         headerWrap: headerStyle.flexWrap,
         headingOwnsContentDelta: Math.abs(pageHeadingRect.width - contentWidth),
+        titleRowOwnsHeadingDelta: Math.abs(
+          titleRowRect.width - pageHeadingRect.width,
+        ),
         actionsInsideHeader:
           actionsRect.left >=
             pageHeaderRect.left +
@@ -12027,8 +12201,18 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
             pageHeaderRect.right -
               Number.parseFloat(headerStyle.paddingRight) +
               0.5,
-        actionsDoNotOverlapHeading:
-          actionsRect.top >= pageHeaderContentRect.bottom - 0.5,
+        actionsShareTitleRow:
+          title.parentElement === titleRow &&
+          actions.parentElement === titleRow &&
+          actionsRect.top < titleRect.bottom &&
+          actionsRect.bottom > titleRect.top,
+        titleActionBottomDelta: Math.abs(actionsRect.bottom - titleRect.bottom),
+        metricBelowTitleRow: descriptionRect.top >= titleRowRect.bottom - 0.5,
+        metricGapDelta: Math.abs(
+          descriptionRect.top -
+            titleRowRect.bottom -
+            Number.parseFloat(headingStyle.rowGap),
+        ),
         titleWrap: titleStyle.overflowWrap,
         descriptionWrap: descriptionStyle.overflowWrap,
         backLabelWrap: backLabelStyle.overflowWrap,
@@ -12059,8 +12243,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         headerDirection: narrowLessonHeader.headerDirection,
         headerWrap: narrowLessonHeader.headerWrap,
         actionsInsideHeader: narrowLessonHeader.actionsInsideHeader,
-        actionsDoNotOverlapHeading:
-          narrowLessonHeader.actionsDoNotOverlapHeading,
+        actionsShareTitleRow: narrowLessonHeader.actionsShareTitleRow,
+        metricBelowTitleRow: narrowLessonHeader.metricBelowTitleRow,
         titleWrap: narrowLessonHeader.titleWrap,
         descriptionWrap: narrowLessonHeader.descriptionWrap,
         backLabelWrap: narrowLessonHeader.backLabelWrap,
@@ -12076,10 +12260,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         documentClientWidth: 1120,
         documentScrollWidth: 1120,
         headerDisplay: "flex",
-        headerDirection: "row",
-        headerWrap: "wrap",
+        headerDirection: "column",
+        headerWrap: "nowrap",
         actionsInsideHeader: true,
-        actionsDoNotOverlapHeading: true,
+        actionsShareTitleRow: true,
+        metricBelowTitleRow: true,
         titleWrap: "anywhere",
         descriptionWrap: "anywhere",
         backLabelWrap: "normal",
@@ -12093,6 +12278,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       },
     );
     assert.ok(narrowLessonHeader.headingOwnsContentDelta < 0.5);
+    assert.ok(narrowLessonHeader.titleRowOwnsHeadingDelta < 0.5);
+    assert.ok(narrowLessonHeader.titleActionBottomDelta < 0.5);
+    assert.ok(narrowLessonHeader.metricGapDelta < 0.5);
     assert.ok(narrowLessonHeader.backLabelSingleLineDelta < 0.5);
     assert.ok(Math.abs(narrowLessonHeader.headerToBackGap - 20) < 0.5);
     assert.ok(Math.abs(narrowLessonHeader.backToHeadingGap - 20) < 0.5);
@@ -13118,6 +13306,10 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         document.querySelector<HTMLElement>(".app-page-header");
       const pageHeading =
         pageHeader?.querySelector<HTMLElement>(".app-page-heading");
+      const titleRow = pageHeading?.querySelector<HTMLElement>(
+        ".app-page-title-row",
+      );
+      const title = titleRow?.querySelector<HTMLElement>(".app-page-title");
       const pageHeaderContent = pageHeader?.querySelector<HTMLElement>(
         ".app-page-header-content",
       );
@@ -13142,6 +13334,8 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       if (
         !pageHeader ||
         !pageHeading ||
+        !titleRow ||
+        !title ||
         !pageHeaderContent ||
         !headerActions ||
         !headerAction ||
@@ -13156,8 +13350,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const viewportWidth = document.documentElement.clientWidth;
       const pageHeaderStyle = getComputedStyle(pageHeader);
       const pageHeaderRect = pageHeader.getBoundingClientRect();
-      const pageHeaderContentRect = pageHeaderContent.getBoundingClientRect();
       const pageHeadingRect = pageHeading.getBoundingClientRect();
+      const titleRowRect = titleRow.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
       const headerActionRect = headerAction.getBoundingClientRect();
       const pageHeaderContentWidth =
@@ -13174,25 +13369,31 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         pageHeader: {
           contentWidth: pageHeaderContentWidth,
           headingWidth: pageHeadingRect.width,
+          titleRowWidth: titleRowRect.width,
+          titleWidth: titleRect.width,
           actionsWidth: headerActionsRect.width,
           actionWidth: headerActionRect.width,
           actionsFitContentDelta: Math.abs(
             headerActionsRect.width - headerActionRect.width,
           ),
-          actionCenterDelta: Math.abs(
-            headerActionsRect.top +
-              headerActionsRect.height / 2 -
-              (pageHeaderContentRect.top + pageHeaderContentRect.height / 2),
+          actionsShareTitleRow:
+            title.parentElement === titleRow &&
+            headerActions.parentElement === titleRow &&
+            headerActionsRect.top < titleRect.bottom &&
+            headerActionsRect.bottom > titleRect.top,
+          titleActionBottomDelta: Math.abs(
+            headerActionsRect.bottom - titleRect.bottom,
+          ),
+          actionControlBottomDelta: Math.abs(
+            headerActionRect.bottom - titleRect.bottom,
           ),
           actionRightInsetDelta: Math.abs(
             pageHeaderRect.right -
               Number.parseFloat(pageHeaderStyle.paddingRight) -
               headerActionsRect.right,
           ),
-          contentActionGap:
-            headerActionsRect.left - pageHeaderContentRect.right,
-          actionsDoNotOverlapContent:
-            headerActionsRect.left >= pageHeaderContentRect.right,
+          titleActionGap: headerActionsRect.left - titleRect.right,
+          actionsDoNotOverlapTitle: headerActionsRect.left >= titleRect.right,
           actionsInsideViewport:
             headerActionsRect.left >= 0 &&
             headerActionsRect.right <= viewportWidth,
@@ -13245,21 +13446,35 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       },
     );
     assert.ok(mobileCoursesToolbar.pageHeader.contentWidth > 0);
+    assert.ok(
+      Math.abs(
+        mobileCoursesToolbar.pageHeader.headingWidth -
+          mobileCoursesToolbar.pageHeader.contentWidth,
+      ) < 0.5,
+    );
+    assert.ok(
+      Math.abs(
+        mobileCoursesToolbar.pageHeader.titleRowWidth -
+          mobileCoursesToolbar.pageHeader.contentWidth,
+      ) < 0.5,
+    );
     assert.ok(Math.abs(mobileCoursesToolbar.searchStartInset) < 0.5);
     assert.ok(Math.abs(mobileCoursesToolbar.railEndInset) < 0.5);
     assert.ok(mobileCoursesToolbar.pageHeader.actionWidth > 0);
     assert.ok(
-      mobileCoursesToolbar.pageHeader.headingWidth >
+      mobileCoursesToolbar.pageHeader.titleWidth >
         mobileCoursesToolbar.pageHeader.actionsWidth,
     );
     assert.ok(mobileCoursesToolbar.pageHeader.actionsFitContentDelta < 0.5);
-    assert.ok(mobileCoursesToolbar.pageHeader.actionCenterDelta < 0.5);
+    assert.equal(mobileCoursesToolbar.pageHeader.actionsShareTitleRow, true);
+    assert.ok(mobileCoursesToolbar.pageHeader.titleActionBottomDelta < 0.5);
+    assert.ok(mobileCoursesToolbar.pageHeader.actionControlBottomDelta < 0.5);
     assert.ok(mobileCoursesToolbar.pageHeader.actionRightInsetDelta < 0.5);
     assert.ok(
-      Math.abs(mobileCoursesToolbar.pageHeader.contentActionGap - 24) < 0.5,
+      Math.abs(mobileCoursesToolbar.pageHeader.titleActionGap - 24) < 0.5,
     );
     assert.equal(
-      mobileCoursesToolbar.pageHeader.actionsDoNotOverlapContent,
+      mobileCoursesToolbar.pageHeader.actionsDoNotOverlapTitle,
       true,
     );
     assert.equal(mobileCoursesToolbar.pageHeader.actionsInsideViewport, true);
@@ -13447,7 +13662,13 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       );
       const pageHeading =
         pageHeader?.querySelector<HTMLElement>(".app-page-heading");
+      const titleRow = pageHeading?.querySelector<HTMLElement>(
+        ".app-page-title-row",
+      );
       const title = pageHeader?.querySelector<HTMLElement>(".app-page-title");
+      const description = pageHeader?.querySelector<HTMLElement>(
+        ".app-page-description",
+      );
       const backLink = pageHeader?.querySelector<HTMLElement>(
         ".app-page-back-link",
       );
@@ -13474,7 +13695,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         !pageHeader ||
         !pageHeaderContent ||
         !pageHeading ||
+        !titleRow ||
         !title ||
+        !description ||
         !backLink ||
         !backIcon ||
         !backLabel ||
@@ -13491,17 +13714,27 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       backLabel.textContent = "МобильныйКурсБезПробелов".repeat(20);
 
       const titleStyle = getComputedStyle(title);
+      const titleRowStyle = getComputedStyle(titleRow);
+      const pageHeadingStyle = getComputedStyle(pageHeading);
       const backLinkStyle = getComputedStyle(backLink);
       const backIconStyle = getComputedStyle(backIcon);
       const backLabelStyle = getComputedStyle(backLabel);
       const pageHeaderRect = pageHeader.getBoundingClientRect();
-      const pageHeaderContentRect = pageHeaderContent.getBoundingClientRect();
       const pageHeadingRect = pageHeading.getBoundingClientRect();
+      const titleRowRect = titleRow.getBoundingClientRect();
       const titleRect = title.getBoundingClientRect();
+      const descriptionRect = description.getBoundingClientRect();
       const headerRect = header.getBoundingClientRect();
       const backLinkRect = backLink.getBoundingClientRect();
       const backLabelRect = backLabel.getBoundingClientRect();
       const actionsRect = actions.getBoundingClientRect();
+      const actionControlRects = Array.from(
+        actions.querySelectorAll<HTMLElement>(".product-btn"),
+      ).map((control) => control.getBoundingClientRect());
+      const actionsContentWidth = actionControlRects.length
+        ? Math.max(...actionControlRects.map((rect) => rect.right)) -
+          Math.min(...actionControlRects.map((rect) => rect.left))
+        : 0;
       const tabStripRect = tabStrip.getBoundingClientRect();
       const selectedTabRect = selectedTab.getBoundingClientRect();
       const baselineStyle = getComputedStyle(tabs, "::before");
@@ -13520,8 +13753,21 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
           actionsInsideViewport:
             actionsRect.left >= 0 &&
             actionsRect.right <= document.documentElement.clientWidth,
-          actionsBelowContent:
-            actionsRect.top >= pageHeaderContentRect.bottom - 0.5,
+          actionsFitContentDelta: Math.abs(
+            actionsRect.width - actionsContentWidth,
+          ),
+          actionsWrappedBelowTitle: actionsRect.top >= titleRect.bottom - 0.5,
+          actionStackGapDelta: Math.abs(
+            actionsRect.top -
+              titleRect.bottom -
+              Number.parseFloat(titleRowStyle.rowGap),
+          ),
+          metricBelowActions: descriptionRect.top >= actionsRect.bottom - 0.5,
+          metricGapDelta: Math.abs(
+            descriptionRect.top -
+              titleRowRect.bottom -
+              Number.parseFloat(pageHeadingStyle.rowGap),
+          ),
           backColor: backLinkStyle.color,
           backIconColor: backIconStyle.color,
           backIconFlexShrink: backIconStyle.flexShrink,
@@ -13574,7 +13820,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     assert.deepEqual(
       {
         actionsInsideViewport: mobileVisual.pageHeader.actionsInsideViewport,
-        actionsBelowContent: mobileVisual.pageHeader.actionsBelowContent,
+        actionsWrappedBelowTitle:
+          mobileVisual.pageHeader.actionsWrappedBelowTitle,
+        metricBelowActions: mobileVisual.pageHeader.metricBelowActions,
         backColor: mobileVisual.pageHeader.backColor,
         backIconColor: mobileVisual.pageHeader.backIconColor,
         backIconFlexShrink: mobileVisual.pageHeader.backIconFlexShrink,
@@ -13586,7 +13834,8 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       },
       {
         actionsInsideViewport: true,
-        actionsBelowContent: true,
+        actionsWrappedBelowTitle: true,
+        metricBelowActions: true,
         backColor: "rgb(20, 20, 20)",
         backIconColor: "rgb(20, 20, 20)",
         backIconFlexShrink: "0",
@@ -13597,6 +13846,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         backInsideHeader: true,
       },
     );
+    assert.ok(mobileVisual.pageHeader.actionStackGapDelta < 0.5);
+    assert.ok(mobileVisual.pageHeader.actionsFitContentDelta < 0.5);
+    assert.ok(mobileVisual.pageHeader.metricGapDelta < 0.5);
     assert.ok(mobileVisual.pageHeader.backLabelSingleLineDelta < 0.5);
     assert.ok(Math.abs(mobileVisual.pageHeader.headerToBackGap - 16) < 0.5);
     assert.ok(Math.abs(mobileVisual.pageHeader.backToHeadingGap - 16) < 0.5);

@@ -633,21 +633,25 @@ Visual contract Course routes не меняет эту навигационну�
   header: известные title/meta/actions и вкладки показываются сразу, а только
   metric мягко проявляется внутри зарезервированной строки после data/error
   resolution. Поэтому поздний ответ не меняет геометрию header. Heading
-  получает всю оставшуюся ширину, а actions вертикально центрированы и имеют
-  intrinsic ширину по
-  содержимому с ограничением шириной контейнера. В current production сам H1 больше
-  не имеет лимита `24ch` и заполняет heading-колонку; desktop column-gap равен
-  24 px. Backlink и стрелка используют непрозрачный `#141414`, label остаётся в
+  получает всю оставшуюся ширину. В current source H1 и правая action-секция
+  образуют одну title-row: block-end action rail совпадает с block-end H1, а
+  сами actions сохраняют intrinsic ширину с ограничением шириной контейнера.
+  Зарезервированная backlink-row выше и metric/meta ниже принадлежат только
+  content-column и не участвуют в вертикальном выравнивании actions. В current
+  production сам H1 больше не имеет лимита `24ch` и заполняет heading-колонку;
+  desktop column-gap равен 24 px. Backlink и стрелка используют непрозрачный
+  `#141414`, label остаётся в
   одной строке и обрезается ellipsis, а интервалы над и под backlink совпадают с
   page-header block-inset (20 px desktop, 16 px mobile). Backlink-row всегда
   занимает ту же строку и сохраняет начало heading; если `back` отсутствует,
   внутри нет фиктивного link/button или текста. Этот UI-only follow-up не меняет
   Lesson hierarchy, API или schema.
   В current source / next production layout ниже `1280 px` становится
-  content-aware wrapping row: content растёт, intrinsic action остаётся справа
-  в той же строке, пока суммарная фактическая ширина помещается, и переносится
-  вниз только при реальном overflow. Это не меняет лимит одного visible primary
-  action и не превращает control в full-width кнопку. Product shell использует
+  content-aware wrapping row: intrinsic action остаётся справа в title-row и
+  сохраняет общее с H1 block-end выравнивание, пока суммарная фактическая ширина
+  помещается, а при реальном overflow переносится вниз в отдельный ряд. Это не
+  меняет лимит одного visible primary action и не превращает control в
+  full-width кнопку. Product shell использует
   `overflow-x: clip`, чтобы directional route entrance не расширял document на
   промежуточном frame; собственные горизонтальные scrollers остаются
   интерактивными.

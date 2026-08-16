@@ -139,7 +139,15 @@ test("active V2 pages share one page header contract without visual modifiers", 
   );
   assert.match(header, /className="app-page-back-link"/);
   assert.match(header, /className="app-page-back-link-label"/);
-  assert.match(header, /className="app-page-actions"/);
+  assert.match(
+    header,
+    /<div className="app-page-title-row">[\s\S]*?<h1[\s\S]*?className="app-page-title"[\s\S]*?\{title\}[\s\S]*?<\/h1>[\s\S]*?\{actions \? <div className="app-page-actions">\{actions\}<\/div> : null\}[\s\S]*?<\/div>[\s\S]*?\{hasMetric \|\| usesAsyncMetric \? \(/,
+  );
+  assert.doesNotMatch(
+    header,
+    /<\/div>\s*\{actions \? <div className="app-page-actions">/,
+    "Actions must stay in the title row instead of aligning to the full header stack",
+  );
   assert.match(header, /data-page-header-pending=/);
   assert.match(header, /data-page-header-async-metric=/);
   assert.match(header, /data-page-header-metric-placeholder=/);
@@ -234,32 +242,26 @@ test("active V2 pages share one page header contract without visual modifiers", 
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.app-page-header > \.app-page-actions\s*\{[^}]*width: max-content;[^}]*max-width: 100%;[^}]*align-self: flex-start;/,
+    /\.app-page-title-row\s*\{[^}]*display: flex;[^}]*width: 100%;[^}]*min-width: 0;[^}]*flex-flow: row wrap;[^}]*align-items: flex-end;[^}]*column-gap: 1\.5rem;[^}]*row-gap: var\(--app-page-header-space\);/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.app-page-title-row > \.app-page-actions\s*\{[^}]*width: max-content;[^}]*max-width: 100%;[^}]*flex: 0 0 auto;[^}]*align-self: flex-end;[^}]*margin-inline-start: auto;/,
   );
   assert.match(styles, /\.course-demo-shell\s*\{[^}]*overflow-x: clip;/);
   assert.match(
     styles,
-    /@media \(max-width: 1279px\)\s*\{[\s\S]*?\.course-demo-shell \.app-page-header-with-actions\s*\{[^}]*flex-flow: row wrap;[^}]*align-items: center;[^}]*column-gap: 1\.5rem;/,
+    /\.app-page-title\s*\{[^}]*width: auto;[^}]*max-width: none;[^}]*min-width: min\(10rem, 100%\);[^}]*flex: 1 1 0;/,
   );
-  assert.match(
+  assert.doesNotMatch(
     styles,
-    /@media \(max-width: 1279px\)[\s\S]*?\.course-demo-shell\s*\.app-page-header-with-actions\s*> \.app-page-header-content\s*\{[^}]*width: auto;[^}]*flex: 1 1 auto;/,
+    /\.course-demo-shell \.app-page-header-with-actions\s*> \.app-page-actions/,
+    "The reserved backlink stack must not own the action alignment",
   );
-  assert.match(
+  assert.doesNotMatch(
     styles,
-    /@media \(max-width: 1279px\)[\s\S]*?\.course-demo-shell \.app-page-header-with-actions > \.app-page-actions\s*\{[^}]*flex: 0 0 auto;[^}]*align-self: center;/,
-  );
-  assert.match(
-    styles,
-    /@media \(min-width: 1280px\)\s*\{[\s\S]*?\.course-demo-shell \.app-page-header-with-actions\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\) max-content;[^}]*column-gap: 1\.5rem;/,
-  );
-  assert.match(
-    styles,
-    /\.course-demo-shell\s*\.app-page-header-with-actions\s*> \.app-page-header-content\s*\{[^}]*align-self: stretch;[^}]*justify-content: center;/,
-  );
-  assert.match(
-    styles,
-    /\.course-demo-shell\s*\.app-page-header-with-actions\.app-page-header-with-back\s*> \.app-page-header-content\s*\{[^}]*justify-content: flex-start;/,
+    /\.app-page-header-with-actions[\s\S]*?(?:align-items|align-self): center/,
+    "Actions must not center against the full AppPageHeader height",
   );
   assert.match(
     styles,
@@ -289,12 +291,12 @@ test("active V2 pages share one page header contract without visual modifiers", 
   );
   assert.match(
     styles,
-    /\.app-page-title\s*\{[^}]*width: 100%;[^}]*max-width: none;/,
+    /\.course-demo-shell \.app-page-title\s*\{[^}]*min-width: min\(10rem, 100%\);[^}]*overflow-wrap: anywhere;/,
   );
   assert.doesNotMatch(styles, /\.app-page-title\s*\{[^}]*24ch/);
   assert.match(
     styles,
-    /\.course-demo-shell \.app-page-title,\s*\.course-demo-shell \.app-page-description\s*\{[^}]*min-width: 0;[^}]*overflow-wrap: anywhere;/,
+    /\.course-demo-shell \.app-page-description\s*\{[^}]*min-width: 0;[^}]*overflow-wrap: anywhere;/,
   );
   assert.doesNotMatch(
     styles,

@@ -98,13 +98,16 @@ export function AppPageHeader({
           ) : null}
         </div>
         <div className="app-page-heading">
-          <h1
-            ref={headingRef}
-            className="app-page-title"
-            tabIndex={headingRef ? -1 : undefined}
-          >
-            {title}
-          </h1>
+          <div className="app-page-title-row">
+            <h1
+              ref={headingRef}
+              className="app-page-title"
+              tabIndex={headingRef ? -1 : undefined}
+            >
+              {title}
+            </h1>
+            {actions ? <div className="app-page-actions">{actions}</div> : null}
+          </div>
           {hasMetric || usesAsyncMetric ? (
             <p
               className="app-page-description app-page-metric"
@@ -119,7 +122,6 @@ export function AppPageHeader({
         </div>
         {meta ? <div className="app-page-meta">{meta}</div> : null}
       </div>
-      {actions ? <div className="app-page-actions">{actions}</div> : null}
     </header>
   );
 }

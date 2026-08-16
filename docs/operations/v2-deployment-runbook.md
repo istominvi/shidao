@@ -960,15 +960,23 @@ ShiDao V2 application:
 - `/courses`, Course и Lesson показывают одинаковые computed H1/optional metric
   через один `AppPageHeader`: H1 не крупнее 48 px на desktop и 32 px
   на mobile; искусственного `min-height` нет, высоту задают фактические
-  title/metric/meta/actions и block padding. Actions вертикально центрированы,
-  занимают только ширину содержимого и оставляют всю свободную ширину heading
-  и H1; desktop gap между heading и actions равен 24 px. Асинхронная metric
+  title/metric/meta/actions и block padding. На ширине, где action rail остаётся
+  справа от H1, оба элемента образуют одну title-row: абсолютная разница между
+  `getBoundingClientRect().bottom` для `.app-page-actions` и `.app-page-title`
+  не превышает `0.5 px`. Центр полной высоты header не является anchor для
+  actions. Проверить это отдельно на `/courses` с пустой зарезервированной
+  backlink-row и на Course/Lesson с настоящим backlink; наличие metric/meta ниже
+  title-row также не должно сдвигать action rail. Actions занимают только ширину
+  содержимого и оставляют всю свободную ширину heading и H1; desktop gap между
+  heading и actions равен 24 px. Асинхронная metric
   резервирует одну строку `1lh` до ответа; H1, meta, actions и известные
   вкладки должны быть видимы сразу, а только metric проявляется позже внутри
   этой строки без изменения геометрии header. На 1120
-  px Lesson с одной primary и одним square overflow складывается без document overflow,
-  непрерывные title/metric переносятся, а back-label остаётся в одной
-  строке и обрезается ellipsis;
+  px Lesson с одной primary и одним square overflow складывается без document
+  overflow: пока H1 и actions помещаются, их block-end совпадает; при реальной
+  нехватке ширины intrinsic action rail переносится отдельным рядом. Непрерывные
+  title/metric переносятся, а back-label остаётся в одной строке и обрезается
+  ellipsis;
   metric, когда она существует, получает один computed-цвет
   `oklch(0.19 0 0 / 0.6)` из canonical
   `--app-page-header-description-color`;

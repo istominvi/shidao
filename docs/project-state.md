@@ -61,7 +61,8 @@ glyphs без изменения геометрии: public production CSS
 Это public-bundle/HTTP postflight; он не подменяет matching-container evidence
 Profile/avatar release `4462da2`, зафиксированное ниже.
 
-**Current source / next production — TopNav и стабильный backlink rhythm:**
+**Current source / next production — TopNav, стабильный backlink rhythm и
+title-row alignment:**
 product TopNav теперь остаётся в normal document flow, не использует
 `position: sticky` или `fixed` и уходит за верхнюю границу вместе с остальным
 контентом при scroll. Белый shell имеет внешнюю высоту ровно `64 px`. Его общий
@@ -74,9 +75,14 @@ active-pill; выбранный пункт сохраняет чёрный activ
 всегда резервирует одну backlink-row и её вертикальный rhythm. При отсутствии
 `back` строка остаётся пустой и не создаёт фиктивные link, button или текст;
 поэтому heading начинается на той же высоте, что и на странице с настоящим
-backlink. Этот UI-only source contract supersede-ит только deployed
-`68 px`/sticky геометрию и условную backlink-row; API, schema, migrations и
-Lesson hierarchy не меняются.
+backlink. H1 и правая action-секция `AppPageHeader` образуют одну title-row:
+нижняя граница action rail совпадает с нижней границей H1. Зарезервированная
+backlink-row остаётся выше только в content-column, а metric/meta находятся
+ниже title-row; эти строки не участвуют в вертикальном выравнивании actions.
+При реальной нехватке ширины intrinsic action rail переносится в отдельный ряд.
+Этот UI-only source contract supersede-ит только deployed `68 px`/sticky
+геометрию, условную backlink-row и центрирование actions по всей высоте header;
+API, schema, migrations и Lesson hierarchy не меняются.
 
 **Current source / next production — instant primary-section chrome:**
 protected Account shell заранее выполняет full RSC prefetch пяти главных
@@ -1236,10 +1242,13 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   зарезервированную backlink-row с optional интерактивным backlink и правую
   action-секцию для `/courses`, `/students`, `/schedule`, Course и Lesson.
   Высота контейнера следует фактическому title/metric/meta/actions и padding без
-  искусственного minimum; actions вертикально центрированы в собственной
-  content-row. Заголовочная колонка занимает всё оставшееся место, а actions
-  имеют intrinsic ширину по содержимому и не растягивают кнопки даже при узком
-  viewport. Асинхронная метрика занимает будущую строку до ответа,
+  искусственного minimum. В current source H1 и правая action-секция находятся
+  в одной title-row, причём их нижние границы совпадают. Зарезервированная
+  backlink-row выше и metric/meta ниже остаются в content-column и не влияют на
+  вертикальную позицию actions. Заголовочная колонка занимает всё оставшееся
+  место, а actions имеют intrinsic ширину по содержимому, не растягивают кнопки
+  даже при узком viewport и переносятся в отдельный ряд только при реальной
+  нехватке ширины. Асинхронная метрика занимает будущую строку до ответа,
   но весь header становится видимым только вместе с её финальным значением или
   error-state. В current production сам
   H1 заполняет эту колонку без прежнего лимита `24ch`; desktop column-gap равен

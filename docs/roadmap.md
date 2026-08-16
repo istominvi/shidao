@@ -23,7 +23,7 @@
 8. Нельзя расширять scope за счёт Auth, SMTP, JWT/API keys, базового Storage или
    recovery V1 без отдельного решения.
 
-## Current source / next production — TopNav и backlink rhythm
+## Current source / next production — TopNav, backlink rhythm и title-row
 
 - Product TopNav возвращён в normal document flow: он не sticky/fixed и при
   scroll уходит вверх вместе с content.
@@ -37,16 +37,23 @@
 - `AppPageHeader` всегда сохраняет backlink-row и одинаковую высоту начала
   heading. Настоящий link/button/text появляется только при переданном `back`;
   top-level page не получает фиктивный интерактивный элемент.
+- H1 и правая action-секция образуют одну title-row: нижняя граница action rail
+  совпадает с нижней границей H1. Зарезервированная backlink-row выше и
+  metric/meta ниже остаются только в content-column и не сдвигают actions. При
+  реальной нехватке ширины intrinsic action rail переносится в отдельный ряд.
 - Slice UI-only: API, schema, migrations и Lesson hierarchy не меняются.
   Следующий release step — UI gates, обычный Coolify rollout и authenticated
   desktop/mobile scroll/hover postflight с проверкой `64 px` shell, `40 px`
-  inner row, равных `12 px` отступов и общей вертикальной centerline.
+  inner row, равных `12 px` отступов, общей вертикальной centerline TopNav и
+  совпадения нижних границ H1/action rail в `AppPageHeader` с пустой и
+  заполненной backlink-row.
 
 ## Current source / next production — mobile responsive polish
 
-- `AppPageHeader` теперь оставляет короткий content и intrinsic action в одной
-  строке на узком экране, пока они действительно помещаются, и переносит action
-  только при нехватке ширины.
+- `AppPageHeader` теперь оставляет короткий H1 и intrinsic action в одной
+  title-row на узком экране, пока они действительно помещаются, сохраняет их
+  общее block-end выравнивание и переносит action отдельным intrinsic-width
+  рядом только при нехватке ширины.
 - `WorkspaceTabs` сохраняет горизонтальный swipe, скрывает системный scrollbar
   и показывает только доступные fade-chevron направления; кнопки прокручивают
   ленту, не выбирая вкладку, а keyboard/ARIA/indicator остаются прежними.
@@ -107,7 +114,10 @@
   интерактивным backlink и правой action-секцией. Метрика не заменяется
   пояснением назначения страницы; если честной метрики нет, supporting line
   отсутствует. Высота Header определяется содержимым и padding без
-  искусственного minimum; actions центрируются относительно content-row.
+  искусственного minimum. В current source H1 и action rail образуют общую
+  title-row с совпадающими нижними границами; зарезервированная backlink-row
+  выше и metric/meta ниже не участвуют в выравнивании actions. При реальной
+  нехватке ширины intrinsic action rail переносится в отдельный ряд.
   Асинхронные метрики заранее резервируют одну строку `1lh`; title, meta,
   actions и известные вкладки становятся видимыми сразу и не ждут ни metric,
   ни page-content. Поздняя metric проявляется только внутри зарезервированной
