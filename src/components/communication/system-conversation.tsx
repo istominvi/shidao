@@ -8,6 +8,7 @@ import {
 } from "@/components/communication/communication-client";
 import { fullCommunicationTime } from "@/components/communication/communication-presenters";
 import { usePageVisible } from "@/components/communication/use-page-visible";
+import { Button } from "@/components/ui/button";
 import type { SystemNotification } from "@/modules/communication/domain";
 
 function errorMessage(caught: unknown) {
@@ -102,12 +103,12 @@ export function SystemConversation({
         ) : error && items.length === 0 ? (
           <div className="communication-error" role="alert">
             <span>{error}</span>
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={() => setReloadKey((key) => key + 1)}
             >
               Повторить
-            </button>
+            </Button>
           </div>
         ) : items.length === 0 ? (
           <div className="communication-empty" role="status">

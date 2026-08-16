@@ -892,6 +892,11 @@ Course только открывают этот же центр на нужно�
   defaults server-side. Первый inbox и остальные первые страницы не требуют
   явных `undefined`/`null` keys от browser; internal default Zod diagnostics не
   показываются пользователю;
+- global launcher использует black/white message/X state и красный aggregate
+  iOS-style unread badge. Desktop остаётся одной узкой panel: inbox, new dialog
+  и conversation заменяют друг друга без expand/two-column mode. Main header
+  без subtitle, initial open не фокусирует search, а Retry использует общий
+  canonical product button;
 - forward schema/migrations, RPC/application/API и responsive UI current.
   Production DB CC1 + A2, snapshot и postflight current; dependent web/API
   initial rollout развёрнут exact source

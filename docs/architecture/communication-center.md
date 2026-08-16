@@ -149,9 +149,15 @@ assistant conversations. Он задаёт сортировку, preview и об
   human/AI history и system feed. Default internal Zod diagnostics не
   показываются пользователю.
 
-Desktop использует non-modal panel с возможностью расширения, mobile —
-полноэкранную поверхность. Контекстные действия «Написать» и «Чат курса»
-открывают тот же глобальный центр в нужном диалоге и не создают второй UI-flow.
+Desktop использует одну узкую non-modal panel без expand/two-column mode: inbox,
+выбор адресата и открытый диалог сменяют друг друга в одной поверхности. Mobile
+использует полноэкранный вариант того же flow. Launcher имеет чёрный surface,
+белую Message/X icon и красный aggregate iOS-style unread badge, пересекающий
+его верхнюю правую границу. Main header не содержит supporting subtitle;
+initial open фокусирует panel, а не search input. Контекстные действия
+«Написать» и «Чат курса» открывают тот же глобальный центр в нужном диалоге и
+не создают второй UI-flow. Central retry actions используют общий canonical
+product `Button` contract.
 
 ## Authorization and persistence boundary
 

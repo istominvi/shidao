@@ -81,7 +81,7 @@ test("global assistant routes keep active Account, explicit apply and user-JWT b
   assert.match(serverContext, /resolution\.status !== "account"/);
 });
 
-test("unified messages uses the compact opal launcher contract", async () => {
+test("unified messages uses the compact black launcher and iOS-style badge contract", async () => {
   const [center, css] = await Promise.all([
     source("src/components/communication/communication-center.tsx"),
     source("src/app/styles/communication-center.css"),
@@ -95,6 +95,9 @@ test("unified messages uses the compact opal launcher contract", async () => {
   const panelRule = css.match(
     /\.communication-center-panel\s*\{([\s\S]*?)\n\}/,
   )?.[1];
+  const badgeRule = css.match(
+    /\.communication-center-badge\s*\{([\s\S]*?)\n\}/,
+  )?.[1];
   const reducedMotion = css.slice(
     css.indexOf("@media (prefers-reduced-motion: reduce)"),
   );
@@ -102,6 +105,7 @@ test("unified messages uses the compact opal launcher contract", async () => {
   assert.ok(launcherWrapRule);
   assert.ok(launcherRule);
   assert.ok(panelRule);
+  assert.ok(badgeRule);
   assert.match(center, /<MessageCircle aria-hidden="true" \/>/);
   assert.match(center, /communication-center-badge/);
   assert.doesNotMatch(center, /<feTurbulence|<animate|repeatCount=/);
@@ -122,11 +126,16 @@ test("unified messages uses the compact opal launcher contract", async () => {
     launcherRule,
     /border-radius: var\(--product-element-radius, 0\.75rem\);/,
   );
-  assert.match(
-    launcherRule,
-    /background: linear-gradient\([\s\S]*?#91f5f0[\s\S]*?#adf9df[\s\S]*?#f7ffff[\s\S]*?#ddb0ea[\s\S]*?#f0bff5/,
-  );
-  assert.doesNotMatch(launcherRule, /background:\s*#000/);
+  assert.match(launcherRule, /background: #141414;/);
+  assert.match(launcherRule, /color: #fff;/);
+  assert.doesNotMatch(launcherRule, /linear-gradient/);
+  assert.doesNotMatch(css, /\.communication-center-launcher::after/);
+  assert.match(badgeRule, /top: -0\.38rem;/);
+  assert.match(badgeRule, /right: -0\.42rem;/);
+  assert.match(badgeRule, /border: 2px solid #fff;/);
+  assert.match(badgeRule, /background: #ff3b30;/);
+  assert.match(badgeRule, /color: #fff;/);
+  assert.match(badgeRule, /pointer-events: none;/);
   assert.match(
     panelRule,
     /right: calc\(0\.75rem \+ env\(safe-area-inset-right, 0px\)\);/,

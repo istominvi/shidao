@@ -609,6 +609,23 @@ let e2eCourseAudienceReplacement: {
 } | null = null;
 const e2eSupabaseReferers: string[] = [];
 const e2eCommunicationInboxRpcPayloads: Record<string, unknown>[] = [];
+let e2eCommunicationInboxRpcUnavailable = false;
+const E2E_COMMUNICATION_INBOX_PAGE = {
+  items: [
+    {
+      id: "system",
+      kind: "system",
+      pinned: true,
+      title: "ShiDao",
+      preview: "Новое системное сообщение",
+      lastActivityAt: "2026-08-16T08:00:00.000Z",
+      unreadCount: 7,
+      lastNotificationId: 7,
+    },
+  ],
+  nextCursor: null,
+  totalUnread: 7,
+};
 
 type PlaywrightLocator = {
   boundingBox: () => Promise<{
@@ -1349,11 +1366,14 @@ async function handleMockSupabase(
   if (requestUrl.pathname === "/rest/v1/rpc/list_my_communication_inbox") {
     const body = await readJsonBody(request);
     e2eCommunicationInboxRpcPayloads.push(body);
-    json(response, 200, {
-      items: [],
-      nextCursor: null,
-      totalUnread: 0,
-    });
+    if (e2eCommunicationInboxRpcUnavailable) {
+      json(response, 503, {
+        code: "communication_network_error",
+        message: "Сервис сообщений временно недоступен.",
+      });
+      return;
+    }
+    json(response, 200, E2E_COMMUNICATION_INBOX_PAGE);
     return;
   }
 
@@ -3526,6 +3546,7 @@ test("browser smoke: protected pages expose the unified messages center with key
         borderTopWidth: style.borderTopWidth,
         backgroundColor: style.backgroundColor,
         backgroundImage: style.backgroundImage,
+        color: style.color,
       };
     });
     assert.deepEqual(
@@ -3546,8 +3567,43 @@ test("browser smoke: protected pages expose the unified messages center with key
         borderTopWidth: "0px",
       },
     );
-    assert.notEqual(launcherPresentation.backgroundColor, "rgb(0, 0, 0)");
-    assert.match(launcherPresentation.backgroundImage, /linear-gradient/);
+    assert.equal(launcherPresentation.backgroundColor, "rgb(20, 20, 20)");
+    assert.equal(launcherPresentation.backgroundImage, "none");
+    assert.equal(launcherPresentation.color, "rgb(255, 255, 255)");
+
+    const badge = runtime.page.locator(".communication-center-badge");
+    await badge.waitFor();
+    assert.equal(await badge.textContent(), "7");
+    assert.equal(
+      await badge.getAttribute("aria-label"),
+      "Непрочитанных сообщений: 7",
+    );
+    const launcherBox = await launcher.boundingBox();
+    const badgeBox = await badge.boundingBox();
+    assert.ok(launcherBox);
+    assert.ok(badgeBox);
+    const launcherRight = launcherBox.x + launcherBox.width;
+    assert.ok(badgeBox.x < launcherRight);
+    assert.ok(badgeBox.x + badgeBox.width > launcherRight);
+    assert.ok(badgeBox.y < launcherBox.y);
+    assert.ok(badgeBox.y + badgeBox.height > launcherBox.y);
+    assert.deepEqual(
+      await badge.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return {
+          backgroundColor: style.backgroundColor,
+          color: style.color,
+          borderTopWidth: style.borderTopWidth,
+          pointerEvents: style.pointerEvents,
+        };
+      }),
+      {
+        backgroundColor: "rgb(255, 59, 48)",
+        color: "rgb(255, 255, 255)",
+        borderTopWidth: "2px",
+        pointerEvents: "none",
+      },
+    );
     await launcher.press("Enter");
 
     const panel = runtime.page.getByRole("dialog", {
@@ -3556,12 +3612,58 @@ test("browser smoke: protected pages expose the unified messages center with key
     });
     await panel.waitFor();
     await panel
-      .getByText(
-        "Сообщений пока нет. Начните диалог с ИИ, учеником или курсом.",
-        { exact: true },
-      )
+      .getByText("Новое системное сообщение", { exact: true })
       .waitFor();
     assert.equal(await panel.getByRole("alert").count(), 0);
+    assert.equal(
+      await panel
+        .getByText("Все диалоги в одном месте", { exact: true })
+        .count(),
+      0,
+    );
+    assert.equal(
+      await panel.getByText("7 непрочитанных", { exact: true }).count(),
+      0,
+    );
+    assert.equal(
+      await panel
+        .getByRole("button", {
+          name: /Развернуть сообщения|Свернуть сообщения/,
+        })
+        .count(),
+      0,
+    );
+    const headerPresentation = await panel
+      .locator(".communication-center-header")
+      .evaluate((element) => {
+        const header = element as HTMLElement;
+        const title = header.querySelector("h2");
+        const plus = header.querySelector<HTMLElement>(
+          '[aria-label="Новый диалог"]',
+        );
+        const close = header.querySelector<HTMLElement>(
+          '[aria-label="Закрыть сообщения"]',
+        );
+        if (!title || !plus || !close) {
+          throw new Error("Communication header contract is incomplete");
+        }
+        const headerRect = header.getBoundingClientRect();
+        const titleRect = title.getBoundingClientRect();
+        return {
+          height: Math.round(headerRect.height),
+          titleCenterDelta: Math.round(
+            titleRect.top +
+              titleRect.height / 2 -
+              (headerRect.top + headerRect.height / 2),
+          ),
+          plusColor: getComputedStyle(plus).color,
+          closeColor: getComputedStyle(close).color,
+        };
+      });
+    assert.equal(headerPresentation.height, 64);
+    assert.ok(Math.abs(headerPresentation.titleCenterDelta) <= 1);
+    assert.equal(headerPresentation.plusColor, "rgb(20, 20, 20)");
+    assert.equal(headerPresentation.closeColor, "rgb(20, 20, 20)");
     await panel.evaluate(async (element) => {
       await Promise.all(
         element.getAnimations().map((animation) => animation.finished),
@@ -3583,6 +3685,12 @@ test("browser smoke: protected pages expose the unified messages center with key
       }),
       { width: 375, height: 812, top: 0, left: 0 },
     );
+    assert.equal(
+      await runtime.page.evaluate(
+        () => document.activeElement?.id === "communication-center-panel",
+      ),
+      true,
+    );
     await runtime.page.setViewportSize({ width: 900, height: 812 });
     const search = panel.getByLabel("Найти диалог");
     await search.waitFor();
@@ -3592,7 +3700,60 @@ test("browser smoke: protected pages expose the unified messages center with key
     );
     assert.equal(
       await runtime.page.evaluate(
-        () => document.activeElement?.getAttribute("type") === "search",
+        () => document.activeElement?.id === "communication-center-panel",
+      ),
+      true,
+    );
+    assert.deepEqual(
+      await search.evaluate((element) => {
+        const field = element.closest(".communication-search");
+        if (!field) throw new Error("Communication search shell is missing");
+        const style = getComputedStyle(field);
+        return {
+          active: document.activeElement === element,
+          outlineStyle: style.outlineStyle,
+        };
+      }),
+      { active: false, outlineStyle: "none" },
+    );
+    const desktopPanelWidth = await panel.evaluate((element) =>
+      Math.round(element.getBoundingClientRect().width),
+    );
+    assert.ok(desktopPanelWidth >= 400 && desktopPanelWidth <= 416);
+    assert.equal(
+      await runtime.page
+        .locator(".communication-center-launcher")
+        .evaluate((element) => getComputedStyle(element).color),
+      "rgb(255, 255, 255)",
+    );
+
+    const newDialog = panel.getByRole("button", {
+      name: "Новый диалог",
+      exact: true,
+    });
+    await newDialog.press("Enter");
+    await panel.getByText("Новый диалог", { exact: true }).waitFor();
+    await runtime.page.evaluate(
+      () =>
+        new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+    );
+    assert.equal(
+      await runtime.page.evaluate(
+        () => document.activeElement?.id === "communication-center-panel",
+      ),
+      true,
+    );
+    await panel
+      .getByRole("button", { name: "Назад к сообщениям", exact: true })
+      .press("Enter");
+    await panel.getByLabel("Найти диалог").waitFor();
+    await runtime.page.evaluate(
+      () =>
+        new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+    );
+    assert.equal(
+      await runtime.page.evaluate(
+        () => document.activeElement?.id === "communication-center-panel",
       ),
       true,
     );
@@ -3624,6 +3785,62 @@ test("browser smoke: protected pages expose the unified messages center with key
     );
   } finally {
     await runtime.close();
+  }
+});
+
+test("browser smoke: messages retry uses the canonical raised product button", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  e2eCommunicationInboxRpcUnavailable = true;
+  let runtime: Awaited<ReturnType<typeof openPage>> | null = null;
+
+  try {
+    runtime = await openPage({ cookie: authenticatedCookieValue() });
+    await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
+    await runtime.page
+      .getByRole("button", { name: "Открыть сообщения", exact: true })
+      .click();
+    const panel = runtime.page.getByRole("dialog", {
+      name: "Сообщения",
+      exact: true,
+    });
+    const alert = panel.getByRole("alert");
+    await alert.waitFor();
+    const retry = alert.getByRole("button", {
+      name: "Повторить",
+      exact: true,
+    });
+    await retry.waitFor();
+    assert.match((await retry.getAttribute("class")) ?? "", /\bproduct-btn\b/);
+    assert.match(
+      (await retry.getAttribute("class")) ?? "",
+      /\bproduct-btn-secondary\b/,
+    );
+    assert.deepEqual(
+      await retry.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return {
+          height: style.height,
+          backgroundColor: style.backgroundColor,
+          borderTopWidth: style.borderTopWidth,
+          boxShadow: style.boxShadow,
+          fontWeight: style.fontWeight,
+        };
+      }),
+      {
+        height: "40px",
+        backgroundColor: "rgb(255, 255, 255)",
+        borderTopWidth: "1px",
+        boxShadow: E2E_RAISED_CONTROL_SHADOW,
+        fontWeight: "600",
+      },
+    );
+  } finally {
+    e2eCommunicationInboxRpcUnavailable = false;
+    await runtime?.close();
   }
 });
 

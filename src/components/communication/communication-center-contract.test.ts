@@ -55,6 +55,44 @@ test("one communication center owns messages, system events and persisted AI dia
   );
 });
 
+test("communication center keeps one narrow flow, quiet initial focus and canonical retry controls", async () => {
+  const [center, provider, inbox, newConversation, system, css] =
+    await Promise.all([
+      source("src/components/communication/communication-center.tsx"),
+      source("src/components/communication/communication-center-provider.tsx"),
+      source("src/components/communication/communication-inbox.tsx"),
+      source("src/components/communication/new-conversation-view.tsx"),
+      source("src/components/communication/system-conversation.tsx"),
+      source("src/app/styles/communication-center.css"),
+    ]);
+
+  assert.doesNotMatch(center, /\bExpand\b|Minimize2|twoColumn|toggleExpanded/);
+  assert.doesNotMatch(provider, /\bexpanded\b|toggleExpanded/);
+  assert.doesNotMatch(css, /is-expanded|communication-center-expand-button/);
+  assert.match(
+    center,
+    /\{view\.type === "inbox" \? inboxColumn : detailColumn\}/,
+  );
+  assert.match(center, /panel\.focus\(\{ preventScroll: true \}\)/);
+  assert.doesNotMatch(center, /Все диалоги в одном месте/);
+  assert.doesNotMatch(inbox, /data-communication-initial-focus/);
+  assert.doesNotMatch(newConversation, /data-communication-initial-focus/);
+
+  for (const retrySource of [center, inbox, newConversation, system]) {
+    assert.match(
+      retrySource,
+      /<Button[\s\S]*?variant="secondary"[\s\S]*?>[\s\S]*?Повторить[\s\S]*?<\/Button>/,
+    );
+  }
+  assert.doesNotMatch(css, /\.communication-error button/);
+  assert.match(css, /\.communication-center-header,[\s\S]*?min-height: 4rem;/);
+  assert.match(
+    css,
+    /\.communication-center-icon-button\s*\{[\s\S]*?color: #141414;/,
+  );
+  assert.match(css, /\.communication-center-panel:focus\s*\{\s*outline: none;/);
+});
+
 test("communication client uses only the canonical V2 API and atomic persisted AI exchange", async () => {
   const client = await source(
     "src/components/communication/communication-client.ts",

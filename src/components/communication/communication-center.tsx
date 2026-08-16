@@ -3,10 +3,8 @@
 import {
   Archive,
   ArrowLeft,
-  Expand,
   LoaderCircle,
   MessageCircle,
-  Minimize2,
   Pencil,
   Plus,
   X,
@@ -122,7 +120,6 @@ function ConversationHeader({
   view,
   thread,
   assistant,
-  twoColumn,
   busy,
   onBack,
   onClose,
@@ -132,7 +129,6 @@ function ConversationHeader({
   view: CommunicationCenterView;
   thread: HumanThreadSummary | null;
   assistant: AssistantConversationSummary | null;
-  twoColumn: boolean;
   busy: boolean;
   onBack: () => void;
   onClose: () => void;
@@ -184,16 +180,14 @@ function ConversationHeader({
 
   return (
     <header className="communication-conversation-header">
-      {!twoColumn ? (
-        <button
-          type="button"
-          className="communication-center-icon-button communication-center-back"
-          aria-label="Назад к сообщениям"
-          onClick={onBack}
-        >
-          <ArrowLeft aria-hidden="true" />
-        </button>
-      ) : null}
+      <button
+        type="button"
+        className="communication-center-icon-button communication-center-back"
+        aria-label="Назад к сообщениям"
+        onClick={onBack}
+      >
+        <ArrowLeft aria-hidden="true" />
+      </button>
       {view.type !== "new" ? (
         <CommunicationAvatar kind={kind} title={title} />
       ) : (
@@ -227,19 +221,10 @@ function ConversationHeader({
 }
 
 export function CommunicationCenter() {
-  const {
-    open,
-    expanded,
-    view,
-    openInbox,
-    close,
-    setView,
-    toggleExpanded,
-    setLauncherElement,
-  } = useCommunicationCenter();
+  const { open, view, openInbox, close, setView, setLauncherElement } =
+    useCommunicationCenter();
   const { page } = useSystemAssistant();
   const mobile = useMobileViewport();
-  const twoColumn = expanded && !mobile;
   const [mounted, setMounted] = useState(false);
   const [items, setItems] = useState<InboxItem[]>([]);
   const [nextCursor, setNextCursor] =
@@ -423,13 +408,7 @@ export function CommunicationCenter() {
     const frame = window.requestAnimationFrame(() => {
       const panel = panelRef.current;
       if (!panel) return;
-      const preferred = panel.querySelector<HTMLElement>(
-        "[data-communication-initial-focus]",
-      );
-      const fallback = panel.querySelector<HTMLElement>(
-        "textarea:not([disabled]), input:not([disabled]), button:not([disabled])",
-      );
-      (preferred ?? fallback ?? panel).focus();
+      panel.focus({ preventScroll: true });
     });
     return () => window.cancelAnimationFrame(frame);
   }, [open, view]);
@@ -713,12 +692,12 @@ export function CommunicationCenter() {
       return targetError ? (
         <div className="communication-error" role="alert">
           <span>{targetError}</span>
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => setTargetRetry((key) => key + 1)}
           >
             Повторить
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="communication-loading" role="status">
@@ -737,11 +716,6 @@ export function CommunicationCenter() {
       <header className="communication-center-header">
         <div className="communication-center-heading">
           <h2 id={`${PANEL_ID}-title`}>Сообщения</h2>
-          <p>
-            {totalUnread > 0
-              ? `${totalUnread.toLocaleString("ru-RU")} непрочитанных`
-              : "Все диалоги в одном месте"}
-          </p>
         </div>
         <button
           type="button"
@@ -756,27 +730,12 @@ export function CommunicationCenter() {
         </button>
         <button
           type="button"
-          className="communication-center-icon-button communication-center-expand-button"
-          aria-label={twoColumn ? "Свернуть сообщения" : "Развернуть сообщения"}
-          aria-pressed={twoColumn}
-          onClick={toggleExpanded}
+          className="communication-center-icon-button"
+          aria-label="Закрыть сообщения"
+          onClick={close}
         >
-          {twoColumn ? (
-            <Minimize2 aria-hidden="true" />
-          ) : (
-            <Expand aria-hidden="true" />
-          )}
+          <X aria-hidden="true" />
         </button>
-        {!twoColumn ? (
-          <button
-            type="button"
-            className="communication-center-icon-button"
-            aria-label="Закрыть сообщения"
-            onClick={close}
-          >
-            <X aria-hidden="true" />
-          </button>
-        ) : null}
       </header>
       <CommunicationInbox
         items={items}
@@ -797,44 +756,12 @@ export function CommunicationCenter() {
   );
 
   const detailColumn =
-    view.type === "inbox" ? (
-      <section className="communication-center-view">
-        <header className="communication-conversation-header">
-          <div className="communication-conversation-heading">
-            <strong>Сообщения</strong>
-            <span>Выберите диалог</span>
-          </div>
-          <button
-            type="button"
-            className="communication-center-icon-button"
-            aria-label="Закрыть сообщения"
-            onClick={close}
-          >
-            <X aria-hidden="true" />
-          </button>
-        </header>
-        <div className="communication-center-placeholder">
-          <MessageCircle aria-hidden="true" />
-          <strong>Выберите диалог</strong>
-          <span>Или начните новый — с ИИ, учеником или курсом.</span>
-          <button
-            type="button"
-            onClick={() => {
-              setTargetError(null);
-              setView({ type: "new" });
-            }}
-          >
-            Новый диалог
-          </button>
-        </div>
-      </section>
-    ) : (
+    view.type === "inbox" ? null : (
       <section className="communication-center-view">
         <ConversationHeader
           view={view}
           thread={selectedThread}
           assistant={selectedAssistant}
-          twoColumn={twoColumn}
           busy={dialogBusy || targetBusy}
           onBack={openInbox}
           onClose={close}
@@ -852,18 +779,13 @@ export function CommunicationCenter() {
           ref={panelRef}
           id={PANEL_ID}
           tabIndex={-1}
-          className={`communication-center-panel ${twoColumn ? "is-expanded" : ""}`}
+          className="communication-center-panel"
           role="dialog"
           aria-modal={mobile}
           aria-label="Сообщения"
         >
           <div className="communication-center-shell">
-            {twoColumn || view.type === "inbox" ? inboxColumn : null}
-            {twoColumn
-              ? detailColumn
-              : view.type !== "inbox"
-                ? detailColumn
-                : null}
+            {view.type === "inbox" ? inboxColumn : detailColumn}
           </div>
         </aside>
       ) : null}

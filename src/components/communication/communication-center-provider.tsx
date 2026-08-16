@@ -25,7 +25,6 @@ export type CommunicationCenterView =
 
 type CommunicationCenterContextValue = {
   open: boolean;
-  expanded: boolean;
   view: CommunicationCenterView;
   openInbox: () => void;
   openNewConversation: () => void;
@@ -36,7 +35,6 @@ type CommunicationCenterContextValue = {
   openCourse: (courseId: string, label?: string) => void;
   close: () => void;
   setView: (view: CommunicationCenterView) => void;
-  toggleExpanded: () => void;
   setLauncherElement: (element: HTMLButtonElement | null) => void;
   restoreFocus: () => void;
 };
@@ -56,7 +54,6 @@ export function CommunicationCenterProvider({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [view, setView] = useState<CommunicationCenterView>({ type: "inbox" });
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const launcherRef = useRef<HTMLButtonElement | null>(null);
@@ -87,7 +84,6 @@ export function CommunicationCenterProvider({
   const value = useMemo<CommunicationCenterContextValue>(
     () => ({
       open,
-      expanded,
       view,
       openInbox: () => openView({ type: "inbox" }),
       openNewConversation: () => openView({ type: "new" }),
@@ -101,13 +97,12 @@ export function CommunicationCenterProvider({
         openView({ type: "course-target", courseId, label }),
       close,
       setView,
-      toggleExpanded: () => setExpanded((current) => !current),
       setLauncherElement: (element) => {
         launcherRef.current = element;
       },
       restoreFocus,
     }),
-    [close, expanded, open, openView, restoreFocus, view],
+    [close, open, openView, restoreFocus, view],
   );
 
   return (

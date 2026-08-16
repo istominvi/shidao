@@ -21,48 +21,23 @@
   overflow: hidden;
   border: 0;
   border-radius: var(--product-element-radius, 0.75rem);
-  background: linear-gradient(
-    112deg,
-    #91f5f0 0%,
-    #adf9df 28%,
-    #f7ffff 51%,
-    #d2d9e6 68%,
-    #ddb0ea 84%,
-    #f0bff5 100%
-  );
-  color: #141414;
-  box-shadow:
-    0 10px 24px rgba(52, 45, 72, 0.2),
-    0 2px 6px rgba(52, 45, 72, 0.12);
+  background: #141414;
+  color: #fff;
+  box-shadow: var(--product-raised-control-shadow);
   cursor: pointer;
-  isolation: isolate;
   transition:
     transform var(--product-raised-control-transition, 160ms ease),
     box-shadow var(--product-raised-control-transition, 160ms ease);
   animation: communication-center-launcher-in 180ms ease-out;
 }
 
-.communication-center-launcher::after {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(
-    148deg,
-    rgba(255, 255, 255, 0.4),
-    transparent 44%,
-    rgba(255, 255, 255, 0.18)
-  );
-  content: "";
-}
-
 .communication-center-launcher:hover {
-  box-shadow:
-    0 14px 30px rgba(52, 45, 72, 0.24),
-    0 3px 8px rgba(52, 45, 72, 0.14);
+  box-shadow: var(--product-raised-control-shadow-hover);
   transform: translateY(-1px) scale(1.03);
 }
 
 .communication-center-launcher:active {
+  box-shadow: var(--product-raised-control-shadow-pressed);
   transform: scale(0.97);
 }
 
@@ -82,12 +57,13 @@
   place-items: center;
   border: 2px solid #fff;
   border-radius: 999px;
-  background: #141414;
+  background: #ff3b30;
   padding-inline: 0.2rem;
   color: #fff;
   font-size: 0.58rem;
   font-weight: 800;
   line-height: 1;
+  pointer-events: none;
 }
 
 .communication-center-panel {
@@ -120,14 +96,8 @@
   animation: communication-center-panel-in 180ms ease-out;
 }
 
-.communication-center-panel.is-expanded {
-  width: min(
-    54rem,
-    calc(
-      100vw - 1.5rem - env(safe-area-inset-left, 0px) -
-        env(safe-area-inset-right, 0px)
-    )
-  );
+.communication-center-panel:focus {
+  outline: none;
 }
 
 .communication-center-shell {
@@ -137,63 +107,12 @@
   grid-template-rows: minmax(0, 1fr);
 }
 
-.communication-center-panel.is-expanded .communication-center-shell {
-  grid-template-columns: 20rem minmax(0, 1fr);
-}
-
 .communication-center-column,
 .communication-center-view {
   display: grid;
   min-width: 0;
   min-height: 0;
   grid-template-rows: auto minmax(0, 1fr);
-}
-
-.communication-center-placeholder {
-  display: grid;
-  min-height: 0;
-  align-content: center;
-  justify-items: center;
-  gap: 0.55rem;
-  padding: 2rem;
-  color: #6c6f78;
-  text-align: center;
-}
-
-.communication-center-placeholder > svg {
-  width: 2rem;
-  height: 2rem;
-  margin-bottom: 0.25rem;
-  color: #a0a2aa;
-}
-
-.communication-center-placeholder strong {
-  color: #30323a;
-  font-size: 0.9rem;
-}
-
-.communication-center-placeholder span {
-  max-width: 18rem;
-  font-size: 0.76rem;
-  line-height: 1.45;
-}
-
-.communication-center-placeholder button {
-  min-height: 2.5rem;
-  margin-top: 0.25rem;
-  border: 0;
-  border-radius: var(--product-element-radius, 0.75rem);
-  background: #141414;
-  padding: 0.55rem 0.8rem;
-  color: #fff;
-  font: inherit;
-  font-size: 0.75rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.communication-center-panel.is-expanded .communication-center-column {
-  border-right: 1px solid #ececef;
 }
 
 .communication-center-header,
@@ -224,7 +143,6 @@
   white-space: nowrap;
 }
 
-.communication-center-heading p,
 .communication-conversation-heading span {
   display: block;
   overflow: hidden;
@@ -245,7 +163,7 @@
   border: 0;
   border-radius: var(--product-element-radius, 0.75rem);
   background: transparent;
-  color: #3f424a;
+  color: #141414;
   cursor: pointer;
 }
 
@@ -261,14 +179,6 @@
 .communication-center-icon-button svg {
   width: 1.1rem;
   height: 1.1rem;
-}
-
-.communication-center-back {
-  display: none;
-}
-
-.communication-center-panel:not(.is-expanded) .communication-center-back {
-  display: inline-grid;
 }
 
 .communication-inbox-body,
@@ -474,7 +384,6 @@
 }
 
 .communication-empty button,
-.communication-error button,
 .communication-load-older {
   min-height: 2.5rem;
   border: 1px solid rgba(20, 20, 20, 0.14);
@@ -753,9 +662,7 @@
 .communication-inbox-item:focus-visible,
 .communication-target-item:focus-visible,
 .communication-empty button:focus-visible,
-.communication-error button:focus-visible,
 .communication-load-older:focus-visible,
-.communication-center-placeholder button:focus-visible,
 .communication-assistant-empty button:focus-visible,
 .communication-composer button:focus-visible {
   outline: 3px solid #141414;
@@ -789,8 +696,7 @@
     visibility: hidden;
   }
 
-  .communication-center-panel,
-  .communication-center-panel.is-expanded {
+  .communication-center-panel {
     inset: 0;
     z-index: 4;
     width: 100vw;
@@ -803,22 +709,6 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
     padding-left: env(safe-area-inset-left, 0px);
     animation-name: communication-center-panel-mobile-in;
-  }
-
-  .communication-center-panel.is-expanded .communication-center-shell {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .communication-center-panel.is-expanded .communication-center-column {
-    border-right: 0;
-  }
-
-  .communication-center-panel.is-expanded .communication-center-back {
-    display: inline-grid;
-  }
-
-  .communication-center-expand-button {
-    display: none;
   }
 
   .communication-message {

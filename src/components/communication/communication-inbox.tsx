@@ -2,6 +2,7 @@
 
 import { LoaderCircle, Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   CommunicationAvatar,
   compactCommunicationTime,
@@ -71,7 +72,6 @@ export function CommunicationInbox({
           <Search aria-hidden="true" />
           <span className="sr-only">Найти диалог</span>
           <input
-            data-communication-initial-focus
             type="search"
             value={query}
             placeholder="Найти диалог"
@@ -88,9 +88,9 @@ export function CommunicationInbox({
       ) : error && items.length === 0 ? (
         <div className="communication-error" role="alert">
           <span>{error}</span>
-          <button type="button" onClick={onRetry}>
+          <Button variant="secondary" onClick={onRetry}>
             Повторить
-          </button>
+          </Button>
         </div>
       ) : visibleItems.length === 0 ? (
         <div className="communication-empty" role="status">

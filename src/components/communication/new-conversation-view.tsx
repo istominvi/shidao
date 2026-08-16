@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { loadMessageTargets } from "@/components/communication/communication-client";
+import { Button } from "@/components/ui/button";
 import type {
   CourseMessageTarget,
   DirectMessageTarget,
@@ -83,7 +84,6 @@ export function NewConversationView({
           <Search aria-hidden="true" />
           <span className="sr-only">Найти ученика или курс</span>
           <input
-            data-communication-initial-focus
             type="search"
             value={query}
             placeholder="Найти ученика или курс"
@@ -129,9 +129,12 @@ export function NewConversationView({
       ) : error ? (
         <div className="communication-error" role="alert">
           <span>{error}</span>
-          <button type="button" onClick={() => setReloadKey((key) => key + 1)}>
+          <Button
+            variant="secondary"
+            onClick={() => setReloadKey((key) => key + 1)}
+          >
             Повторить
-          </button>
+          </Button>
         </div>
       ) : (
         <>

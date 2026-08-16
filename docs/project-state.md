@@ -20,8 +20,9 @@ typecheck, lint, repository-wide format check и production build)
 Course chat, read-only лента **ShiDao · Система** и несколько persisted
 диалогов **ShiDao ИИ** с global/Course/Lesson context. Contextual actions
 «Написать» в Students и «Чат курса» открывают тот же центр сразу на нужном
-диалоге; отдельного параллельного messaging flow нет. Desktop panel можно
-расширить до двух колонок, а mobile использует полноэкранную поверхность.
+диалоге; отдельного параллельного messaging flow нет. Desktop panel использует
+один узкий режим: inbox и выбранный диалог сменяют друг друга внутри
+той же поверхности. Mobile использует полноэкранную поверхность.
 
 Direct target задаётся только через `LearnerProfile` и требует active accepted
 teacher/learner relation с linked Account; archived/pending relation запрещает
@@ -1731,6 +1732,12 @@ application service/contracts внутри authenticated web request.
   отдельный System Assistant launcher. Общая кнопка «Сообщения» с unread badge
   открывает один inbox; direct, Course, system и assistant items остаются
   различимыми по type/provenance, а ShiDao system feed не имеет composer.
+- Launcher — сплошной чёрный квадрат с белой Message/X icon; aggregate unread
+  от system, AI и human sources показывается красным iOS-style badge на его
+  верхнем правом углу. Desktop имеет только одну узкую panel без expand-mode:
+  inbox, выбор адресата и диалог сменяют друг друга. Main header не содержит
+  supporting subtitle, а initial open фокусирует dialog surface, не search.
+  Retry в центральных error states использует общий `Button` contract.
 - Direct conversation открывается из Students по `learnerProfileId`, только
   если у адресата есть linked Account и active accepted teacher/learner
   relation. После открытия browser использует opaque `threadId`; Account/Auth
