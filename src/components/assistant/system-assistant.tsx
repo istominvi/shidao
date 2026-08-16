@@ -897,14 +897,9 @@ export function SystemAssistant() {
         aria-controls={PANEL_ID}
         onClick={() => (open ? close() : setOpen(true))}
       >
-        {open ? (
-          <X className="h-5 w-5" aria-hidden="true" />
-        ) : (
-          <>
-            <Sparkles className="h-5 w-5" aria-hidden="true" />
-            <strong>ИИ</strong>
-          </>
-        )}
+        <span className="system-assistant-launcher-icon" aria-hidden="true">
+          {open ? <X /> : <Sparkles />}
+        </span>
       </button>
     </div>,
     document.body,

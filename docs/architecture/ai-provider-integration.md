@@ -3,7 +3,7 @@
 **Статус:** canonical contract для deployed Course AI и deployed signed
 conversational System Assistant
 
-**Актуально на:** 12 августа 2026 года
+**Актуально на:** 16 августа 2026 года
 
 **Deployment state:** AI application slice развёрнут на `v2.shidao.ru` в release
 `0276aed`; server runtime получает `ROUTERAI_API_KEY` из production secret
@@ -242,6 +242,16 @@ focus return, mobile safe area и reduced motion. Диалог хранится 
 state protected layout: закрытие panel его не удаляет, явный «Новый диалог» или
 reload сбрасывает; PostgreSQL, localStorage и durable browser persistence не
 используются.
+
+**Current source / next production presentation:** launcher остаётся одним
+fixed control, но имеет exact geometry `40 × 40 px`, левый и нижний inset
+`12 px` плюс соответствующий safe area, общий `--product-element-radius` и
+black `#000` base surface без border. Видимый `Sparkles` glyph icon-only;
+доступное имя остаётся на button. Несколько bounded holographic color fields и
+редкий glint анимируются только внутри `overflow: hidden`, а
+`prefers-reduced-motion` оставляет их статичными. Panel выровнен по тому же
+левому inset и расположен на `12 px` выше launcher. Это UI-only изменение:
+page context, dialog state, routes, Apply boundary и schema не меняются.
 
 ### Allowlisted page context
 

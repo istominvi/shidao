@@ -76,12 +76,38 @@ test("global assistant routes keep active Account, explicit apply and user-JWT b
   assert.match(serverContext, /resolution\.status !== "account"/);
 });
 
-test("floating panel follows mobile safe-area and reduced-motion contracts", async () => {
-  const css = await source("src/app/styles/system-assistant.css");
+test("floating assistant uses the compact black holographic launcher contract", async () => {
+  const [assistant, css] = await Promise.all([
+    source("src/components/assistant/system-assistant.tsx"),
+    source("src/app/styles/system-assistant.css"),
+  ]);
+
+  assert.match(
+    assistant,
+    /<span className="system-assistant-launcher-icon" aria-hidden="true">\s*\{open \? <X \/> : <Sparkles \/>\}\s*<\/span>/,
+  );
+  assert.doesNotMatch(
+    assistant,
+    /system-assistant-launcher[\s\S]*?<strong>ИИ<\/strong>/,
+  );
   assert.match(css, /position:\s*fixed/);
+  assert.match(
+    css,
+    /\.system-assistant-launcher\s*\{[\s\S]*?left: calc\(0\.75rem \+ env\(safe-area-inset-left, 0px\)\);[\s\S]*?bottom: calc\(0\.75rem \+ env\(safe-area-inset-bottom, 0px\)\);[\s\S]*?width: 2\.5rem;[\s\S]*?height: 2\.5rem;[\s\S]*?border: 0;[\s\S]*?border-radius: var\(--product-element-radius, 0\.75rem\);[\s\S]*?background: #000;/,
+  );
+  assert.match(css, /@keyframes system-assistant-hologram\s*\{/);
+  assert.match(css, /@keyframes system-assistant-hologram-glint\s*\{/);
+  assert.match(
+    css,
+    /\.system-assistant-panel\s*\{[\s\S]*?left: calc\(0\.75rem \+ env\(safe-area-inset-left, 0px\)\);[\s\S]*?bottom: calc\(4rem \+ env\(safe-area-inset-bottom, 0px\)\);/,
+  );
   assert.match(css, /100dvh/);
   assert.match(css, /env\(safe-area-inset-bottom/);
   assert.match(css, /@media \(max-width: 640px\)/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(
+    css,
+    /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.system-assistant-launcher::before,[\s\S]*?\.system-assistant-launcher::after,[\s\S]*?animation: none !important;/,
+  );
   assert.match(css, /z-index:\s*55/);
 });

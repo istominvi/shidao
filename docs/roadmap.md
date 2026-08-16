@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
 **Статус:** current / next / later priorities после production identity release
-**Актуально на:** 15 августа 2026 года
+**Актуально на:** 16 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -762,6 +762,12 @@ Definition of Done:
 - один floating widget живёт в protected Account layout и не показывается на
   landing/Auth/demo; прежние кнопки course-scoped assistant удалены из Course и
   Lesson headers, а старый Course route может пока оставаться compatibility;
+- **Current source / next production UI:** icon-only launcher уменьшен до
+  стандартных `40 × 40 px`, использует element radius `12 px`, чёрную поверхность
+  без border и `12 px` inset слева/снизу плюс safe area. Несколько медленных
+  holographic fields и световой glint остаются внутри кнопки, а reduced-motion
+  показывает статичную композицию. Panel перенесён к тому же левому краю и
+  сохраняет `12 px` промежуток над launcher; behavior/API/schema не меняются;
 - browser передаёт strict allowlisted surface, согласованный typed view и
   optional Course/Lesson IDs, локальную дату/UTC offset; arbitrary URL, DOM,
   search/hash и значения форм не входят в page context;

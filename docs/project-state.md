@@ -1,7 +1,7 @@
 # Текущее состояние ShiDao V2
 
 **Статус:** главный входной документ для разработки
-**Актуально на:** 15 августа 2026 года
+**Актуально на:** 16 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
 **Текущий functional application source:**
@@ -1662,6 +1662,14 @@ application service/contracts внутри authenticated web request.
   protected `src/app/(app)/layout.tsx`, а не в public landing/Auth/demo и не в
   Course/Lesson header. Кнопки прежнего course-scoped dialog из Course и Lesson
   удалены.
+- **Current source / next production UI:** launcher имеет exact размер
+  `40 × 40 px`, стоит слева и снизу с inset `12 px` плюс mobile safe area,
+  использует общий element radius `12 px`, чистый чёрный base surface и не имеет
+  border. Icon-only glyph сохраняет accessible name через `aria-label`, а
+  медленные holographic color fields и отдельный glint анимируются внутри
+  обрезанной чёрной поверхности. При `prefers-reduced-motion` эффект остаётся
+  статичным. Non-modal panel выровнен по левому inset и открывается на `12 px`
+  выше launcher; API, Assistant state machine и schema не меняются.
 - Browser передаёт только strict поля `surface`, typed `view`, optional
   `courseId`/`lessonId`, `localDate` и `utcOffsetMinutes`. Surface и вкладка
   выбираются из закрытых согласованных списков;
