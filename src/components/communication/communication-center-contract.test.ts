@@ -55,6 +55,54 @@ test("one communication center owns messages, system events and persisted AI dia
   );
 });
 
+test("AI and system bodies render a safe Markdown subset while human text stays literal", async () => {
+  const [markdown, assistant, system, human, css, packageJson] =
+    await Promise.all([
+      source("src/components/communication/communication-markdown.tsx"),
+      source("src/components/communication/assistant-conversation.tsx"),
+      source("src/components/communication/system-conversation.tsx"),
+      source("src/components/communication/human-conversation.tsx"),
+      source("src/app/styles/communication-center.css"),
+      source("package.json"),
+    ]);
+
+  assert.match(packageJson, /"react-markdown": "\^10\.1\.0"/);
+  assert.match(markdown, /dynamic\(\(\) => import\("react-markdown"\)/);
+  assert.match(markdown, /allowedElements=\{ALLOWED_ELEMENTS\}/);
+  assert.match(markdown, /skipHtml/);
+  assert.match(markdown, /unwrapDisallowed/);
+  assert.match(markdown, /memo\(CommunicationMarkdownComponent\)/);
+  assert.doesNotMatch(
+    markdown,
+    /dangerouslySetInnerHTML|rehype-raw|remark-gfm/,
+  );
+  assert.doesNotMatch(markdown, /^\s*"(?:a|img)",?\s*$/m);
+
+  assert.match(
+    assistant,
+    /turn\.role === "assistant" \? \([\s\S]*?<CommunicationMarkdown body=\{turn\.body\} \/>/,
+  );
+  assert.match(assistant, /onAnnouncement\("Ответ ShiDao ИИ получен\."\)/);
+  assert.match(
+    system,
+    /<CommunicationMarkdown body=\{notification\.body\} \/>/,
+  );
+  assert.doesNotMatch(human, /CommunicationMarkdown/);
+
+  assert.match(
+    css,
+    /\.communication-markdown\s*\{[\s\S]*?white-space: normal;/,
+  );
+  assert.match(css, /\.communication-markdown ul\s*\{\s*list-style: disc;/);
+  assert.match(css, /\.communication-markdown ol\s*\{\s*list-style: decimal;/);
+  assert.match(
+    css,
+    /\.communication-markdown pre\s*\{[\s\S]*?overflow-x: auto;/,
+  );
+  assert.match(css, /\.communication-system-card header > strong/);
+  assert.doesNotMatch(css, /\.communication-system-card strong\s*\{/);
+});
+
 test("communication center keeps one narrow flow, quiet initial focus and canonical retry controls", async () => {
   const [
     center,

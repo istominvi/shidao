@@ -25,6 +25,7 @@ import {
   markAssistantConversationRead,
   sendAssistantTurn,
 } from "@/components/communication/communication-client";
+import { CommunicationMarkdown } from "@/components/communication/communication-markdown";
 import { fullCommunicationTime } from "@/components/communication/communication-presenters";
 import { usePageVisible } from "@/components/communication/use-page-visible";
 import type {
@@ -382,7 +383,7 @@ export function AssistantConversationView({
         setLiveProposalKey(null);
       }
       setPending(null);
-      onAnnouncement(exchange.assistantTurn.body);
+      onAnnouncement("Ответ ShiDao ИИ получен.");
       onActivity();
     } catch (caught) {
       setPending((current) =>
@@ -472,7 +473,13 @@ export function AssistantConversationView({
                     ShiDao ИИ
                   </span>
                 ) : null}
-                <div className="communication-message-bubble">{turn.body}</div>
+                <div className="communication-message-bubble">
+                  {turn.role === "assistant" ? (
+                    <CommunicationMarkdown body={turn.body} />
+                  ) : (
+                    turn.body
+                  )}
+                </div>
                 <time
                   className="communication-message-meta"
                   dateTime={turn.createdAt}

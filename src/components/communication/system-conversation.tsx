@@ -6,6 +6,7 @@ import {
   loadSystemNotifications,
   markSystemNotificationsRead,
 } from "@/components/communication/communication-client";
+import { CommunicationMarkdown } from "@/components/communication/communication-markdown";
 import { fullCommunicationTime } from "@/components/communication/communication-presenters";
 import { usePageVisible } from "@/components/communication/use-page-visible";
 import { Button } from "@/components/ui/button";
@@ -128,7 +129,9 @@ export function SystemConversation({
                     {fullCommunicationTime(notification.occurredAt)}
                   </time>
                 </header>
-                {notification.body ? <p>{notification.body}</p> : null}
+                {notification.body ? (
+                  <CommunicationMarkdown body={notification.body} />
+                ) : null}
               </article>
             );
           })

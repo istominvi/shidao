@@ -902,6 +902,11 @@ Course только открывают этот же центр на нужно�
   callouts удалены; system explanation доступно по neutral `?` disclosure рядом
   с ShiDao. Empty AI dialogue не дублирует icon и показывает расширенные,
   context-aware и allowlist-accurate prompt chips обычной tab typography;
+- assistant replies и system notification bodies отображают safe CommonMark
+  для абзацев, emphasis, списков, цитат и code. Raw HTML, images и active
+  model-authored links запрещены, headings компактны; human/user messages и
+  system titles остаются literal plain text. Existing persisted strings не
+  требуют миграции и получают форматирование при рендере;
 - forward schema/migrations, RPC/application/API и responsive UI current.
   Production DB CC1 + A2, snapshot и postflight current; dependent web/API
   initial rollout развёрнут exact source

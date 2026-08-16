@@ -3513,6 +3513,52 @@ test("browser smoke: protected pages expose the unified messages center with key
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
 
   try {
+    await runtime.page.route(
+      "**/api/v2/system-notifications*",
+      async (route) => {
+        if (new URL(route.request().url()).pathname.endsWith("/read")) {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              receipt: { markedThroughId: 7, unreadCount: 0 },
+            }),
+          });
+          return;
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            notifications: {
+              items: [
+                {
+                  id: 7,
+                  eventType: "lesson_run.scheduled",
+                  severity: "success",
+                  title: "**Урок назначен**",
+                  body: [
+                    "Урок **подтверждён**.",
+                    "",
+                    "1. Завтра",
+                    "   - В 15:00",
+                    "   - Код: `lesson-1`",
+                    "",
+                    "<script>window.markdownXss = true</script>",
+                    "![tracking](https://example.test/pixel.png)",
+                    "[опасная ссылка](javascript:alert(1))",
+                  ].join("\n"),
+                  payload: {},
+                  occurredAt: "2026-08-16T08:00:00.000Z",
+                  readAt: null,
+                },
+              ],
+              nextCursor: null,
+            },
+          }),
+        });
+      },
+    );
     await runtime.page.setViewportSize({ width: 375, height: 812 });
     const inboxResponsePromise = runtime.page.waitForResponse(
       (response) => new URL(response.url()).pathname === "/api/v2/inbox",
@@ -3750,6 +3796,50 @@ test("browser smoke: protected pages expose the unified messages center with key
       },
     );
     await systemRow.click();
+    const systemCard = panel.locator(".communication-system-card");
+    await systemCard.getByText("подтверждён", { exact: true }).waitFor();
+    assert.equal(
+      await systemCard.locator("header > strong").textContent(),
+      "**Урок назначен**",
+    );
+    assert.equal(await systemCard.locator("header strong strong").count(), 0);
+    assert.equal(
+      await systemCard.locator(".communication-markdown strong").textContent(),
+      "подтверждён",
+    );
+    assert.deepEqual(
+      await systemCard.evaluate((element) => {
+        const markdown = element.querySelector(".communication-markdown");
+        const paragraph = element.querySelector(".communication-markdown p");
+        const ordered = element.querySelector("ol");
+        const unordered = element.querySelector("ul");
+        if (!markdown || !paragraph || !ordered || !unordered) {
+          throw new Error("System Markdown structure is incomplete");
+        }
+        return {
+          whiteSpace: getComputedStyle(markdown).whiteSpace,
+          paragraphWhiteSpace: getComputedStyle(paragraph).whiteSpace,
+          orderedStyle: getComputedStyle(ordered).listStyleType,
+          unorderedStyle: getComputedStyle(unordered).listStyleType,
+          scripts: element.querySelectorAll("script").length,
+          images: element.querySelectorAll("img").length,
+          links: element.querySelectorAll("a").length,
+          rawScriptText: element.textContent?.includes("window.markdownXss"),
+          scriptSideEffect: "markdownXss" in window,
+        };
+      }),
+      {
+        whiteSpace: "normal",
+        paragraphWhiteSpace: "normal",
+        orderedStyle: "decimal",
+        unorderedStyle: "disc",
+        scripts: 0,
+        images: 0,
+        links: 0,
+        rawScriptText: false,
+        scriptSideEffect: false,
+      },
+    );
     const systemInfo = panel.getByRole("button", {
       name: "О ленте ShiDao",
       exact: true,
@@ -4022,7 +4112,17 @@ test("browser smoke: persisted AI quick reply is one-time and sends one atomic t
             : [];
         const assistantBody =
           requestNumber === 1
-            ? "Вам нужен пустой урок-заготовка или сразу наполненный урок с содержанием и заданиями?"
+            ? [
+                "У вас **6 курсов**:",
+                "",
+                "1. **ShiDao V2**",
+                "   - Предмет: _китайский_",
+                "   - Код: `course-1`",
+                "",
+                "<script>window.markdownXss = true</script>",
+                "![tracking](https://example.test/pixel.png)",
+                "[опасная ссылка](javascript:alert(1))",
+              ].join("\n")
             : "Хорошо, подготовлю пустой урок.";
         await route.fulfill({
           status: 200,
@@ -4146,7 +4246,7 @@ test("browser smoke: persisted AI quick reply is one-time and sends one atomic t
     assert.equal(capabilityPresentation.fontSize, "14.08px");
     assert.equal(capabilityPresentation.fontWeight, "400");
     const composer = panel.getByLabel("Сообщение ShiDao ИИ");
-    await composer.fill("Сделай четвёртый урок");
+    await composer.fill("**Сделай четвёртый урок**");
     await composer.press("Enter");
 
     const emptyLesson = panel.getByRole("button", {
@@ -4159,6 +4259,59 @@ test("browser smoke: persisted AI quick reply is one-time and sends one atomic t
     });
     await emptyLesson.waitFor();
     await readyLesson.waitFor();
+    const ownBubble = panel.locator(
+      ".communication-message.is-own .communication-message-bubble",
+    );
+    assert.equal(await ownBubble.textContent(), "**Сделай четвёртый урок**");
+    assert.equal(await ownBubble.locator("strong").count(), 0);
+    const assistantMarkdown = panel
+      .locator(".communication-message:not(.is-own) .communication-markdown")
+      .nth(0);
+    await assistantMarkdown.getByText("6 курсов", { exact: true }).waitFor();
+    assert.equal(
+      await assistantMarkdown.locator("strong").nth(0).textContent(),
+      "6 курсов",
+    );
+    assert.equal(
+      await assistantMarkdown.locator("code").textContent(),
+      "course-1",
+    );
+    assert.equal(
+      await assistantMarkdown.locator("em").textContent(),
+      "китайский",
+    );
+    assert.deepEqual(
+      await assistantMarkdown.evaluate((element) => {
+        const paragraph = element.querySelector("p");
+        const ordered = element.querySelector("ol");
+        const unordered = element.querySelector("ul");
+        if (!paragraph || !ordered || !unordered) {
+          throw new Error("Assistant Markdown lists are missing");
+        }
+        return {
+          whiteSpace: getComputedStyle(element).whiteSpace,
+          paragraphWhiteSpace: getComputedStyle(paragraph).whiteSpace,
+          orderedStyle: getComputedStyle(ordered).listStyleType,
+          unorderedStyle: getComputedStyle(unordered).listStyleType,
+          scripts: element.querySelectorAll("script").length,
+          images: element.querySelectorAll("img").length,
+          links: element.querySelectorAll("a").length,
+          rawScriptText: element.textContent?.includes("window.markdownXss"),
+          scriptSideEffect: "markdownXss" in window,
+        };
+      }),
+      {
+        whiteSpace: "normal",
+        paragraphWhiteSpace: "normal",
+        orderedStyle: "decimal",
+        unorderedStyle: "disc",
+        scripts: 0,
+        images: 0,
+        links: 0,
+        rawScriptText: false,
+        scriptSideEffect: false,
+      },
+    );
     assert.equal(
       await panel.getByText("Пустой урок", { exact: true }).count(),
       1,

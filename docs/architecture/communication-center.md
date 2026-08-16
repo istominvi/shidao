@@ -167,6 +167,16 @@ System provenance объясняется только по click/touch disclosur
 только реально allowlisted read/actions текущего контекста. Chips используют
 обычную типографику product tabs, не bold helper style.
 
+Тела ответов ShiDao ИИ и системных уведомлений отображают безопасное подмножество
+CommonMark: абзацы, акцент, упорядоченные и неупорядоченные списки, цитаты и код.
+Это presentation-only contract поверх persisted plain string: raw HTML
+игнорируется, изображения и ссылки не становятся активными, а навигация и
+изменения по-прежнему доступны только через typed application cards/actions.
+System title, user turns и direct/Course human messages остаются буквальным
+plain text, поэтому введённые человеком Markdown-маркеры не меняют смысл его
+сообщения. Parser загружается лениво только при первом показе formatted body;
+глобальный launcher и inbox не несут его в initial protected-page bundle.
+
 ## Authorization and persistence boundary
 
 - Browser не передаёт `sender_account_id`; sender выводится из authenticated
@@ -179,6 +189,10 @@ System provenance объясняется только по click/touch disclosur
 - Deep link повторно проходит authorization целевой Course/Lesson/Profile.
 - Message body имеет bounded length; cursor pagination использует
   `(created_at, id)`, а RLS/access lookup columns индексируются.
+- Markdown renderer не использует `dangerouslySetInnerHTML`, raw-HTML plugins,
+  remote images или model-authored links. System body считается недоверенным
+  formatting input, даже когда событие создано trusted producer: в него могут
+  входить пользовательские Lesson titles и shared comments.
 - System events создаёт только trusted database/application boundary.
 - AI conversation persistence не хранит JWT, secrets, full provider context,
   raw foreign history или attachment contents.

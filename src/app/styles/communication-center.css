@@ -592,6 +592,102 @@
   white-space: pre-wrap;
 }
 
+.communication-markdown {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.communication-markdown > :first-child {
+  margin-top: 0;
+}
+
+.communication-markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.communication-markdown p,
+.communication-markdown ul,
+.communication-markdown ol,
+.communication-markdown blockquote,
+.communication-markdown pre,
+.communication-markdown hr {
+  margin: 0.5rem 0;
+}
+
+.communication-markdown ul,
+.communication-markdown ol {
+  padding-inline-start: 1.35rem;
+}
+
+.communication-markdown ul {
+  list-style: disc;
+}
+
+.communication-markdown ol {
+  list-style: decimal;
+}
+
+.communication-markdown ul ul {
+  list-style: circle;
+}
+
+.communication-markdown ol ol {
+  list-style: lower-alpha;
+}
+
+.communication-markdown li + li {
+  margin-top: 0.18rem;
+}
+
+.communication-markdown li > p {
+  margin: 0.2rem 0;
+}
+
+.communication-markdown strong,
+.communication-markdown-heading {
+  color: inherit;
+  font-weight: 700;
+}
+
+.communication-markdown-heading {
+  margin: 0.65rem 0 0.35rem;
+}
+
+.communication-markdown blockquote {
+  border-left: 3px solid currentColor;
+  padding-left: 0.65rem;
+  opacity: 0.78;
+}
+
+.communication-markdown code {
+  border-radius: 0.35rem;
+  background: rgba(20, 20, 20, 0.08);
+  padding: 0.08rem 0.28rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.88em;
+}
+
+.communication-markdown pre {
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: 0.65rem;
+  background: rgba(20, 20, 20, 0.08);
+  padding: 0.65rem;
+  white-space: pre;
+}
+
+.communication-markdown pre code {
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 0.78rem;
+}
+
+.communication-markdown hr {
+  border: 0;
+  border-top: 1px solid rgba(20, 20, 20, 0.16);
+}
+
 .communication-message.is-own .communication-message-bubble {
   border-bottom-right-radius: 0.3rem;
   border-bottom-left-radius: 0.95rem;
@@ -656,7 +752,7 @@
   gap: 0.65rem;
 }
 
-.communication-system-card strong {
+.communication-system-card header > strong {
   font-size: 0.78rem;
 }
 
@@ -665,12 +761,11 @@
   font-size: 0.62rem;
 }
 
-.communication-system-card p {
+.communication-system-card > .communication-markdown {
   margin: 0.45rem 0 0;
   color: #555963;
   font-size: 0.75rem;
   line-height: 1.45;
-  white-space: pre-wrap;
 }
 
 .communication-composer {

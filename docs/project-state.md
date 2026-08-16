@@ -29,6 +29,14 @@ feed открывается через маленькую нейтральную
 dialogue сразу показывает контекстный набор фактически доступных prompt chips
 без второй центральной иконки.
 
+Persisted ответы ShiDao ИИ и тела system events теперь отображают безопасное
+подмножество CommonMark, поэтому `**акцент**`, абзацы, списки, цитаты и code
+render семантически, а не как видимые служебные маркеры. Raw HTML полностью
+игнорируется; изображения и model-authored links не активируются. System title,
+AI user turns и direct/Course human messages сохраняют literal plain-text
+рендер. Это UI-only изменение: формат persisted body, API и physical schema не
+изменялись, поэтому уже сохранённые ответы также получают форматирование.
+
 Direct target задаётся только через `LearnerProfile` и требует active accepted
 teacher/learner relation с linked Account; archived/pending relation запрещает
 новое чтение и отправку, но restore возвращает доступ к полной истории.
@@ -1750,6 +1758,14 @@ application service/contracts внутри authenticated web request.
   avatar и показывает расширенные context-aware prompt chips обычным
   tab-weight шрифтом. Global dialogue не обещает directory/schedule context;
   Course/Lesson prompts соответствуют текущему closed action allowlist.
+- Assistant turn body и system notification body используют общий memoized
+  safe CommonMark renderer для абзацев, strong/emphasis, списков, цитат и code.
+  Raw HTML, images и active Markdown links запрещены; headings сводятся к
+  компактным text blocks. User turns, human messages и system title остаются
+  literal plain text. Full assistant body больше не отправляется целиком в live
+  region: screen reader получает короткое уведомление о новом ответе. Parser
+  загружается отдельным lazy client chunk только при показе formatted body, а
+  не увеличивает initial bundle каждой protected page.
 - Direct conversation открывается из Students по `learnerProfileId`, только
   если у адресата есть linked Account и active accepted teacher/learner
   relation. После открытия browser использует opaque `threadId`; Account/Auth
