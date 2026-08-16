@@ -10,19 +10,19 @@ function source(path: string) {
   return readFileSync(join(process.cwd(), path), "utf8");
 }
 
-test("unoptimized preset images render their static WebP directly", () => {
+test("preset images use the responsive Next image pipeline", () => {
   const markup = renderToStaticMarkup(
     createElement(Image, {
       src: "/avatars/presets/sd-avatar-v1-01.webp",
       alt: "",
       width: 96,
       height: 96,
-      unoptimized: true,
+      quality: 75,
     }),
   );
 
-  assert.match(markup, /src="\/avatars\/presets\/sd-avatar-v1-01\.webp"/);
-  assert.doesNotMatch(markup, /\/_next\/image/);
+  assert.match(markup, /\/_next\/image\?url=%2Favatars%2Fpresets%2F/);
+  assert.match(markup, /srcSet=/);
 });
 
 test("account settings keep avatar choices compact and require confirmation", () => {
@@ -48,7 +48,7 @@ test("account settings keep avatar choices compact and require confirmation", ()
   assert.match(form, /ACCOUNT_AVATAR_PRESETS\.map/);
   assert.match(
     form,
-    /<Image[\s\S]*?src=\{preset\.src\}[\s\S]*?unoptimized[\s\S]*?sizes=/,
+    /<Image[\s\S]*?src=\{preset\.src\}[\s\S]*?quality=\{75\}[\s\S]*?sizes=/,
   );
   assert.match(form, /type="radio"/);
   assert.match(form, /checked=\{selected\}/);
@@ -111,8 +111,18 @@ test("only protected mobile navigation uses a menu; every avatar links to Profil
   assert.match(avatarImage, /style=\{\{ width: size, height: size \}\}/);
   assert.match(avatarImage, /width=\{size\}/);
   assert.match(avatarImage, /height=\{size\}/);
-  assert.match(avatarImage, /height=\{size\}[\s\S]*?unoptimized/);
-  assert.match(avatarImage, /className="h-full w-full object-cover"/);
+  assert.match(
+    avatarImage,
+    /loader=\{avatar\.kind === "custom" \? privateAvatarLoader : undefined\}/,
+  );
+  assert.match(
+    avatarImage,
+    /quality=\{avatar\.kind === "preset" \? 75 : undefined\}/,
+  );
+  assert.match(avatarImage, /width=\$\{deliveryWidth\}/);
+  assert.match(avatarImage, /<span aria-hidden="true">\{initials\}<\/span>/);
+  assert.match(avatarImage, /absolute inset-0 h-full w-full object-cover/);
+  assert.match(avatarImage, /onLoad=\{\(\) => setLoadedSrc\(src\)\}/);
   assert.match(avatarImage, /onError=\{\(\) => setFailedSrc\(src\)\}/);
   assert.match(
     navigationCss,

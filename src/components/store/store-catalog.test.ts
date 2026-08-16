@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import sharp from "sharp";
 import {
   DEFAULT_STORE_FILTERS,
   STORE_CATEGORIES,
@@ -38,7 +39,7 @@ function reduceCart(
   return actions.reduce(storeCartReducer, initialState);
 }
 
-test("store demo catalog has nine stable, complete, realistic products", () => {
+test("store demo catalog has nine stable, complete, realistic products", async () => {
   assert.equal(STORE_PRODUCTS.length, 9);
   assert.equal(new Set(STORE_PRODUCTS.map((product) => product.id)).size, 9);
   assert.equal(new Set(STORE_PRODUCTS.map((product) => product.slug)).size, 9);
@@ -52,6 +53,7 @@ test("store demo catalog has nine stable, complete, realistic products", () => {
     [3, 2, 2, 2, 2, 2, 2, 2, 2],
   );
 
+  let totalImageBytes = 0;
   for (const product of STORE_PRODUCTS) {
     assert.match(product.id, /^store-product-\d{3}$/);
     assert.match(product.slug, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
@@ -73,13 +75,19 @@ test("store demo catalog has nine stable, complete, realistic products", () => {
       );
       assert.match(image.src, /\/(?:cover|detail-\d{2})\.webp$/);
       assert.ok(image.alt.length > 24);
+      const imagePath = join(process.cwd(), "public", image.src.slice(1));
       assert.equal(
-        existsSync(join(process.cwd(), "public", image.src.slice(1))),
+        existsSync(imagePath),
         true,
         `${image.src} must exist in public`,
       );
+      const metadata = await sharp(imagePath).metadata();
+      assert.equal(metadata.width, 1254);
+      assert.equal(metadata.height, 1254);
+      totalImageBytes += statSync(imagePath).size;
     }
   }
+  assert.ok(totalImageBytes < 4 * 1024 * 1024);
 
   assert.deepEqual(
     new Set(STORE_PRODUCTS.map((product) => product.category)),

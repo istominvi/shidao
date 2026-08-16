@@ -396,7 +396,7 @@ export function AvatarSettingsForm() {
                           alt=""
                           width={112}
                           height={112}
-                          unoptimized
+                          quality={75}
                           sizes="(max-width: 640px) 22vw, 104px"
                           className="h-full w-full rounded-[0.55rem] object-cover"
                         />

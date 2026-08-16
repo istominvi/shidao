@@ -7,6 +7,13 @@ import {
 
 export const PROFILE_AVATAR_DIMENSION = 512;
 export const PROFILE_AVATAR_MAX_SOURCE_DIMENSION = 4096;
+export const PROFILE_AVATAR_DELIVERY_WIDTHS = [
+  32, 40, 48, 64, 72, 80, 96, 112, 128, 144, 160, 192, 256, 384, 480, 512,
+] as const;
+
+const PROFILE_AVATAR_DELIVERY_WIDTH_SET = new Set<number>(
+  PROFILE_AVATAR_DELIVERY_WIDTHS,
+);
 
 export type ProfileAvatarInputMimeType =
   "image/jpeg" | "image/png" | "image/webp";
@@ -19,6 +26,41 @@ export class ProfileAvatarInputError extends Error {
     super(message);
     this.name = "ProfileAvatarInputError";
   }
+}
+
+export function parseProfileAvatarDeliveryWidth(value: string | null) {
+  if (value === null) return PROFILE_AVATAR_DIMENSION;
+  if (!/^[1-9][0-9]*$/.test(value)) return null;
+  const width = Number(value);
+  return PROFILE_AVATAR_DELIVERY_WIDTH_SET.has(width) ? width : null;
+}
+
+export async function renderProfileAvatarDeliveryVariant(
+  bytes: Uint8Array,
+  width: number,
+) {
+  if (!PROFILE_AVATAR_DELIVERY_WIDTH_SET.has(width)) {
+    throw new Error("Profile avatar delivery width is invalid.");
+  }
+  if (width === PROFILE_AVATAR_DIMENSION) return new Uint8Array(bytes);
+
+  const output = await sharp(new Uint8Array(bytes), {
+    failOn: "warning",
+    limitInputPixels: PROFILE_AVATAR_DIMENSION * PROFILE_AVATAR_DIMENSION,
+    sequentialRead: true,
+  })
+    .resize(width, width, { fit: "cover", position: "centre" })
+    .toColourspace("srgb")
+    .webp({ quality: 80, effort: 3, smartSubsample: true })
+    .toBuffer();
+
+  if (
+    output.byteLength < 1 ||
+    output.byteLength > PROFILE_AVATAR_OUTPUT_BYTES_LIMIT
+  ) {
+    throw new Error("Profile avatar delivery output is invalid.");
+  }
+  return new Uint8Array(output);
 }
 
 const PROFILE_AVATAR_INPUT_MIME_TYPES = new Set<ProfileAvatarInputMimeType>([

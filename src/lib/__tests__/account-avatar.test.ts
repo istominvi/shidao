@@ -61,4 +61,13 @@ test("avatar preset parser and source helpers fail closed", () => {
     accountAvatarSrc({ kind: "custom", presetKey: null, revision: 8 }),
     "/api/settings/profile/avatar?revision=8",
   );
+  assert.equal(
+    accountAvatarSrc({
+      kind: "custom",
+      presetKey: null,
+      revision: 8,
+      deliveryKey: "abcdefghijklmnopqrstuvwx",
+    }),
+    "/api/settings/profile/avatar?revision=8&cache=abcdefghijklmnopqrstuvwx",
+  );
 });

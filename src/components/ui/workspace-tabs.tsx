@@ -8,7 +8,8 @@ import {
   useState,
   type KeyboardEvent,
 } from "react";
-import { ChevronLeft, ChevronRight, type LucideIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { FadeChevronButton } from "@/components/ui/fade-chevron-button";
 import { classNames } from "@/lib/ui/classnames";
 
 const SCROLL_EDGE_EPSILON = 1;
@@ -366,17 +367,15 @@ export function WorkspaceTabs<T extends string>({
       data-can-scroll-left={scrollEdges.canScrollLeft || undefined}
       data-can-scroll-right={scrollEdges.canScrollRight || undefined}
     >
-      <button
+      <FadeChevronButton
         ref={leftScrollControlRef}
-        type="button"
+        direction="left"
         className="workspace-tabs-scroll-control workspace-tabs-scroll-control-left"
         aria-label="Прокрутить вкладки влево"
         aria-controls={`${idBase}-tablist`}
         hidden={!scrollEdges.canScrollLeft}
         onClick={() => scrollTabs("left")}
-      >
-        <ChevronLeft aria-hidden="true" />
-      </button>
+      />
       <div
         ref={scrollRef}
         className="workspace-tabs-scroll"
@@ -442,17 +441,15 @@ export function WorkspaceTabs<T extends string>({
           })}
         </div>
       </div>
-      <button
+      <FadeChevronButton
         ref={rightScrollControlRef}
-        type="button"
+        direction="right"
         className="workspace-tabs-scroll-control workspace-tabs-scroll-control-right"
         aria-label="Прокрутить вкладки вправо"
         aria-controls={`${idBase}-tablist`}
         hidden={!scrollEdges.canScrollRight}
         onClick={() => scrollTabs("right")}
-      >
-        <ChevronRight aria-hidden="true" />
-      </button>
+      />
     </div>
   );
 }

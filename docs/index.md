@@ -17,6 +17,7 @@
 - [Доменная модель](./domain-model.md)
 - [Lesson workflow model](./architecture/lesson-workflow-model.md)
 - [Learner identity and access model](./architecture/learner-identity-access-model.md)
+- [Image delivery boundary](./architecture/image-delivery.md)
 - [Account avatar design and privacy contract](./product/account-avatars.md)
 - [Auth, domains и routing](./authorization-routing.md)
 - [Development Course Builder MCP](./v2/COURSE_BUILDER_MCP.md)

@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Image, { type ImageLoaderProps } from "next/image";
 import { useState } from "react";
 import { accountAvatarSrc, type AccountAvatarView } from "@/lib/account-avatar";
 import { classNames } from "@/lib/ui/classnames";
@@ -14,6 +14,11 @@ type AvatarImageProps = {
   priority?: boolean;
 };
 
+function privateAvatarLoader({ src, width }: ImageLoaderProps) {
+  const deliveryWidth = Math.min(512, Math.max(32, width));
+  return `${src}${src.includes("?") ? "&" : "?"}width=${deliveryWidth}`;
+}
+
 export function AvatarImage({
   avatar,
   initials = "U",
@@ -24,7 +29,9 @@ export function AvatarImage({
 }: AvatarImageProps) {
   const src = accountAvatarSrc(avatar);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
   const failed = failedSrc === src;
+  const loaded = loadedSrc === src;
 
   return (
     <span
@@ -36,21 +43,21 @@ export function AvatarImage({
       role={failed && alt ? "img" : undefined}
       aria-label={failed && alt ? alt : undefined}
     >
-      {failed ? (
-        <span aria-hidden="true">{initials}</span>
-      ) : (
+      <span aria-hidden="true">{initials}</span>
+      {!failed ? (
         <Image
           src={src}
           alt={alt}
           width={size}
           height={size}
-          sizes={`${size}px`}
           priority={priority}
-          unoptimized
-          className="h-full w-full object-cover"
+          loader={avatar.kind === "custom" ? privateAvatarLoader : undefined}
+          quality={avatar.kind === "preset" ? 75 : undefined}
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-150 motion-reduce:transition-none ${loaded ? "opacity-100" : "opacity-0"}`}
+          onLoad={() => setLoadedSrc(src)}
           onError={() => setFailedSrc(src)}
         />
-      )}
+      ) : null}
     </span>
   );
 }

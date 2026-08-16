@@ -1,8 +1,8 @@
 # Account avatars
 
 Status: **current production** for the ShiDao V2 Account avatar state and
-profile surface; header-trigger simplification is **current source / next
-production**.
+profile surface; responsive preset/private delivery and header-trigger
+simplification are **current source / next production**.
 
 Current functional application source:
 `1d4e5deff83cbdc1b479b16e4220cf799327009f`; initial unified Profile/avatar
@@ -44,9 +44,14 @@ radio state, visible border and check mark.
 Production assets live at
 `public/avatars/presets/sd-avatar-v1-XX.webp`. Each file is opaque sRGB WebP,
 `512 × 512`, with no baked border or corner radius. UI surfaces apply their own
-crop and the shared `12 px` product radius. Picker images use `next/image` only
-as an unoptimized renderer, so the browser requests those static WebP paths
-directly and never routes presets through `/_next/image`.
+crop and the shared `12 px` product radius. In current source, public presets
+use the built-in `next/image` + Sharp responsive optimizer at quality `75` with
+surface-specific `sizes`; the source path is restricted by
+`images.localPatterns` and the shared public-image cache floor is seven days.
+The `512 × 512` WebP remains the source-controlled master, not the response
+size for every viewport. This uses the existing Sharp dependency and adds no
+external image service. The cross-surface delivery policy is canonical in
+[`docs/architecture/image-delivery.md`](../architecture/image-delivery.md).
 
 ## Visual language and provenance
 
@@ -80,9 +85,37 @@ Storage or PostgREST writes. The sequence is upload new object, atomically
 switch the Account pointer with optimistic revision checking, then best-effort
 delete the old object. If the RPC response is lost after a possible commit, the
 route rereads canonical Account state before deleting anything; an ambiguous
-new object is retained rather than risking a dangling pointer. Browser session
-payloads contain only avatar kind, preset key and revision; they never expose a
-Storage path, signed token or internal Account identifier.
+new object is retained rather than risking a dangling pointer. Browser
+SessionView contains avatar kind, preset key and revision. For a custom avatar,
+current source additionally exposes only an opaque delivery key derived
+server-side for the authenticated Account and exact revision; it never exposes
+a Storage path, signed token, Auth/Account identifier or signing secret.
+
+### Current source / next production private delivery
+
+Custom avatars intentionally do not use the default `/_next/image` optimizer:
+that request path is not the owner authorization boundary and must not be
+allowed to cache private bytes across Accounts. `AvatarImage` uses a custom
+loader that calls the same-origin authenticated avatar GET route directly and
+requests only an allowlisted square width from `32` through `512`.
+
+The route authenticates first, rereads canonical Account/avatar state and then
+requires an exact revision. Its optional cache address is a domain-separated
+opaque HMAC delivery key derived from Auth user identity plus revision with the
+server session secret. A supplied malformed/mismatched key fails closed; width
+values outside the fixed allowlist are rejected. The valid cacheable response
+uses `Cache-Control: private, max-age=31536000, immutable`, `Vary: Cookie` and
+an ETag bound to delivery key + width. Conditional `304` is returned only after
+Account authorization. A legacy request without the opaque key remains
+authenticated but receives `private, no-store`.
+
+This key is a cache-isolation address, not a bearer capability: logout,
+cross-Account access and revision changes still fail the ordinary authorization
+checks. Accounts may share the same revision number, so revision alone is
+never treated as a globally unique cache key. The route downloads the private
+`512 × 512` normalized master only after those checks and uses the existing
+Sharp runtime to produce smaller WebP variants; it does not make the Storage
+object or a signed URL public.
 
 ## Rendering and accessibility
 
@@ -110,8 +143,10 @@ Storage path, signed token or internal Account identifier.
 - `Загрузить фото` opens the operating-system file picker. A valid file then
   opens a separate square preview dialog with `Сохранить`, `Отмена` and
   `Выбрать другое фото`; choosing a file alone never mutates the Account.
-- If an image cannot load, render the Account initials without changing or
-  clearing the saved avatar.
+- Account initials are present immediately underneath the image while it loads;
+  the image fades in after `load`. If loading fails, initials remain visible
+  without changing or clearing the saved avatar. Reduced-motion disables the
+  fade transition.
 
 ## Implementation map
 
@@ -126,9 +161,13 @@ Storage path, signed token or internal Account identifier.
 - responsive protected/landing direct profile link and protected-mobile
   navigation menu composition:
   `src/components/session-nav-actions.tsx`;
-- same-origin API and normalization/storage/reconciliation boundary:
-  `src/app/api/settings/profile/avatar/route.ts` and
-  `src/lib/server/profile-avatar-*.ts`;
+- same-origin API, authenticated delivery and normalization/storage/
+  reconciliation boundary:
+  `src/app/api/settings/profile/avatar/route.ts`,
+  `src/lib/server/profile-avatar-delivery.ts`,
+  `src/lib/server/profile-avatar-image.ts`,
+  `src/lib/server/profile-avatar-storage.ts` and
+  `src/lib/server/profile-avatar-reconciliation.ts`;
 - immutable preset assets: `public/avatars/presets/`;
 - physical Account/Storage contract:
   `supabase/migrations/20260814050347_account_profile_avatars.sql`.
@@ -150,6 +189,20 @@ and the custom-file preview/choose-another/cancel/save flow. These checks do not
 claim a separate authenticated production mutation smoke; Account writes remain
 covered by the API, optimistic-revision and server-image contract suites.
 
-The direct desktop/landing `/profile` link and mobile-only navigation dropdown
-are current source / next production. They require desktop/mobile authenticated
-browser acceptance and rollout postflight before becoming production evidence.
+The direct desktop/landing `/profile` link, mobile-only navigation dropdown and
+responsive image delivery are current source / next production. Their source
+acceptance requires public presets to resolve through `/_next/image` at a
+viewport-appropriate width, while custom avatars resolve directly through the
+authenticated same-origin route with an allowlisted width. It also covers
+visible initials during loading/error, exact revision/key checks, private cache
+headers/ETag, two Accounts with the same numeric revision, logout/cross-Account
+denial and the absence of Storage path, identity or signed token in SessionView
+and image URL. The blob URL used only for the unsaved upload preview remains
+`unoptimized` and never enters the shared cache.
+
+These current-source changes still require desktop/mobile authenticated browser
+acceptance and rollout postflight before becoming production evidence. The
+direct `200 image/webp` and no-`/_next/image` statements above remain accurate
+historical evidence for exact deployed release
+`4462da2248dd97bf6ab5c0a35f9a781844473874`; they are not the target delivery
+contract of the next release.

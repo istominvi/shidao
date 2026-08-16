@@ -18,9 +18,15 @@ import {
 } from "@/lib/server/app-session";
 import { logger } from "@/lib/server/logger";
 import {
+  parseProfileAvatarDeliveryWidth,
   processProfileAvatarImage,
   ProfileAvatarInputError,
+  renderProfileAvatarDeliveryVariant,
 } from "@/lib/server/profile-avatar-image";
+import {
+  createProfileAvatarDeliveryKey,
+  PROFILE_AVATAR_DELIVERY_KEY_PATTERN,
+} from "@/lib/server/profile-avatar-delivery";
 import { reconcileProfileAvatarCustomSwitch } from "@/lib/server/profile-avatar-reconciliation";
 import {
   createProfileAvatarStoragePath,
@@ -308,18 +314,63 @@ export async function GET(req: NextRequest) {
     return apiError(404, "Собственный аватар не найден.");
   }
 
+  const requestedRevision = parseExpectedRevision(
+    req.nextUrl.searchParams.get("revision"),
+  );
+  if (requestedRevision !== account.avatar.revision) {
+    return apiError(404, "Аватар уже изменился.");
+  }
+  const width = parseProfileAvatarDeliveryWidth(
+    req.nextUrl.searchParams.get("width"),
+  );
+  if (width === null) {
+    return apiError(400, "Недопустимый размер аватара.");
+  }
+
+  const suppliedDeliveryKey = req.nextUrl.searchParams.get("cache");
+  if (
+    suppliedDeliveryKey !== null &&
+    !PROFILE_AVATAR_DELIVERY_KEY_PATTERN.test(suppliedDeliveryKey)
+  ) {
+    return apiError(400, "Недопустимый адрес аватара.");
+  }
+  const expectedDeliveryKey = createProfileAvatarDeliveryKey({
+    authUserId: account.authUserId,
+    revision: account.avatar.revision,
+  });
+  if (
+    suppliedDeliveryKey !== null &&
+    suppliedDeliveryKey !== expectedDeliveryKey
+  ) {
+    return apiError(404, "Аватар уже изменился.");
+  }
+
+  const cacheable = suppliedDeliveryKey === expectedDeliveryKey;
+  const etag = `"avatar-${expectedDeliveryKey}-${width}"`;
+  const cacheHeaders = {
+    "Cache-Control": cacheable
+      ? "private, max-age=31536000, immutable"
+      : "private, no-store",
+    ETag: etag,
+    Vary: "Cookie",
+    "X-Content-Type-Options": "nosniff",
+  };
+  if (cacheable && req.headers.get("if-none-match") === etag) {
+    return new NextResponse(null, { status: 304, headers: cacheHeaders });
+  }
+
   try {
     const bytes = await downloadProfileAvatarObject({
       accountId: account.accountId,
       path: account.avatar.storagePath,
     });
-    return new NextResponse(bytes, {
+    const variant = await renderProfileAvatarDeliveryVariant(bytes, width);
+    return new NextResponse(variant, {
       status: 200,
       headers: {
-        "Cache-Control": "private, no-store",
-        "Content-Length": String(bytes.byteLength),
+        ...cacheHeaders,
+        "Content-Length": String(variant.byteLength),
         "Content-Type": PROFILE_AVATAR_OUTPUT_MIME_TYPE,
-        "X-Content-Type-Options": "nosniff",
       },
     });
   } catch (error) {

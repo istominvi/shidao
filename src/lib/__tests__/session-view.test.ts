@@ -19,6 +19,7 @@ test("toSessionView keeps only the roleless Account contract", () => {
         kind: "custom",
         presetKey: null,
         revision: 7,
+        deliveryKey: "abcdefghijklmnopqrstuvwx",
         storagePath: "must-not-leave-the-server",
       },
       activeProfile: "teacher",
@@ -37,6 +38,7 @@ test("toSessionView keeps only the roleless Account contract", () => {
         kind: "custom",
         presetKey: null,
         revision: 7,
+        deliveryKey: "abcdefghijklmnopqrstuvwx",
       },
     },
   );

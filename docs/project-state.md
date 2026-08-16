@@ -416,6 +416,23 @@ commit-unknown сверяется повторным canonical read. Browser Ses
 `src/lib/account-avatar.ts` и `public/avatars/presets/`, визуальный/privacy
 контракт — в `docs/product/account-avatars.md`.
 
+**Current source / next production image delivery:** public preset avatars
+переведены на built-in `next/image` + существующий Sharp с responsive `sizes`,
+quality `75`, explicit local allowlist и общим minimum cache TTL `7d`. Private
+custom avatar не проходит через default `/_next/image`: custom loader вызывает
+authenticated same-origin route с allowlisted width, exact revision и opaque
+domain-separated HMAC delivery key из server SessionView. Route повторно
+проверяет Account, revision/key/width до Storage/resize; cacheable exact URL
+получает `private, max-age=31536000, immutable`, `Vary: Cookie` и ETag, а
+совместимый URL без key остаётся `private, no-store`. Одинаковая numeric
+revision у разных Accounts не создаёт общий cache address; SessionView/URL не
+раскрывает identity, Storage path или signed token. Initials видимы до load и
+при ошибке, reduced-motion отключает fade. Private Course/Lesson signed images
+намеренно остаются `unoptimized` до отдельного authenticated derivative slice;
+Communication использует initials/Lucide и не получает message attachments.
+Общий current/next/later boundary зафиксирован в
+[`docs/architecture/image-delivery.md`](./architecture/image-delivery.md).
+
 Navigation/catalog follow-up `bafc984d0bc7bfb6cb795170a09ba2aabfb98441`
 упростил primary Account navigation до «Расписание / Ученики / Курсы», перенёс
 «Учебный профиль» в Account menu, а observer projection — в третью вкладку
@@ -446,18 +463,30 @@ typecheck, lint, format, production build, `581/581` unit/API, `23/23` strict
 production-mode browser scenarios и `72/72` schema/migration subset, включая
 Store deep link, cart/checkout, focus return и mobile no-overflow.
 
-**Current source / next production Store photo catalog:** девять статических
-demo-товаров теперь используют 19 квадратных WebP из
-`public/store/products/<slug>/`: три кадра у прописей и по два у остальных.
-Каждая карточка имеет независимую галерею с tap/keyboard advance,
-горизонтальным swipe, предыдущей/следующей стрелками и доступным индексом.
-Прежние декоративные иконки/иероглифы, availability-текст, stock gating и
-header-chip «Демо · без оплаты» удалены; demo boundary остаётся явно указан на
-checkout. Вместо таблицы один и тот же набор переключается между крупными и
-компактными карточками: `3/6` колонок на широком экране, `2/4` на tablet и
-`1/2` на mobile. Цена увеличена и выровнена по центру с кнопкой корзины.
-Изображения остаются source-controlled UI assets, а не Product/Inventory или
-Supabase Storage; API, schema, migrations и Lesson contracts не меняются.
+**Current source / next production Store photo/detail catalog:** девять
+статических demo-товаров используют 19 square WebP masters `1254 × 1254`
+quality `90` из `public/store/products/<slug>/`: три кадра у прописей и по два
+у остальных. Built-in `next/image` + существующий Sharp выдаёт responsive
+WebP по explicit local allowlist/`sizes`: quality `75` для card/thumbnail и
+`85` для detail, shared minimum cache TTL `7d`; новая dependency не добавлена.
+Независимая галерея листается horizontal swipe и общими
+`FadeChevronButton`-стрелками с borderless radial fade; dots приглушены и не
+имеют shadow. Tap/click фото, title или свободной non-control области теперь
+открывает `56rem × 42rem` product `DialogShell` с большой gallery/thumbnails,
+полным существующим description, price, «В корзину» и «Оформить сразу».
+Buy-now гарантирует quantity `>= 1`, закрывает detail и открывает delivery без
+двух dialog одновременно. View Transition расширяет конкретную card и
+реверсируется при закрытии; unsupported/reduced-motion получает немедленный
+fallback. Deep link сохраняет прежнюю scroll/focus semantics и не открывает
+dialog автоматически.
+
+Обе плотности сохраняют category/audience pills, включая compact; нижние
+tag-pills, decorative icons/glyphs, availability, stock gating, card
+`ShoppingBag`, footer divider и header-chip «Демо · без оплаты» удалены. Card
+CTA использует `ShoppingCart`, а checkout/detail честно сохраняют demo
+boundary. Сетка остаётся `3/6` desktop, `2/4` tablet и `1/2` mobile.
+Изображения — source-controlled UI assets, а не Product/Inventory или Supabase
+Storage; API, schema, migrations и Lesson contracts не меняются.
 
 Historical identity-program acceptance на прежнем совместимом production
 release подтвердила authenticated browser postflight: roleless navigation и
@@ -1158,14 +1187,22 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   Отдельные audience/price/availability filters удалены, а sort использует
   product dropdown ShiDao вместо native platform `select`.
 - **Current source / next production:** каждый из девяти товаров ссылается на
-  ordered-массив из двух или трёх квадратных фотографий; все 19 оптимизированных
-  WebP находятся в `public/store/products/<slug>/`. Галерея внутри карточки
-  листается тапом, клавиатурой, swipe и обеими стрелками без перехода на
-  отдельную страницу. Тумблер выбирает крупные (`3` desktop columns) или
-  компактные (`6`) карточки вместо прежней таблицы; responsive projection —
-  `2/4` на tablet и `1/2` на mobile. Декоративные visual icons/glyphs,
-  availability, stock gating и header-chip удалены. Цена крупнее и стоит на
-  одной centerline с кнопкой корзины.
+  ordered-массив из двух или трёх square WebP masters `1254 × 1254` quality
+  `90`; все 19 находятся в `public/store/products/<slug>/`. Built-in
+  `next/image` + Sharp выдаёт responsive variants по local allowlist и точному
+  `sizes`: quality `75` на card/thumbnail и `85` в detail, cache floor `7d`.
+  Swipe и borderless fade arrows листают только галерею, а click/tap фото,
+  title или свободной non-control card area открывает product `DialogShell` до
+  `56rem × 42rem` с gallery/thumbnails, полным description, price, add и
+  buy-now. Последний гарантирует quantity `>= 1` и открывает delivery после
+  закрытия detail. View Transition расширяет/сворачивает конкретную card с
+  reduced-motion/unsupported fallback; deep link остаётся scroll/focus.
+- Тумблер выбирает крупные (`3` desktop columns) или компактные (`6`) карточки
+  вместо прежней таблицы; responsive projection — `2/4` на tablet и `1/2` на
+  mobile. Category/audience pills видимы в обеих плотностях; нижние tag-pills,
+  decorative visual icons/glyphs, availability, stock gating, card
+  `ShoppingBag`, footer divider и header-chip удалены. Card CTA использует
+  `ShoppingCart`; цена крупнее и стоит на одной centerline с кнопкой корзины.
 - Кнопка «Корзина» находится в action-секции общего `AppPageHeader`. В одном
   `DialogShell` можно менять количество и удалять позиции, затем заполнить имя,
   телефон, email и адрес. Платёжный экран — честная заглушка без card fields и
@@ -2300,7 +2337,8 @@ positions, а плотность поддерживают текущие service
 | Learner identity contracts/service   | `src/modules/learner-identity/`                                                                                                                                                                                                                                                   |
 | Learner identity UI/routes           | `src/app/(app)/profile/`, `src/components/profile/`, `src/components/learner-identity/`, `/profile`, `/students?tab=observing`, `/identity/invitations/*`; `/learning-profile`, `/settings/*` и `/observing` — compatibility redirects                                            |
 | Account profile/avatar UI            | `src/components/account/`, `src/components/account/avatar-settings-form.tsx`, `src/lib/navigation/profile-nav.ts`                                                                                                                                                                 |
-| Account avatar API                   | `src/app/api/settings/profile/avatar/`, `src/lib/account-avatar.ts`, `src/lib/server/profile-avatar-image.ts`, `src/lib/server/profile-avatar-storage.ts`, `src/lib/server/profile-avatar-reconciliation.ts`                                                                      |
+| Account avatar API/delivery          | `src/app/api/settings/profile/avatar/`, `src/lib/account-avatar.ts`, `src/lib/server/profile-avatar-delivery.ts`, `src/lib/server/profile-avatar-image.ts`, `src/lib/server/profile-avatar-storage.ts`, `src/lib/server/profile-avatar-reconciliation.ts`                         |
+| Cross-surface image delivery         | `next.config.ts`, `src/lib/__tests__/image-delivery-contract.test.ts`, `docs/architecture/image-delivery.md`                                                                                                                                                                      |
 | Learner identity access doc          | `docs/architecture/learner-identity-access-model.md`                                                                                                                                                                                                                              |
 | Consented AI safe history            | `src/modules/ai/shared-history.ts`, `course-context.ts`, `course-builder-service.ts`                                                                                                                                                                                              |
 | Historical identity execution prompt | `docs/v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md`                                                                                                                                                                                                                                   |
@@ -2468,6 +2506,12 @@ compatibility redirects с query/hash, единый opaque-white surface contrac
 preset grid до открытия modal, прямую загрузку всех `20/20` static WebP без
 `/_next/image`, explicit Save для preset и custom preview, Cancel/Escape с
 возвратом фокуса и mobile layout `375 × 812` без document-level overflow.
+
+Это no-`/_next/image` утверждение относится только к exact historical release
+`4462da2248dd97bf6ab5c0a35f9a781844473874`. Current source / next production
+намеренно переводит public presets на responsive `/_next/image`, но оставляет
+private custom avatar за authenticated direct custom loader; rollout evidence
+для нового delivery contract ещё не заявлено.
 
 Для базового LessonRun slice локально подтверждены:
 

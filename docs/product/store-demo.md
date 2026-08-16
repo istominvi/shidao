@@ -1,7 +1,8 @@
 # Демо-магазин ShiDao
 
-**Статус:** current production UI-only demo; фото-каталог и два карточных
-режима — current source / next production
+**Статус:** current production UI-only demo; responsive-фото, карточная
+галерея, product detail dialog и два карточных режима — current source / next
+production
 **Актуально на:** 16 августа 2026 года
 
 ## Назначение
@@ -34,27 +35,55 @@
   указанному товару; она не добавляет товар в корзину и не создаёт заказ.
   Неизвестный `slug` безопасно оставляет пользователя в каталоге.
 
-## Current source / next production: фотографии и плотность
+## Current source / next production: фотографии, карточки и detail dialog
 
-- Девять demo-товаров ссылаются на 19 оптимизированных квадратных WebP:
-  у прописей три кадра, у остальных товаров по два. Файлы размером
-  `1000 × 1000` находятся в `public/store/products/<slug>/` и называются
-  `cover.webp`, `detail-01.webp` и, где нужен третий кадр,
-  `detail-02.webp`.
+- Девять demo-товаров ссылаются на 19 квадратных WebP masters: у прописей три
+  кадра, у остальных товаров по два. Файлы `1254 × 1254`, WebP quality `90`,
+  находятся в `public/store/products/<slug>/` и называются `cover.webp`,
+  `detail-01.webp` и, где нужен третий кадр, `detail-02.webp`.
+- Public masters не отправляются всем viewport как один и тот же файл.
+  Встроенный `next/image` runtime optimizer с уже установленным Sharp строит
+  responsive WebP: карточка запрашивает quality `75`, detail dialog — `85`, а
+  thumbnails — `75`. Контекстные `sizes` описывают крупную/compact сетку,
+  mobile и dialog; разрешённые local paths ограничены `images.localPatterns`,
+  а minimum cache TTL равен семи дням. Новый image dependency или внешний
+  image service не добавлен. Полный общий boundary описан в
+  [`docs/architecture/image-delivery.md`](../architecture/image-delivery.md).
 - Каждая карточка показывает квадратную галерею только с фотографиями товара,
-  без прежних декоративных Lucide-иконок и иероглифов. Тап или клавиатурная
-  активация изображения листает вперёд, горизонтальный touch-жест листает в
-  соответствующую сторону, а отдельные кнопки «Предыдущее фото» и «Следующее
-  фото» доступны постоянно. Индекс хранится локально для каждой карточки.
+  без прежних декоративных Lucide-иконок и иероглифов. Горизонтальный
+  touch-жест и отдельные кнопки «Предыдущее фото» / «Следующее фото» листают
+  галерею; индекс хранится локально для каждой карточки. Стрелки используют
+  общий с overflow-навигацией вкладок `FadeChevronButton`: без границы,
+  круглой белой подложки и тени, с мягким radial fade по краю фотографии.
+  Индикатор кадров использует приглушённый белый fade без тени.
+- Обычный click/tap по фотографии, названию или свободной non-control области
+  карточки открывает product detail, а не листает следующий кадр. Arrow/cart
+  controls выполняют только собственное действие. Detail использует
+  `DialogShell` размером до `56rem × 42rem`, показывает большую галерею,
+  thumbnails всех кадров, полное существующее описание, цену и действия
+  «В корзину» / «Оформить сразу». Кнопка закрытия находится справа сверху;
+  Escape/backdrop закрывают dialog и возвращают пользователя к каталогу.
+- «В корзину» из detail добавляет одну единицу и оставляет dialog открытым.
+  «Оформить сразу» сначала гарантирует количество товара не меньше единицы,
+  затем закрывает detail и открывает шаг доставки существующего demo checkout;
+  два `DialogShell` одновременно не остаются открытыми.
+- Открытие и закрытие использует View Transition от конкретной карточки к
+  dialog и обратно. При отсутствии API, ошибке transition или
+  `prefers-reduced-motion: reduce` применяется немедленный функциональный
+  fallback без shared-element анимации.
 - Выбор вида переключает одну projection между крупными и компактными
   карточками. На широком экране это соответственно три и шесть колонок, на
-  tablet — две и четыре, на mobile — одна и две. Compact mode скрывает
-  вторичное описание и chips, но сохраняет фото, название, цену и действие
-  корзины.
+  tablet — две и четыре, на mobile — одна и две. Обе плотности сохраняют верхние
+  pills категории и аудитории (`Для ученика` / `Для преподавателя`) сразу под
+  фото. Compact mode скрывает вторичное описание, но сохраняет pills, фото,
+  название, цену и действие корзины. Нижние tag-pills вроде «методика» или
+  «письмо» на карточке больше не показываются.
 - Строки «В наличии / Нет в наличии» и stock-based блокировка удалены: в этом
   demo нет Inventory. Цена стала заметнее и выровнена по общей вертикальной
-  оси с кнопкой «В корзину». Header-chip «Демо · без оплаты» удалён; честная
-  demo-маркировка остаётся на платёжном и финальном шагах checkout.
+  оси с кнопкой «В корзину». В card CTA используется понятная иконка
+  `ShoppingCart`, а разделителя над footer нет. Header-chip «Демо · без оплаты»
+  удалён; честная demo-маркировка остаётся в detail, на платёжном и финальном
+  шагах checkout.
 - Эти изображения — source-controlled public assets текущего UI-only demo, а
   не Supabase Storage, Product media model или свидетельство фактического
   остатка. Управляемые product media остаются частью будущего commerce slice.
@@ -90,18 +119,22 @@ Checkout запрашивает только имя, телефон, email и а
 - Категории и выбор вида имеют клавиатурное управление, видимый focus и
   доступные имена; поиск и поля checkout связаны с явными label, а ошибки — с
   соответствующими полями.
-- Галерея имеет осмысленный `alt` для каждого кадра, доступные имена у tap и
-  arrow controls и live-status «Фото N из M». Горизонтальный жест не блокирует
-  вертикальный scroll страницы.
-- Модальный диалог объявлен семантически, удерживает focus внутри, закрывается
-  по `Escape` и после закрытия возвращает focus на вызвавшую его кнопку.
+- Галерея имеет осмысленный `alt` для каждого кадра, отдельные доступные имена
+  у open/arrow/thumbnail controls и live-status «Фото N из M». Горизонтальный
+  жест не блокирует вертикальный scroll страницы; на карточке обычная
+  активация фотографии открывает detail, а в detail клавиши-стрелки и swipe
+  меняют кадр.
+- Product detail и cart/checkout dialog объявлены семантически, удерживают
+  focus внутри, закрываются по `Escape` и после закрытия возвращают focus на
+  вызвавший control. Shared-element motion не является условием выполнения
+  действия и отключается при `prefers-reduced-motion: reduce`.
 - Изменение количества и удаление не зависят только от иконки или цвета:
   controls имеют понятные accessible names, а итог и количество доступны
   screen reader.
 - На узком экране header actions сохраняют intrinsic width, toolbar переносится
   без горизонтального overflow, а крупный и компактный виды перестраиваются в
-  одну и две колонки. Диалог корзины и checkout остаётся внутри viewport и
-  допускает вертикальный scroll содержимого.
+  одну и две колонки. Product detail, корзина и checkout остаются внутри
+  viewport и допускают вертикальный scroll содержимого.
 
 ## Acceptance checks current-среза
 
@@ -123,9 +156,21 @@ Checkout запрашивает только имя, телефон, email и а
    slug не ломает страницу и не меняет корзину.
 7. Основной путь доступен с клавиатуры; dialog focus/return-focus работает, а
    mobile viewport не получает page-level horizontal overflow.
-8. Все 19 изображений загружаются в квадратной области; tap, swipe и обе
-   стрелки меняют только текущую карточку. Availability-текста и недоступной
-   из-за stock кнопки в каталоге нет.
+8. Все 19 masters имеют `1254 × 1254`; карточка и detail получают responsive
+   `/_next/image` variants из разрешённых local paths с подходящим `sizes`, а
+   не безусловно скачивают master. Квадратная область и `object-fit: cover`
+   сохраняются.
+9. Swipe и обе стрелки меняют только текущую галерею; click/tap по фото,
+   заголовку или свободной non-control области открывает detail. Нажатие
+   стрелки или кнопки корзины detail не открывает.
+10. Detail показывает все кадры и thumbnails, существующее полное описание,
+    цену и два действия. «В корзину» обновляет badge; «Оформить сразу» не
+    дублирует позицию при уже положительном количестве и открывает delivery без
+    одновременного второго dialog.
+11. Верхние category/audience pills присутствуют в обеих плотностях; нижних
+    tag-pills, availability-текста, stock gating, card `ShoppingBag` и footer
+    divider в каталоге нет. View Transition имеет функциональный
+    reduced-motion/unsupported fallback.
 
 Historical Store baseline был подтверждён running source
 `9e66fb548bef176486673149f466b269fd436b21`: guest `/store` следовал текущему
@@ -156,11 +201,24 @@ shadow-transition. Plain cards также используют
 не с белой заливкой. Semantic/dashed `SurfaceCard` borders при этом не
 перезаписываются. Deep-link и programmatic focus товара сохраняют отдельный
 3 px outline поверх неизменной base-тени. Фото занимает квадратную область с
-`object-fit: cover`; overlay-кнопки галереи имеют контрастный focus. Крупная
-сетка использует три колонки, compact — шесть, с responsive fallbacks,
-описанными выше. Footer сохраняет одну строку с vertically centered ценой
-`1.18rem` и кнопкой корзины. В `forced-colors` surface shadow заменяется
-системным outline.
+`object-fit: cover`; overlay-кнопка открытия и arrow controls имеют
+контрастный focus. Стрелки — общий `FadeChevronButton` с borderless radial
+fade, а dots — приглушённый white fade без shadow. Крупная сетка использует три
+колонки, compact — шесть, с responsive fallbacks, описанными выше. Category и
+audience pills сохраняются в обеих плотностях; отдельный ряд tag-pills на card
+не возвращается. Footer без верхнего divider сохраняет одну строку с vertically
+centered ценой `1.18rem` и кнопкой `ShoppingCart`. В `forced-colors` surface
+shadow заменяется системным outline.
+
+Product detail использует тот же `DialogShell`, но с panel до
+`56rem × 42rem`; desktop layout делит gallery/copy, narrow viewport
+перестраивает их вертикально. Большое фото и thumbnails используют responsive
+`next/image`; dialog не меняет public/private image boundary. Для единственного
+активного товара card surface и dialog panel временно получают общий
+`view-transition-name`; имя снимается после завершения, а reduced-motion и
+unsupported browser идут по немедленному fallback. Deep link
+`/store?product=<slug>` по-прежнему только выбирает category, прокручивает и
+фокусирует карточку: он не открывает detail автоматически и не меняет cart.
 
 Base `.product-control` / `.field-input`, включая многострочный адрес,
 получают общий border и clipped background. Поиск каталога и

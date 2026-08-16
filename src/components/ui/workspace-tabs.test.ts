@@ -8,6 +8,7 @@ function source(path: string) {
 
 test("workspace tabs keep their accessible visual contract and raise positive counts", () => {
   const component = source("src/components/ui/workspace-tabs.tsx");
+  const fadeControl = source("src/components/ui/fade-chevron-button.tsx");
   const styles = source("src/app/globals.css");
   const motionStyles = source("src/app/styles/page-motion.css");
   const countStyles = /\.workspace-tab-count\s*\{[^}]*\}/.exec(styles)?.[0];
@@ -40,7 +41,12 @@ test("workspace tabs keep their accessible visual contract and raise positive co
   assert.match(component, /hidden=\{!scrollEdges\.canScrollRight\}/);
   assert.match(
     component,
-    /<ChevronLeft aria-hidden="true" \/>[\s\S]*?role="tablist"[\s\S]*?<ChevronRight aria-hidden="true" \/>/,
+    /<FadeChevronButton[\s\S]*?direction="left"[\s\S]*?role="tablist"[\s\S]*?<FadeChevronButton[\s\S]*?direction="right"/,
+  );
+  assert.match(fadeControl, /"fade-chevron-control"/);
+  assert.match(
+    fadeControl,
+    /direction === "left" \? ChevronLeft : ChevronRight/,
   );
   assert.match(component, /scroller\.scrollBy\(\{/);
   assert.match(component, /behavior: reducedMotion \? "auto" : "smooth"/);
@@ -74,7 +80,11 @@ test("workspace tabs keep their accessible visual contract and raise positive co
   );
   assert.match(
     styles,
-    /\.workspace-tabs-scroll-control\s*\{[^}]*position: absolute;[^}]*width: var\(--course-demo-control-height, 2\.5rem\);[^}]*height: var\(--course-demo-control-height, 2\.5rem\);/,
+    /\.workspace-tabs-scroll-control\s*\{[^}]*position: absolute;/,
+  );
+  assert.match(
+    styles,
+    /\.fade-chevron-control\s*\{[^}]*width: var\(--course-demo-control-height, 2\.5rem\);[^}]*height: var\(--course-demo-control-height, 2\.5rem\);[^}]*border: 0;[^}]*radial-gradient/,
   );
   assert.match(
     styles,

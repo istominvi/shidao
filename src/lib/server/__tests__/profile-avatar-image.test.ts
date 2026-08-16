@@ -4,8 +4,10 @@ import sharp from "sharp";
 import { ACCOUNT_AVATAR_MAX_UPLOAD_BYTES } from "@/lib/account-avatar";
 import {
   detectProfileAvatarMimeType,
+  parseProfileAvatarDeliveryWidth,
   processProfileAvatarImage,
   ProfileAvatarInputError,
+  renderProfileAvatarDeliveryVariant,
 } from "../profile-avatar-image";
 
 test("profile avatar magic detection accepts only JPEG, PNG and WebP", () => {
@@ -124,5 +126,36 @@ test("profile avatar processing rejects oversized files and dimensions", async (
       declaredMimeType: "image/png",
     }),
     /неподдерживаемые параметры/,
+  );
+});
+
+test("profile avatar delivery emits only bounded responsive WebP variants", async () => {
+  assert.equal(parseProfileAvatarDeliveryWidth(null), 512);
+  assert.equal(parseProfileAvatarDeliveryWidth("40"), 40);
+  assert.equal(parseProfileAvatarDeliveryWidth("80"), 80);
+  assert.equal(parseProfileAvatarDeliveryWidth("41"), null);
+  assert.equal(parseProfileAvatarDeliveryWidth("2048"), null);
+  assert.equal(parseProfileAvatarDeliveryWidth("40.0"), null);
+
+  const master = await sharp({
+    create: {
+      width: 512,
+      height: 512,
+      channels: 3,
+      background: "#70b7ff",
+    },
+  })
+    .webp({ quality: 82 })
+    .toBuffer();
+  const variant = await renderProfileAvatarDeliveryVariant(master, 40);
+  const metadata = await sharp(variant).metadata();
+
+  assert.equal(metadata.format, "webp");
+  assert.equal(metadata.width, 40);
+  assert.equal(metadata.height, 40);
+  assert.ok(variant.byteLength < master.byteLength);
+  await assert.rejects(
+    renderProfileAvatarDeliveryVariant(master, 41),
+    /width is invalid/,
   );
 });

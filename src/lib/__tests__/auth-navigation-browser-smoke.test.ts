@@ -3188,7 +3188,10 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
     return;
   }
 
-  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+  const runtime = await openPage({
+    cookie: authenticatedCookieValue(),
+    viewport: { width: 1280, height: 720 },
+  });
 
   try {
     await runtime.page.goto(
@@ -3244,12 +3247,17 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
       return {
         complete: image.complete,
         naturalWidth: image.naturalWidth,
+        currentSrc: image.currentSrc,
+        srcset: image.getAttribute("srcset") ?? "",
         width: rect.width,
         height: rect.height,
       };
     });
     assert.equal(firstImageState.complete, true);
     assert.ok(firstImageState.naturalWidth > 0);
+    assert.ok(firstImageState.naturalWidth <= 1254);
+    assert.match(firstImageState.currentSrc, /\/_next\/image\?/);
+    assert.match(firstImageState.srcset, /\/_next\/image\?/);
     assert.ok(Math.abs(firstImageState.width - firstImageState.height) < 1);
     assert.equal(await firstCarousel.getAttribute("data-image-index"), "0");
 
@@ -3262,26 +3270,98 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
     assert.equal(await secondCarousel.getAttribute("data-image-index"), "0");
     await firstCarousel
       .getByRole("button", {
-        name: "Показать следующее фото товара: Прописи «Первые китайские иероглифы»",
+        name: "Следующее фото товара: Прописи «Первые китайские иероглифы»",
         exact: true,
       })
       .click();
     assert.equal(await firstCarousel.getAttribute("data-image-index"), "1");
     assert.equal(await secondCarousel.getAttribute("data-image-index"), "0");
-    await firstCarousel
-      .getByRole("button", {
-        name: "Следующее фото товара: Прописи «Первые китайские иероглифы»",
-        exact: true,
-      })
-      .click();
-    assert.equal(await firstCarousel.getAttribute("data-image-index"), "2");
+    assert.equal(await runtime.page.getByRole("dialog").count(), 0);
     await firstCarousel
       .getByRole("button", {
         name: "Предыдущее фото товара: Прописи «Первые китайские иероглифы»",
         exact: true,
       })
       .click();
-    assert.equal(await firstCarousel.getAttribute("data-image-index"), "1");
+    assert.equal(await firstCarousel.getAttribute("data-image-index"), "0");
+
+    const productImageOpener = firstCarousel.getByRole("button", {
+      name: "Открыть товар: Прописи «Первые китайские иероглифы»",
+      exact: true,
+    });
+    await productImageOpener.click();
+    let productDialog = runtime.page.getByRole("dialog", {
+      name: "Прописи «Первые китайские иероглифы»",
+      exact: true,
+    });
+    await productDialog.waitFor();
+    await runtime.page.waitForFunction(() => {
+      const image = document.querySelector<HTMLImageElement>(
+        ".store-product-dialog .store-product-image",
+      );
+      return Boolean(image?.complete && image.naturalWidth > 0);
+    });
+    assert.equal((await productDialog.getByRole("img").count()) >= 1, true);
+    assert.equal(
+      await productDialog
+        .getByRole("button", { name: /Показать фото/ })
+        .count(),
+      3,
+    );
+    await productDialog
+      .getByRole("button", { name: /^Показать фото 3:/ })
+      .click();
+    assert.equal(
+      await productDialog
+        .getByRole("group", {
+          name: "Фотографии товара: Прописи «Первые китайские иероглифы»",
+          exact: true,
+        })
+        .getAttribute("data-image-index"),
+      "2",
+    );
+    const productDialogRect = await productDialog.evaluate((dialog) => {
+      const rect = dialog.getBoundingClientRect();
+      return { width: Math.round(rect.width), height: Math.round(rect.height) };
+    });
+    assert.ok(productDialogRect.width >= 800);
+    assert.ok(productDialogRect.height >= 600);
+    await productDialog
+      .getByRole("button", { name: "В корзину", exact: true })
+      .click();
+    await productDialog
+      .getByRole("button", { name: "Добавить ещё · 1", exact: true })
+      .waitFor();
+    await productDialog
+      .getByRole("button", { name: "Закрыть товар", exact: true })
+      .click();
+    await productDialog.waitFor({ state: "detached" });
+    assert.equal(await firstCarousel.getAttribute("data-image-index"), "2");
+    assert.equal(
+      await productImageOpener.evaluate(
+        (button) => document.activeElement === button,
+      ),
+      true,
+    );
+
+    const productTitleOpener = firstProduct.getByRole("button", {
+      name: "Прописи «Первые китайские иероглифы»",
+      exact: true,
+    });
+    await productTitleOpener.click();
+    productDialog = runtime.page.getByRole("dialog", {
+      name: "Прописи «Первые китайские иероглифы»",
+      exact: true,
+    });
+    await productDialog.waitFor();
+    await runtime.page.keyboard.press("Escape");
+    await productDialog.waitFor({ state: "detached" });
+    assert.equal(
+      await productTitleOpener.evaluate(
+        (button) => document.activeElement === button,
+      ),
+      true,
+    );
 
     const comfortableView = runtime.page.getByRole("button", {
       name: "Показать крупные карточки товаров",
@@ -3531,7 +3611,38 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
         name: "Добавить в корзину: Прописи «Первые китайские иероглифы»",
         exact: true,
       })
+      .waitFor();
+    await runtime.page
+      .getByRole("button", {
+        name: "Прописи «Первые китайские иероглифы»",
+        exact: true,
+      })
       .click();
+    productDialog = runtime.page.getByRole("dialog", {
+      name: "Прописи «Первые китайские иероглифы»",
+      exact: true,
+    });
+    await productDialog.waitFor();
+    await productDialog
+      .getByRole("button", { name: "Оформить сразу", exact: true })
+      .click();
+    const directDeliveryDialog = runtime.page.getByRole("dialog", {
+      name: "Куда доставить",
+      exact: true,
+    });
+    await directDeliveryDialog.waitFor();
+    assert.equal(await runtime.page.getByRole("dialog").count(), 1);
+    assert.equal(
+      await runtime.page
+        .getByRole("button", {
+          name: "Открыть корзину, товаров: 1",
+          exact: true,
+        })
+        .count(),
+      1,
+    );
+    await runtime.page.keyboard.press("Escape");
+    await directDeliveryDialog.waitFor({ state: "detached" });
     await runtime.page
       .getByRole("button", {
         name: "Открыть корзину, товаров: 1",
@@ -3621,6 +3732,34 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
       })),
       { clientWidth: 375, scrollWidth: 375 },
     );
+    await runtime.page
+      .getByRole("button", {
+        name: "Прописи «Первые китайские иероглифы»",
+        exact: true,
+      })
+      .click();
+    const mobileProductDialog = runtime.page.getByRole("dialog", {
+      name: "Прописи «Первые китайские иероглифы»",
+      exact: true,
+    });
+    await mobileProductDialog.waitFor();
+    assert.deepEqual(
+      await runtime.page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      })),
+      { clientWidth: 375, scrollWidth: 375 },
+    );
+    assert.equal(
+      await mobileProductDialog.evaluate((dialog) => {
+        const rect = dialog.getBoundingClientRect();
+        return rect.left >= 0 && rect.right <= window.innerWidth;
+      }),
+      true,
+    );
+    await mobileProductDialog
+      .getByRole("button", { name: "Закрыть товар", exact: true })
+      .click();
   } finally {
     await runtime.close();
   }
@@ -9205,7 +9344,7 @@ test("browser smoke: self profile exposes only learner-safe history and controls
     await runtime.page.waitForFunction(() => {
       const images = Array.from(
         document.querySelectorAll<HTMLImageElement>(
-          '[role="dialog"] fieldset img[src^="/avatars/presets/"]',
+          '[role="dialog"] fieldset img',
         ),
       );
       return (
@@ -9217,7 +9356,7 @@ test("browser smoke: self profile exposes only learner-safe history and controls
       );
     });
     const presetImageContract = await avatarDialog
-      .locator('fieldset img[src^="/avatars/presets/"]')
+      .locator("fieldset img")
       .evaluateAll((images) =>
         images.map((image) => {
           const avatarImage = image as HTMLImageElement;
@@ -9236,8 +9375,8 @@ test("browser smoke: self profile exposes only learner-safe history and controls
           image.complete &&
           image.naturalWidth > 0 &&
           image.naturalHeight > 0 &&
-          image.src.startsWith("/avatars/presets/") &&
-          !image.src.includes("/_next/image"),
+          image.src.includes("/_next/image") &&
+          image.src.includes("url=%2Favatars%2Fpresets%2F"),
       ),
       true,
     );

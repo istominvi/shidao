@@ -1,6 +1,7 @@
 import { toInitials } from "@/lib/auth";
 import { GUEST_SESSION_VIEW, type SessionView } from "@/lib/session-view";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
+import { createProfileAvatarDeliveryKey } from "@/lib/server/profile-avatar-delivery";
 
 export async function readSessionViewServer(): Promise<SessionView> {
   const resolution = await resolveAccessPolicy();
@@ -29,6 +30,14 @@ export async function readSessionViewServer(): Promise<SessionView> {
           kind: ctx.avatar.kind,
           presetKey: ctx.avatar.presetKey,
           revision: ctx.avatar.revision,
+          ...(ctx.avatar.kind === "custom"
+            ? {
+                deliveryKey: createProfileAvatarDeliveryKey({
+                  authUserId: ctx.authUserId,
+                  revision: ctx.avatar.revision,
+                }),
+              }
+            : {}),
         },
       };
     }

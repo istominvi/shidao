@@ -9,6 +9,7 @@ function source(path: string) {
 
 test("profile avatar API keeps private object identity out of public responses", () => {
   const route = source("src/app/api/settings/profile/avatar/route.ts");
+  const delivery = source("src/lib/server/profile-avatar-delivery.ts");
   const publicAvatarStart = route.indexOf("function publicAvatar(");
   const publicAvatarEnd = route.indexOf("\n}\n", publicAvatarStart) + 2;
   const publicAvatar = route.slice(publicAvatarStart, publicAvatarEnd);
@@ -20,9 +21,18 @@ test("profile avatar API keeps private object identity out of public responses",
   assert.doesNotMatch(publicAvatar, /storagePath|storage_path/);
   assert.match(route, /account\.authUserId !== session\.uid/);
   assert.match(route, /isSessionRevoked/);
-  assert.match(route, /"Cache-Control": "private, no-store"/);
+  assert.match(route, /requestedRevision !== account\.avatar\.revision/);
+  assert.match(route, /parseProfileAvatarDeliveryWidth/);
+  assert.match(route, /suppliedDeliveryKey !== expectedDeliveryKey/);
+  assert.match(route, /private, max-age=31536000, immutable/);
+  assert.match(route, /Vary: "Cookie"/);
+  assert.match(route, /req\.headers\.get\("if-none-match"\) === etag/);
+  assert.match(route, /renderProfileAvatarDeliveryVariant\(bytes, width\)/);
   assert.match(route, /"X-Content-Type-Options": "nosniff"/);
   assert.doesNotMatch(route, /SUPABASE_SERVICE_ROLE_KEY|service-role/);
+  assert.match(delivery, /createHmac\("sha256", appSessionSecret\(\)\)/);
+  assert.match(delivery, /DELIVERY_KEY_SCOPE/);
+  assert.doesNotMatch(delivery, /storagePath|storage_path/);
 });
 
 test("custom avatar upload is validated server-side before private Storage", () => {

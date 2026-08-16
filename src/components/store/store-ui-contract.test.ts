@@ -9,6 +9,8 @@ function source(path: string) {
 const page = source("src/app/(app)/store/page.tsx");
 const workspace = source("src/components/store/store-workspace.tsx");
 const carousel = source("src/components/store/store-product-carousel.tsx");
+const productDialog = source("src/components/store/store-product-dialog.tsx");
+const fadeControl = source("src/components/ui/fade-chevron-button.tsx");
 const productSelect = source("src/components/ui/product-select.tsx");
 const checkout = source("src/components/store/store-checkout-dialog.tsx");
 const catalog = source("src/components/store/store-catalog.ts");
@@ -81,13 +83,14 @@ test("Store is an Account page built from the shared product shell", () => {
   assert.doesNotMatch(catalog, /visualKey|\bstock:/);
 });
 
-test("Store cards use square photo carousels with tap, swipe, and arrow controls", () => {
+test("Store cards use optimized square galleries with open, swipe, and shared fade controls", () => {
   assert.match(carousel, /import Image from "next\/image"/);
   assert.match(carousel, /className="store-product-carousel"/);
   assert.match(carousel, /className="store-product-image"/);
   assert.match(carousel, /alt=\{image\.alt\}/);
-  assert.match(carousel, /unoptimized/);
-  assert.match(carousel, /Показать следующее фото товара/);
+  assert.doesNotMatch(carousel, /unoptimized/);
+  assert.match(carousel, /quality=\{detail \? 85 : 75\}/);
+  assert.match(carousel, /Открыть товар/);
   assert.match(carousel, /Предыдущее фото товара/);
   assert.match(carousel, /Следующее фото товара/);
   assert.match(carousel, /onPointerDown=\{handlePointerDown\}/);
@@ -97,6 +100,9 @@ test("Store cards use square photo carousels with tap, swipe, and arrow controls
     /Фото \{imageIndex \+ 1\} из \{product\.images\.length\}/,
   );
   assert.match(carousel, /aria-live="polite"/);
+  assert.match(carousel, /<FadeChevronButton/);
+  assert.match(fadeControl, /"fade-chevron-control"/);
+  assert.match(workspace, /<StoreProductDialog/);
 
   assert.match(styles, /\.store-product-carousel\s*\{[^}]*aspect-ratio: 1;/);
   assert.match(styles, /\.store-product-image\s*\{[^}]*object-fit: cover;/);
@@ -115,6 +121,49 @@ test("Store cards use square photo carousels with tap, swipe, and arrow controls
   assert.match(
     styles,
     /\.store-product-card-footer strong\s*\{[^}]*font-size: 1\.18rem;/,
+  );
+
+  const arrowStyles =
+    /\.store-product-carousel-arrow\s*\{[^}]*\}/.exec(styles)?.[0] ?? "";
+  const dotStyles =
+    /\.store-product-carousel-dots\s*\{[^}]*\}/.exec(styles)?.[0] ?? "";
+  const footerStyles =
+    /\.store-product-card-footer\s*\{[^}]*\}/.exec(styles)?.[0] ?? "";
+  assert.doesNotMatch(
+    arrowStyles,
+    /border:|border-radius:|background:|box-shadow:|backdrop-filter:/,
+  );
+  assert.match(dotStyles, /radial-gradient/);
+  assert.doesNotMatch(dotStyles, /box-shadow:/);
+  assert.doesNotMatch(footerStyles, /border-top:/);
+  assert.doesNotMatch(workspace, /store-product-tags/);
+  assert.match(workspace, /<ShoppingCart className="h-4 w-4"/);
+  assert.match(workspace, /className="store-product-card-meta"/);
+});
+
+test("Store product details expand into a large accessible purchase dialog", () => {
+  assert.match(productDialog, /<DialogShell/);
+  assert.match(productDialog, /title=\{product\.title\}/);
+  assert.match(productDialog, /closeLabel="Закрыть товар"/);
+  assert.match(productDialog, /event\.key !== "Escape"/);
+  assert.match(productDialog, /<StoreProductCarousel/);
+  assert.match(productDialog, /detail/);
+  assert.match(productDialog, /product\.description/);
+  assert.match(productDialog, /formatStorePrice/);
+  assert.match(productDialog, /В корзину/);
+  assert.match(productDialog, /Оформить сразу/);
+  assert.match(carousel, /store-product-gallery-thumbnails/);
+  assert.match(carousel, /aria-current=\{index === imageIndex/);
+  assert.match(workspace, /startViewTransition/);
+  assert.match(workspace, /flushSync/);
+  assert.match(
+    styles,
+    /\.store-product-dialog-panel\s*\{[^}]*min\(56rem,[^}]*min\(42rem,/,
+  );
+  assert.match(styles, /view-transition-name: store-product-detail;/);
+  assert.match(
+    styles,
+    /@media \(prefers-reduced-motion: reduce\)[\s\S]*?view-transition-group\(store-product-detail\)/,
   );
 });
 

@@ -11,11 +11,18 @@ import {
   Puzzle,
   RotateCcw,
   Search,
-  ShoppingBag,
   ShoppingCart,
   type LucideIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
+import { flushSync } from "react-dom";
 import { AppPageHeader } from "@/components/app/page-header";
 import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
 import { useSessionView } from "@/components/use-session-view";
@@ -44,12 +51,26 @@ import {
   type StoreProduct,
 } from "@/components/store/store-catalog";
 import { StoreProductCarousel } from "@/components/store/store-product-carousel";
+import { StoreProductDialog } from "@/components/store/store-product-dialog";
 import {
   StoreCheckoutDialog,
   type StoreCheckoutStep,
 } from "@/components/store/store-checkout-dialog";
 
 type StoreView = "comfortable" | "compact";
+
+type BrowserViewTransition = {
+  finished: Promise<void>;
+};
+
+type ViewTransitionDocument = Document & {
+  startViewTransition?: (update: () => void) => BrowserViewTransition;
+};
+
+type OpenStoreProduct = {
+  product: StoreProduct;
+  imageIndex: number;
+};
 
 const STORE_TABS_ID = "store-categories";
 
@@ -78,25 +99,50 @@ function StoreProductCard({
   quantity,
   highlighted,
   compact,
+  priority,
+  imageIndex,
+  transitionSource,
   onAdd,
+  onImageIndexChange,
+  onOpen,
 }: {
   product: StoreProduct;
   quantity: number;
   highlighted: boolean;
   compact: boolean;
+  priority: boolean;
+  imageIndex: number;
+  transitionSource: boolean;
   onAdd: (product: StoreProduct) => void;
+  onImageIndexChange: (product: StoreProduct, imageIndex: number) => void;
+  onOpen: (product: StoreProduct, imageIndex: number) => void;
 }) {
   return (
     <article
       id={`store-product-${product.id}`}
       tabIndex={-1}
       className={`store-product-card ${highlighted ? "store-product-highlighted" : ""}`}
+      onClick={(event) => {
+        const target = event.target;
+        if (target instanceof Element && target.closest("button, a, input")) {
+          return;
+        }
+        event.currentTarget.focus({ preventScroll: true });
+        onOpen(product, imageIndex);
+      }}
     >
       <SurfaceCard
-        className="store-product-card-surface"
+        className={`store-product-card-surface ${transitionSource ? "store-product-card-transition-source" : ""}`}
         bodyClassName="store-product-card-inner"
       >
-        <StoreProductCarousel product={product} compact={compact} />
+        <StoreProductCarousel
+          product={product}
+          compact={compact}
+          imageIndex={imageIndex}
+          onImageIndexChange={(index) => onImageIndexChange(product, index)}
+          onOpen={() => onOpen(product, imageIndex)}
+          priority={priority}
+        />
         <div className="store-product-card-body">
           <div className="store-product-card-meta">
             <span>{CATEGORY_LABELS[product.category]}</span>
@@ -106,13 +152,16 @@ function StoreProductCard({
                 : "Для ученика"}
             </span>
           </div>
-          <h2>{product.title}</h2>
+          <h2>
+            <button
+              type="button"
+              className="store-product-title-button"
+              onClick={() => onOpen(product, imageIndex)}
+            >
+              {product.title}
+            </button>
+          </h2>
           <p>{product.description}</p>
-          <div className="store-product-tags" aria-label="Метки товара">
-            {product.tags.slice(0, 2).map((tag) => (
-              <span key={tag}>{tag}</span>
-            ))}
-          </div>
           <div className="store-product-card-footer">
             <strong>{formatStorePrice(product.priceKopeks)}</strong>
             <Button
@@ -120,7 +169,7 @@ function StoreProductCard({
               aria-label={`Добавить в корзину: ${product.title}`}
               onClick={() => onAdd(product)}
             >
-              <ShoppingBag className="h-4 w-4" aria-hidden="true" />
+              <ShoppingCart className="h-4 w-4" aria-hidden="true" />
               <span className="store-product-add-label">
                 {quantity > 0 ? `Ещё · ${quantity}` : "В корзину"}
               </span>
@@ -145,10 +194,18 @@ export function StoreWorkspace({
     category: targetProduct?.category ?? "all",
   }));
   const [view, setView] = useState<StoreView>("comfortable");
+  const [productImageIndexes, setProductImageIndexes] = useState<
+    Record<string, number>
+  >({});
   const [cartState, dispatchCart] = useReducer(storeCartReducer, {});
   const [checkoutStep, setCheckoutStep] = useState<StoreCheckoutStep | null>(
     null,
   );
+  const [openProduct, setOpenProduct] = useState<OpenStoreProduct | null>(null);
+  const [transitionProductSlug, setTransitionProductSlug] = useState<
+    string | null
+  >(null);
+  const productTransitionTokenRef = useRef(0);
   const [announcement, setAnnouncement] = useState("");
   const { state: session } = useSessionView();
 
@@ -197,6 +254,48 @@ export function StoreWorkspace({
 
   const closeCheckout = useCallback(() => setCheckoutStep(null), []);
 
+  const runProductTransition = useCallback(
+    (productSlug: string, update: () => void) => {
+      const transitionDocument = document as ViewTransitionDocument;
+      const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      if (!transitionDocument.startViewTransition || reducedMotion) {
+        update();
+        return Promise.resolve();
+      }
+
+      const token = ++productTransitionTokenRef.current;
+      flushSync(() => setTransitionProductSlug(productSlug));
+
+      try {
+        const transition = transitionDocument.startViewTransition(() => {
+          if (productTransitionTokenRef.current !== token) return;
+          flushSync(update);
+        });
+        return transition.finished
+          .catch(() => undefined)
+          .then(() => {
+            if (productTransitionTokenRef.current === token) {
+              setTransitionProductSlug(null);
+            }
+          });
+      } catch {
+        setTransitionProductSlug(null);
+        update();
+        return Promise.resolve();
+      }
+    },
+    [],
+  );
+
+  const closeProduct = useCallback(() => {
+    if (!openProduct) return;
+    void runProductTransition(openProduct.product.slug, () => {
+      setOpenProduct(null);
+    });
+  }, [openProduct, runProductTransition]);
+
   function updateFilter<TKey extends keyof StoreFilters>(
     key: TKey,
     value: StoreFilters[TKey],
@@ -211,6 +310,36 @@ export function StoreWorkspace({
   function addProduct(product: StoreProduct) {
     dispatchCart({ type: "add", slug: product.slug });
     setAnnouncement(`${product.title} добавлен в корзину.`);
+  }
+
+  function showProduct(product: StoreProduct, imageIndex: number) {
+    void runProductTransition(product.slug, () => {
+      setOpenProduct({ product, imageIndex });
+    });
+  }
+
+  function updateProductImage(product: StoreProduct, imageIndex: number) {
+    setProductImageIndexes((current) =>
+      current[product.slug] === imageIndex
+        ? current
+        : { ...current, [product.slug]: imageIndex },
+    );
+    setOpenProduct((current) =>
+      current?.product.slug === product.slug &&
+      current.imageIndex !== imageIndex
+        ? { ...current, imageIndex }
+        : current,
+    );
+  }
+
+  function buyProductNow(product: StoreProduct) {
+    if ((cartState[product.slug] ?? 0) === 0) {
+      dispatchCart({ type: "add", slug: product.slug });
+    }
+    setAnnouncement(`${product.title} выбран для оформления.`);
+    void runProductTransition(product.slug, () => {
+      setOpenProduct(null);
+    }).then(() => setCheckoutStep("delivery"));
   }
 
   return (
@@ -341,14 +470,22 @@ export function StoreWorkspace({
               }
               data-density={view}
             >
-              {visibleProducts.map((product) => (
+              {visibleProducts.map((product, index) => (
                 <StoreProductCard
                   key={product.id}
                   product={product}
                   quantity={cartState[product.slug] ?? 0}
                   highlighted={targetProduct?.slug === product.slug}
                   compact={view === "compact"}
+                  priority={index === 0}
+                  imageIndex={productImageIndexes[product.slug] ?? 0}
+                  transitionSource={
+                    transitionProductSlug === product.slug &&
+                    openProduct?.product.slug !== product.slug
+                  }
                   onAdd={addProduct}
+                  onImageIndexChange={updateProductImage}
+                  onOpen={showProduct}
                 />
               ))}
             </div>
@@ -359,6 +496,22 @@ export function StoreWorkspace({
           {announcement}
         </p>
       </section>
+
+      {openProduct ? (
+        <StoreProductDialog
+          key={openProduct.product.slug}
+          product={openProduct.product}
+          imageIndex={openProduct.imageIndex}
+          quantity={cartState[openProduct.product.slug] ?? 0}
+          transitionTarget={transitionProductSlug === openProduct.product.slug}
+          onImageIndexChange={(imageIndex) =>
+            updateProductImage(openProduct.product, imageIndex)
+          }
+          onAdd={addProduct}
+          onBuyNow={buyProductNow}
+          onClose={closeProduct}
+        />
+      ) : null}
 
       {checkoutStep ? (
         <StoreCheckoutDialog

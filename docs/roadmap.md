@@ -312,6 +312,19 @@ email и пять основных маршрутов. Sign-out и адресу�
 внутри `/profile`; rollout и authenticated production postflight ещё не
 заявлены.
 
+**Current source / next production image delivery follow-up:** public Store и
+20 preset-avatar masters используют built-in `next/image` + уже установленный
+Sharp, explicit local allowlist, surface-specific `sizes`/quality и public
+cache floor `7d`. Private custom avatar остаётся за authenticated direct custom
+loader: exact revision, allowlisted width и opaque HMAC delivery key проверяются
+до Storage/resize; cache изолирован `private` + `Vary: Cookie` + ETag, initials
+видимы во время load/error. Private Course/Lesson signed images намеренно
+остаются `unoptimized` до отдельного authenticated derivative slice, потому что
+общий cache не должен переживать expiry/revoke/access change. Communication
+сейчас использует initials/Lucide; attachments остаются later. Новых dependency,
+schema, migration, bucket или message API нет. Полный boundary:
+[`docs/architecture/image-delivery.md`](./architecture/image-delivery.md).
+
 Согласованный target:
 
 - один roleless Account может одновременно преподавать, учиться и наблюдать;
@@ -1046,15 +1059,27 @@ audience/price/availability filters удалены. Header action открыва
 отсутствуют. Стабильный в текущем demo-каталоге product slug позволяет открыть
 `/store?product=<slug>`, но Lesson contracts пока не изменяются.
 
-**Current source / next production:** 19 квадратных фото девяти товаров
-нормализованы в `public/store/products/<slug>/` и связаны ordered-массивами с
-fixtures. Каждая карточка листает свою галерею тапом, клавиатурой, swipe или
-стрелками. Placeholder icons/glyphs, availability, stock gating и header demo
-chip удалены; честная demo-маркировка checkout сохранена. Прежняя таблица
-заменена compact cards: широкий экран переключается между `3` и `6` колонками,
-tablet — `2/4`, mobile — `1/2`. Цена увеличена и выровнена с кнопкой корзины.
-Это application/public-assets slice без Product, Inventory, API, Supabase
-Storage, schema или migration.
+**Current source / next production:** 19 square WebP masters девяти товаров
+нормализованы до `1254 × 1254` quality `90` в
+`public/store/products/<slug>/` и связаны ordered-массивами с fixtures.
+Built-in `next/image` + существующий Sharp отдаёт responsive variants по local
+allowlist/`sizes`: quality `75` на card/thumbnail и `85` в detail, cache floor
+`7d`, без новой dependency. Swipe и общие `FadeChevronButton` arrows листают
+галерею; стрелки имеют borderless radial fade, dots приглушены без shadow.
+Обычный click/tap фото, title или non-control card area открывает product
+`DialogShell` до `56rem × 42rem` с gallery/thumbnails, полным description,
+price, add и buy-now. Buy-now гарантирует quantity `>= 1` и переходит в
+delivery после закрытия detail. Card → dialog → card использует View Transition
+с unsupported/reduced-motion fallback; deep link остаётся scroll/focus.
+
+Category/audience pills сохранены в обеих плотностях, включая compact. Нижние
+tag-pills, placeholder icons/glyphs, availability, stock gating, card
+`ShoppingBag`, footer divider и header demo chip удалены; card CTA использует
+`ShoppingCart`, честная demo-маркировка detail/checkout сохранена. Прежняя
+таблица заменена compact cards: широкий экран переключается между `3` и `6`
+колонками, tablet — `2/4`, mobile — `1/2`. Цена увеличена и выровнена с кнопкой
+корзины. Это application/public-assets slice без Product, Inventory, API,
+Supabase Storage, schema или migration.
 
 **Next:** отдельно спроектировать Product/Order/Inventory, admin catalog,
 управляемые изображения и документы в Storage, delivery/legal contract и
@@ -1074,8 +1099,16 @@ Definition of Done текущего demo:
   четвёртый nav item и active state;
 - category tabs, поиск, custom product sort и крупный/компактный виды используют
   один детерминированный набор; отдельной filter-кнопки и таблицы нет;
-- все 19 square product images загружаются, а tap/swipe/обе стрелки изменяют
-  только текущую карточку; availability и stock gating отсутствуют;
+- все 19 masters имеют `1254 × 1254`, а Store card/detail получают responsive
+  `/_next/image` width по `sizes`; swipe/обе fade-стрелки изменяют только
+  текущую галерею;
+- tap/click фото, title или non-control card area открывает detail, но arrow и
+  cart controls его не открывают; thumbnails/description/price/add/buy-now и
+  close/focus return работают, buy-now не дублирует уже добавленный товар и
+  открывает delivery без второго dialog;
+- category/audience pills остаются в обеих плотностях; нижние tag-pills,
+  availability, stock gating, card `ShoppingBag` и footer divider отсутствуют;
+  View Transition имеет reduced-motion/unsupported fallback;
 - cart quantity/subtotal и checkout validation работают с клавиатуры и на
   mobile без page-level overflow;
 - UI не запрашивает банковские реквизиты, не выполняет order/payment request и

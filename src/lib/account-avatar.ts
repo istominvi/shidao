@@ -29,6 +29,7 @@ export type AccountAvatarView = {
   kind: "preset" | "custom";
   presetKey: AvatarPresetKey | null;
   revision: number;
+  deliveryKey?: string;
 };
 
 export type AccountAvatarPreset = {
@@ -112,7 +113,11 @@ export function avatarPresetSrc(key: AvatarPresetKey): string {
 
 export function accountAvatarSrc(avatar: AccountAvatarView): string {
   if (avatar.kind === "custom") {
-    return `/api/settings/profile/avatar?revision=${avatar.revision}`;
+    const params = new URLSearchParams({
+      revision: String(avatar.revision),
+    });
+    if (avatar.deliveryKey) params.set("cache", avatar.deliveryKey);
+    return `/api/settings/profile/avatar?${params.toString()}`;
   }
 
   return avatarPresetSrc(avatar.presetKey ?? DEFAULT_AVATAR_PRESET_KEY);

@@ -254,9 +254,10 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Run on everything except Next internals and static assets. The guard only
-  // acts on unsafe methods, so safe page/asset GETs are unaffected.
+  // Public raster sources bypass middleware so Next's internal image fetch can
+  // read their bytes without a synthetic Host header. Private image APIs stay
+  // inside the host/auth guard and use their own authenticated variant loader.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|manifest.webmanifest|icon.svg).*)",
+    "/((?!_next/static|_next/image|avatars/presets/|landing/|model/|store/products/|favicon.ico|sitemap.xml|manifest.webmanifest|icon.svg).*)",
   ],
 };

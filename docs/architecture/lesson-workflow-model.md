@@ -1162,6 +1162,16 @@ Course attachment:
   ownership;
 - не считается проанализированным только из-за успешной загрузки.
 
+Current private Course/Lesson image delivery намеренно сохраняет
+`next/image unoptimized` для краткоживущего signed URL. Общий `/_next/image`
+cache не является Course authorization boundary и может пережить expiry,
+revoke или изменение audience, поэтому private Storage host нельзя широко
+добавлять в `images.remotePatterns`. Responsive derivatives для StoredFile
+требуют отдельного authenticated security-reviewed slice с owner/course check,
+bounded variants, cache isolation и revoke semantics; public Store/preset
+оптимизация этот boundary не расширяет. Каноническая матрица находится в
+[`docs/architecture/image-delivery.md`](./image-delivery.md).
+
 OCR, parsing, embeddings и RAG — отдельный pipeline. Отсутствие этого pipeline
 не блокирует ручное использование файла в Lesson.
 

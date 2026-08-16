@@ -78,6 +78,10 @@ function pickAccountAvatar(input: unknown): AccountAvatarView | null {
     kind: "custom",
     presetKey: null,
     revision: input.revision as number,
+    ...(typeof input.deliveryKey === "string" &&
+    /^[A-Za-z0-9_-]{24}$/.test(input.deliveryKey)
+      ? { deliveryKey: input.deliveryKey }
+      : {}),
   };
 }
 

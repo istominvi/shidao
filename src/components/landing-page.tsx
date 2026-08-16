@@ -220,6 +220,7 @@ export function LandingPage({
               alt="Скриншоты интерфейса Shidao"
               width={1491}
               height={1491}
+              sizes="(max-width: 767px) calc(100vw - 2.5rem), 50vw"
               className="hero-product-shot-image"
               priority
             />
