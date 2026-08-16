@@ -8,9 +8,10 @@
 persisted System Assistant conversations и unified inbox
 
 **Deployment boundary:** production DB current через CC1 + A2 atomic Assistant
-schedule guard; dependent Communication Center web/API deployment и production
-API/browser postflight pending. Описанный UI нельзя считать доступным на
-`v2.shidao.ru` до отдельного deploy.
+schedule guard. Communication Center web/API/UI current на `v2.shidao.ru` из
+exact source `2efaa86851fffc7e444af904fb900d9984caa6a8`; Coolify deployment
+`otekp2zseg5ig2r05v6taabu` и production HTTP/auth/CSRF boundary postflight
+успешны.
 
 ## Product decision
 

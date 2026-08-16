@@ -468,12 +468,9 @@ client-loaded projection; cursor Catalog сохраняет server order. Оди
 `MoreVertical` в каждой Students-row
 открывает contextual menu: профиль, управление группами, реальный
 «Добавить в курс…» с сохранением существующей group/direct audience и
-destructive «Убрать из списка». «Написать сообщение» остаётся disabled с явной пометкой о
-недоступности в current production baseline. **Current source / next
-production:** для active linked learner этот пункт открывает единый центр
-«Сообщения» через `learnerProfileId`. CC1+A2 DB contract уже current, но до
-dependent web/API deployment и API/browser postflight source flow не
-объявляется production-возможностью.
+destructive «Убрать из списка». «Написать сообщение» для active linked learner
+открывает единый current production центр «Сообщения» через
+`learnerProfileId`.
 Archived/pending rows получают только допустимые restore/permanent-delete или
 cancel actions. Authenticated top header/profile menu стали
 сплошными белыми поверхностями без blur. Active V2 buttons/header controls
@@ -771,12 +768,12 @@ Definition of Done:
 - attachment metadata без скачивания/парсинга file contents;
 - отсутствие schema migration, quota/ledger и billing.
 
-**Current production System Assistant baseline; superseded in source единым
+**Historical System Assistant baseline; superseded in current production единым
 центром из P0.3a:**
 
-Production CC1+A2 DB contract уже применён и прошёл postflight/snapshot
-refresh, но dependent Communication Center web/API ещё не развёрнут. Поэтому current
-deployed System Assistant ниже по-прежнему остаётся React-state baseline.
+До Communication Center этот deployed System Assistant оставался React-state
+baseline. Production CC1+A2, dependent web/API и release postflight теперь
+current и заменили описанный ниже launcher/history flow.
 
 - один floating widget живёт в protected Account layout и не показывается на
   landing/Auth/demo; прежние кнопки course-scoped assistant удалены из Course и
@@ -813,7 +810,7 @@ course.add_lesson_with_plan | lesson.fill | lesson.delete`; chat ничего н
 - proposal HMAC-подписан на actor + idempotency key + exact action на 10 минут.
   UI допускает только одну pending карточку: «да»/кнопка применяют её без LLM,
   «нет», новый запрос или смена target отменяют;
-- в current production dialog history остаётся только в React state.
+- в historical baseline dialog history оставалась только в React state.
   Rate/concurrency guard,
   actor+target mutex и 10-минутный idempotency result cache работают только в
   памяти одного process; restart/другая replica их не видят. Подпись не заменяет
@@ -853,8 +850,7 @@ teacher context. Нельзя писать «AI изучил файл», пок�
 
 ## P0.3a: единый центр «Сообщения»
 
-**Current source + current production DB / next web/API; dependent rollout
-pending:** один global launcher с общим unread badge заменяет отдельные AI,
+**Current production:** один global launcher с общим unread badge заменяет отдельные AI,
 notification и messaging entry points. Он открывает unified inbox, но сохраняет
 явный provenance четырёх типов: direct, Course, **ShiDao · Система** и один из
 нескольких persisted диалогов **ShiDao ИИ**. Contextual actions Students и
@@ -892,13 +888,13 @@ Course только открывают этот же центр на нужно�
 - inbox использует cursor reads, polling раз в 30 секунд, focus refresh и
   `visibilitychange` для read cursor выбранного диалога. Realtime/presence,
   push/email, attachments и background AI worker в первый slice не входят;
-- forward schema/migrations, RPC/application/API и responsive UI находятся в
-  current source. Production DB CC1 + A2 применены, DB postflight и contract
-  snapshot current; dependent web/API deployment и production API/browser
-  postflight ещё не выполнены и не подразумеваются этим статусом.
+- forward schema/migrations, RPC/application/API и responsive UI current.
+  Production DB CC1 + A2, snapshot и postflight current; dependent web/API
+  развёрнут exact source `2efaa86851fffc7e444af904fb900d9984caa6a8`
+  через Coolify deployment `otekp2zseg5ig2r05v6taabu`, а production
+  HTTP/auth/CSRF boundary postflight пройден.
 
-**Next:** выполнить dependent web/API deploy и exact production API/browser
-postflight. Затем отдельными slices добавить durable action/job ledger,
+**Next:** отдельными slices добавить durable action/job ledger,
 distributed limiter, reliable background completion producers, richer
 learner-safe metrics, Realtime/presence и push/email delivery.
 

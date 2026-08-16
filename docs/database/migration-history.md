@@ -107,8 +107,9 @@ ShiDao хранит два обязательных слоя:
   не имеет `supabase_migrations.schema_migrations`; применение подтверждают
   checksum/`COMMIT`/postflight. Production contract snapshot SHA-256 —
   `1e8d7ac420be9deb5018f37a20db82d2bb84c7aafd7e3e3ba361f43795c02060`.
-  Database rollout current; dependent Communication Center web/API deployment
-  pending.
+  Database rollout current; dependent Communication Center web/API rollout
+  завершён exact source `2efaa86851fffc7e444af904fb900d9984caa6a8` через
+  Coolify deployment `otekp2zseg5ig2r05v6taabu`.
 - `20260816072345_atomic_assistant_lesson_run_schedule.sql` — applied
   production A2 forward guard для confirmed Assistant `lesson.schedule_run`.
   Exact SHA-256
@@ -125,8 +126,9 @@ ShiDao хранит два обязательных слоя:
   `PUBLIC`/`anon`/`service_role`, при unchanged canonical/CC1 rows. Current
   production snapshot снят `2026-08-16T07:42:38Z`, SHA-256
   `a91aefb693fc5857e1ae921e7226bc688230d0dd3c7e9373197c1006b4314a7d`;
-  authenticated user RPC total — `17`. Database rollout complete; dependent
-  Communication Center web/API deployment pending.
+  authenticated user RPC total — `17`. Database и dependent Communication
+  Center web/API rollout current; production HTTP/auth/CSRF boundary postflight
+  пройден для exact source `2efaa86851fffc7e444af904fb900d9984caa6a8`.
 
 Backfill details являются историей этих migrations и не должны повторяться в
 current-schema guide как действующая domain model.

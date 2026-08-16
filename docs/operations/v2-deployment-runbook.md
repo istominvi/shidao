@@ -120,8 +120,8 @@ Worktree должен содержать только изменения тек�
 Forward migration
 `20260816072345_atomic_assistant_lesson_run_schedule.sql` применена к
 production ShiDao DB с `COMMIT` 16 августа 2026 года. Это DB-first hardening
-поверх CC1: atomic guard уже current, но dependent Communication Center web/API
-deployment и production API/browser postflight остаются pending.
+поверх CC1; atomic guard и dependent Communication Center web/API/UI теперь
+current production.
 
 Production evidence:
 
@@ -167,9 +167,8 @@ backup выше является отдельной maintenance-операцие
 
 Forward migration `20260816053117_communication_center.sql` применена к
 production ShiDao DB с `COMMIT` 16 августа 2026 года. Это DB-first expand:
-physical/RPC contract уже current, а зависимый Communication Center web/API
-deployment остаётся pending и не должен описываться как deployed surface до
-собственного release/postflight.
+physical/RPC contract и зависимый Communication Center web/API deployment
+current после собственного release/postflight.
 
 Production evidence:
 
@@ -194,6 +193,27 @@ Production evidence:
 - штатный read-only snapshot снят strict stage `contract` в
   `2026-08-16T07:08:18Z`; SHA-256
   `1e8d7ac420be9deb5018f37a20db82d2bb84c7aafd7e3e3ba361f43795c02060`.
+
+Dependent web/API execution evidence:
+
+- release gate прошёл `704/704` unit/API, `27/27` strict production-mode
+  browser scenarios, typecheck, lint, repository-wide format check и isolated
+  production build;
+- exact functional commit и initial rollout `SOURCE_COMMIT` —
+  `2efaa86851fffc7e444af904fb900d9984caa6a8`;
+- Coolify deployment `otekp2zseg5ig2r05v6taabu` начался
+  `2026-08-16T07:53:03Z` и завершился `2026-08-16T07:55:56Z` со status
+  `finished`;
+- container `g9x4d9zn60jv35r7zf0xl6xj-075303148584` использует matching image
+  tag и `SOURCE_COMMIT`, image ID
+  `sha256:5cebcac03f9c53ec5632eb1c7e20691f5b3bc4b1d41d13e66a81bbc4a6dd3083`,
+  restart count `0`;
+- V2 `/login` и `/robots.txt` вернули `200`, guest `/courses` — `307` в login,
+  новые unauthenticated `/api/v2/inbox` и assistant conversations — `401`;
+- landing root вернул `200`, landing `/login` и `/api/*` — `503`; unsafe POST
+  без Origin и с wrong Origin вернул `403`, а exact
+  `https://v2.shidao.ru` Origin без session дошёл до auth boundary и вернул
+  `401`.
 
 Два postflight trigger — deferred LessonRun notification producer и
 `communication_message` delete-repair для cached last-message cursor. Все 18
@@ -1428,10 +1448,11 @@ flow как permanent delete.
 / Аккаунт / Группы / Добавлен / Действия`. В конце каждой строки расположен
   keyboard/touch-доступный `MoreVertical` portal-menu; для active learner он
   содержит профиль, учебную историю, группы, добавление в курс, связь с
-  аккаунтом и безопасное «Убрать из списка». «Написать сообщение» явно
-  disabled до появления messaging slice; добавление в курс сохраняет уже
-  выбранные direct learners и groups. Keyboard focus и dialogs проверяются без
-  возврата teacher-only route gate;
+  аккаунтом и безопасное «Убрать из списка». Для active linked learner
+  «Написать сообщение» открывает Communication Center, а offline/pending target
+  остаётся disabled; добавление в курс сохраняет уже выбранные direct learners
+  и groups. Keyboard focus и dialogs проверяются без возврата teacher-only
+  route gate;
 - `/observing` перенаправляет на `/students?tab=observing`, reload сохраняет
   выбранную вкладку, а main navigation подсвечивает «Ученики»;
 - `/courses` не показывает instructional subtitle; tabs сохраняют общий edge-to-edge

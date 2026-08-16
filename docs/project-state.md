@@ -5,16 +5,15 @@
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
 **Текущий functional application source:**
-`1d4e5deff83cbdc1b479b16e4220cf799327009f`
-(`640/640` unit/API, `24/24` strict production-mode browser scenarios,
-typecheck, test compile, repository-wide format check и production build внутри
-browser gate)
+`2efaa86851fffc7e444af904fb900d9984caa6a8`
+(`704/704` unit/API, `27/27` strict production-mode browser scenarios,
+typecheck, lint, repository-wide format check и production build)
 **Exact matching-container Profile/avatar rollout:**
 `4462da2248dd97bf6ab5c0a35f9a781844473874`
 **Исторический functional E2 baseline:**
 `22b486a7163453019d9720cb4fe0f36ed7c0228d`
 
-**Current source / next production — единый центр «Сообщения»:** protected
+**Current production — единый центр «Сообщения»:** protected
 `(app)` layout теперь монтирует одну глобальную кнопку с общим unread badge
 вместо отдельных AI-launcher, колокольчика и пункта навигации. Она открывает
 единый inbox с четырьмя явно маркированными источниками: direct-диалоги,
@@ -53,11 +52,15 @@ worker остаются **later**.
 Unified inbox обновляется bounded polling раз в 30 секунд и при возврате focus;
 read cursor выбранного диалога учитывает `visibilitychange`. Realtime,
 presence, push/email, attachments, richer metric producers и generalized
-background notifications в первый source slice не входят. Source уже содержит
-forward schema/migrations, RPC/application/API и responsive UI. Production DB
-CC1 + A2 уже применены, а DB postflight и contract snapshot current; dependent
-web/API deployment и production API/browser postflight ещё не выполнены.
-Поэтому этот раздел не объявляет функциональность доступной на `v2.shidao.ru`.
+background notifications в первый production slice не входят. Production DB
+CC1 + A2 применены, DB postflight и contract snapshot current. Dependent
+web/API развёрнут exact source
+`2efaa86851fffc7e444af904fb900d9984caa6a8`: Coolify deployment
+`otekp2zseg5ig2r05v6taabu` завершён `finished`; initial functional rollout container
+`g9x4d9zn60jv35r7zf0xl6xj-075303148584` использует matching image и
+`SOURCE_COMMIT`, restart count `0`. HTTP postflight подтвердил V2 login/robots,
+guest redirect, новые unauthenticated inbox/assistant boundaries, landing-only
+изоляцию и exact Origin CSRF boundary.
 
 **Current production — page headers and motion:** supporting
 copy в `AppPageHeader` теперь действительно optional и допускает только
@@ -869,12 +872,9 @@ contextual portal-menu. Для active profile меню открывает про
 группами, реальный flow «Добавить в курс…» с выбором Course, сохранением
 существующей group/direct audience и добавлением direct learner, а также
 destructive-действие «Убрать из списка». Пункт
-«Написать сообщение» в текущем production baseline видим, но disabled.
-**Current source / next production:** для active linked learner этот пункт
-открывает единый центр «Сообщения» через `learnerProfileId`; archived/pending
-rows по-прежнему получают только допустимые restore/permanent-delete или cancel
-actions. CC1+A2 DB contract уже current, но до dependent web/API deployment и
-API/browser postflight этот source flow не объявляется production-возможностью.
+«Написать сообщение» для active linked learner открывает current production
+центр «Сообщения» через `learnerProfileId`; archived/pending rows по-прежнему
+получают только допустимые restore/permanent-delete или cancel actions.
 Trigger и пункты меню не активируют неявный row click. Это current production
 UI/application flow поверх существующих Group/Course audience boundaries;
 schema и migrations не меняются.
@@ -890,13 +890,11 @@ cancel требует подтверждения, а edit открывает т�
 кликом по строке. Это deployed application/UI follow-up поверх существующих
 API; schema и migrations не меняются.
 
-**Current production / superseded source UI — System Assistant conversational
-action slice:** deployed baseline использует один глобальный floating widget
-«ИИ» внутри protected `(app)` layout. В production он сохраняет диалог только
-в React state до reload/явного сброса и получает не DOM/URL, а строгий
-allowlisted page context. В current source этот launcher и ephemeral history
-заменены единым persisted центром «Сообщения», описанным выше. Production
-CC1+A2 DB contract уже current, но dependent web/API rollout ещё не выполнен.
+**Historical production baseline, superseded by current Communication Center —
+System Assistant conversational action slice:** прежний deployed baseline
+использовал один глобальный floating widget «ИИ» и сохранял диалог только в
+React state до reload/явного сброса. Current production заменил launcher и
+ephemeral history единым persisted центром «Сообщения», описанным выше.
 Server-side
 orchestration читает bounded owner/recorder/consent-scoped проекции текущего
 Account и открытой Course/Lesson, Students или выбранного дня Schedule.
@@ -1429,10 +1427,8 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   `MoreVertical` в каждой строке открывает contextual menu: active profile
   можно открыть, изменить группы, реально добавить в выбранный Course с
   сохранением существующей audience или «Убрать из списка». «Написать сообщение»
-  остаётся disabled в current production, но current source для active linked
-  learner открывает через него единый центр «Сообщения»; этот flow станет
-  production только после dependent web/API deployment и API/browser
-  postflight. CC1+A2 DB contract уже current. Archived/pending rows получают
+  для active linked learner открывает единый current production центр
+  «Сообщения». Archived/pending rows получают
   только допустимые restore/permanent-delete или cancel actions.
   Видимое имя принадлежит relation текущего преподавателя, а не глобальной identity.
 - Header action на `/students` следует выбранной вкладке: «Новый ученик» или
@@ -1720,7 +1716,7 @@ application service/contracts внутри authenticated web request.
   server log event. Persistent quota/ledger, billing, balance и AI change sets
   отсутствуют; process-local rate limit не является пользовательской квотой.
 
-#### Communication Center — current source / next production
+#### Communication Center — current production
 
 - Один `CommunicationCenterProvider` в protected `(app)` layout заменяет
   отдельный System Assistant launcher. Общая кнопка «Сообщения» с unread badge
@@ -1766,17 +1762,20 @@ application service/contracts внутри authenticated web request.
   `src/app/api/v2/assistant/conversations/`,
   `src/components/communication/` и current forward migration/schema.
   Production DB CC1 + A2 применены, DB postflight и contract snapshot current;
-  dependent web/API deployment и production API/browser postflight pending.
+  dependent web/API deployment `otekp2zseg5ig2r05v6taabu` exact source
+  `2efaa86851fffc7e444af904fb900d9984caa6a8` и production HTTP/auth/CSRF
+  postflight завершены.
   Durable action/job ledger, distributed idempotency и reliable background
   worker — отдельный later slice.
 
-#### System Assistant — current production baseline, superseded in source
+#### System Assistant — historical production baseline, superseded in current production
 
-- `SystemAssistantProvider` и один floating `SystemAssistant` монтируются в
+- Historical baseline монтировал `SystemAssistantProvider` и один floating
+  `SystemAssistant` в
   protected `src/app/(app)/layout.tsx`, а не в public landing/Auth/demo и не в
   Course/Lesson header. Кнопки прежнего course-scoped dialog из Course и Lesson
   удалены.
-- **Superseded source-only launcher refinement:** launcher имеет exact размер
+- **Superseded launcher refinement:** launcher имел exact размер
   `40 × 40 px`, стоит справа и снизу с inset `12 px` плюс mobile safe area,
   использует общий element radius `12 px` и не имеет border. Светлая опаловая
   поверхность перетекает из aqua/mint через молочно-белый в lavender/pink:
@@ -1831,7 +1830,7 @@ application service/contracts внутри authenticated web request.
   другой новый запрос supersede-ит старую карточку, а смена Course/Lesson context
   делает pending proposal недоступным. Terminal stale/expired ответ требует
   сформировать новую карточку вместо бесконечного retry.
-- В current production baseline диалог не persisted. Chat ограничен 30 turns,
+- В historical baseline диалог не persisted. Chat был ограничен 30 turns,
   новые uncached Apply — 20
   действиями на actor за 10 минут; concurrency guard, actor+target apply mutex и
   replay cache idempotency key существуют только в памяти одного Node process.
@@ -1862,8 +1861,6 @@ History-aware context развёрнут в release `9393080`; production provid
 ## 3. Что ещё не реализовано
 
 - пользовательский выбор модели и persisted provider settings;
-- dependent web/API deployment и production API/browser postflight
-  current-source Communication Center;
 - durable assistant action/job history и generalized tool calling за пределами
   allowlisted Course/Lesson actions;
 - distributed rate limit, durable idempotency/action ledger и exactly-once
@@ -2009,12 +2006,11 @@ comment timestamp, actual duration at time и superseded merge provenance.
 Recorder immutable; subject reset использует explicit erasure workflow вместо
 случайного cascade.
 
-Текущий deployed System Assistant читает bounded finalized history и хранит
-dialog только в React state, потому что dependent Communication Center web/API
-ещё не развёрнут. При этом production DB CC1 уже содержит отдельные persisted
-AI conversations/turns/read cursors, human threads/messages и system
-notifications, а A2 — atomic Assistant schedule guard; DB postflight и contract
-snapshot current. Provider request
+Current Communication Center читает bounded finalized history и сохраняет
+несколько AI conversations/turns/read cursors; human threads/messages и system
+notifications используют отдельные persistence contracts. Production DB CC1
+и A2 atomic Assistant schedule guard, dependent web/API и boundary postflight
+current. Provider request
 payloads, quota/billing и durable action/job ledger по-прежнему не сохраняются.
 
 Последние структурные migrations:
@@ -2133,8 +2129,8 @@ payloads, quota/billing и durable action/job ledger по-прежнему не 
   producer RPC и два trigger; canonical counts не изменились. Current contract
   snapshot `2026-08-16T07:08:18Z` имеет SHA-256
   `1e8d7ac420be9deb5018f37a20db82d2bb84c7aafd7e3e3ba361f43795c02060`.
-  Dependent Communication Center web/API deployment и production API/browser
-  postflight pending; UI ещё не объявляется доступным на `v2.shidao.ru`.
+  Dependent Communication Center web/API развёрнут exact source `2efaa86`;
+  Coolify/HTTP/auth/CSRF postflight пройден, UI current на `v2.shidao.ru`.
 - `20260816072345_atomic_assistant_lesson_run_schedule.sql` — current
   production A2 schema head. Exact migration SHA-256
   `61ddca91ad28d60aac5ebdbbbb12e0d8e0ef2b8b52a0501de792d416052c6834`
@@ -2145,7 +2141,7 @@ payloads, quota/billing и durable action/job ledger по-прежнему не 
   SHA-256
   `a91aefb693fc5857e1ae921e7226bc688230d0dd3c7e9373197c1006b4314a7d`,
   authenticated user RPC total — `17`. Dependent Communication Center web/API
-  deployment и production API/browser postflight pending.
+  rollout и production boundary postflight завершены exact source `2efaa86`.
 
 Источники истины для текущего состояния:
 

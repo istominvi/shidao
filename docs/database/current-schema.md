@@ -6,8 +6,8 @@ catalog + Course Component D1 + A1 atomic Course archive + E1 educator Course
 content-guard correction + U1 unified Text authored data + AV1 Account avatars
 и CC1 Communication Center database contract + A2 atomic Assistant schedule
 guard. CC1 и A2 DB-first contracts применены; зависимый Communication Center
-web/API deployment ещё не выполнен и не считается current application
-surface.
+web/API/UI current production из exact source
+`2efaa86851fffc7e444af904fb900d9984caa6a8`.
 
 **Production schema head:**
 `20260816072345_atomic_assistant_lesson_run_schedule.sql`. Она применена к
@@ -90,8 +90,8 @@ snapshots остались неизменными.
 
 ### Production CC1 Communication Center
 
-DB-first rollout завершён 16 августа 2026 года; dependent web/API deployment
-остаётся следующим отдельным шагом:
+DB-first rollout завершён 16 августа 2026 года; dependent web/API rollout также
+завершён и зафиксирован ниже:
 
 - read-only preflight под `supabase_admin` подтвердил PostgreSQL `15.8`,
   canonical counts Account/Course/Lesson/Component/LessonRun `19/6/22/84/2`
@@ -121,7 +121,7 @@ snapshot, а не отсутствующая history row.
 ### Production A2 atomic Assistant LessonRun schedule guard
 
 DB-first rollout завершён 16 августа 2026 года; dependent Communication Center
-web/API deployment остаётся pending:
+web/API rollout также current:
 
 - read-only preflight под `supabase_admin` подтвердил PostgreSQL `15.8`,
   canonical counts Account/Course/Lesson/Component/LessonRun `19/6/22/84/2`,
@@ -143,6 +143,20 @@ web/API deployment остаётся pending:
   `2026-08-16T07:42:38Z`; SHA-256
   `a91aefb693fc5857e1ae921e7226bc688230d0dd3c7e9373197c1006b4314a7d`,
   current authenticated user RPC total — `17`.
+
+Dependent web/API execution evidence:
+
+- exact functional source и initial rollout `SOURCE_COMMIT` —
+  `2efaa86851fffc7e444af904fb900d9984caa6a8`;
+- Coolify deployment `otekp2zseg5ig2r05v6taabu` завершён `finished` в
+  `2026-08-16T07:55:56Z`;
+- container `g9x4d9zn60jv35r7zf0xl6xj-075303148584` использует matching image,
+  image ID
+  `sha256:5cebcac03f9c53ec5632eb1c7e20691f5b3bc4b1d41d13e66a81bbc4a6dd3083`,
+  restart count `0`;
+- HTTP postflight подтвердил V2 login/robots `200`, guest redirect, новые
+  unauthenticated inbox/assistant `401`, landing-only `200/503` и CSRF
+  `403/403/401` для missing/wrong/exact Origin.
 
 Self-hosted contour по-прежнему не содержит
 `supabase_migrations.schema_migrations`; A2 rollout подтверждают exact
@@ -570,9 +584,10 @@ snapshot и только затем вызывает canonical `schedule_lesson_
 transaction. Любое расхождение возвращает `lesson_run_changed`/SQLSTATE
 `55000`; Account/Auth UUID в browser arguments отсутствуют.
 
-Physical DB contract является current. Communication Center web/API/UI и
-provider-backed AI execution пока pending; наличие persisted assistant tables
-само по себе не доказывает развёрнутый AI adapter или action workflow.
+Physical DB contract, Communication Center web/API/UI и provider-backed AI
+execution являются current production. Persisted tables не были единственным
+evidence: exact rollout source/image и HTTP/auth/CSRF postflight зафиксированы
+выше и в deployment runbook.
 
 ### Course Builder, audience и history
 
@@ -1043,9 +1058,9 @@ status, Homework persistence, parsing/RAG, learner enrollment/consumption
 является Parent/Guardian role, а
 AI consent не является Course access.
 
-CC1 добавляет persisted assistant conversations/turns, но до отдельного
-dependent web/API rollout в current application нет доступной пользователю
-Communication Center surface или доказанного provider-backed action executor.
+CC1 добавляет persisted assistant conversations/turns; dependent web/API
+rollout current, поэтому unified Communication Center surface и
+provider-backed explicit action executor доступны в current application.
 
 ## Snapshot refresh workflow
 
