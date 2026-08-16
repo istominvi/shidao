@@ -1672,13 +1672,15 @@ application service/contracts внутри authenticated web request.
   Course/Lesson header. Кнопки прежнего course-scoped dialog из Course и Lesson
   удалены.
 - **Current source / next production UI:** launcher имеет exact размер
-  `40 × 40 px`, стоит слева и снизу с inset `12 px` плюс mobile safe area,
-  использует общий element radius `12 px`, чистый чёрный base surface и не имеет
-  border. Icon-only glyph сохраняет accessible name через `aria-label`, а
-  медленные holographic color fields и отдельный glint анимируются внутри
-  обрезанной чёрной поверхности. При `prefers-reduced-motion` эффект остаётся
-  статичным. Non-modal panel выровнен по левому inset и открывается на `12 px`
-  выше launcher; API, Assistant state machine и schema не меняются.
+  `40 × 40 px`, стоит справа и снизу с inset `12 px` плюс mobile safe area,
+  использует общий element radius `12 px` и не имеет border. Светлая опаловая
+  поверхность перетекает из aqua/mint через молочно-белый в lavender/pink:
+  два независимых turbulence/displacement-поля меняют геометрию волн с
+  несоизмеримыми циклами, а не перемещают готовые radial gradients. Icon-only
+  glyph остаётся тёмным и сохраняет accessible name через `aria-label`; при
+  `prefers-reduced-motion` композиция статична. Non-modal panel выровнен по
+  правому inset и открывается на `12 px` выше launcher; API, Assistant state
+  machine и schema не меняются.
 - Browser передаёт только strict поля `surface`, typed `view`, optional
   `courseId`/`lessonId`, `localDate` и `utcOffsetMinutes`. Surface и вкладка
   выбираются из закрытых согласованных списков;

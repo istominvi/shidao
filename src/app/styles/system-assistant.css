@@ -5,7 +5,7 @@
 
 .system-assistant-launcher {
   position: fixed;
-  left: calc(0.75rem + env(safe-area-inset-left, 0px));
+  right: calc(0.75rem + env(safe-area-inset-right, 0px));
   bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
   z-index: 2;
   display: inline-flex;
@@ -16,9 +16,19 @@
   overflow: hidden;
   border: 0;
   border-radius: var(--product-element-radius, 0.75rem);
-  background: #000;
-  color: #fff;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+  background: linear-gradient(
+    112deg,
+    #91f5f0 0%,
+    #adf9df 28%,
+    #f7ffff 51%,
+    #d2d9e6 68%,
+    #ddb0ea 84%,
+    #f0bff5 100%
+  );
+  color: #141414;
+  box-shadow:
+    0 10px 24px rgba(52, 45, 72, 0.2),
+    0 2px 6px rgba(52, 45, 72, 0.12);
   cursor: pointer;
   isolation: isolate;
   transition:
@@ -27,63 +37,118 @@
   animation: system-assistant-launcher-in 180ms ease-out;
 }
 
-.system-assistant-launcher::before {
-  position: absolute;
-  inset: -55%;
-  z-index: -2;
-  background:
-    radial-gradient(
-      circle at 24% 26%,
-      rgba(78, 220, 255, 0.98) 0 8%,
-      transparent 30%
-    ),
-    radial-gradient(
-      circle at 76% 24%,
-      rgba(244, 82, 255, 0.92) 0 9%,
-      transparent 31%
-    ),
-    radial-gradient(
-      circle at 72% 78%,
-      rgba(255, 225, 94, 0.9) 0 8%,
-      transparent 30%
-    ),
-    radial-gradient(
-      circle at 24% 76%,
-      rgba(107, 255, 186, 0.88) 0 9%,
-      transparent 31%
-    );
-  content: "";
-  filter: blur(3px) saturate(1.3) brightness(0.82);
-  opacity: 0.78;
-  transform: translate3d(-8%, -5%, 0) rotate(0deg) scale(1.08);
-  animation: system-assistant-hologram 7s ease-in-out infinite alternate;
-}
-
 .system-assistant-launcher::after {
   position: absolute;
-  inset: -35% -90%;
-  z-index: -1;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
   background: linear-gradient(
-    112deg,
-    transparent 36%,
-    rgba(255, 255, 255, 0.06) 43%,
-    rgba(255, 255, 255, 0.42) 49%,
-    rgba(255, 255, 255, 0.08) 55%,
-    transparent 63%
+    148deg,
+    rgba(255, 255, 255, 0.18),
+    transparent 38%,
+    rgba(255, 255, 255, 0.04) 66%,
+    rgba(255, 255, 255, 0.12)
   );
   content: "";
-  opacity: 0.48;
-  transform: translateX(-54%);
-  animation: system-assistant-hologram-glint 4.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.system-assistant-launcher-filter-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.system-assistant-launcher-hologram-field,
+.system-assistant-launcher-hologram-caustic {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.system-assistant-launcher-hologram-field {
+  inset: -48%;
+  z-index: -2;
+  background:
+    linear-gradient(
+      112deg,
+      #79eee9 0%,
+      #95f1d2 27%,
+      #effdf8 50%,
+      #c6d2e4 67%,
+      #d7a4e7 84%,
+      #eda9f2 100%
+    ),
+    conic-gradient(
+      from 204deg at 53% 47%,
+      rgba(101, 235, 229, 0.78),
+      rgba(174, 250, 215, 0.34),
+      rgba(255, 255, 255, 0.48),
+      rgba(201, 164, 233, 0.66),
+      rgba(235, 147, 236, 0.72),
+      rgba(101, 235, 229, 0.78)
+    );
+  background-blend-mode: overlay;
+  background-position:
+    4% 8%,
+    72% 44%;
+  background-size:
+    118% 118%,
+    134% 134%;
+  filter: url("#system-assistant-hologram-field-warp") saturate(1.06)
+    contrast(0.99);
+  transform: translate3d(-5%, -3%, 0) rotate(-8deg) scale(1.08, 0.94);
+  animation: system-assistant-hologram-field-flow 23.1s
+    cubic-bezier(0.37, 0, 0.63, 1) infinite alternate;
+}
+
+.system-assistant-launcher-hologram-caustic {
+  inset: -58%;
+  z-index: -1;
+  background:
+    repeating-linear-gradient(
+      124deg,
+      transparent 0 9%,
+      rgba(255, 255, 255, 0.14) 13%,
+      rgba(255, 255, 255, 0.5) 18%,
+      rgba(189, 255, 247, 0.2) 23%,
+      transparent 31%
+    ),
+    linear-gradient(
+      38deg,
+      rgba(137, 246, 239, 0.46),
+      rgba(255, 255, 255, 0.62) 48%,
+      rgba(230, 179, 241, 0.42)
+    );
+  background-blend-mode: screen;
+  background-position:
+    18% 12%,
+    76% 64%;
+  background-size:
+    142% 142%,
+    126% 126%;
+  filter: url("#system-assistant-hologram-caustic-warp") blur(1.2px)
+    saturate(0.86);
+  mix-blend-mode: screen;
+  opacity: 0.44;
+  transform: translate3d(4%, -7%, 0) rotate(14deg) scale(1.14, 0.86);
+  animation: system-assistant-hologram-caustic-flow 29.3s
+    cubic-bezier(0.34, 0, 0.66, 1) infinite alternate;
 }
 
 .system-assistant-launcher:hover {
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.34);
+  box-shadow:
+    0 14px 30px rgba(52, 45, 72, 0.24),
+    0 3px 8px rgba(52, 45, 72, 0.14);
   transform: translateY(-1px) scale(1.03);
 }
 
 .system-assistant-launcher:active {
-  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.28);
+  box-shadow:
+    0 7px 18px rgba(52, 45, 72, 0.2),
+    0 1px 4px rgba(52, 45, 72, 0.12);
   transform: scale(0.97);
 }
 
@@ -94,7 +159,7 @@
   width: 1.25rem;
   height: 1.25rem;
   place-items: center;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.38));
 }
 
 .system-assistant-launcher-icon > svg {
@@ -113,13 +178,13 @@
 .system-assistant-composer button:focus-visible,
 .system-assistant-action-buttons button:focus-visible,
 .system-assistant-action-result a:focus-visible {
-  outline: 3px solid rgba(2, 132, 199, 0.45);
+  outline: 3px solid #141414;
   outline-offset: 2px;
 }
 
 .system-assistant-panel {
   position: fixed;
-  left: calc(0.75rem + env(safe-area-inset-left, 0px));
+  right: calc(0.75rem + env(safe-area-inset-right, 0px));
   bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   z-index: 1;
   display: grid;
@@ -578,26 +643,69 @@
   }
 }
 
-@keyframes system-assistant-hologram {
+@keyframes system-assistant-hologram-field-flow {
   0% {
-    transform: translate3d(-8%, -5%, 0) rotate(0deg) scale(1.08);
+    background-position:
+      4% 8%,
+      72% 44%;
+    transform: translate3d(-5%, -3%, 0) rotate(-8deg) scale(1.08, 0.94);
   }
-  48% {
-    transform: translate3d(7%, -2%, 0) rotate(122deg) scale(1.14);
+  19% {
+    background-position:
+      81% 19%,
+      24% 78%;
+    transform: translate3d(7%, -8%, 0) rotate(11deg) scale(0.93, 1.12);
+  }
+  47% {
+    background-position:
+      31% 86%,
+      88% 17%;
+    transform: translate3d(-2%, 8%, 0) rotate(27deg) scale(1.16, 0.9);
+  }
+  73% {
+    background-position:
+      92% 58%,
+      13% 35%;
+    transform: translate3d(9%, 3%, 0) rotate(-19deg) scale(0.96, 1.14);
   }
   100% {
-    transform: translate3d(3%, 8%, 0) rotate(245deg) scale(1.1);
+    background-position:
+      12% 72%,
+      66% 91%;
+    transform: translate3d(-7%, 5%, 0) rotate(6deg) scale(1.12, 0.92);
   }
 }
 
-@keyframes system-assistant-hologram-glint {
-  0%,
-  28% {
-    transform: translateX(-54%);
+@keyframes system-assistant-hologram-caustic-flow {
+  0% {
+    background-position:
+      18% 12%,
+      76% 64%;
+    transform: translate3d(4%, -7%, 0) rotate(14deg) scale(1.14, 0.86);
   }
-  58%,
+  23% {
+    background-position:
+      76% 84%,
+      19% 28%;
+    transform: translate3d(-8%, 4%, 0) rotate(-12deg) scale(0.91, 1.18);
+  }
+  52% {
+    background-position:
+      44% 18%,
+      92% 83%;
+    transform: translate3d(6%, 9%, 0) rotate(31deg) scale(1.2, 0.84);
+  }
+  79% {
+    background-position:
+      9% 73%,
+      41% 11%;
+    transform: translate3d(-3%, -5%, 0) rotate(-25deg) scale(0.94, 1.16);
+  }
   100% {
-    transform: translateX(54%);
+    background-position:
+      88% 42%,
+      7% 89%;
+    transform: translate3d(8%, 2%, 0) rotate(8deg) scale(1.1, 0.9);
   }
 }
 
@@ -614,7 +722,7 @@
 
 @media (max-width: 640px) {
   .system-assistant-panel {
-    left: calc(0.75rem + env(safe-area-inset-left, 0px));
+    right: calc(0.75rem + env(safe-area-inset-right, 0px));
     bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
     width: calc(
       100vw - 1.5rem - env(safe-area-inset-left, 0px) -
@@ -641,19 +749,46 @@
 
 @media (prefers-reduced-motion: reduce) {
   .system-assistant-launcher,
-  .system-assistant-launcher::before,
-  .system-assistant-launcher::after,
+  .system-assistant-launcher-hologram-field,
+  .system-assistant-launcher-hologram-caustic,
   .system-assistant-panel,
   .system-assistant-layer .animate-spin {
     animation: none !important;
   }
 
-  .system-assistant-launcher::before {
-    transform: rotate(18deg) scale(1.08);
+  .system-assistant-launcher {
+    transition: none;
   }
 
-  .system-assistant-launcher::after {
-    opacity: 0.26;
-    transform: translateX(0);
+  .system-assistant-launcher:hover,
+  .system-assistant-launcher:active {
+    transform: none;
+  }
+
+  .system-assistant-launcher-hologram-field {
+    filter: saturate(1.06) contrast(0.99);
+    transform: rotate(-6deg) scale(1.04);
+    will-change: auto;
+  }
+
+  .system-assistant-launcher-hologram-caustic {
+    filter: blur(1.2px) saturate(0.86);
+    opacity: 0.46;
+    transform: rotate(12deg) scale(1.08, 0.92);
+    will-change: auto;
+  }
+}
+
+@media (forced-colors: active) {
+  .system-assistant-launcher {
+    border: 1px solid ButtonText;
+    background: ButtonFace;
+    color: ButtonText;
+  }
+
+  .system-assistant-launcher::after,
+  .system-assistant-launcher-hologram-field,
+  .system-assistant-launcher-hologram-caustic {
+    display: none;
   }
 }

@@ -773,11 +773,13 @@ Definition of Done:
   landing/Auth/demo; прежние кнопки course-scoped assistant удалены из Course и
   Lesson headers, а старый Course route может пока оставаться compatibility;
 - **Current source / next production UI:** icon-only launcher уменьшен до
-  стандартных `40 × 40 px`, использует element radius `12 px`, чёрную поверхность
-  без border и `12 px` inset слева/снизу плюс safe area. Несколько медленных
-  holographic fields и световой glint остаются внутри кнопки, а reduced-motion
-  показывает статичную композицию. Panel перенесён к тому же левому краю и
-  сохраняет `12 px` промежуток над launcher; behavior/API/schema не меняются;
+  стандартных `40 × 40 px`, использует element radius `12 px`, светлую
+  aqua/mint/milk/lavender/pink opal-поверхность без border и `12 px` inset
+  справа/снизу плюс safe area. Два независимо деформируемых
+  turbulence/displacement-поля перетекают волнами с несоизмеримыми циклами, а
+  reduced-motion показывает статичную композицию. Panel перенесён к тому же
+  правому краю и сохраняет `12 px` промежуток над launcher;
+  behavior/API/schema не меняются;
 - browser передаёт strict allowlisted surface, согласованный typed view и
   optional Course/Lesson IDs, локальную дату/UTC offset; arbitrary URL, DOM,
   search/hash и значения форм не входят в page context;

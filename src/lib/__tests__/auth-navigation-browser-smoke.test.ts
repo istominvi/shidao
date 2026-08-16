@@ -3480,6 +3480,7 @@ test("browser smoke: protected pages expose the global assistant with keyboard f
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
 
   try {
+    await runtime.page.setViewportSize({ width: 375, height: 812 });
     await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
 
     const launcher = runtime.page.getByRole("button", {
@@ -3487,6 +3488,40 @@ test("browser smoke: protected pages expose the global assistant with keyboard f
       exact: true,
     });
     await launcher.waitFor();
+    const launcherPresentation = await launcher.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const style = window.getComputedStyle(element);
+      return {
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+        rightInset: Math.round(window.innerWidth - rect.right),
+        bottomInset: Math.round(window.innerHeight - rect.bottom),
+        borderRadius: style.borderRadius,
+        borderTopWidth: style.borderTopWidth,
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+      };
+    });
+    assert.deepEqual(
+      {
+        width: launcherPresentation.width,
+        height: launcherPresentation.height,
+        rightInset: launcherPresentation.rightInset,
+        bottomInset: launcherPresentation.bottomInset,
+        borderRadius: launcherPresentation.borderRadius,
+        borderTopWidth: launcherPresentation.borderTopWidth,
+      },
+      {
+        width: 40,
+        height: 40,
+        rightInset: 12,
+        bottomInset: 12,
+        borderRadius: "12px",
+        borderTopWidth: "0px",
+      },
+    );
+    assert.notEqual(launcherPresentation.backgroundColor, "rgb(0, 0, 0)");
+    assert.match(launcherPresentation.backgroundImage, /linear-gradient/);
     await launcher.press("Enter");
 
     const panel = runtime.page.getByRole("dialog", {
@@ -3494,6 +3529,28 @@ test("browser smoke: protected pages expose the global assistant with keyboard f
       exact: true,
     });
     await panel.waitFor();
+    await panel.evaluate(async (element) => {
+      await Promise.all(
+        element.getAnimations().map((animation) => animation.finished),
+      );
+    });
+    assert.deepEqual(
+      await runtime.page.evaluate(() => {
+        const launcherElement = document.querySelector(
+          ".system-assistant-launcher",
+        );
+        const panelElement = document.querySelector(".system-assistant-panel");
+        if (!launcherElement || !panelElement) return null;
+        const launcherRect = launcherElement.getBoundingClientRect();
+        const panelRect = panelElement.getBoundingClientRect();
+        return {
+          panelRightInset: Math.round(window.innerWidth - panelRect.right),
+          panelLauncherGap: Math.round(launcherRect.top - panelRect.bottom),
+        };
+      }),
+      { panelRightInset: 12, panelLauncherGap: 12 },
+    );
+    await runtime.page.setViewportSize({ width: 900, height: 812 });
     const composer = panel.getByLabel("Сообщение ИИ-ассистенту");
     await composer.waitFor();
     await runtime.page.evaluate(

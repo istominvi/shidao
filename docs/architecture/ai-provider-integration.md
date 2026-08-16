@@ -244,14 +244,17 @@ reload сбрасывает; PostgreSQL, localStorage и durable browser persist
 используются.
 
 **Current source / next production presentation:** launcher остаётся одним
-fixed control, но имеет exact geometry `40 × 40 px`, левый и нижний inset
+fixed control, но имеет exact geometry `40 × 40 px`, правый и нижний inset
 `12 px` плюс соответствующий safe area, общий `--product-element-radius` и
-black `#000` base surface без border. Видимый `Sparkles` glyph icon-only;
-доступное имя остаётся на button. Несколько bounded holographic color fields и
-редкий glint анимируются только внутри `overflow: hidden`, а
-`prefers-reduced-motion` оставляет их статичными. Panel выровнен по тому же
-левому inset и расположен на `12 px` выше launcher. Это UI-only изменение:
-page context, dialog state, routes, Apply boundary и schema не меняются.
+светлую aqua/mint/milk/lavender/pink opal-поверхность без border. Видимый
+`Sparkles` glyph icon-only и тёмный; доступное имя остаётся на button. Два
+independent SVG turbulence/displacement-поля и CSS transforms меняют форму и
+направление широких каустических волн с несоизмеримыми циклами вместо движения
+готовых radial gradients. `overflow: hidden` удерживает эффект внутри launcher,
+а `prefers-reduced-motion` оставляет композицию статичной. Panel выровнен по
+тому же правому inset и расположен на `12 px` выше launcher. Это UI-only
+изменение: page context, dialog state, routes, Apply boundary и schema не
+меняются.
 
 ### Allowlisted page context
 

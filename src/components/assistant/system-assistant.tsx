@@ -39,6 +39,71 @@ import type {
 
 const PANEL_ID = "system-assistant-panel";
 const TRANSCRIPT_LIMIT = 32;
+const LAUNCHER_FIELD_FILTER_ID = "system-assistant-hologram-field-warp";
+const LAUNCHER_CAUSTIC_FILTER_ID = "system-assistant-hologram-caustic-warp";
+
+function AssistantLauncherHologramFilters() {
+  return (
+    <svg
+      className="system-assistant-launcher-filter-defs"
+      width="0"
+      height="0"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <defs>
+        <filter
+          id={LAUNCHER_FIELD_FILTER_ID}
+          x="-45%"
+          y="-45%"
+          width="190%"
+          height="190%"
+          colorInterpolationFilters="sRGB"
+        >
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.012 0.034"
+            numOctaves="3"
+            seed="11"
+            result="fieldNoise"
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="fieldNoise"
+            scale="24"
+            xChannelSelector="R"
+            yChannelSelector="B"
+          />
+        </filter>
+
+        <filter
+          id={LAUNCHER_CAUSTIC_FILTER_ID}
+          x="-55%"
+          y="-55%"
+          width="210%"
+          height="210%"
+          colorInterpolationFilters="sRGB"
+        >
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.026 0.062"
+            numOctaves="2"
+            seed="29"
+            result="causticNoise"
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="causticNoise"
+            scale="19"
+            xChannelSelector="G"
+            yChannelSelector="B"
+          />
+          <feGaussianBlur stdDeviation="0.55" />
+        </filter>
+      </defs>
+    </svg>
+  );
+}
 
 type TranscriptMessage = AiAssistantMessage & {
   id: string;
@@ -887,6 +952,7 @@ export function SystemAssistant() {
         </aside>
       ) : null}
 
+      <AssistantLauncherHologramFilters />
       <button
         ref={launcherRef}
         type="button"
@@ -897,6 +963,14 @@ export function SystemAssistant() {
         aria-controls={PANEL_ID}
         onClick={() => (open ? close() : setOpen(true))}
       >
+        <span
+          className="system-assistant-launcher-hologram-field"
+          aria-hidden="true"
+        />
+        <span
+          className="system-assistant-launcher-hologram-caustic"
+          aria-hidden="true"
+        />
         <span className="system-assistant-launcher-icon" aria-hidden="true">
           {open ? <X /> : <Sparkles />}
         </span>
