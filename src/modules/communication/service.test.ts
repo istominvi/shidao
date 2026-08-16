@@ -73,6 +73,204 @@ test("bare inbox request reaches the repository with canonical query defaults", 
   assert.deepEqual(received, emptyInboxQuery);
 });
 
+test("assistant monthly quota aggregates persisted owner-scoped turns", async () => {
+  const now = new Date();
+  const currentMonth = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 2),
+  ).toISOString();
+  const priorMonth = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0),
+  ).toISOString();
+  let conversationQuery: unknown;
+  let turnQuery: unknown;
+  const replyPayload = (totalTokens: number) => ({
+    replyToTurnId: 1,
+    reply: {
+      requestId: `request-${totalTokens}`,
+      model: "test-model",
+      provider: "test-provider",
+      usage: {
+        inputTokens: totalTokens,
+        outputTokens: 0,
+        totalTokens,
+        cachedInputTokens: 0,
+        reasoningTokens: 0,
+      },
+      proposedAction: null,
+      quickReplies: [],
+      sharedHistoryUsed: false,
+    },
+  });
+  const repository = {
+    async listAssistantConversations(query: unknown) {
+      conversationQuery = query;
+      return {
+        items: [
+          {
+            id: GUID_A,
+            title: "Архивный диалог тоже учитывается",
+            contextCourseId: null,
+            contextLessonId: null,
+            lastTurnId: 4,
+            lastActivityAt: currentMonth,
+            unreadCount: 0,
+            archivedAt: currentMonth,
+            createdAt: priorMonth,
+            updatedAt: currentMonth,
+          },
+        ],
+      };
+    },
+    async listAssistantTurns(_conversationId: string, query: unknown) {
+      turnQuery = query;
+      return {
+        items: [
+          {
+            id: 1,
+            role: "assistant" as const,
+            deliveryKind: "interactive" as const,
+            body: "Старый ответ",
+            payload: replyPayload(900_000),
+            createdAt: priorMonth,
+          },
+          {
+            id: 2,
+            role: "user" as const,
+            deliveryKind: "interactive" as const,
+            body: "Сообщение",
+            payload: {},
+            createdAt: currentMonth,
+          },
+          {
+            id: 3,
+            role: "assistant" as const,
+            deliveryKind: "interactive" as const,
+            body: "Ответ",
+            payload: replyPayload(500_000),
+            createdAt: currentMonth,
+          },
+        ],
+        nextCursor: null,
+      };
+    },
+  } as unknown as CommunicationRepository;
+  const service = createCommunicationService({ repository });
+
+  const quota = await service.getAssistantMonthlyQuota(actor);
+  assert.equal(quota.limitTokens, 2_000_000);
+  assert.equal(quota.usedTokens, 500_000);
+  assert.equal(quota.remainingTokens, 1_500_000);
+  assert.deepEqual(conversationQuery, { includeArchived: true, limit: 50 });
+  assert.deepEqual(turnQuery, { beforeTurnId: null, limit: 50 });
+});
+
+test("assistant monthly quota paginates turns, rejects malformed usage and clamps the remainder", async () => {
+  const now = new Date();
+  const periodStartedAt = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+  );
+  const beforePeriod = new Date(periodStartedAt.getTime() - 1).toISOString();
+  const currentPeriod = periodStartedAt.toISOString();
+  const turnQueries: unknown[] = [];
+  const replyPayload = (totalTokens: number) => ({
+    replyToTurnId: 1,
+    reply: {
+      requestId: `request-${totalTokens}`,
+      model: "test-model",
+      provider: "test-provider",
+      usage: {
+        inputTokens: totalTokens,
+        outputTokens: 0,
+        totalTokens,
+        cachedInputTokens: 0,
+        reasoningTokens: 0,
+      },
+      proposedAction: null,
+      quickReplies: [],
+      sharedHistoryUsed: false,
+    },
+  });
+  const repository = {
+    async listAssistantConversations() {
+      return {
+        items: [
+          {
+            id: GUID_A,
+            title: "Много ответов",
+            contextCourseId: null,
+            contextLessonId: null,
+            lastTurnId: 4,
+            lastActivityAt: currentPeriod,
+            unreadCount: 0,
+            archivedAt: null,
+            createdAt: beforePeriod,
+            updatedAt: currentPeriod,
+          },
+        ],
+      };
+    },
+    async listAssistantTurns(
+      _conversationId: string,
+      query: { beforeTurnId: number | null; limit: number },
+    ) {
+      turnQueries.push(query);
+      if (query.beforeTurnId === null) {
+        return {
+          items: [
+            {
+              id: 3,
+              role: "assistant" as const,
+              deliveryKind: "interactive" as const,
+              body: "Большой ответ",
+              payload: replyPayload(1_700_000),
+              createdAt: currentPeriod,
+            },
+            {
+              id: 4,
+              role: "assistant" as const,
+              deliveryKind: "interactive" as const,
+              body: "Некорректные metadata",
+              payload: { reply: { usage: { totalTokens: 9_000_000 } } },
+              createdAt: currentPeriod,
+            },
+          ],
+          nextCursor: 3,
+        };
+      }
+      return {
+        items: [
+          {
+            id: 1,
+            role: "assistant" as const,
+            deliveryKind: "interactive" as const,
+            body: "Прошлый месяц",
+            payload: replyPayload(900_000),
+            createdAt: beforePeriod,
+          },
+          {
+            id: 2,
+            role: "assistant" as const,
+            deliveryKind: "interactive" as const,
+            body: "Граница месяца",
+            payload: replyPayload(500_000),
+            createdAt: currentPeriod,
+          },
+        ],
+        nextCursor: null,
+      };
+    },
+  } as unknown as CommunicationRepository;
+  const service = createCommunicationService({ repository });
+
+  const quota = await service.getAssistantMonthlyQuota(actor);
+  assert.equal(quota.usedTokens, 2_200_000);
+  assert.equal(quota.remainingTokens, 0);
+  assert.deepEqual(turnQueries, [
+    { beforeTurnId: null, limit: 50 },
+    { beforeTurnId: 3, limit: 50 },
+  ]);
+});
+
 test("service maps repository auth, access, conflict and outage errors", async (t) => {
   const cases = [
     {

@@ -80,6 +80,14 @@ export type AssistantExchange = {
   usage: import("@/modules/ai/course-builder-contracts").AiProviderUsage;
 };
 
+export type AssistantMonthlyQuota = {
+  periodStartedAt: string;
+  resetsAt: string;
+  limitTokens: number;
+  usedTokens: number;
+  remainingTokens: number;
+};
+
 export type SystemNotificationSeverity =
   "info" | "success" | "warning" | "error" | "action_required";
 

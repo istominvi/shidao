@@ -14,6 +14,7 @@ const routePaths = [
   "src/app/api/v2/communication-threads/[threadId]/messages/route.ts",
   "src/app/api/v2/communication-threads/[threadId]/read/route.ts",
   "src/app/api/v2/assistant/conversations/route.ts",
+  "src/app/api/v2/assistant/quota/route.ts",
   "src/app/api/v2/assistant/conversations/[conversationId]/route.ts",
   "src/app/api/v2/assistant/conversations/[conversationId]/turns/route.ts",
   "src/app/api/v2/assistant/conversations/[conversationId]/read/route.ts",
@@ -50,4 +51,15 @@ test("trusted assistant persistence is dynamically loaded only after provider su
     source("src/modules/communication/repository.ts"),
     /SUPABASE_SERVICE_ROLE_KEY|append_assistant_turn_admin/,
   );
+});
+
+test("monthly assistant meter is loaded independently from turns and exchange", () => {
+  const quotaRoute = source("src/app/api/v2/assistant/quota/route.ts");
+  const turnsRoute = source(
+    "src/app/api/v2/assistant/conversations/[conversationId]/turns/route.ts",
+  );
+
+  assert.match(quotaRoute, /service\.getAssistantMonthlyQuota\(actor\)/);
+  assert.doesNotMatch(turnsRoute, /getAssistantMonthlyQuota/);
+  assert.doesNotMatch(turnsRoute, /\bquota\b/);
 });

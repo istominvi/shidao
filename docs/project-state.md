@@ -18,18 +18,24 @@ typecheck, lint, repository-wide format check и production build)
 вместо отдельных AI-launcher, колокольчика и пункта навигации. Она открывает
 единый inbox с четырьмя явно маркированными источниками: direct-диалоги,
 Course chat, read-only лента **ShiDao · Система** и несколько persisted
-диалогов **ShiDao ИИ** с global/Course/Lesson context. Contextual actions
+диалогов с видимой маркировкой **ИИ** и global/Course/Lesson context. Contextual actions
 «Написать» в Students и «Чат курса» открывают тот же центр сразу на нужном
 диалоге; отдельного параллельного messaging flow нет. Desktop panel использует
 один узкий режим: inbox и выбранный диалог сменяют друг друга внутри
-той же поверхности. Mobile использует полноэкранную поверхность. ShiDao system
-source имеет чёрный avatar с белой `S`, а ShiDao ИИ — чёрный avatar с белой
+той же поверхности. Mobile использует полноэкранную поверхность. Текущая
+panel полностью непрозрачна и белая: header и composer отделены full-bleed
+линиями без боковых зазоров. Угол, из которого визуально исходит реплика, имеет
+радиус `1 px`: нижний левый у входящего и нижний правый у исходящего сообщения;
+остальные углы остаются скруглёнными. На fine pointer время сохраняет место под сообщением, но скрыто
+до hover/focus и проявляется за `250 ms`; на touch/coarse pointer оно всегда
+видимо, а reduced-motion убирает transition. ShiDao system
+source имеет чёрный avatar с белой `S`, а ИИ — чёрный avatar с белой
 Sparkles icon. Постоянные system/AI callout-плашки удалены: пояснение system
 feed открывается через маленькую нейтральную `?` рядом с ShiDao, а пустой AI
 dialogue сразу показывает контекстный набор фактически доступных prompt chips
 без второй центральной иконки.
 
-Persisted ответы ShiDao ИИ и тела system events теперь отображают безопасное
+Persisted ответы ИИ и тела system events теперь отображают безопасное
 подмножество CommonMark, поэтому `**акцент**`, абзацы, списки, цитаты и code
 render семантически, а не как видимые служебные маркеры. Raw HTML полностью
 игнорируется; изображения и model-authored links не активируются. System title,
@@ -62,6 +68,20 @@ Account/Auth UUID в browser action contract не входят.
 устаревшие; actionable может быть только карточка, полученная в текущем mounted
 exchange. Durable action/job ledger, distributed exactly-once и background AI
 worker остаются **later**.
+
+В footer AI-диалога raw token count заменён full-width progress track высотой
+`4 px`: тёмно-зелёная часть показывает оставшуюся долю тестового месячного
+объёма `2 000 000` токенов на Account. Server вычисляет использование текущего
+календарного месяца UTC из валидных persisted assistant-reply payloads во всех
+owner-scoped сохранённых диалогах, включая архивные, в пределах текущего
+bounded contract до `50` диалогов; чтение и пагинация turns идут через уже
+существующие authenticated user-JWT RPC. Это информационный тестовый meter, а
+не hard quota: он не резервирует объём перед provider call, не выполняет
+settlement конкурентных запросов, не блокирует composer и не является balance
+или billing enforcement. Отдельное quota-read не блокирует turns или POST
+exchange; при его временной ошибке UI скрывает только meter. Новая migration,
+таблица или physical schema для него не добавлялись; durable usage ledger с
+reservation/settlement остаётся **later**.
 
 Unified inbox обновляется bounded polling раз в 30 секунд и при возврате focus;
 read cursor выбранного диалога учитывает `visibilitychange`. Realtime,
@@ -1729,8 +1749,9 @@ application service/contracts внутри authenticated web request.
   Screen не публикуется автоматически.
 - Course/Lesson apply использует существующий `CourseBuilderApplicationService`
   с per-request actor, ownership и пользовательским JWT. Provider/quota
-  persistence этот authoring baseline не добавляет; identity consent/audit
-  tables принадлежат отдельному M2–M3 contract.
+  persistence этот authoring baseline не добавляет; информационный meter
+  Communication Center отдельно выводится из уже сохранённых assistant replies,
+  а identity consent/audit tables принадлежат отдельному M2–M3 contract.
 - Развёрнутый course-scoped Assistant route читает bounded Course/selected
   Lesson context и отвечает текстом без mutation commands, MCP tools или apply
   routes. Его прежний Course/Lesson dialog удалён из current deployed UI;
@@ -1757,8 +1778,10 @@ application service/contracts внутри authenticated web request.
   доступны только filename/MIME/status. Parsing, OCR, embeddings и RAG не
   реализованы.
 - Provider request ID/model/usage возвращаются UI и попадают в ограниченный
-  server log event. Persistent quota/ledger, billing, balance и AI change sets
-  отсутствуют; process-local rate limit не является пользовательской квотой.
+  server log event. Durable quota/usage ledger, reservation/settlement,
+  billing, balance и AI change sets отсутствуют; process-local rate limit и
+  информационный meter Communication Center не являются hard пользовательской
+  квотой.
 
 #### Communication Center — current production
 
@@ -1771,14 +1794,19 @@ application service/contracts внутри authenticated web request.
   верхнем правом углу. Desktop имеет только одну узкую panel без expand-mode:
   inbox, выбор адресата и диалог сменяют друг друга. Main header не содержит
   supporting subtitle, а initial open фокусирует dialog surface, не search.
-  Retry в центральных error states использует общий `Button` contract.
+  Retry в центральных error states использует общий `Button` contract. Panel
+  имеет непрозрачный белый фон; header divider и footer divider над composer
+  доходят до обеих границ, а после footer divider сохраняется `12 px` до
+  composer content.
 - System avatar использует белую wordmark-style `S` на чёрном фоне, assistant
   avatar — белую Sparkles icon на таком же чёрном фоне. Постоянные зелёные
   system/AI helper callouts отсутствуют: provenance system feed раскрывается
   маленькой доступной `?` рядом с ShiDao. Empty AI state не повторяет header
   avatar и показывает расширенные context-aware prompt chips обычным
   tab-weight шрифтом. Global dialogue не обещает directory/schedule context;
-  Course/Lesson prompts соответствуют текущему closed action allowlist.
+  Course/Lesson prompts соответствуют текущему closed action allowlist. В
+  пользовательском UI assistant подписан кратко **«ИИ»**, без прежнего
+  «ShiDao ИИ».
 - Assistant turn body и system notification body используют общий memoized
   safe CommonMark renderer для абзацев, strong/emphasis, списков, цитат и code.
   Raw HTML, images и active Markdown links запрещены; headings сводятся к
@@ -1810,6 +1838,20 @@ application service/contracts внутри authenticated web request.
   user turn, читает bounded persisted history/context, вызывает существующий
   Assistant и trusted append-ом сохраняет assistant reply/proposal в одном
   orchestrated exchange.
+- Message bubbles используют радиус `1 px` только у исходящего угла реплики:
+  bottom-left для incoming и bottom-right для own message. На fine pointer
+  timestamp скрыт и плавно проявляется за `250 ms` при hover/focus-within;
+  layout под ним не схлопывается. Touch/coarse pointer оставляет timestamp
+  видимым, reduced-motion отключает transition.
+- Footer AI conversation показывает semantic progressbar высотой `4 px` с
+  тёмно-зелёной оставшейся долей тестового месячного объёма `2 000 000`.
+  Server агрегирует текущий UTC-месяц из canonical persisted assistant-reply
+  payloads owner-scoped сохранённых conversations, включая archived, через
+  существующие user-JWT list-conversations/list-turns RPC. Отдельный quota GET
+  подгружается независимо от turns/exchange и при ошибке убирает только meter.
+  Meter информационный: hard enforcement, reservation/settlement, distributed
+  reconciliation и billing отсутствуют. Срез не меняет physical schema и не
+  добавляет migration.
 - Existing HMAC-signed preview/explicit Apply сохраняется. Новый strict
   `lesson.schedule_run` показывает назначение или перенос и вызывает canonical
   LessonRun mutation только после подтверждения. A2
@@ -1934,7 +1976,9 @@ History-aware context развёрнут в release `9393080`; production provid
   allowlisted Course/Lesson actions;
 - distributed rate limit, durable idempotency/action ledger и exactly-once
   assistant mutations между replicas;
-- persistent token quota/ledger, billing units, balance и AI change sets/undo;
+- durable token usage ledger, hard quota с reservation/settlement и concurrent
+  enforcement, billing units, balance и AI change sets/undo; текущий
+  `2 000 000` meter является только информационной тестовой проекцией;
 - parsing/RAG прикреплённых материалов;
 - persisted Homework editor;
 - LearnerProfile-scoped enrollment/consumption детского Course и настоящий live
@@ -2079,8 +2123,11 @@ Current Communication Center читает bounded finalized history и сохр�
 несколько AI conversations/turns/read cursors; human threads/messages и system
 notifications используют отдельные persistence contracts. Production DB CC1
 и A2 atomic Assistant schedule guard, dependent web/API и boundary postflight
-current. Provider request
-payloads, quota/billing и durable action/job ledger по-прежнему не сохраняются.
+current. Информационный месячный meter `2 000 000` выводится application server
+из валидных persisted assistant replies текущего UTC-месяца через существующие
+user-JWT RPC и не добавляет migration/physical schema. Provider request
+payloads, отдельный quota/billing ledger и durable action/job ledger по-прежнему
+не сохраняются.
 
 Последние структурные migrations:
 

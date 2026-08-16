@@ -6,6 +6,7 @@ import {
 import type {
   AssistantConversation,
   AssistantConversationList,
+  AssistantMonthlyQuota,
   AssistantTurn,
   CommunicationMessage,
   CommunicationThread,
@@ -212,6 +213,35 @@ export const assistantTurnSchema: ZodType<AssistantTurn> = z
     createdAt: timestampSchema,
   })
   .strict();
+
+export const assistantMonthlyQuotaSchema: ZodType<AssistantMonthlyQuota> = z
+  .object({
+    periodStartedAt: timestampSchema,
+    resetsAt: timestampSchema,
+    limitTokens: z.number().int().positive().safe(),
+    usedTokens: z.number().int().nonnegative().safe(),
+    remainingTokens: z.number().int().nonnegative().safe(),
+  })
+  .strict()
+  .superRefine((quota, context) => {
+    if (
+      quota.remainingTokens !==
+      Math.max(0, quota.limitTokens - quota.usedTokens)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["remainingTokens"],
+        message: "Остаток месячного объёма ИИ не согласован с расходом.",
+      });
+    }
+    if (Date.parse(quota.resetsAt) <= Date.parse(quota.periodStartedAt)) {
+      context.addIssue({
+        code: "custom",
+        path: ["resetsAt"],
+        message: "Граница месячного объёма ИИ некорректна.",
+      });
+    }
+  });
 
 export const systemNotificationSchema: ZodType<SystemNotification> = z
   .object({

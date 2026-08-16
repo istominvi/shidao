@@ -4155,6 +4155,13 @@ test("browser smoke: persisted AI quick reply is one-time and sends one atomic t
       cachedInputTokens: 0,
       reasoningTokens: 0,
     };
+    const quota = {
+      periodStartedAt: "2026-08-01T00:00:00.000Z",
+      resetsAt: "2026-09-01T00:00:00.000Z",
+      limitTokens: 2_000_000,
+      usedTokens: 500_000,
+      remainingTokens: 1_500_000,
+    };
 
     await runtime.page.route("**/api/v2/inbox*", async (route) => {
       await route.fulfill({
@@ -4170,6 +4177,13 @@ test("browser smoke: persisted AI quick reply is one-time and sends one atomic t
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({ targets: { direct: [], courses: [] } }),
+      });
+    });
+    await runtime.page.route("**/api/v2/assistant/quota", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ quota }),
       });
     });
     await runtime.page.route(
@@ -4301,9 +4315,7 @@ test("browser smoke: persisted AI quick reply is one-time and sends one atomic t
       .locator(".communication-center-header")
       .getByRole("button", { name: "Новый диалог", exact: true })
       .click();
-    await panel
-      .getByRole("button", { name: /Новый диалог с ShiDao ИИ/ })
-      .click();
+    await panel.getByRole("button", { name: /Новый диалог с ИИ/ }).click();
     const capabilities = panel.getByRole("heading", {
       name: "Что может делать ИИ",
       exact: true,
@@ -4368,7 +4380,7 @@ test("browser smoke: persisted AI quick reply is one-time and sends one atomic t
     assert.equal(capabilityPresentation.color, "rgb(20, 20, 20)");
     assert.equal(capabilityPresentation.fontSize, "14.08px");
     assert.equal(capabilityPresentation.fontWeight, "400");
-    const composer = panel.getByLabel("Сообщение ShiDao ИИ");
+    const composer = panel.getByLabel("Сообщение ИИ");
     await composer.fill("**Сделай четвёртый урок**");
     await composer.press("Enter");
 
@@ -4387,6 +4399,119 @@ test("browser smoke: persisted AI quick reply is one-time and sends one atomic t
     );
     assert.equal(await ownBubble.textContent(), "**Сделай четвёртый урок**");
     assert.equal(await ownBubble.locator("strong").count(), 0);
+    const assistantBubble = panel
+      .locator(
+        ".communication-message:not(.is-own) .communication-message-bubble",
+      )
+      .nth(0);
+    const bubblePresentation = await Promise.all([
+      ownBubble.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return {
+          tail: style.borderBottomRightRadius,
+          opposite: style.borderBottomLeftRadius,
+        };
+      }),
+      assistantBubble.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return {
+          tail: style.borderBottomLeftRadius,
+          opposite: style.borderBottomRightRadius,
+        };
+      }),
+    ]);
+    assert.deepEqual(bubblePresentation, [
+      { tail: "1px", opposite: "15.2px" },
+      { tail: "1px", opposite: "15.2px" },
+    ]);
+
+    const assistantTime = panel
+      .locator(
+        ".communication-message:not(.is-own) .communication-message-time",
+      )
+      .nth(0);
+    await runtime.page.mouse.move(0, 0);
+    await runtime.page.waitForTimeout(300);
+    const timePresentation = await assistantTime.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        opacity: style.opacity,
+        transitionProperty: style.transitionProperty,
+        transitionDuration: style.transitionDuration,
+        height: element.getBoundingClientRect().height,
+      };
+    });
+    assert.equal(timePresentation.opacity, "0");
+    assert.equal(timePresentation.transitionProperty, "opacity");
+    assert.equal(timePresentation.transitionDuration, "0.25s");
+    assert.ok(timePresentation.height > 0);
+    await assistantBubble.hover();
+    await runtime.page.waitForTimeout(300);
+    assert.equal(
+      await assistantTime.evaluate(
+        (element) => getComputedStyle(element).opacity,
+      ),
+      "1",
+    );
+
+    const footerPresentation = await panel.evaluate((element) => {
+      const panelRect = element.getBoundingClientRect();
+      const header = element.querySelector<HTMLElement>(
+        ".communication-conversation-header",
+      );
+      const footer = element.querySelector<HTMLElement>(
+        ".communication-composer-footer",
+      );
+      const quotaTrack = element.querySelector<HTMLElement>(
+        ".communication-assistant-quota",
+      );
+      const quotaFill = quotaTrack?.firstElementChild as HTMLElement | null;
+      if (!header || !footer || !quotaTrack || !quotaFill) {
+        throw new Error("Communication footer geometry is missing");
+      }
+      const headerRect = header.getBoundingClientRect();
+      const footerRect = footer.getBoundingClientRect();
+      const quotaRect = quotaTrack.getBoundingClientRect();
+      const fillRect = quotaFill.getBoundingClientRect();
+      const panelStyle = getComputedStyle(element);
+      const footerStyle = getComputedStyle(footer);
+      return {
+        panelBackground: panelStyle.backgroundColor,
+        panelBackgroundImage: panelStyle.backgroundImage,
+        panelOpacity: panelStyle.opacity,
+        panelBorder: panelStyle.borderTopWidth,
+        headerLeftDelta: Math.abs(headerRect.left - panelRect.left),
+        headerRightDelta: Math.abs(headerRect.right - panelRect.right),
+        footerLeftDelta: Math.abs(footerRect.left - panelRect.left),
+        footerRightDelta: Math.abs(footerRect.right - panelRect.right),
+        footerBorder: footerStyle.borderTopWidth,
+        footerPaddingTop: footerStyle.paddingTop,
+        quotaHeight: quotaRect.height,
+        quotaRatio: fillRect.width / quotaRect.width,
+        quotaMax: quotaTrack.getAttribute("aria-valuemax"),
+        quotaNow: quotaTrack.getAttribute("aria-valuenow"),
+      };
+    });
+    assert.ok(Math.abs(footerPresentation.quotaRatio - 0.75) < 0.001);
+    assert.deepEqual(
+      { ...footerPresentation, quotaRatio: 0.75 },
+      {
+        panelBackground: "rgb(255, 255, 255)",
+        panelBackgroundImage: "none",
+        panelOpacity: "1",
+        panelBorder: "0px",
+        headerLeftDelta: 0,
+        headerRightDelta: 0,
+        footerLeftDelta: 0,
+        footerRightDelta: 0,
+        footerBorder: "1px",
+        footerPaddingTop: "12px",
+        quotaHeight: 4,
+        quotaRatio: 0.75,
+        quotaMax: "2000000",
+        quotaNow: "1500000",
+      },
+    );
     const assistantMarkdown = panel
       .locator(".communication-message:not(.is-own) .communication-markdown")
       .nth(0);

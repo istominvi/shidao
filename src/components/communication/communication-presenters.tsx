@@ -71,7 +71,7 @@ export function inboxItemSubtitle(item: InboxItem) {
     case "course":
       return "Чат курса";
     case "assistant":
-      return "ShiDao ИИ";
+      return "ИИ";
     case "system":
       return "Системные уведомления";
   }

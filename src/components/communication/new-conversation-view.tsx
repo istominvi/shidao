@@ -110,7 +110,7 @@ export function NewConversationView({
                   <Sparkles />
                 </span>
                 <span className="communication-target-copy">
-                  <strong>Новый диалог с ShiDao ИИ</strong>
+                  <strong>Новый диалог с ИИ</strong>
                   <span>Контекст: {contextLabel}</span>
                 </span>
               </button>

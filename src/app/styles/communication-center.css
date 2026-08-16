@@ -88,9 +88,9 @@
   );
   max-height: 44rem;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.88);
+  border: 0;
   border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.99);
+  background: #fff;
   box-shadow: 0 30px 76px rgba(20, 20, 20, 0.24);
   color: #141414;
   animation: communication-center-panel-in 180ms ease-out;
@@ -485,11 +485,11 @@
 .communication-conversation {
   display: grid;
   min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 .communication-assistant-conversation {
-  grid-template-rows: minmax(0, 1fr) auto auto auto;
+  grid-template-rows: minmax(0, 1fr) auto;
 }
 
 .communication-system-conversation {
@@ -582,7 +582,7 @@
 
 .communication-message-bubble {
   border-radius: 0.95rem;
-  border-bottom-left-radius: 0.3rem;
+  border-bottom-left-radius: 1px;
   background: #f0f0f2;
   padding: 0.68rem 0.75rem;
   color: #30323a;
@@ -689,7 +689,7 @@
 }
 
 .communication-message.is-own .communication-message-bubble {
-  border-bottom-right-radius: 0.3rem;
+  border-bottom-right-radius: 1px;
   border-bottom-left-radius: 0.95rem;
   background: #141414;
   color: #fff;
@@ -703,6 +703,19 @@
   text-align: right;
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .communication-message-time {
+    opacity: 0;
+    transition: opacity 250ms ease;
+  }
+
+  .communication-message-bubble:hover ~ .communication-message-time,
+  .communication-message-time:hover,
+  .communication-message:focus-within .communication-message-time {
+    opacity: 1;
+  }
+}
+
 .communication-message .system-assistant-action-card {
   width: min(22rem, calc(100vw - 4rem));
   max-width: 100%;
@@ -711,13 +724,6 @@
 
 .communication-message .system-assistant-quick-replies {
   margin-top: 0.45rem;
-}
-
-.communication-assistant-meta {
-  margin: -0.25rem 0.8rem 0.55rem;
-  color: #858790;
-  font-size: 0.6rem;
-  line-height: 1.35;
 }
 
 .communication-message-error {
@@ -768,12 +774,18 @@
   line-height: 1.45;
 }
 
+.communication-composer-footer {
+  min-width: 0;
+  border-top: 1px solid #ececef;
+  padding: 0.75rem 0.7rem 0.7rem;
+}
+
 .communication-composer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 0.3rem;
-  margin: 0 0.7rem 0.7rem;
+  margin: 0;
   border: 1px solid rgba(20, 20, 20, 0.16);
   border-radius: 0.95rem;
   background: #fff;
@@ -818,10 +830,26 @@
 }
 
 .communication-composer-error {
-  margin: -0.25rem 0.75rem 0.6rem;
+  margin: 0 0 0.6rem;
   color: #9f1239;
   font-size: 0.7rem;
   line-height: 1.4;
+}
+
+.communication-assistant-quota {
+  width: calc(100% + 1.4rem);
+  height: 4px;
+  overflow: hidden;
+  margin: 0.7rem -0.7rem -0.7rem;
+  background: #ececef;
+}
+
+.communication-assistant-quota > span {
+  display: block;
+  height: 100%;
+  border-radius: 0 999px 999px 0;
+  background: #15803d;
+  transition: width 250ms ease;
 }
 
 .communication-center-launcher:focus-visible,
@@ -906,6 +934,11 @@
     transition: none;
   }
 
+  .communication-message-time,
+  .communication-assistant-quota > span {
+    transition: none;
+  }
+
   .communication-center-launcher:hover,
   .communication-center-launcher:active {
     transform: none;
@@ -926,6 +959,17 @@
     border: 1px solid ButtonText;
     background: ButtonFace;
     color: ButtonText;
+    forced-color-adjust: auto;
+  }
+
+  .communication-assistant-quota {
+    border: 1px solid CanvasText;
+    background: Canvas;
+    forced-color-adjust: auto;
+  }
+
+  .communication-assistant-quota > span {
+    background: Highlight;
     forced-color-adjust: auto;
   }
 

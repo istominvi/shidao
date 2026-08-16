@@ -21,6 +21,7 @@ import {
 } from "@/components/assistant/system-assistant-client";
 import { useSystemAssistant } from "@/components/assistant/system-assistant-provider";
 import {
+  loadAssistantMonthlyQuota,
   loadAssistantTurns,
   markAssistantConversationRead,
   sendAssistantTurn,
@@ -34,6 +35,7 @@ import type {
 } from "@/modules/ai/system-assistant-contracts";
 import type {
   AssistantConversation,
+  AssistantMonthlyQuota,
   AssistantTurn,
 } from "@/modules/communication/domain";
 import type { PersistedAssistantReplyPayload } from "@/modules/communication/output-contracts";
@@ -52,15 +54,11 @@ export type AssistantConversationSummary = Pick<
 type AssistantTurnMetadata = {
   proposedAction: SystemAssistantActionProposal | null;
   quickReplies: SystemAssistantQuickReply[];
-  sharedHistoryUsed: boolean;
-  totalTokens: number | null;
 };
 
 const EMPTY_METADATA: AssistantTurnMetadata = {
   proposedAction: null,
   quickReplies: [],
-  sharedHistoryUsed: false,
-  totalTokens: null,
 };
 
 function metadata(turn: AssistantTurn): AssistantTurnMetadata {
@@ -70,9 +68,29 @@ function metadata(turn: AssistantTurn): AssistantTurnMetadata {
   return {
     proposedAction: reply.proposedAction,
     quickReplies: reply.quickReplies,
-    sharedHistoryUsed: reply.sharedHistoryUsed,
-    totalTokens: reply.usage.totalTokens,
   };
+}
+
+function AssistantQuotaBar({ quota }: { quota: AssistantMonthlyQuota }) {
+  const remainingRatio = Math.max(
+    0,
+    Math.min(1, quota.remainingTokens / quota.limitTokens),
+  );
+  const remainingPercent = Math.round(remainingRatio * 100);
+
+  return (
+    <div
+      className="communication-assistant-quota"
+      role="progressbar"
+      aria-label="Месячный запас ИИ"
+      aria-valuemin={0}
+      aria-valuemax={quota.limitTokens}
+      aria-valuenow={quota.remainingTokens}
+      aria-valuetext={`Осталось ${remainingPercent}% месячного объёма ИИ`}
+    >
+      <span style={{ width: `${remainingRatio * 100}%` }} />
+    </div>
+  );
 }
 
 function latestPendingProposal(
@@ -146,6 +164,7 @@ export function AssistantConversationView({
   const [loading, setLoading] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quota, setQuota] = useState<AssistantMonthlyQuota | null>(null);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState<PendingTurn | null>(null);
   const [actionStates, setActionStates] = useState<
@@ -156,13 +175,13 @@ export function AssistantConversationView({
     useState<number | null>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const quotaRequestRef = useRef(0);
   const pageVisible = usePageVisible();
   const applying = Object.values(actionStates).some(
     (state) => state.status === "applying",
   );
   const latestTurn = turns.at(-1) ?? null;
   const latestTurnId = latestTurn?.id ?? null;
-  const latestMetadata = latestTurn ? metadata(latestTurn) : EMPTY_METADATA;
 
   useEffect(() => {
     let active = true;
@@ -174,6 +193,15 @@ export function AssistantConversationView({
     setLiveProposalKey(null);
     setHiddenQuickRepliesForTurnId(null);
     setError(null);
+    setQuota(null);
+    const quotaRequest = ++quotaRequestRef.current;
+    void loadAssistantMonthlyQuota()
+      .then((nextQuota) => {
+        if (active && quotaRequest === quotaRequestRef.current) {
+          setQuota(nextQuota);
+        }
+      })
+      .catch(() => null);
     void loadAssistantTurns(conversation.id)
       .then((payload) => {
         if (!active) return;
@@ -383,8 +411,14 @@ export function AssistantConversationView({
         setLiveProposalKey(null);
       }
       setPending(null);
-      onAnnouncement("Ответ ShiDao ИИ получен.");
+      onAnnouncement("Ответ ИИ получен.");
       onActivity();
+      const quotaRequest = ++quotaRequestRef.current;
+      void loadAssistantMonthlyQuota()
+        .then((nextQuota) => {
+          if (quotaRequest === quotaRequestRef.current) setQuota(nextQuota);
+        })
+        .catch(() => null);
     } catch (caught) {
       setPending((current) =>
         current?.clientTurnId === clientTurnId
@@ -469,9 +503,7 @@ export function AssistantConversationView({
                 className={`communication-message ${turn.role === "user" ? "is-own" : ""}`}
               >
                 {turn.role === "assistant" ? (
-                  <span className="communication-message-sender">
-                    ShiDao ИИ
-                  </span>
+                  <span className="communication-message-sender">ИИ</span>
                 ) : null}
                 <div className="communication-message-bubble">
                   {turn.role === "assistant" ? (
@@ -481,9 +513,8 @@ export function AssistantConversationView({
                   )}
                 </div>
                 <time
-                  className="communication-message-meta"
+                  className="communication-message-meta communication-message-time"
                   dateTime={turn.createdAt}
-                  title={fullCommunicationTime(turn.createdAt)}
                 >
                   {fullCommunicationTime(turn.createdAt)}
                 </time>
@@ -559,58 +590,51 @@ export function AssistantConversationView({
         <div ref={endRef} />
       </div>
 
-      {error ? (
-        <p className="communication-composer-error" role="alert">
-          {error}
-        </p>
-      ) : (
-        <span aria-hidden="true" />
-      )}
+      <div className="communication-composer-footer">
+        {error ? (
+          <p className="communication-composer-error" role="alert">
+            {error}
+          </p>
+        ) : null}
 
-      <form className="communication-composer" onSubmit={submit}>
-        <label
-          className="sr-only"
-          htmlFor={`communication-assistant-${conversation.id}`}
-        >
-          Сообщение ShiDao ИИ
-        </label>
-        <textarea
-          ref={composerRef}
-          id={`communication-assistant-${conversation.id}`}
-          rows={1}
-          maxLength={6_000}
-          value={draft}
-          disabled={pending?.status === "sending" || applying}
-          placeholder="Спросите или поручите…"
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={handleKeyDown}
-        />
-        <button
-          type="submit"
-          aria-label="Отправить ИИ"
-          disabled={pending?.status === "sending" || applying || !draft.trim()}
-        >
-          {pending?.status === "sending" || applying ? (
-            <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <Send className="h-4 w-4" aria-hidden="true" />
-          )}
-        </button>
-      </form>
+        <form className="communication-composer" onSubmit={submit}>
+          <label
+            className="sr-only"
+            htmlFor={`communication-assistant-${conversation.id}`}
+          >
+            Сообщение ИИ
+          </label>
+          <textarea
+            ref={composerRef}
+            id={`communication-assistant-${conversation.id}`}
+            rows={1}
+            maxLength={6_000}
+            value={draft}
+            disabled={pending?.status === "sending" || applying}
+            placeholder="Спросите или поручите…"
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <button
+            type="submit"
+            aria-label="Отправить ИИ"
+            disabled={
+              pending?.status === "sending" || applying || !draft.trim()
+            }
+          >
+            {pending?.status === "sending" || applying ? (
+              <LoaderCircle
+                className="h-4 w-4 animate-spin"
+                aria-hidden="true"
+              />
+            ) : (
+              <Send className="h-4 w-4" aria-hidden="true" />
+            )}
+          </button>
+        </form>
 
-      {latestMetadata.totalTokens || latestMetadata.sharedHistoryUsed ? (
-        <p className="communication-assistant-meta">
-          {latestMetadata.totalTokens
-            ? `${latestMetadata.totalTokens.toLocaleString("ru-RU")} токенов`
-            : null}
-          {latestMetadata.totalTokens && latestMetadata.sharedHistoryUsed
-            ? " · "
-            : null}
-          {latestMetadata.sharedHistoryUsed
-            ? "Использована разрешённая обезличенная история"
-            : null}
-        </p>
-      ) : null}
+        {quota ? <AssistantQuotaBar quota={quota} /> : null}
+      </div>
     </div>
   );
 }

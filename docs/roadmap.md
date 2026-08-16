@@ -766,7 +766,8 @@ Definition of Done:
 - фактические request ID/model/token usage в ответе и metadata-only server log;
 - process-local rate/concurrency limit без новой persistence;
 - attachment metadata без скачивания/парсинга file contents;
-- отсутствие schema migration, quota/ledger и billing.
+- отсутствие schema migration, durable quota/usage ledger и billing; текущий
+  информационный meter Communication Center описан отдельно в P0.3a.
 
 **Historical System Assistant baseline; superseded in current production единым
 центром из P0.3a:**
@@ -837,7 +838,8 @@ course.add_lesson_with_plan | lesson.fill | lesson.delete`; chat ничего н
   confirmation; delete, Auth/security, audience, schedule и публикация не
   становятся общими tools автоматически;
 - спроектировать persistent quota/usage ledger до введения платного ограничения,
-  но не выдавать текущий metadata usage за balance или billing.
+  но не выдавать текущий derived informational meter за hard balance или
+  billing.
 
 MCP остаётся development adapter. Production web вызывает application
 service/contracts напрямую и не поднимает внешний MCP endpoint или статический
@@ -853,7 +855,7 @@ teacher context. Нельзя писать «AI изучил файл», пок�
 **Current production:** один global launcher с общим unread badge заменяет отдельные AI,
 notification и messaging entry points. Он открывает unified inbox, но сохраняет
 явный provenance четырёх типов: direct, Course, **ShiDao · Система** и один из
-нескольких persisted диалогов **ShiDao ИИ**. Contextual actions Students и
+нескольких persisted диалогов с видимой маркировкой **ИИ**. Contextual actions Students и
 Course только открывают этот же центр на нужном thread; второго messenger flow
 нет.
 
@@ -896,17 +898,32 @@ Course только открывают этот же центр на нужно�
   iOS-style unread badge. Desktop остаётся одной узкой panel: inbox, new dialog
   и conversation заменяют друг друга без expand/two-column mode. Main header
   без subtitle, initial open не фокусирует search, а Retry использует общий
-  canonical product button;
+  canonical product button. Panel теперь полностью opaque white; header и
+  footer dividers идут full-bleed до обеих границ, а composer начинается через
+  `12 px` после footer divider;
 - system и assistant avatars используют единый black/white visual contract:
   wordmark-style `S` и Sparkles соответственно. Persistent green context
   callouts удалены; system explanation доступно по neutral `?` disclosure рядом
   с ShiDao. Empty AI dialogue не дублирует icon и показывает расширенные,
   context-aware и allowlist-accurate prompt chips обычной tab typography;
+- входящие/исходящие message bubbles имеют `1 px` только у угла, из которого
+  визуально выходит реплика. На fine pointer timestamp занимает прежнее место,
+  но проявляется при hover/focus за `250 ms`; на touch/coarse pointer он всегда
+  видим, а reduced-motion убирает transition;
 - assistant replies и system notification bodies отображают safe CommonMark
   для абзацев, emphasis, списков, цитат и code. Raw HTML, images и active
   model-authored links запрещены, headings компактны; human/user messages и
   system titles остаются literal plain text. Existing persisted strings не
   требуют миграции и получают форматирование при рендере;
+- raw token count заменён semantic progressbar высотой `4 px`: тёмно-зелёная
+  доля показывает остаток из тестового месячного объёма `2 000 000` на Account.
+  Server выводит usage текущего UTC-месяца из валидных persisted
+  assistant-reply payloads owner-scoped сохранённых conversations, включая
+  archived, через существующие user-JWT RPC. Meter загружается отдельным GET и
+  не блокирует turns/exchange; его временная ошибка скрывает только полоску. Это
+  informational meter без hard enforcement, reservation/settlement,
+  distributed reconciliation или billing; новая migration и physical schema
+  не добавлялись;
 - forward schema/migrations, RPC/application/API и responsive UI current.
   Production DB CC1 + A2, snapshot и postflight current; dependent web/API
   initial rollout развёрнут exact source
@@ -914,9 +931,10 @@ Course только открывают этот же центр на нужно�
   через Coolify deployment `otekp2zseg5ig2r05v6taabu`, а production
   HTTP/auth/CSRF boundary postflight пройден.
 
-**Next:** отдельными slices добавить durable action/job ledger,
-distributed limiter, reliable background completion producers, richer
-learner-safe metrics, Realtime/presence и push/email delivery.
+**Next:** отдельными slices добавить durable action/job и token-usage ledger,
+quota reservation/settlement с distributed enforcement, reliable background
+completion producers, richer learner-safe metrics, Realtime/presence и
+push/email delivery. Текущий тестовый meter не используется как billing balance.
 
 ## P0.4: reusable Course catalog
 
@@ -1283,7 +1301,7 @@ real-record progress без speculative metrics.
   background notification/AI workers;
 - общий catalog moderation UI за пределами educator review, ratings и
   контролируемый importer repository archive;
-- AI change sets, undo, quotas и billing;
+- AI change sets, undo, durable hard quotas и billing;
 - optional staging перед публичным production;
 - внешний MCP только после OAuth/scoped tokens, permissions, rate limits,
   audit и revocation.

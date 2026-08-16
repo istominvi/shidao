@@ -31,7 +31,12 @@ import {
   type SystemNotificationPageQuery,
   type UpdateAssistantConversationInput,
 } from "./contracts";
-import type { AssistantConversation, CommunicationActor } from "./domain";
+import type {
+  AssistantConversation,
+  AssistantMonthlyQuota,
+  CommunicationActor,
+} from "./domain";
+import { persistedAssistantReplyPayloadSchema } from "./output-contracts";
 import {
   CommunicationRepositoryError,
   type CommunicationRepository,
@@ -44,6 +49,75 @@ export type CommunicationServiceDependencies = {
 export type CommunicationApplicationService = ReturnType<
   typeof createCommunicationService
 >;
+
+const ASSISTANT_MONTHLY_TOKEN_ALLOWANCE = 2_000_000;
+const ASSISTANT_QUOTA_CONVERSATION_LIMIT = 50;
+const ASSISTANT_QUOTA_TURN_PAGE_LIMIT = 50;
+
+function assistantMonthRange(now = new Date()) {
+  const periodStartedAt = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+  );
+  const resetsAt = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+  );
+  return { periodStartedAt, resetsAt };
+}
+
+async function loadAssistantMonthlyQuota(
+  repository: CommunicationRepository,
+): Promise<AssistantMonthlyQuota> {
+  const { periodStartedAt, resetsAt } = assistantMonthRange();
+  const conversations = await repository.listAssistantConversations({
+    includeArchived: true,
+    limit: ASSISTANT_QUOTA_CONVERSATION_LIMIT,
+  });
+  let usedTokens = 0;
+
+  for (const conversation of conversations.items) {
+    let beforeTurnId: number | null = null;
+    let reachedPriorPeriod = false;
+
+    do {
+      const page = await repository.listAssistantTurns(conversation.id, {
+        beforeTurnId,
+        limit: ASSISTANT_QUOTA_TURN_PAGE_LIMIT,
+      });
+      for (const turn of page.items) {
+        const createdAt = Date.parse(turn.createdAt);
+        if (createdAt < periodStartedAt.getTime()) {
+          reachedPriorPeriod = true;
+          continue;
+        }
+        if (createdAt >= resetsAt.getTime() || turn.role !== "assistant") {
+          continue;
+        }
+        const payload = persistedAssistantReplyPayloadSchema.safeParse(
+          turn.payload,
+        );
+        if (!payload.success) continue;
+        usedTokens += payload.data.reply.usage.totalTokens;
+        if (!Number.isSafeInteger(usedTokens)) {
+          usedTokens = Number.MAX_SAFE_INTEGER;
+          reachedPriorPeriod = true;
+          break;
+        }
+      }
+      beforeTurnId = page.nextCursor;
+    } while (beforeTurnId !== null && !reachedPriorPeriod);
+  }
+
+  return {
+    periodStartedAt: periodStartedAt.toISOString(),
+    resetsAt: resetsAt.toISOString(),
+    limitTokens: ASSISTANT_MONTHLY_TOKEN_ALLOWANCE,
+    usedTokens,
+    remainingTokens: Math.max(
+      0,
+      ASSISTANT_MONTHLY_TOKEN_ALLOWANCE - usedTokens,
+    ),
+  };
+}
 
 function unavailable(): never {
   throw new CommunicationApplicationError(
@@ -245,6 +319,10 @@ export function createCommunicationService(
       return operation(() =>
         repository.listAssistantTurns(conversationId, input),
       );
+    },
+
+    getAssistantMonthlyQuota(_actor: CommunicationActor) {
+      return operation(() => loadAssistantMonthlyQuota(repository));
     },
 
     appendAssistantUserTurn(

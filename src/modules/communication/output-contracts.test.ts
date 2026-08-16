@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   assistantCommunicationPayloadSchema,
+  assistantMonthlyQuotaSchema,
   communicationMessageSchema,
   communicationThreadSchema,
   cursorPageSchema,
@@ -15,6 +16,32 @@ import {
 const GUID_A = "00000000-0000-0000-0000-000000000001";
 const GUID_B = "00000000-0000-0000-0000-000000000002";
 const NOW = "2026-08-16T06:00:00.000Z";
+
+test("assistant monthly quota is exact, bounded, and internally consistent", () => {
+  const quota = {
+    periodStartedAt: "2026-08-01T00:00:00.000Z",
+    resetsAt: "2026-09-01T00:00:00.000Z",
+    limitTokens: 2_000_000,
+    usedTokens: 500_000,
+    remainingTokens: 1_500_000,
+  };
+
+  assert.equal(assistantMonthlyQuotaSchema.safeParse(quota).success, true);
+  assert.equal(
+    assistantMonthlyQuotaSchema.safeParse({
+      ...quota,
+      remainingTokens: 1_499_999,
+    }).success,
+    false,
+  );
+  assert.equal(
+    assistantMonthlyQuotaSchema.safeParse({
+      ...quota,
+      periodStartedAt: quota.resetsAt,
+    }).success,
+    false,
+  );
+});
 
 test("human DTOs expose labels and learner-domain ids, never Account/Auth ids", () => {
   const direct = {

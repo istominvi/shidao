@@ -26,7 +26,7 @@ unread badge открывает единый список, но не превр�
 ├── личный диалог Account ↔ Account
 ├── чат Course
 ├── ShiDao · Система
-└── ShiDao ИИ · один из нескольких persisted диалогов
+└── ИИ · один из нескольких persisted диалогов
 ```
 
 Пользовательский словарь не вводит параллельные сущности «центр уведомлений»,
@@ -38,7 +38,7 @@ unread badge открывает единый список, но не превр�
 - Человеческое сообщение всегда подписано фактическим Account-отправителем.
 - **ShiDao · Система** сообщает только committed typed domain facts. System
   item нельзя создать через human composer или provider output.
-- **ShiDao ИИ** возвращает model-authored текст, результат явной AI-задачи или
+- **ИИ** возвращает model-authored текст, результат явной AI-задачи или
   strict proposal. Он не изображает системный факт или другого человека.
 - Точная метрика LessonRun принадлежит ShiDao. Если модель интерпретирует эту
   метрику, AI-вывод показывается отдельно и маркируется как ИИ.
@@ -132,6 +132,31 @@ Human messages никогда автоматически не входят в pr
 выбранного фрагмента ИИ требует отдельного явного действия и не входит в первый
 slice.
 
+### Informational monthly meter
+
+В footer каждого AI-диалога находится semantic progressbar высотой `4 px`.
+Полная ширина соответствует тестовому месячному объёму `2 000 000` токенов на
+Account, а тёмно-зелёная часть показывает оставшуюся долю. Raw число токенов в
+пользовательском интерфейсе не выводится.
+
+Application server вычисляет meter для текущего календарного месяца UTC. Через
+существующие authenticated owner-scoped user-JWT RPC он читает сохранённые AI
+conversations, включая archived, в пределах current bounded contract до `50`
+диалогов, пагинирует turns и суммирует `usage.totalTokens` только у payloads,
+которые успешно проходят canonical persisted assistant-reply schema. User
+turns, malformed payloads и turns вне текущего UTC-месяца не учитываются.
+Отдельный `GET /api/v2/assistant/quota` отдаёт projection независимо от turns и
+POST exchange: UI запрашивает meter при открытии AI-диалога и обновляет после
+ответа, а при временной ошибке скрывает только полоску, не задерживая и не ломая
+сообщения.
+
+Это информационный test-stage meter, а не hard quota или billing balance. Он не
+резервирует объём до provider call, не делает settlement конкурентных запросов,
+не блокирует composer при нуле и не учитывает provider failures или AI-вызовы
+вне Communication Center. Новый RPC, таблица, migration и physical schema для
+него не добавлялись. Durable token ledger, reservation/settlement и distributed
+enforcement являются отдельным **later** slice.
+
 ## Unified inbox and unread
 
 Unified inbox является read model поверх human threads, system notifications и
@@ -151,7 +176,10 @@ assistant conversations. Он задаёт сортировку, preview и об
 
 Desktop использует одну узкую non-modal panel без expand/two-column mode: inbox,
 выбор адресата и открытый диалог сменяют друг друга в одной поверхности. Mobile
-использует полноэкранный вариант того же flow. Launcher имеет чёрный surface,
+использует полноэкранный вариант того же flow. Panel имеет полностью
+непрозрачный белый фон. Header divider и divider над composer идут full-bleed до
+обеих границ; внутри footer между divider и composer content остаётся `12 px`.
+Launcher имеет чёрный surface,
 белую Message/X icon и красный aggregate iOS-style unread badge, пересекающий
 его верхнюю правую границу. Main header не содержит supporting subtitle;
 initial open фокусирует panel, а не search input. Контекстные действия
@@ -167,7 +195,7 @@ System provenance объясняется только по click/touch disclosur
 только реально allowlisted read/actions текущего контекста. Chips используют
 обычную типографику product tabs, не bold helper style.
 
-Тела ответов ShiDao ИИ и системных уведомлений отображают безопасное подмножество
+Тела ответов ИИ и системных уведомлений отображают безопасное подмножество
 CommonMark: абзацы, акцент, упорядоченные и неупорядоченные списки, цитаты и код.
 Это presentation-only contract поверх persisted plain string: raw HTML
 игнорируется, изображения и ссылки не становятся активными, а навигация и
@@ -176,6 +204,13 @@ System title, user turns и direct/Course human messages остаются бук
 plain text, поэтому введённые человеком Markdown-маркеры не меняют смысл его
 сообщения. Parser загружается лениво только при первом показе formatted body;
 глобальный launcher и inbox не несут его в initial protected-page bundle.
+
+У входящей реплики только bottom-left, а у исходящей только bottom-right угол
+источника имеет радиус `1 px`; остальные углы сохраняют обычное скругление.
+Timestamp остаётся в layout. На fine pointer он скрыт до hover/focus-within и
+плавно проявляется за `250 ms`; на touch/coarse pointer всегда видим.
+`prefers-reduced-motion` отключает transition. Видимое имя assistant во всех
+inbox/conversation surfaces — краткое **«ИИ»**.
 
 ## Authorization and persistence boundary
 

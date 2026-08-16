@@ -209,7 +209,7 @@ function ConversationHeader({
     kind = thread.kind;
   } else if (view.type === "assistant" && assistant) {
     title = assistant.title;
-    subtitle = "ShiDao ИИ · сохранённый диалог";
+    subtitle = "ИИ · сохранённый диалог";
     kind = "assistant";
   } else if (view.type === "direct-target" || view.type === "course-target") {
     title = view.label ?? "Открываем диалог";

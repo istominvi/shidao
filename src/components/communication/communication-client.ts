@@ -4,6 +4,7 @@ import { ROUTES } from "@/lib/auth";
 import type {
   AssistantConversation,
   AssistantExchange,
+  AssistantMonthlyQuota,
   AssistantTurn,
   CommunicationMessage,
   CommunicationThread,
@@ -216,6 +217,13 @@ export async function loadAssistantTurns(
     `/api/v2/assistant/conversations/${encodeURIComponent(conversationId)}/turns${suffix}`,
   );
   return payload;
+}
+
+export async function loadAssistantMonthlyQuota() {
+  const payload = await communicationRequest<{
+    quota: AssistantMonthlyQuota;
+  }>("/api/v2/assistant/quota");
+  return payload.quota;
 }
 
 export async function sendAssistantTurn(

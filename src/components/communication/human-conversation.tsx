@@ -301,9 +301,8 @@ export function HumanConversation({
               ) : null}
               <div className="communication-message-bubble">{message.body}</div>
               <time
-                className="communication-message-meta"
+                className="communication-message-meta communication-message-time"
                 dateTime={message.createdAt}
-                title={fullCommunicationTime(message.createdAt)}
               >
                 {fullCommunicationTime(message.createdAt)}
               </time>
@@ -333,53 +332,53 @@ export function HumanConversation({
         <div ref={endRef} />
       </div>
 
-      {loadError ? (
-        <p className="communication-composer-error" role="alert">
-          {loadError}
-        </p>
-      ) : (
-        <span aria-hidden="true" />
-      )}
+      <div className="communication-composer-footer">
+        {loadError ? (
+          <p className="communication-composer-error" role="alert">
+            {loadError}
+          </p>
+        ) : null}
 
-      {thread.canSend ? (
-        <form className="communication-composer" onSubmit={submit}>
-          <label
-            className="sr-only"
-            htmlFor={`communication-message-${thread.id}`}
-          >
-            Сообщение в диалог «{thread.title}»
-          </label>
-          <textarea
-            ref={composerRef}
-            id={`communication-message-${thread.id}`}
-            rows={1}
-            maxLength={6_000}
-            value={draft}
-            disabled={pending?.status === "sending"}
-            placeholder="Сообщение…"
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-          <button
-            type="submit"
-            aria-label="Отправить"
-            disabled={pending?.status === "sending" || !draft.trim()}
-          >
-            {pending?.status === "sending" ? (
-              <LoaderCircle
-                className="h-4 w-4 animate-spin"
-                aria-hidden="true"
-              />
-            ) : (
-              <Send className="h-4 w-4" aria-hidden="true" />
-            )}
-          </button>
-        </form>
-      ) : (
-        <p className="communication-course-notice" role="status">
-          Этот диалог доступен только для чтения.
-        </p>
-      )}
+        {thread.canSend ? (
+          <form className="communication-composer" onSubmit={submit}>
+            <label
+              className="sr-only"
+              htmlFor={`communication-message-${thread.id}`}
+            >
+              Сообщение в диалог «{thread.title}»
+            </label>
+            <textarea
+              ref={composerRef}
+              id={`communication-message-${thread.id}`}
+              rows={1}
+              maxLength={6_000}
+              value={draft}
+              disabled={pending?.status === "sending"}
+              placeholder="Сообщение…"
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+            <button
+              type="submit"
+              aria-label="Отправить"
+              disabled={pending?.status === "sending" || !draft.trim()}
+            >
+              {pending?.status === "sending" ? (
+                <LoaderCircle
+                  className="h-4 w-4 animate-spin"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Send className="h-4 w-4" aria-hidden="true" />
+              )}
+            </button>
+          </form>
+        ) : (
+          <p className="communication-course-notice" role="status">
+            Этот диалог доступен только для чтения.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

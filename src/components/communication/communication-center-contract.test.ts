@@ -82,7 +82,7 @@ test("AI and system bodies render a safe Markdown subset while human text stays 
     assistant,
     /turn\.role === "assistant" \? \([\s\S]*?<CommunicationMarkdown body=\{turn\.body\} \/>/,
   );
-  assert.match(assistant, /onAnnouncement\("Ответ ShiDao ИИ получен\."\)/);
+  assert.match(assistant, /onAnnouncement\("Ответ ИИ получен\."\)/);
   assert.match(
     system,
     /<CommunicationMarkdown body=\{notification\.body\} \/>/,
@@ -136,6 +136,15 @@ test("communication center keeps one narrow flow, quiet initial focus and canoni
   assert.doesNotMatch(inbox, /data-communication-initial-focus/);
   assert.doesNotMatch(newConversation, /data-communication-initial-focus/);
 
+  for (const communicationSource of [
+    center,
+    assistant,
+    presenters,
+    newConversation,
+  ]) {
+    assert.doesNotMatch(communicationSource, /ShiDao ИИ/);
+  }
+
   for (const retrySource of [center, inbox, newConversation, system]) {
     assert.match(
       retrySource,
@@ -185,7 +194,7 @@ test("communication center keeps one narrow flow, quiet initial focus and canoni
   }
   assert.match(
     css,
-    /\.communication-assistant-conversation\s*\{\s*grid-template-rows: minmax\(0, 1fr\) auto auto auto;/,
+    /\.communication-assistant-conversation\s*\{\s*grid-template-rows: minmax\(0, 1fr\) auto;/,
   );
   assert.match(
     css,
@@ -194,6 +203,61 @@ test("communication center keeps one narrow flow, quiet initial focus and canoni
   assert.match(
     css,
     /\.communication-assistant-empty button\s*\{[\s\S]*?font-size: var\(--course-demo-control-font-size, 0\.88rem\);[\s\S]*?font-weight: var\(--course-demo-control-font-weight, 400\);/,
+  );
+
+  assert.match(
+    css,
+    /\.communication-center-panel\s*\{[\s\S]*?border: 0;[\s\S]*?background: #fff;/,
+  );
+  assert.match(
+    css,
+    /\.communication-message-bubble\s*\{[\s\S]*?border-bottom-left-radius: 1px;/,
+  );
+  assert.match(
+    css,
+    /\.communication-message\.is-own \.communication-message-bubble\s*\{[\s\S]*?border-bottom-right-radius: 1px;[\s\S]*?border-bottom-left-radius: 0\.95rem;/,
+  );
+  assert.match(
+    assistant,
+    /communication-message-meta communication-message-time/,
+  );
+  assert.match(
+    await source("src/components/communication/human-conversation.tsx"),
+    /communication-message-meta communication-message-time/,
+  );
+  assert.match(
+    css,
+    /@media \(hover: hover\) and \(pointer: fine\)[\s\S]*?\.communication-message-time\s*\{[\s\S]*?opacity: 0;[\s\S]*?transition: opacity 250ms ease;/,
+  );
+  assert.match(
+    css,
+    /\.communication-message-bubble:hover ~ \.communication-message-time,[\s\S]*?opacity: 1;/,
+  );
+  assert.match(
+    css,
+    /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.communication-message-time,[\s\S]*?transition: none;/,
+  );
+  assert.match(
+    css,
+    /\.communication-composer-footer\s*\{[\s\S]*?border-top: 1px solid #ececef;[\s\S]*?padding: 0\.75rem 0\.7rem 0\.7rem;/,
+  );
+  assert.match(assistant, /role="progressbar"/);
+  assert.match(assistant, /const quotaRequestRef = useRef\(0\)/);
+  assert.match(
+    assistant,
+    /quotaRequest === quotaRequestRef\.current[\s\S]*?setQuota\(nextQuota\)/,
+  );
+  assert.match(assistant, /aria-label="Месячный запас ИИ"/);
+  assert.match(assistant, /aria-valuemax=\{quota\.limitTokens\}/);
+  assert.match(assistant, /aria-valuenow=\{quota\.remainingTokens\}/);
+  assert.doesNotMatch(assistant, /toLocaleString\("ru-RU"\).*токенов/);
+  assert.match(
+    css,
+    /\.communication-assistant-quota\s*\{[\s\S]*?height: 4px;[\s\S]*?background: #ececef;/,
+  );
+  assert.match(
+    css,
+    /\.communication-assistant-quota > span\s*\{[\s\S]*?background: #15803d;/,
   );
 });
 
@@ -212,6 +276,8 @@ test("communication client uses only the canonical V2 API and atomic persisted A
     assert.match(client, new RegExp(route.replaceAll("/", "\\/")));
   }
   assert.match(client, /exchange: AssistantExchange/);
+  assert.match(client, /quota: AssistantMonthlyQuota/);
+  assert.match(client, /\/api\/v2\/assistant\/quota/);
   assert.match(client, /localDate/);
   assert.match(client, /utcOffsetMinutes: -now\.getTimezoneOffset\(\)/);
   assert.doesNotMatch(client, /sendSystemAssistantMessage/);
