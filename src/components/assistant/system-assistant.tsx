@@ -112,7 +112,7 @@ type TranscriptMessage = AiAssistantMessage & {
   quickRepliesContextKey?: string;
 };
 
-type ActionState =
+export type AssistantActionState =
   | { status: "applying" }
   | { status: "cancelled" }
   | { status: "stale"; message: string }
@@ -143,7 +143,7 @@ const CANCEL_WORDS = new Set([
   "не нужно",
 ]);
 
-function confirmationIntent(value: string) {
+export function confirmationIntent(value: string) {
   const normalized = value
     .trim()
     .toLocaleLowerCase("ru-RU")
@@ -156,7 +156,7 @@ function confirmationIntent(value: string) {
 
 function latestPendingProposal(
   messages: TranscriptMessage[],
-  actionStates: Record<string, ActionState>,
+  actionStates: Record<string, AssistantActionState>,
 ) {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const proposal = messages[index]?.proposal;
@@ -212,7 +212,7 @@ function quickPrompts(
   return ["Расскажи о моих курсах", "Создай черновик нового курса"];
 }
 
-function actionTitle(proposal: SystemAssistantActionProposal) {
+export function actionTitle(proposal: SystemAssistantActionProposal) {
   switch (proposal.action.type) {
     case "course.create_draft":
       return "Создать курс";
@@ -224,10 +224,14 @@ function actionTitle(proposal: SystemAssistantActionProposal) {
       return "Дополнить урок";
     case "lesson.delete":
       return "Удалить урок";
+    case "lesson.schedule_run":
+      return proposal.action.existingLessonRunId
+        ? "Перенести урок"
+        : "Назначить урок";
   }
 }
 
-function verifiedMessage(result: SystemAssistantActionResult) {
+export function verifiedMessage(result: SystemAssistantActionResult) {
   switch (result.type) {
     case "course.create_draft":
       return `Готово: курс «${result.courseTitle}» создан.`;
@@ -238,6 +242,14 @@ function verifiedMessage(result: SystemAssistantActionResult) {
       return `Готово: в урок «${result.lessonTitle}» добавлено ${result.componentIds.length} блоков.`;
     case "lesson.delete":
       return `Готово: урок «${result.lessonTitle}» удалён из курса «${result.courseTitle}».`;
+    case "lesson.schedule_run":
+      return `Готово: урок «${result.lessonTitle}» назначен на ${new Intl.DateTimeFormat(
+        "ru-RU",
+        {
+          dateStyle: "long",
+          timeStyle: "short",
+        },
+      ).format(new Date(result.scheduledAt))}.`;
   }
 }
 
@@ -274,7 +286,7 @@ function lessonComponentPreview(component: AiLessonComponentPlan) {
   }
 }
 
-function AssistantActionCard({
+export function AssistantActionCard({
   proposal,
   state,
   busy,
@@ -282,7 +294,7 @@ function AssistantActionCard({
   onCancel,
 }: {
   proposal: SystemAssistantActionProposal;
-  state: ActionState | undefined;
+  state: AssistantActionState | undefined;
   busy: boolean;
   onApply: () => void;
   onCancel: () => void;
@@ -345,6 +357,36 @@ function AssistantActionCard({
             Завершённые индивидуальные результаты учеников сохранятся.
           </p>
         </>
+      ) : action.type === "lesson.schedule_run" ? (
+        <dl>
+          <div>
+            <dt>Курс</dt>
+            <dd>{action.courseTitle}</dd>
+          </div>
+          <div>
+            <dt>Урок</dt>
+            <dd>{action.lessonTitle}</dd>
+          </div>
+          <div>
+            <dt>
+              {action.existingLessonRunId ? "Новое время" : "Дата и время"}
+            </dt>
+            <dd>
+              {new Intl.DateTimeFormat("ru-RU", {
+                dateStyle: "long",
+                timeStyle: "short",
+              }).format(new Date(action.scheduledAt))}
+            </dd>
+          </div>
+          <div>
+            <dt>Продолжительность</dt>
+            <dd>{action.plannedDurationMinutes} мин.</dd>
+          </div>
+          <div>
+            <dt>Участники</dt>
+            <dd>{action.participantCount}</dd>
+          </div>
+        </dl>
       ) : (
         <dl>
           <div>
@@ -470,9 +512,9 @@ export function SystemAssistant() {
   const [error, setError] = useState<string | null>(null);
   const [lastUsage, setLastUsage] = useState<AiProviderUsage | null>(null);
   const [sharedHistoryUsed, setSharedHistoryUsed] = useState(false);
-  const [actionStates, setActionStates] = useState<Record<string, ActionState>>(
-    {},
-  );
+  const [actionStates, setActionStates] = useState<
+    Record<string, AssistantActionState>
+  >({});
   const [announcement, setAnnouncement] = useState("");
   const launcherRef = useRef<HTMLButtonElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);

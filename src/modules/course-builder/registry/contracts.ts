@@ -1158,7 +1158,10 @@ const addComponentVariantSchemas = creatableComponentTypeKeys.map((typeKey) => {
   const definition = componentRegistry[typeKey];
   return z
     .object({
-      lessonId: z.uuid(),
+      // PostgreSQL UUID values are not guaranteed to carry an RFC version bit
+      // (for example, deterministic md5::uuid fixtures), so persisted ids use
+      // the generic GUID shape at this boundary.
+      lessonId: z.guid(),
       typeKey: z.literal(typeKey),
       payload: definition.payloadSchema,
       placement: definition.placementSchema,

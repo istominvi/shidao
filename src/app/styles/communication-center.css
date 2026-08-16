@@ -1,0 +1,877 @@
+.communication-center-layer {
+  position: relative;
+  /* Global messaging must stay above the product header (z-index: 60),
+     while confirmation dialogs remain the topmost modal layer (120). */
+  z-index: 70;
+}
+
+.communication-center-launcher-wrap {
+  position: fixed;
+  right: calc(0.75rem + env(safe-area-inset-right, 0px));
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  z-index: 3;
+}
+
+.communication-center-launcher {
+  position: relative;
+  display: inline-grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--product-element-radius, 0.75rem);
+  background: linear-gradient(
+    112deg,
+    #91f5f0 0%,
+    #adf9df 28%,
+    #f7ffff 51%,
+    #d2d9e6 68%,
+    #ddb0ea 84%,
+    #f0bff5 100%
+  );
+  color: #141414;
+  box-shadow:
+    0 10px 24px rgba(52, 45, 72, 0.2),
+    0 2px 6px rgba(52, 45, 72, 0.12);
+  cursor: pointer;
+  isolation: isolate;
+  transition:
+    transform var(--product-raised-control-transition, 160ms ease),
+    box-shadow var(--product-raised-control-transition, 160ms ease);
+  animation: communication-center-launcher-in 180ms ease-out;
+}
+
+.communication-center-launcher::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    148deg,
+    rgba(255, 255, 255, 0.4),
+    transparent 44%,
+    rgba(255, 255, 255, 0.18)
+  );
+  content: "";
+}
+
+.communication-center-launcher:hover {
+  box-shadow:
+    0 14px 30px rgba(52, 45, 72, 0.24),
+    0 3px 8px rgba(52, 45, 72, 0.14);
+  transform: translateY(-1px) scale(1.03);
+}
+
+.communication-center-launcher:active {
+  transform: scale(0.97);
+}
+
+.communication-center-launcher svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.communication-center-badge {
+  position: absolute;
+  top: -0.38rem;
+  right: -0.42rem;
+  z-index: 2;
+  display: inline-grid;
+  min-width: 1.18rem;
+  height: 1.18rem;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #141414;
+  padding-inline: 0.2rem;
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.communication-center-panel {
+  position: fixed;
+  right: calc(0.75rem + env(safe-area-inset-right, 0px));
+  bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  z-index: 2;
+  display: grid;
+  width: min(
+    26rem,
+    calc(
+      100vw - 1.5rem - env(safe-area-inset-left, 0px) -
+        env(safe-area-inset-right, 0px)
+    )
+  );
+  height: min(
+    44rem,
+    calc(
+      100dvh - 4.75rem - env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px)
+    )
+  );
+  max-height: 44rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 1.35rem;
+  background: rgba(255, 255, 255, 0.99);
+  box-shadow: 0 30px 76px rgba(20, 20, 20, 0.24);
+  color: #141414;
+  animation: communication-center-panel-in 180ms ease-out;
+}
+
+.communication-center-panel.is-expanded {
+  width: min(
+    54rem,
+    calc(
+      100vw - 1.5rem - env(safe-area-inset-left, 0px) -
+        env(safe-area-inset-right, 0px)
+    )
+  );
+}
+
+.communication-center-shell {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.communication-center-panel.is-expanded .communication-center-shell {
+  grid-template-columns: 20rem minmax(0, 1fr);
+}
+
+.communication-center-column,
+.communication-center-view {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.communication-center-placeholder {
+  display: grid;
+  min-height: 0;
+  align-content: center;
+  justify-items: center;
+  gap: 0.55rem;
+  padding: 2rem;
+  color: #6c6f78;
+  text-align: center;
+}
+
+.communication-center-placeholder > svg {
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: 0.25rem;
+  color: #a0a2aa;
+}
+
+.communication-center-placeholder strong {
+  color: #30323a;
+  font-size: 0.9rem;
+}
+
+.communication-center-placeholder span {
+  max-width: 18rem;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.communication-center-placeholder button {
+  min-height: 2.5rem;
+  margin-top: 0.25rem;
+  border: 0;
+  border-radius: var(--product-element-radius, 0.75rem);
+  background: #141414;
+  padding: 0.55rem 0.8rem;
+  color: #fff;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.communication-center-panel.is-expanded .communication-center-column {
+  border-right: 1px solid #ececef;
+}
+
+.communication-center-header,
+.communication-conversation-header {
+  display: flex;
+  min-width: 0;
+  min-height: 4rem;
+  align-items: center;
+  gap: 0.55rem;
+  border-bottom: 1px solid #ececef;
+  padding: 0.7rem 0.75rem;
+}
+
+.communication-center-heading,
+.communication-conversation-heading {
+  min-width: 0;
+  flex: 1;
+}
+
+.communication-center-heading h2,
+.communication-conversation-heading strong {
+  display: block;
+  overflow: hidden;
+  margin: 0;
+  font-size: 0.94rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.communication-center-heading p,
+.communication-conversation-heading span {
+  display: block;
+  overflow: hidden;
+  margin: 0.12rem 0 0;
+  color: #70727a;
+  font-size: 0.7rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.communication-center-icon-button {
+  display: inline-grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 2.5rem;
+  place-items: center;
+  border: 0;
+  border-radius: var(--product-element-radius, 0.75rem);
+  background: transparent;
+  color: #3f424a;
+  cursor: pointer;
+}
+
+.communication-center-icon-button:hover {
+  background: #f0f0f2;
+}
+
+.communication-center-icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.communication-center-icon-button svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.communication-center-back {
+  display: none;
+}
+
+.communication-center-panel:not(.is-expanded) .communication-center-back {
+  display: inline-grid;
+}
+
+.communication-inbox-body,
+.communication-new-body,
+.communication-message-log,
+.communication-system-feed {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.communication-inbox-tools,
+.communication-new-search {
+  padding: 0.7rem 0.75rem 0.25rem;
+}
+
+.communication-new-action-error {
+  margin: 0.7rem 0.75rem 0;
+  border-radius: 0.72rem;
+  background: #fff1f2;
+  padding: 0.55rem 0.65rem;
+  color: #9f1239;
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.communication-search {
+  display: flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid rgba(20, 20, 20, 0.14);
+  border-radius: var(--product-element-radius, 0.75rem);
+  background: #fff;
+  padding: 0 0.7rem;
+}
+
+.communication-search:focus-within {
+  border-color: rgba(20, 20, 20, 0.5);
+  outline: 2px solid var(--product-control-focus-halo, rgba(20, 20, 20, 0.58));
+  outline-offset: 0;
+}
+
+.communication-search svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
+  color: #73767f;
+}
+
+.communication-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #141414;
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.communication-inbox-list,
+.communication-target-list {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0.45rem;
+  list-style: none;
+}
+
+.communication-inbox-item,
+.communication-target-item {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  min-height: 4.4rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  border: 0;
+  border-radius: 0.9rem;
+  background: transparent;
+  padding: 0.55rem;
+  color: #141414;
+  text-align: left;
+  cursor: pointer;
+}
+
+.communication-target-item {
+  min-height: 3.7rem;
+}
+
+.communication-inbox-item:hover,
+.communication-target-item:hover,
+.communication-inbox-item[aria-current="true"] {
+  background: #f2f2f4;
+}
+
+.communication-avatar {
+  position: relative;
+  display: inline-grid;
+  width: 2.65rem;
+  height: 2.65rem;
+  flex: 0 0 2.65rem;
+  place-items: center;
+  border-radius: 0.9rem;
+  background: #ececef;
+  color: #30323a;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.communication-avatar.is-assistant {
+  background: #141414;
+  color: #c9ff4f;
+}
+
+.communication-avatar.is-system {
+  background: rgba(112, 183, 255, 0.22);
+  color: #175b93;
+}
+
+.communication-avatar.is-course {
+  background: rgba(201, 180, 255, 0.34);
+  color: #5d3c94;
+}
+
+.communication-avatar svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.communication-inbox-copy,
+.communication-target-copy {
+  min-width: 0;
+}
+
+.communication-inbox-title-row {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.communication-inbox-title-row strong,
+.communication-target-copy strong {
+  display: block;
+  overflow: hidden;
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.communication-inbox-title-row time {
+  flex: 0 0 auto;
+  color: #858790;
+  font-size: 0.62rem;
+}
+
+.communication-inbox-preview,
+.communication-target-copy span {
+  display: block;
+  overflow: hidden;
+  margin-top: 0.16rem;
+  color: #6c6f78;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.communication-unread-count {
+  display: inline-grid;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #141414;
+  padding-inline: 0.28rem;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.communication-empty,
+.communication-loading,
+.communication-error {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.65rem;
+  min-height: 12rem;
+  padding: 1.5rem;
+  color: #666a73;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.communication-error {
+  color: #9f1239;
+}
+
+.communication-empty button,
+.communication-error button,
+.communication-load-older {
+  min-height: 2.5rem;
+  border: 1px solid rgba(20, 20, 20, 0.14);
+  border-radius: var(--product-element-radius, 0.75rem);
+  background: #fff;
+  padding: 0.5rem 0.75rem;
+  color: #141414;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.communication-section-title {
+  margin: 0;
+  padding: 0.8rem 1rem 0.2rem;
+  color: #777a83;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.communication-conversation {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+}
+
+.communication-assistant-conversation {
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+}
+
+.communication-assistant-empty {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.5rem;
+  min-height: 15rem;
+  padding: 1.25rem;
+  color: #666a73;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.communication-assistant-empty > strong {
+  color: #30323a;
+  font-size: 0.88rem;
+}
+
+.communication-assistant-empty > span:not(.communication-avatar) {
+  max-width: 20rem;
+}
+
+.communication-assistant-empty > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.communication-assistant-empty button {
+  min-height: 2.5rem;
+  border: 1px solid rgba(20, 20, 20, 0.16);
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.5rem 0.75rem;
+  color: #141414;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.communication-assistant-empty button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.communication-context-chip,
+.communication-course-notice {
+  margin: 0.55rem 0.75rem 0;
+  border-radius: 0.72rem;
+  background: rgba(201, 255, 79, 0.2);
+  padding: 0.5rem 0.62rem;
+  color: #59621b;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.communication-course-notice {
+  background: #f2f2f4;
+  color: #62656e;
+  font-weight: 600;
+}
+
+.communication-message-log,
+.communication-system-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.75rem;
+}
+
+.communication-message {
+  width: fit-content;
+  max-width: 88%;
+}
+
+.communication-message.is-own {
+  align-self: flex-end;
+}
+
+.communication-message-sender {
+  display: block;
+  margin: 0 0 0.18rem 0.25rem;
+  color: #747780;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.communication-message-bubble {
+  border-radius: 0.95rem;
+  border-bottom-left-radius: 0.3rem;
+  background: #f0f0f2;
+  padding: 0.68rem 0.75rem;
+  color: #30323a;
+  font-size: 0.8rem;
+  line-height: 1.48;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.communication-message.is-own .communication-message-bubble {
+  border-bottom-right-radius: 0.3rem;
+  border-bottom-left-radius: 0.95rem;
+  background: #141414;
+  color: #fff;
+}
+
+.communication-message-meta {
+  display: block;
+  margin: 0.2rem 0.25rem 0;
+  color: #858790;
+  font-size: 0.6rem;
+  text-align: right;
+}
+
+.communication-message .system-assistant-action-card {
+  width: min(22rem, calc(100vw - 4rem));
+  max-width: 100%;
+  margin-top: 0.45rem;
+}
+
+.communication-message .system-assistant-quick-replies {
+  margin-top: 0.45rem;
+}
+
+.communication-assistant-meta {
+  margin: -0.25rem 0.8rem 0.55rem;
+  color: #858790;
+  font-size: 0.6rem;
+  line-height: 1.35;
+}
+
+.communication-message-error {
+  color: #be123c;
+}
+
+.communication-system-card {
+  border: 1px solid #ececef;
+  border-radius: 1rem;
+  background: #fff;
+  padding: 0.75rem;
+  box-shadow: var(--product-raised-surface-shadow);
+}
+
+.communication-system-card[data-severity="success"] {
+  border-left: 3px solid #65a30d;
+}
+
+.communication-system-card[data-severity="warning"],
+.communication-system-card[data-severity="action_required"] {
+  border-left: 3px solid #d97706;
+}
+
+.communication-system-card[data-severity="error"] {
+  border-left: 3px solid #be123c;
+}
+
+.communication-system-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.communication-system-card strong {
+  font-size: 0.78rem;
+}
+
+.communication-system-card time {
+  color: #858790;
+  font-size: 0.62rem;
+}
+
+.communication-system-card p {
+  margin: 0.45rem 0 0;
+  color: #555963;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.communication-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.3rem;
+  margin: 0 0.7rem 0.7rem;
+  border: 1px solid rgba(20, 20, 20, 0.16);
+  border-radius: 0.95rem;
+  background: #fff;
+  padding: 0.32rem;
+}
+
+.communication-composer:focus-within {
+  border-color: rgba(20, 20, 20, 0.5);
+  box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.06);
+}
+
+.communication-composer textarea {
+  min-width: 0;
+  min-height: 2.5rem;
+  max-height: 8rem;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  padding: 0.62rem 0.55rem;
+  color: #141414;
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.communication-composer button {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border: 0;
+  border-radius: var(--product-element-radius, 0.75rem);
+  background: #141414;
+  color: #fff;
+  cursor: pointer;
+}
+
+.communication-composer button:disabled {
+  cursor: not-allowed;
+  opacity: 0.32;
+}
+
+.communication-composer-error {
+  margin: -0.25rem 0.75rem 0.6rem;
+  color: #9f1239;
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.communication-center-launcher:focus-visible,
+.communication-center-icon-button:focus-visible,
+.communication-inbox-item:focus-visible,
+.communication-target-item:focus-visible,
+.communication-empty button:focus-visible,
+.communication-error button:focus-visible,
+.communication-load-older:focus-visible,
+.communication-center-placeholder button:focus-visible,
+.communication-assistant-empty button:focus-visible,
+.communication-composer button:focus-visible {
+  outline: 3px solid #141414;
+  outline-offset: 2px;
+}
+
+@keyframes communication-center-launcher-in {
+  from {
+    transform: translateY(6px) scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes communication-center-panel-in {
+  from {
+    transform: translateY(8px) scale(0.985);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .communication-center-launcher-wrap.is-open {
+    visibility: hidden;
+  }
+
+  .communication-center-panel,
+  .communication-center-panel.is-expanded {
+    inset: 0;
+    z-index: 4;
+    width: 100vw;
+    height: 100dvh;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    animation-name: communication-center-panel-mobile-in;
+  }
+
+  .communication-center-panel.is-expanded .communication-center-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .communication-center-panel.is-expanded .communication-center-column {
+    border-right: 0;
+  }
+
+  .communication-center-panel.is-expanded .communication-center-back {
+    display: inline-grid;
+  }
+
+  .communication-center-expand-button {
+    display: none;
+  }
+
+  .communication-message {
+    max-width: 92%;
+  }
+}
+
+@keyframes communication-center-panel-mobile-in {
+  from {
+    transform: translateY(0.75rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .communication-center-launcher,
+  .communication-center-panel,
+  .communication-center-layer .animate-spin {
+    animation: none !important;
+  }
+
+  .communication-center-launcher {
+    transition: none;
+  }
+
+  .communication-center-launcher:hover,
+  .communication-center-launcher:active {
+    transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .communication-center-launcher,
+  .communication-inbox-item,
+  .communication-target-item,
+  .communication-center-icon-button,
+  .communication-composer button,
+  .communication-unread-count,
+  .communication-center-badge {
+    border: 1px solid ButtonText;
+    background: ButtonFace;
+    color: ButtonText;
+    forced-color-adjust: auto;
+  }
+
+  .communication-center-panel,
+  .communication-system-card {
+    border: 1px solid CanvasText;
+    background: Canvas;
+    box-shadow: none;
+  }
+}

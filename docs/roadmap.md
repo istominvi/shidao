@@ -469,7 +469,11 @@ client-loaded projection; cursor Catalog сохраняет server order. Оди
 открывает contextual menu: профиль, управление группами, реальный
 «Добавить в курс…» с сохранением существующей group/direct audience и
 destructive «Убрать из списка». «Написать сообщение» остаётся disabled с явной пометкой о
-недоступности; communication layer не объявляется current-возможностью.
+недоступности в current production baseline. **Current source / next
+production:** для active linked learner этот пункт открывает единый центр
+«Сообщения» через `learnerProfileId`. CC1+A2 DB contract уже current, но до
+dependent web/API deployment и API/browser postflight source flow не
+объявляется production-возможностью.
 Archived/pending rows получают только допустимые restore/permanent-delete или
 cancel actions. Authenticated top header/profile menu стали
 сплошными белыми поверхностями без blur. Active V2 buttons/header controls
@@ -767,12 +771,17 @@ Definition of Done:
 - attachment metadata без скачивания/парсинга file contents;
 - отсутствие schema migration, quota/ledger и billing.
 
-**Current System Assistant conversational action follow-up:**
+**Current production System Assistant baseline; superseded in source единым
+центром из P0.3a:**
+
+Production CC1+A2 DB contract уже применён и прошёл postflight/snapshot
+refresh, но dependent Communication Center web/API ещё не развёрнут. Поэтому current
+deployed System Assistant ниже по-прежнему остаётся React-state baseline.
 
 - один floating widget живёт в protected Account layout и не показывается на
   landing/Auth/demo; прежние кнопки course-scoped assistant удалены из Course и
   Lesson headers, а старый Course route может пока оставаться compatibility;
-- **Current source / next production UI:** icon-only launcher уменьшен до
+- **Superseded source-only visual refinement:** icon-only launcher уменьшен до
   стандартных `40 × 40 px`, использует element radius `12 px`, светлую
   aqua/mint/milk/lavender/pink opal-поверхность без border и `12 px` inset
   справа/снизу плюс safe area. Два независимо деформируемых
@@ -804,7 +813,8 @@ course.add_lesson_with_plan | lesson.fill | lesson.delete`; chat ничего н
 - proposal HMAC-подписан на actor + idempotency key + exact action на 10 минут.
   UI допускает только одну pending карточку: «да»/кнопка применяют её без LLM,
   «нет», новый запрос или смена target отменяют;
-- dialog history остаётся только в React state. Rate/concurrency guard,
+- в current production dialog history остаётся только в React state.
+  Rate/concurrency guard,
   actor+target mutex и 10-минутный idempotency result cache работают только в
   памяти одного process; restart/другая replica их не видят. Подпись не заменяет
   durable action ledger/distributed exactly-once; delete stale compare и RPC
@@ -840,6 +850,57 @@ MCP actor. Полный current/source/deployment contract находится в
 На этом этапе attachment используется только как metadata и явно введённый
 teacher context. Нельзя писать «AI изучил файл», пока отдельный parsing pipeline
 не вернул подтверждённый extracted text.
+
+## P0.3a: единый центр «Сообщения»
+
+**Current source + current production DB / next web/API; dependent rollout
+pending:** один global launcher с общим unread badge заменяет отдельные AI,
+notification и messaging entry points. Он открывает unified inbox, но сохраняет
+явный provenance четырёх типов: direct, Course, **ShiDao · Система** и один из
+нескольких persisted диалогов **ShiDao ИИ**. Contextual actions Students и
+Course только открывают этот же центр на нужном thread; второго messenger flow
+нет.
+
+- direct conversation использует `LearnerProfile` как teacher-side target и
+  разрешена только для active accepted relation с linked Account; browser не
+  получает Account/Auth UUID, а archive/restore relation закрывает и возвращает
+  capability без потери полной истории;
+- Course owner и linked Account current effective audience видят всю историю
+  Course thread, включая период до присоединения. Выход из audience закрывает
+  read/send, повторное добавление возвращает доступ;
+- human composer отправляет сообщение только по явному Send. AI или system
+  event не может автоматически написать ученику или Course audience;
+- закреплённая лента **ShiDao · Система** read-only и принимает только trusted
+  typed events. Первый producer покрывает назначение, перенос и отмену
+  LessonRun, owner aggregate и собственный learner-safe результат после
+  завершения; произвольный `payload.href` не превращается в CTA;
+- Account может создавать, переименовывать и архивировать несколько persisted
+  AI conversations с fixed global/Course/Lesson context. Server сохраняет user
+  turn, читает bounded persisted history/context, вызывает existing Assistant и
+  trusted append-ом сохраняет assistant reply/proposal как один exchange;
+- existing signed preview/explicit Apply сохраняется. Strict
+  `lesson.schedule_run` показывает «Назначить урок» или «Перенести урок» и
+  выполняет canonical LessonRun mutation только после отдельного подтверждения.
+  Production-current A2 `schedule_lesson_run_if_unchanged` атомарно сравнивает
+  expected no-open-Run или exact Run id/`updated_at`, draft roster и current
+  Course audience перед canonical scheduler write; mismatch становится stale
+  action, а Account/Auth UUID не выходят в browser contract;
+- все proposal, прочитанные из persisted history при hydration, stale и
+  fail closed; actionable может быть только карточка, возвращённая текущим
+  mounted exchange. Durable action/job ledger и distributed exactly-once —
+  later;
+- inbox использует cursor reads, polling раз в 30 секунд, focus refresh и
+  `visibilitychange` для read cursor выбранного диалога. Realtime/presence,
+  push/email, attachments и background AI worker в первый slice не входят;
+- forward schema/migrations, RPC/application/API и responsive UI находятся в
+  current source. Production DB CC1 + A2 применены, DB postflight и contract
+  snapshot current; dependent web/API deployment и production API/browser
+  postflight ещё не выполнены и не подразумеваются этим статусом.
+
+**Next:** выполнить dependent web/API deploy и exact production API/browser
+postflight. Затем отдельными slices добавить durable action/job ledger,
+distributed limiter, reliable background completion producers, richer
+learner-safe metrics, Realtime/presence и push/email delivery.
 
 ## P0.4: reusable Course catalog
 
@@ -1184,12 +1245,14 @@ real-record progress без speculative metrics.
 - Realtime/presence и learner authorization проектируются поверх открытого
   LessonRun, а не через второй content-bearing LessonSession.
 
-## P3: richer learning history, communication и product scale
+## P3: richer learning history, communication delivery и product scale
 
 - Component/runtime-produced subject metrics и richer progress signals поверх
   текущих finalized LearningRecord;
 - common/individual Homework assignment snapshots;
-- course chat и notifications;
+- communication follow-ups поверх current-source direct/Course/system/AI
+  baseline: Realtime/presence, push/email, attachments, moderation и reliable
+  background notification/AI workers;
 - общий catalog moderation UI за пределами educator review, ratings и
   контролируемый importer repository archive;
 - AI change sets, undo, quotas и billing;

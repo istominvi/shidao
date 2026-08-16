@@ -240,6 +240,7 @@ type LearnerDirectoryActions = {
     surface: "profile" | "history" | "connection",
   ) => void;
   onAddToCourse: (profile: LearnerProfile) => void;
+  onMessage: (profile: LearnerProfile) => void;
   onArchive: (profile: LearnerProfile) => void;
   onRestore: (learner: TeacherLearnerDirectoryItem) => void;
   onPermanentlyDelete: (learner: TeacherLearnerDirectoryItem) => void;
@@ -252,6 +253,7 @@ function learnerDirectoryActionItems(
     disabled,
     onOpen,
     onAddToCourse,
+    onMessage,
     onArchive,
     onRestore,
     onPermanentlyDelete,
@@ -334,9 +336,18 @@ function learnerDirectoryActionItems(
     {
       id: "message",
       label: "Написать сообщение",
-      hint: "Сообщения пока недоступны",
+      hint:
+        entry.identity.identityState === "offline"
+          ? "Сначала подключите аккаунт ученика"
+          : entry.identity.identityState === "pending"
+            ? "Ученик ещё не подтвердил подключение"
+            : undefined,
       icon: MessageSquare,
-      disabled: true,
+      disabled:
+        disabled ||
+        (entry.identity.identityState !== "claimed" &&
+          entry.identity.identityState !== "merged"),
+      onSelect: () => onMessage(entry.profile),
     },
     {
       id: "archive",
@@ -357,6 +368,7 @@ export function LearnersDirectoryTable({
   disabled,
   onOpen,
   onAddToCourse,
+  onMessage,
   onArchive,
   onRestore,
   onPermanentlyDelete,
@@ -372,6 +384,7 @@ export function LearnersDirectoryTable({
     surface: "profile" | "history" | "connection",
   ) => void;
   onAddToCourse: (profile: LearnerProfile) => void;
+  onMessage: (profile: LearnerProfile) => void;
   onArchive: (profile: LearnerProfile) => void;
   onRestore: (learner: TeacherLearnerDirectoryItem) => void;
   onPermanentlyDelete: (learner: TeacherLearnerDirectoryItem) => void;
@@ -462,6 +475,7 @@ export function LearnersDirectoryTable({
                 disabled,
                 onOpen,
                 onAddToCourse,
+                onMessage,
                 onArchive,
                 onRestore,
                 onPermanentlyDelete,
@@ -576,6 +590,7 @@ export function LearnersDirectoryCards({
   disabled,
   onOpen,
   onAddToCourse,
+  onMessage,
   onArchive,
   onRestore,
   onPermanentlyDelete,
@@ -590,6 +605,7 @@ export function LearnersDirectoryCards({
     surface: "profile" | "history" | "connection",
   ) => void;
   onAddToCourse: (profile: LearnerProfile) => void;
+  onMessage: (profile: LearnerProfile) => void;
   onArchive: (profile: LearnerProfile) => void;
   onRestore: (learner: TeacherLearnerDirectoryItem) => void;
   onPermanentlyDelete: (learner: TeacherLearnerDirectoryItem) => void;
@@ -623,6 +639,7 @@ export function LearnersDirectoryCards({
             disabled,
             onOpen,
             onAddToCourse,
+            onMessage,
             onArchive,
             onRestore,
             onPermanentlyDelete,

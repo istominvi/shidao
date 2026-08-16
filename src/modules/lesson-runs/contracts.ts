@@ -12,7 +12,7 @@ const uniqueUuidList = (options?: {
   duplicateMessage?: string;
 }) =>
   z
-    .array(z.uuid())
+    .array(z.guid())
     .min(options?.allowEmpty ? 0 : 1)
     .max(200)
     .refine((ids) => new Set(ids).size === ids.length, {
@@ -126,9 +126,46 @@ export type RescheduleLessonRunInput = z.infer<
   typeof rescheduleLessonRunInputSchema
 >;
 
+export const assistantScheduleLessonRunInputSchema = z
+  .object({
+    scheduledAt: z.iso.datetime({ offset: true }),
+    plannedDurationMinutes: z.number().int().min(5).max(480),
+    expectedLessonRunId: z.guid().nullable(),
+    expectedLessonRunUpdatedAt: z.iso.datetime({ offset: true }).nullable(),
+    expectedLearnerProfileIds: uniqueUuidList({ allowEmpty: true }).refine(
+      (ids) =>
+        ids.every(
+          (learnerProfileId, index) =>
+            index === 0 || ids[index - 1]!.localeCompare(learnerProfileId) < 0,
+        ),
+      {
+        message:
+          "Ожидаемый состав участников должен быть отсортирован по идентификатору.",
+      },
+    ),
+  })
+  .strict()
+  .superRefine((input, context) => {
+    if (
+      (input.expectedLessonRunId === null) !==
+      (input.expectedLessonRunUpdatedAt === null)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["expectedLessonRunUpdatedAt"],
+        message:
+          "Ожидаемые идентификатор и версия занятия должны быть указаны вместе.",
+      });
+    }
+  });
+
+export type AssistantScheduleLessonRunInput = z.infer<
+  typeof assistantScheduleLessonRunInputSchema
+>;
+
 export const completeLearningRecordInputSchema = z
   .object({
-    learnerProfileId: z.uuid(),
+    learnerProfileId: z.guid(),
     wasPresent: z.boolean(),
     needsRepeat: z.boolean(),
     teacherComment: optionalTrimmedText(2_000),

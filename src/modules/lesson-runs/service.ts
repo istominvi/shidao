@@ -6,6 +6,7 @@ import {
 import type { CourseBuilderActor } from "@/modules/course-builder/domain";
 import {
   assertSameLearnerSet,
+  assistantScheduleLessonRunInputSchema,
   completeLessonRunInputSchema,
   createLearnerGroupInputSchema,
   createLearnerProfileInputSchema,
@@ -16,6 +17,7 @@ import {
   scheduleLessonRunInputSchema,
   updateLearnerGroupInputSchema,
   updateLearnerProfileInputSchema,
+  type AssistantScheduleLessonRunInput,
   type CompleteLessonRunInput,
   type CreateLearnerGroupInput,
   type CreateLearnerProfileInput,
@@ -253,6 +255,23 @@ export function createLessonRunsService(
             "lesson_run_closed",
           );
         }
+      }
+      throw error;
+    }
+  }
+
+  async function runAssistantScheduleMutation<T>(operation: () => Promise<T>) {
+    try {
+      return await runMutation(operation);
+    } catch (error) {
+      if (
+        error instanceof CourseBuilderConflictError &&
+        error.code === "lesson_run_changed"
+      ) {
+        throw new CourseBuilderConflictError(
+          "Занятие или состав участников изменились после предложения. Подготовьте назначение заново.",
+          "ai_action_stale",
+        );
       }
       throw error;
     }
@@ -525,6 +544,28 @@ export function createLessonRunsService(
           plannedDurationMinutes:
             input.plannedDurationMinutes ?? current.plannedDurationMinutes,
           learnerProfileIds: input.learnerProfileIds ?? null,
+        }),
+      );
+    },
+
+    async applyAssistantScheduleRun(
+      actor: CourseBuilderActor,
+      lessonId: string,
+      rawInput: AssistantScheduleLessonRunInput | unknown,
+    ) {
+      const { lesson } = await requireOwnedLesson(actor, lessonId);
+      const input = parseLessonRunsContract(
+        assistantScheduleLessonRunInputSchema,
+        rawInput,
+      );
+      return runAssistantScheduleMutation(() =>
+        repository.scheduleRunIfUnchanged({
+          lessonId: lesson.id,
+          scheduledAt: input.scheduledAt,
+          plannedDurationMinutes: input.plannedDurationMinutes,
+          expectedLessonRunId: input.expectedLessonRunId,
+          expectedLessonRunUpdatedAt: input.expectedLessonRunUpdatedAt,
+          expectedLearnerProfileIds: input.expectedLearnerProfileIds,
         }),
       );
     },

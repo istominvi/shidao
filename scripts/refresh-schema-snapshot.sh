@@ -121,6 +121,62 @@ SHIDAO_SCHEMA_SIGNATURE="$({
         values
           ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'),
           ('REFERENCES'), ('TRIGGER')
+      ), communication_table(table_name) as (
+        values
+          ('communication_thread'),
+          ('communication_message'),
+          ('communication_read_state'),
+          ('assistant_conversation'),
+          ('assistant_turn'),
+          ('system_notification')
+      ), communication_user_rpc(signature) as (
+        values
+          ('public.list_my_communication_inbox(timestamp with time zone,text,text,integer)'),
+          ('public.list_my_message_targets(text,integer)'),
+          ('public.open_direct_communication_thread(uuid)'),
+          ('public.open_course_communication_thread(uuid)'),
+          ('public.list_my_communication_messages(uuid,bigint,integer)'),
+          ('public.send_communication_message(uuid,text,uuid)'),
+          ('public.mark_communication_thread_read(uuid,bigint)'),
+          ('public.list_my_assistant_conversations(boolean,integer)'),
+          ('public.get_my_assistant_conversation(uuid)'),
+          ('public.create_my_assistant_conversation(text,uuid,uuid)'),
+          ('public.update_my_assistant_conversation(uuid,text,boolean)'),
+          ('public.list_my_assistant_turns(uuid,bigint,integer)'),
+          ('public.append_my_assistant_turn(uuid,text,uuid)'),
+          ('public.mark_my_assistant_conversation_read(uuid,bigint)'),
+          ('public.list_my_system_notifications(bigint,integer)'),
+          ('public.mark_my_system_notifications_read(bigint)'),
+          ('public.schedule_lesson_run_if_unchanged(uuid,timestamp with time zone,integer,uuid,timestamp with time zone,uuid[])')
+      ), communication_admin_rpc(signature) as (
+        values
+          ('public.append_assistant_turn_admin(uuid,uuid,text,jsonb,text,text)'),
+          ('public.append_system_notification_admin(uuid,text,text,text,text,jsonb,text,timestamp with time zone)')
+      ), communication_trigger(
+        table_name,
+        trigger_name,
+        function_signature,
+        trigger_type,
+        is_deferrable,
+        is_initially_deferred
+      ) as (
+        values
+          (
+            'lesson_run',
+            'trg_lesson_run_communication_notifications',
+            'public.emit_lesson_run_communication_notifications()',
+            21::smallint,
+            true,
+            true
+          ),
+          (
+            'communication_message',
+            'trg_communication_message_recompute_thread_after_delete',
+            'public.recompute_communication_thread_after_message_delete()',
+            9::smallint,
+            false,
+            false
+          )
       ), attestation_table(table_name) as (
         values
           ('course_attestation'),
@@ -206,6 +262,125 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and to_regclass('public.educator_course_revision_review') is not null
          and to_regclass('public.course_publication_self_enrollment') is not null
          and to_regclass('public.course_publication_lesson_completion') is not null
+         and not exists (
+           select 1
+           from communication_table as required_table
+           left join pg_class as relation
+             on relation.oid = to_regclass(
+               'public.' || required_table.table_name
+             )
+           where relation.oid is null
+              or not relation.relrowsecurity
+         )
+         and not exists (
+           select 1
+           from communication_table as required_table
+           join pg_class as relation
+             on relation.oid = to_regclass(
+               'public.' || required_table.table_name
+             )
+           cross join unnest(array['anon', 'authenticated'])
+             as actor(role_name)
+           cross join checked_table_privilege
+           where has_table_privilege(
+             actor.role_name,
+             relation.oid,
+             checked_table_privilege.privilege_name
+           )
+         )
+         and not exists (
+           select 1
+           from communication_user_rpc as required_rpc
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           where procedure.oid is null
+              or not procedure.prosecdef
+              or procedure.proconfig is null
+              or not (procedure.proconfig @> array['search_path=\"\"'])
+         )
+         and not exists (
+           select 1
+           from communication_user_rpc as required_rpc
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           where not has_function_privilege(
+             'authenticated',
+             procedure.oid,
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from communication_user_rpc as required_rpc
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           cross join unnest(array['anon', 'service_role'])
+             as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             procedure.oid,
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from communication_admin_rpc as required_rpc
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           where procedure.oid is null
+              or not procedure.prosecdef
+              or procedure.proconfig is null
+              or not (procedure.proconfig @> array['search_path=\"\"'])
+         )
+         and not exists (
+           select 1
+           from communication_admin_rpc as required_rpc
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           where not has_function_privilege(
+             'service_role',
+             procedure.oid,
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from communication_admin_rpc as required_rpc
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           cross join unnest(array['anon', 'authenticated'])
+             as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             procedure.oid,
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from communication_trigger as required_trigger
+           left join pg_trigger as database_trigger
+             on database_trigger.tgrelid = to_regclass(
+               'public.' || required_trigger.table_name
+             )
+            and database_trigger.tgname = required_trigger.trigger_name
+            and not database_trigger.tgisinternal
+           left join pg_proc as procedure
+             on procedure.oid = database_trigger.tgfoid
+           where database_trigger.oid is null
+              or database_trigger.tgenabled <> 'O'
+              or database_trigger.tgfoid <>
+                to_regprocedure(required_trigger.function_signature)
+              or database_trigger.tgtype <> required_trigger.trigger_type
+              or database_trigger.tgdeferrable is distinct from
+                required_trigger.is_deferrable
+              or database_trigger.tginitdeferred is distinct from
+                required_trigger.is_initially_deferred
+              or procedure.oid is null
+              or not procedure.prosecdef
+              or procedure.proconfig is null
+              or not (procedure.proconfig @> array['search_path=\"\"'])
+         )
          and to_regclass('public.methodology') is null
          and to_regclass('public.lesson_step') is null
          and to_regclass('public.lesson_run_participant') is null
@@ -1719,6 +1894,12 @@ for required in \
   "CREATE TABLE public.course_publication_attestation" \
   "CREATE TABLE public.course_attestation_attempt" \
   "CREATE TABLE public.course_attestation_award" \
+  "CREATE TABLE public.communication_thread" \
+  "CREATE TABLE public.communication_message" \
+  "CREATE TABLE public.communication_read_state" \
+  "CREATE TABLE public.assistant_conversation" \
+  "CREATE TABLE public.assistant_turn" \
+  "CREATE TABLE public.system_notification" \
   "learning_audience text" \
   "CREATE POLICY course_attestation_owner_all" \
   "CREATE FUNCTION public.get_my_authored_course_attestation" \
@@ -1765,10 +1946,18 @@ for required in \
   "CREATE FUNCTION public.guard_course_publication_active_source" \
   "CREATE FUNCTION public.guard_lesson_course_immutable" \
   "CREATE FUNCTION public.guard_lesson_run_active_course" \
+  "CREATE FUNCTION public.schedule_lesson_run_if_unchanged" \
+  "CREATE FUNCTION public.list_my_communication_inbox" \
+  "CREATE FUNCTION public.open_direct_communication_thread" \
+  "CREATE FUNCTION public.list_my_assistant_conversations" \
+  "CREATE FUNCTION public.append_assistant_turn_admin" \
+  "CREATE FUNCTION public.append_system_notification_admin" \
   "CREATE TRIGGER trg_course_archive_invariants" \
   "CREATE TRIGGER trg_course_publication_active_source" \
   "CREATE TRIGGER trg_lesson_course_immutable" \
-  "CREATE TRIGGER trg_lesson_run_active_course"; do
+  "CREATE TRIGGER trg_lesson_run_active_course" \
+  "CREATE CONSTRAINT TRIGGER trg_lesson_run_communication_notifications" \
+  "CREATE TRIGGER trg_communication_message_recompute_thread_after_delete"; do
   if ! grep -Fq "${required}" "${TMP_RESULT}"; then
     echo "Refusing to replace snapshot: generated result is missing ${required}." >&2
     exit 1

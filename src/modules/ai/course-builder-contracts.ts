@@ -88,7 +88,7 @@ export const aiLessonPlanSchema = z
 
 export const aiLessonPlanRequestSchema = z
   .object({
-    lessonId: z.uuid().nullable(),
+    lessonId: z.guid().nullable(),
     title: z.string().trim().min(1).max(180),
     instruction: optionalInstructionSchema,
   })
@@ -96,12 +96,12 @@ export const aiLessonPlanRequestSchema = z
 
 export const aiLessonPlanApplyRequestSchema = z
   .object({
-    lessonId: z.uuid().nullable(),
+    lessonId: z.guid().nullable(),
     title: z.string().trim().min(1).max(180),
     baseContextFingerprint: contextFingerprintSchema,
     sharedHistoryRevision: contextFingerprintSchema.default("0".repeat(64)),
-    baseLessonIds: z.array(z.uuid()).max(60),
-    baseComponentIds: z.array(z.uuid()).max(200),
+    baseLessonIds: z.array(z.guid()).max(60),
+    baseComponentIds: z.array(z.guid()).max(200),
     plan: aiLessonPlanSchema,
   })
   .strict()
@@ -124,7 +124,7 @@ export const aiAssistantMessageSchema = z
 
 export const aiAssistantRequestSchema = z
   .object({
-    lessonId: z.uuid().nullable(),
+    lessonId: z.guid().nullable(),
     messages: z.array(aiAssistantMessageSchema).min(1).max(16),
   })
   .strict()

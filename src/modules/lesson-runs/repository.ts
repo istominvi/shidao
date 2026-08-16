@@ -202,6 +202,14 @@ export interface LessonRunsRepository {
     plannedDurationMinutes: number;
     learnerProfileIds: string[] | null;
   }): Promise<LessonRun>;
+  scheduleRunIfUnchanged(input: {
+    lessonId: string;
+    scheduledAt: string;
+    plannedDurationMinutes: number;
+    expectedLessonRunId: string | null;
+    expectedLessonRunUpdatedAt: string | null;
+    expectedLearnerProfileIds: string[];
+  }): Promise<LessonRun>;
   startRun(runId: string): Promise<LessonRun>;
   completeRun(runId: string, input: CompleteLessonRunInput): Promise<LessonRun>;
   cancelRun(runId: string): Promise<LessonRun>;
@@ -974,6 +982,17 @@ export function createLessonRunsRepository(
         p_planned_duration_minutes: input.plannedDurationMinutes,
         p_learner_profile_ids: input.learnerProfileIds,
         p_expected_lesson_run_id: input.runId,
+      });
+    },
+
+    scheduleRunIfUnchanged(input) {
+      return runFromRpc("/rest/v1/rpc/schedule_lesson_run_if_unchanged", {
+        p_lesson_id: input.lessonId,
+        p_scheduled_at: input.scheduledAt,
+        p_planned_duration_minutes: input.plannedDurationMinutes,
+        p_expected_lesson_run_id: input.expectedLessonRunId,
+        p_expected_lesson_run_updated_at: input.expectedLessonRunUpdatedAt,
+        p_expected_learner_profile_ids: input.expectedLearnerProfileIds,
       });
     },
 

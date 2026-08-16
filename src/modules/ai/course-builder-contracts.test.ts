@@ -7,7 +7,7 @@ import {
   toLessonAddComponentInput,
 } from "./course-builder-contracts";
 
-const LESSON_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const LESSON_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 
 test("course outline schema requires the exact requested lesson count", () => {
   const schema = createAiCourseOutlinePlanSchema(2);

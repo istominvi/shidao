@@ -48,8 +48,8 @@ export const systemAssistantPageContextSchema = z
       "other",
     ]),
     view: systemAssistantPageViewSchema.nullable(),
-    courseId: z.uuid().nullable(),
-    lessonId: z.uuid().nullable(),
+    courseId: z.guid().nullable(),
+    lessonId: z.guid().nullable(),
     localDate: z.iso.date(),
     utcOffsetMinutes: z
       .number()
@@ -149,6 +149,7 @@ export const systemAssistantProviderTurnSchema = z
       "add_lesson_with_plan",
       "fill_lesson",
       "delete_lesson",
+      "schedule_lesson",
     ]),
     message: z.string().trim().min(1).max(6_000),
     courseRef: z.string().trim().max(64),
@@ -162,6 +163,8 @@ export const systemAssistantProviderTurnSchema = z
     teacherPreferences: z.string().trim().max(2_000),
     summary: z.string().trim().max(1_200),
     instruction: z.string().trim().max(2_000),
+    scheduledAt: z.string().trim().max(64),
+    plannedDurationMinutes: z.number().int().min(0).max(480),
   })
   .strict();
 
@@ -175,7 +178,7 @@ const createCourseAssistantActionSchema = z
 const addLessonAssistantActionSchema = z
   .object({
     type: z.literal("course.add_lesson"),
-    courseId: z.uuid(),
+    courseId: z.guid(),
     courseTitle: z.string().trim().min(1).max(160),
     input: addLessonInputSchema.strict(),
   })
@@ -184,7 +187,7 @@ const addLessonAssistantActionSchema = z
 const addLessonWithPlanAssistantActionSchema = z
   .object({
     type: z.literal("course.add_lesson_with_plan"),
-    courseId: z.uuid(),
+    courseId: z.guid(),
     courseTitle: z.string().trim().min(1).max(160),
     input: aiLessonPlanApplyRequestSchema,
   })
@@ -202,9 +205,9 @@ const addLessonWithPlanAssistantActionSchema = z
 const fillLessonAssistantActionSchema = z
   .object({
     type: z.literal("lesson.fill"),
-    courseId: z.uuid(),
+    courseId: z.guid(),
     courseTitle: z.string().trim().min(1).max(160),
-    lessonId: z.uuid(),
+    lessonId: z.guid(),
     lessonTitle: z.string().trim().min(1).max(180),
     input: aiLessonPlanApplyRequestSchema,
   })
@@ -229,13 +232,91 @@ const fillLessonAssistantActionSchema = z
 const deleteLessonAssistantActionSchema = z
   .object({
     type: z.literal("lesson.delete"),
-    courseId: z.uuid(),
+    courseId: z.guid(),
     courseTitle: z.string().trim().min(1).max(160),
-    lessonId: z.uuid(),
+    lessonId: z.guid(),
     lessonTitle: z.string().trim().min(1).max(180),
     baseLessonFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
   })
   .strict();
+
+const scheduleLessonAssistantActionSchema = z
+  .object({
+    type: z.literal("lesson.schedule_run"),
+    courseId: z.guid(),
+    courseTitle: z.string().trim().min(1).max(160),
+    lessonId: z.guid(),
+    lessonTitle: z.string().trim().min(1).max(180),
+    scheduledAt: z.iso.datetime({ offset: true }),
+    plannedDurationMinutes: z.number().int().min(5).max(480),
+    utcOffsetMinutes: z
+      .number()
+      .int()
+      .min(-14 * 60)
+      .max(14 * 60),
+    participantCount: z.number().int().min(0).max(200),
+    existingLessonRunId: z.guid().nullable(),
+    expectedLessonRunUpdatedAt: z.iso.datetime({ offset: true }).nullable(),
+    expectedLearnerProfileIds: z
+      .array(z.guid())
+      .max(200)
+      .superRefine((ids, context) => {
+        if (new Set(ids).size !== ids.length) {
+          context.addIssue({
+            code: "custom",
+            message: "Ожидаемый состав участников не должен повторяться.",
+          });
+        }
+        if (
+          ids.some(
+            (learnerProfileId, index) =>
+              index > 0 && ids[index - 1]!.localeCompare(learnerProfileId) >= 0,
+          )
+        ) {
+          context.addIssue({
+            code: "custom",
+            message:
+              "Ожидаемый состав участников должен быть отсортирован по идентификатору.",
+          });
+        }
+      }),
+    baseRunFingerprint: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .nullable(),
+    baseAudienceFingerprint: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .nullable(),
+  })
+  .strict()
+  .superRefine((action, context) => {
+    const createsRun = action.existingLessonRunId === null;
+    if (
+      (createsRun &&
+        (action.expectedLessonRunUpdatedAt !== null ||
+          action.baseAudienceFingerprint === null ||
+          action.baseRunFingerprint !== null)) ||
+      (!createsRun &&
+        (action.expectedLessonRunUpdatedAt === null ||
+          action.baseAudienceFingerprint !== null ||
+          action.baseRunFingerprint === null))
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: [createsRun ? "baseAudienceFingerprint" : "baseRunFingerprint"],
+        message:
+          "Новое назначение требует снимок аудитории, а перенос — снимок существующего занятия.",
+      });
+    }
+    if (action.expectedLearnerProfileIds.length !== action.participantCount) {
+      context.addIssue({
+        code: "custom",
+        path: ["expectedLearnerProfileIds"],
+        message: "Количество участников не совпадает с ожидаемым составом.",
+      });
+    }
+  });
 
 export const systemAssistantActionSchema = z.discriminatedUnion("type", [
   createCourseAssistantActionSchema,
@@ -243,11 +324,12 @@ export const systemAssistantActionSchema = z.discriminatedUnion("type", [
   addLessonWithPlanAssistantActionSchema,
   fillLessonAssistantActionSchema,
   deleteLessonAssistantActionSchema,
+  scheduleLessonAssistantActionSchema,
 ]);
 
 export const systemAssistantApplyRequestSchema = z
   .object({
-    idempotencyKey: z.uuid(),
+    idempotencyKey: z.guid(),
     action: systemAssistantActionSchema,
     signature: z
       .string()
@@ -328,5 +410,17 @@ export type SystemAssistantActionResult =
       courseTitle: string;
       lessonId: string;
       lessonTitle: string;
+      href: string;
+    }
+  | {
+      type: "lesson.schedule_run";
+      courseId: string;
+      courseTitle: string;
+      lessonId: string;
+      lessonTitle: string;
+      lessonRunId: string;
+      scheduledAt: string;
+      plannedDurationMinutes: number;
+      participantCount: number;
       href: string;
     };

@@ -6,6 +6,7 @@ import {
 } from "@/modules/course-builder/contracts";
 import {
   assertSameLearnerSet,
+  assistantScheduleLessonRunInputSchema,
   completeLessonRunInputSchema,
   createLearnerGroupInputSchema,
   createLearnerProfileInputSchema,
@@ -101,6 +102,48 @@ test("schedule rejects duplicate learners and timestamps without an offset", () 
         learnerProfileIds: [uuid(1), uuid(1)],
       }),
     /Один ученик не может быть указан дважды/,
+  );
+});
+
+test("assistant schedule guard requires a paired Run version and sorted exact roster", () => {
+  assert.deepEqual(
+    parseLessonRunsContract(assistantScheduleLessonRunInputSchema, {
+      scheduledAt: "2026-08-08T01:00:00Z",
+      plannedDurationMinutes: 45,
+      expectedLessonRunId: uuid(20),
+      expectedLessonRunUpdatedAt: "2026-08-07T01:00:00Z",
+      expectedLearnerProfileIds: [uuid(1), uuid(2)],
+    }),
+    {
+      scheduledAt: "2026-08-08T01:00:00Z",
+      plannedDurationMinutes: 45,
+      expectedLessonRunId: uuid(20),
+      expectedLessonRunUpdatedAt: "2026-08-07T01:00:00Z",
+      expectedLearnerProfileIds: [uuid(1), uuid(2)],
+    },
+  );
+
+  assert.throws(
+    () =>
+      parseLessonRunsContract(assistantScheduleLessonRunInputSchema, {
+        scheduledAt: "2026-08-08T01:00:00Z",
+        plannedDurationMinutes: 45,
+        expectedLessonRunId: uuid(20),
+        expectedLessonRunUpdatedAt: null,
+        expectedLearnerProfileIds: [uuid(1)],
+      }),
+    /должны быть указаны вместе/,
+  );
+  assert.throws(
+    () =>
+      parseLessonRunsContract(assistantScheduleLessonRunInputSchema, {
+        scheduledAt: "2026-08-08T01:00:00Z",
+        plannedDurationMinutes: 45,
+        expectedLessonRunId: null,
+        expectedLessonRunUpdatedAt: null,
+        expectedLearnerProfileIds: [uuid(2), uuid(1)],
+      }),
+    /должен быть отсортирован/,
   );
 });
 

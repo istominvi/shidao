@@ -14,6 +14,51 @@ browser gate)
 **Исторический functional E2 baseline:**
 `22b486a7163453019d9720cb4fe0f36ed7c0228d`
 
+**Current source / next production — единый центр «Сообщения»:** protected
+`(app)` layout теперь монтирует одну глобальную кнопку с общим unread badge
+вместо отдельных AI-launcher, колокольчика и пункта навигации. Она открывает
+единый inbox с четырьмя явно маркированными источниками: direct-диалоги,
+Course chat, read-only лента **ShiDao · Система** и несколько persisted
+диалогов **ShiDao ИИ** с global/Course/Lesson context. Contextual actions
+«Написать» в Students и «Чат курса» открывают тот же центр сразу на нужном
+диалоге; отдельного параллельного messaging flow нет. Desktop panel можно
+расширить до двух колонок, а mobile использует полноэкранную поверхность.
+
+Direct target задаётся только через `LearnerProfile` и требует active accepted
+teacher/learner relation с linked Account; archived/pending relation запрещает
+новое чтение и отправку, но restore возвращает доступ к полной истории.
+Course owner и linked Account текущей effective audience видят всю историю
+Course thread, в том числе сообщения до присоединения; выход из current
+audience сразу закрывает capability. Browser не передаёт Account/Auth UUID или
+sender ID. Каждое human message отправляется только явным действием в composer:
+ИИ не может автоматически написать ученику или в Course chat.
+
+AI conversations, turns и read cursors persisted. Один turn выполняется как
+единый server-orchestrated exchange: user turn сохраняется, bounded history
+и allowlisted context читаются server-side, существующий Assistant формирует
+ответ/proposal, затем trusted boundary сохраняет assistant turn. Existing
+signed proposal/apply semantics сохранены. В частности,
+`lesson.schedule_run` показывает карточку «Назначить урок» или «Перенести
+урок» и меняет LessonRun только после отдельного подтверждения пользователя.
+Apply использует production-current A2 RPC
+`schedule_lesson_run_if_unchanged`: create атомарно проверяет отсутствие open
+Run и exact current Course audience, reschedule — exact Run id/`updated_at` и
+draft roster; mismatch возвращает stale action до canonical scheduler write.
+Account/Auth UUID в browser action contract не входят.
+Все proposal, загруженные из persisted history после hydration, fail closed как
+устаревшие; actionable может быть только карточка, полученная в текущем mounted
+exchange. Durable action/job ledger, distributed exactly-once и background AI
+worker остаются **later**.
+
+Unified inbox обновляется bounded polling раз в 30 секунд и при возврате focus;
+read cursor выбранного диалога учитывает `visibilitychange`. Realtime,
+presence, push/email, attachments, richer metric producers и generalized
+background notifications в первый source slice не входят. Source уже содержит
+forward schema/migrations, RPC/application/API и responsive UI. Production DB
+CC1 + A2 уже применены, а DB postflight и contract snapshot current; dependent
+web/API deployment и production API/browser postflight ещё не выполнены.
+Поэтому этот раздел не объявляет функциональность доступной на `v2.shidao.ru`.
+
 **Current production — page headers and motion:** supporting
 copy в `AppPageHeader` теперь действительно optional и допускает только
 метрику выбранной сущности; поясняющий, рекламный и инструктивный текст из
@@ -824,9 +869,12 @@ contextual portal-menu. Для active profile меню открывает про
 группами, реальный flow «Добавить в курс…» с выбором Course, сохранением
 существующей group/direct audience и добавлением direct learner, а также
 destructive-действие «Убрать из списка». Пункт
-«Написать сообщение» видим, но disabled и явно помечен как недоступный:
-communication layer в current product не заявляется. Archived profile и
-pending request получают свои restore/permanent-delete или cancel actions.
+«Написать сообщение» в текущем production baseline видим, но disabled.
+**Current source / next production:** для active linked learner этот пункт
+открывает единый центр «Сообщения» через `learnerProfileId`; archived/pending
+rows по-прежнему получают только допустимые restore/permanent-delete или cancel
+actions. CC1+A2 DB contract уже current, но до dependent web/API deployment и
+API/browser postflight этот source flow не объявляется production-возможностью.
 Trigger и пункты меню не активируют неявный row click. Это current production
 UI/application flow поверх существующих Group/Course audience boundaries;
 schema и migrations не меняются.
@@ -842,10 +890,14 @@ cancel требует подтверждения, а edit открывает т�
 кликом по строке. Это deployed application/UI follow-up поверх существующих
 API; schema и migrations не меняются.
 
-**Current System Assistant conversational action slice:** реализован один
-глобальный floating widget «ИИ» внутри protected `(app)` layout. Он доступен на
-Account surfaces, сохраняет диалог только в React state до reload/явного сброса
-и получает не DOM/URL, а строгий allowlisted page context. Server-side
+**Current production / superseded source UI — System Assistant conversational
+action slice:** deployed baseline использует один глобальный floating widget
+«ИИ» внутри protected `(app)` layout. В production он сохраняет диалог только
+в React state до reload/явного сброса и получает не DOM/URL, а строгий
+allowlisted page context. В current source этот launcher и ephemeral history
+заменены единым persisted центром «Сообщения», описанным выше. Production
+CC1+A2 DB contract уже current, но dependent web/API rollout ещё не выполнен.
+Server-side
 orchestration читает bounded owner/recorder/consent-scoped проекции текущего
 Account и открытой Course/Lesson, Students или выбранного дня Schedule.
 Ассистент ведёт обычный model-authored диалог, а для записи может подготовить
@@ -1377,8 +1429,11 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   `MoreVertical` в каждой строке открывает contextual menu: active profile
   можно открыть, изменить группы, реально добавить в выбранный Course с
   сохранением существующей audience или «Убрать из списка». «Написать сообщение»
-  показывается disabled с явной пометкой о недоступности. Archived/pending rows
-  получают только допустимые restore/permanent-delete или cancel actions.
+  остаётся disabled в current production, но current source для active linked
+  learner открывает через него единый центр «Сообщения»; этот flow станет
+  production только после dependent web/API deployment и API/browser
+  postflight. CC1+A2 DB contract уже current. Archived/pending rows получают
+  только допустимые restore/permanent-delete или cancel actions.
   Видимое имя принадлежит relation текущего преподавателя, а не глобальной identity.
 - Header action на `/students` следует выбранной вкладке: «Новый ученик» или
   «Новая группа»; поиск и inline-тумблер **Все / В группе / Без группы**
@@ -1665,13 +1720,63 @@ application service/contracts внутри authenticated web request.
   server log event. Persistent quota/ledger, billing, balance и AI change sets
   отсутствуют; process-local rate limit не является пользовательской квотой.
 
-#### System Assistant — current deployed boundary
+#### Communication Center — current source / next production
+
+- Один `CommunicationCenterProvider` в protected `(app)` layout заменяет
+  отдельный System Assistant launcher. Общая кнопка «Сообщения» с unread badge
+  открывает один inbox; direct, Course, system и assistant items остаются
+  различимыми по type/provenance, а ShiDao system feed не имеет composer.
+- Direct conversation открывается из Students по `learnerProfileId`, только
+  если у адресата есть linked Account и active accepted teacher/learner
+  relation. После открытия browser использует opaque `threadId`; Account/Auth
+  UUID, `sender_account_id` и глобальный поиск пользователей в browser contract
+  не входят. Archive закрывает capability, restore возвращает доступ к полной
+  истории.
+- Course thread открывается из Course surface. Owner и linked Account текущей
+  effective audience видят полную историю независимо от даты присоединения;
+  удаление из audience немедленно закрывает read/send, а повторное добавление
+  возвращает ту же историю. ObserverGrant сам по себе доступа не даёт.
+- Human composer всегда требует отдельного Send. AI reply, system event или
+  proposal не может неявно отправить сообщение человеку или Course audience;
+  fake/local seeded messages и notifications отсутствуют.
+- System feed принимает только trusted typed application events. Первый
+  producer отражает назначение, перенос и отмену LessonRun, owner aggregate и
+  собственный learner-safe результат после завершения; UI не исполняет
+  произвольный `payload.href`. Richer Component/runtime metrics и background
+  result producers остаются later.
+- Account может создать, переименовать и архивировать несколько persisted AI
+  conversations с immutable global/Course/Lesson context. Server сохраняет
+  user turn, читает bounded persisted history/context, вызывает существующий
+  Assistant и trusted append-ом сохраняет assistant reply/proposal в одном
+  orchestrated exchange.
+- Existing HMAC-signed preview/explicit Apply сохраняется. Новый strict
+  `lesson.schedule_run` показывает назначение или перенос и вызывает canonical
+  LessonRun mutation только после подтверждения. A2
+  `schedule_lesson_run_if_unchanged` атомарно сравнивает expected no-open-Run
+  или exact Run id/`updated_at`, draft roster и current Course audience перед
+  вызовом canonical scheduler; mismatch становится stale action. После reload
+  все proposal из hydrated history получают stale-состояние «Подготовьте
+  предложение заново»;
+  только proposal текущего mounted exchange может быть actionable.
+- Inbox/read model использует cursor pagination, polling каждые 30 секунд,
+  refresh при focus и `visibilitychange` для read cursor выбранного диалога.
+  Realtime/presence, push/email и visible receipts не заявляются.
+- Source boundary находится в `src/modules/communication/`,
+  `src/app/api/v2/{inbox,message-targets,communication-threads,system-notifications}`,
+  `src/app/api/v2/assistant/conversations/`,
+  `src/components/communication/` и current forward migration/schema.
+  Production DB CC1 + A2 применены, DB postflight и contract snapshot current;
+  dependent web/API deployment и production API/browser postflight pending.
+  Durable action/job ledger, distributed idempotency и reliable background
+  worker — отдельный later slice.
+
+#### System Assistant — current production baseline, superseded in source
 
 - `SystemAssistantProvider` и один floating `SystemAssistant` монтируются в
   protected `src/app/(app)/layout.tsx`, а не в public landing/Auth/demo и не в
   Course/Lesson header. Кнопки прежнего course-scoped dialog из Course и Lesson
   удалены.
-- **Current source / next production UI:** launcher имеет exact размер
+- **Superseded source-only launcher refinement:** launcher имеет exact размер
   `40 × 40 px`, стоит справа и снизу с inset `12 px` плюс mobile safe area,
   использует общий element radius `12 px` и не имеет border. Светлая опаловая
   поверхность перетекает из aqua/mint через молочно-белый в lavender/pink:
@@ -1726,7 +1831,8 @@ application service/contracts внутри authenticated web request.
   другой новый запрос supersede-ит старую карточку, а смена Course/Lesson context
   делает pending proposal недоступным. Terminal stale/expired ответ требует
   сформировать новую карточку вместо бесконечного retry.
-- Диалог не persisted. Chat ограничен 30 turns, новые uncached Apply — 20
+- В current production baseline диалог не persisted. Chat ограничен 30 turns,
+  новые uncached Apply — 20
   действиями на actor за 10 минут; concurrency guard, actor+target apply mutex и
   replay cache idempotency key существуют только в памяти одного Node process.
   Cache живёт до 10 минут и ограничен 500 результатами; restart или другая
@@ -1756,8 +1862,10 @@ History-aware context развёрнут в release `9393080`; production provid
 ## 3. Что ещё не реализовано
 
 - пользовательский выбор модели и persisted provider settings;
-- persistent assistant/Course chat, durable action history и generalized
-  tool calling за пределами allowlisted Course/Lesson actions;
+- dependent web/API deployment и production API/browser postflight
+  current-source Communication Center;
+- durable assistant action/job history и generalized tool calling за пределами
+  allowlisted Course/Lesson actions;
 - distributed rate limit, durable idempotency/action ledger и exactly-once
   assistant mutations между replicas;
 - persistent token quota/ledger, billing units, balance и AI change sets/undo;
@@ -1769,7 +1877,8 @@ History-aware context развёрнут в release `9393080`; production provid
 - live Student Screen sync, realtime presence и teacher-controlled runtime
   cursor поверх открытого LessonRun;
 - richer per-learner metrics ждут реального Component/runtime producer;
-- persisted communication chat и notifications;
+- Realtime/presence для messaging, push/email delivery, attachments,
+  moderation и reliable background notification/AI workers;
 - реальные Product/Order/Inventory, admin catalog, persisted cart/checkout,
   оплата и доставка; current production `/store` является только client-state
   UI-demo и не создаёт заказ;
@@ -1880,6 +1989,12 @@ learner_identity_rate_limit
 learner_erasure_request
 learner_credential_recovery_delegate
 learner_identity_reconciliation
+communication_thread
+communication_message
+communication_read_state
+assistant_conversation
+assistant_turn
+system_notification
 ```
 
 Эти tables принадлежат identity/audience/scheduling/history slice, а не
@@ -1894,8 +2009,13 @@ comment timestamp, actual duration at time и superseded merge provenance.
 Recorder immutable; subject reset использует explicit erasure workflow вместо
 случайного cascade.
 
-Текущий AI-срез читает bounded finalized history, но по-прежнему не сохраняет
-provider requests, assistant dialog history или quota state в БД.
+Текущий deployed System Assistant читает bounded finalized history и хранит
+dialog только в React state, потому что dependent Communication Center web/API
+ещё не развёрнут. При этом production DB CC1 уже содержит отдельные persisted
+AI conversations/turns/read cursors, human threads/messages и system
+notifications, а A2 — atomic Assistant schedule guard; DB postflight и contract
+snapshot current. Provider request
+payloads, quota/billing и durable action/job ledger по-прежнему не сохраняются.
 
 Последние структурные migrations:
 
@@ -1997,7 +2117,7 @@ provider requests, assistant dialog history или quota state в БД.
   authenticated educator `rich_text` update прошли. E2A snapshot на этом stage
   `2026-08-13T11:43:48Z` имеет SHA-256
   `0a6eab37e1bbecc0084e281496346e5436fcbd1ac2b42e102e89951e71ff258e`.
-- `20260814050347_account_profile_avatars.sql` — current production schema head.
+- `20260814050347_account_profile_avatars.sql` — applied production AV1.
   AV1 добавляет exact-one `preset | custom` avatar state в `public.account`,
   private server-only Storage bucket `profile-avatars`, revision-aware setter и
   расширение Account auth context. Exact migration применена `COMMIT` после
@@ -2006,6 +2126,26 @@ provider requests, assistant dialog history или quota state в БД.
   `PUBLIC`/`anon`/`authenticated`. Current snapshot снят
   `2026-08-14T05:53:08Z`, SHA-256
   `3ca847164526568def44d2deed9a6b1d6cd1742e168462376b4f41fe6383ef97`.
+- `20260816053117_communication_center.sql` — current production CC1 base.
+  Exact migration применена с `COMMIT` после read-only sanity, verified
+  backup и exact rollback rehearsal. Postflight подтвердил шесть RLS tables с
+  закрытым raw browser ACL, 16 authenticated user RPC, два service-only
+  producer RPC и два trigger; canonical counts не изменились. Current contract
+  snapshot `2026-08-16T07:08:18Z` имеет SHA-256
+  `1e8d7ac420be9deb5018f37a20db82d2bb84c7aafd7e3e3ba361f43795c02060`.
+  Dependent Communication Center web/API deployment и production API/browser
+  postflight pending; UI ещё не объявляется доступным на `v2.shidao.ru`.
+- `20260816072345_atomic_assistant_lesson_run_schedule.sql` — current
+  production A2 schema head. Exact migration SHA-256
+  `61ddca91ad28d60aac5ebdbbbb12e0d8e0ef2b8b52a0501de792d416052c6834`
+  применена с `COMMIT` после PostgreSQL `15.8` sanity, verified backup и exact
+  rollback rehearsal. Postflight подтвердил authenticated-only
+  `SECURITY DEFINER` atomic guard с пустым `search_path`; counts и пустые CC1
+  rows не изменились. Current contract snapshot `2026-08-16T07:42:38Z` имеет
+  SHA-256
+  `a91aefb693fc5857e1ae921e7226bc688230d0dd3c7e9373197c1006b4314a7d`,
+  authenticated user RPC total — `17`. Dependent Communication Center web/API
+  deployment и production API/browser postflight pending.
 
 Источники истины для текущего состояния:
 

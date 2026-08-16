@@ -3471,7 +3471,7 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
   }
 });
 
-test("browser smoke: protected pages expose the global assistant with keyboard focus recovery", async (t) => {
+test("browser smoke: protected pages expose the unified messages center with keyboard focus recovery", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
     return;
@@ -3484,7 +3484,7 @@ test("browser smoke: protected pages expose the global assistant with keyboard f
     await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
 
     const launcher = runtime.page.getByRole("button", {
-      name: "Открыть ИИ-ассистента",
+      name: "Открыть сообщения",
       exact: true,
     });
     await launcher.waitFor();
@@ -3525,7 +3525,7 @@ test("browser smoke: protected pages expose the global assistant with keyboard f
     await launcher.press("Enter");
 
     const panel = runtime.page.getByRole("dialog", {
-      name: "Shidao ИИ",
+      name: "Сообщения",
       exact: true,
     });
     await panel.waitFor();
@@ -3536,35 +3536,35 @@ test("browser smoke: protected pages expose the global assistant with keyboard f
     });
     assert.deepEqual(
       await runtime.page.evaluate(() => {
-        const launcherElement = document.querySelector(
-          ".system-assistant-launcher",
+        const panelElement = document.querySelector(
+          ".communication-center-panel",
         );
-        const panelElement = document.querySelector(".system-assistant-panel");
-        if (!launcherElement || !panelElement) return null;
-        const launcherRect = launcherElement.getBoundingClientRect();
+        if (!panelElement) return null;
         const panelRect = panelElement.getBoundingClientRect();
         return {
-          panelRightInset: Math.round(window.innerWidth - panelRect.right),
-          panelLauncherGap: Math.round(launcherRect.top - panelRect.bottom),
+          width: Math.round(panelRect.width),
+          height: Math.round(panelRect.height),
+          top: Math.round(panelRect.top),
+          left: Math.round(panelRect.left),
         };
       }),
-      { panelRightInset: 12, panelLauncherGap: 12 },
+      { width: 375, height: 812, top: 0, left: 0 },
     );
     await runtime.page.setViewportSize({ width: 900, height: 812 });
-    const composer = panel.getByLabel("Сообщение ИИ-ассистенту");
-    await composer.waitFor();
+    const search = panel.getByLabel("Найти диалог");
+    await search.waitFor();
     await runtime.page.evaluate(
       () =>
         new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
     );
     assert.equal(
       await runtime.page.evaluate(
-        () => document.activeElement?.id === "system-assistant-message",
+        () => document.activeElement?.getAttribute("type") === "search",
       ),
       true,
     );
 
-    await composer.fill("Черновик вопроса");
+    await search.fill("Черновик поиска");
     await Promise.all([
       runtime.page.waitForURL(/\/students$/),
       runtime.page.getByRole("link", { name: "Ученики", exact: true }).click(),
@@ -3572,10 +3572,10 @@ test("browser smoke: protected pages expose the global assistant with keyboard f
     await runtime.page
       .getByRole("heading", { name: "Ученики", exact: true, level: 1 })
       .waitFor();
-    assert.match((await panel.textContent()) ?? "", /Контекст: Ученики/);
-    assert.equal(await composer.inputValue(), "Черновик вопроса");
+    assert.match((await panel.textContent()) ?? "", /Сообщения/);
+    assert.equal(await search.inputValue(), "Черновик поиска");
 
-    await composer.press("Escape");
+    await search.press("Escape");
     await panel.waitFor({ state: "hidden" });
     await runtime.page.evaluate(
       () =>
@@ -3583,7 +3583,9 @@ test("browser smoke: protected pages expose the global assistant with keyboard f
     );
     assert.equal(
       await runtime.page.evaluate(() =>
-        document.activeElement?.classList.contains("system-assistant-launcher"),
+        document.activeElement?.classList.contains(
+          "communication-center-launcher",
+        ),
       ),
       true,
     );
@@ -3592,7 +3594,7 @@ test("browser smoke: protected pages expose the global assistant with keyboard f
   }
 });
 
-test("browser smoke: assistant quick reply is one-time and sends its structured message in the next request", async (t) => {
+test("browser smoke: persisted AI quick reply is one-time and sends one atomic turn", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
     return;
@@ -3600,7 +3602,9 @@ test("browser smoke: assistant quick reply is one-time and sends its structured 
 
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
   const requestBodies: Array<{
-    messages?: Array<{ role?: string; content?: string }>;
+    body?: string;
+    localDate?: string;
+    utcOffsetMinutes?: number;
   }> = [];
   let observeSecondRequest: (() => void) | undefined;
   let releaseSecondRequest: (() => void) | undefined;
@@ -3612,62 +3616,165 @@ test("browser smoke: assistant quick reply is one-time and sends its structured 
   });
 
   try {
-    await runtime.page.route("**/api/v2/assistant", async (route) => {
-      requestBodies.push(
-        (route.request().postDataJSON() ?? {}) as {
-          messages?: Array<{ role?: string; content?: string }>;
-        },
-      );
-      const requestNumber = requestBodies.length;
-      if (requestNumber === 2) {
-        observeSecondRequest?.();
-        await secondRequestReleased;
-      }
+    const conversation = {
+      id: "10000000-0000-4000-8000-000000000001",
+      title: "Новый диалог",
+      contextCourseId: null,
+      contextLessonId: null,
+      lastTurnId: null,
+      lastActivityAt: "2026-08-16T08:00:00.000Z",
+      unreadCount: 0,
+      archivedAt: null,
+      createdAt: "2026-08-16T08:00:00.000Z",
+      updatedAt: "2026-08-16T08:00:00.000Z",
+    };
+    const usage = {
+      inputTokens: 10,
+      outputTokens: 5,
+      totalTokens: 15,
+      cachedInputTokens: 0,
+      reasoningTokens: 0,
+    };
+
+    await runtime.page.route("**/api/v2/inbox*", async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          result: {
-            message: {
-              role: "assistant",
-              content:
-                requestNumber === 1
-                  ? "Вам нужен пустой урок-заготовка или сразу наполненный урок с содержанием и заданиями?"
-                  : "Хорошо, подготовлю пустой урок.",
-            },
-            proposedAction: null,
-            quickReplies:
-              requestNumber === 1
-                ? [
-                    { label: "Пустой урок", message: "Пустой урок" },
-                    { label: "Готовый урок", message: "Готовый урок" },
-                  ]
-                : [],
-            sharedHistoryUsed: false,
-            requestId: `assistant-browser-${requestNumber}`,
-            model: "test-model",
-            provider: "test-provider",
-            usage: {
-              inputTokens: 10,
-              outputTokens: 5,
-              totalTokens: 15,
-              cachedInputTokens: 0,
-              reasoningTokens: 0,
-            },
-          },
+          inbox: { items: [], nextCursor: null, totalUnread: 0 },
         }),
       });
     });
+    await runtime.page.route("**/api/v2/message-targets*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ targets: { direct: [], courses: [] } }),
+      });
+    });
+    await runtime.page.route(
+      "**/api/v2/assistant/conversations",
+      async (route) => {
+        const requestBody = route.request().postDataJSON();
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(
+            requestBody ? { conversation } : { conversations: [conversation] },
+          ),
+        });
+      },
+    );
+    await runtime.page.route(
+      "**/api/v2/assistant/conversations/*/read",
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            receipt: { markedThroughId: 4, unreadCount: 0 },
+          }),
+        });
+      },
+    );
+    await runtime.page.route(
+      "**/api/v2/assistant/conversations/*/turns*",
+      async (route) => {
+        const requestBody = route.request().postDataJSON();
+        if (!requestBody) {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              conversation,
+              turns: { items: [], nextCursor: null },
+            }),
+          });
+          return;
+        }
+        requestBodies.push(
+          (route.request().postDataJSON() ?? {}) as {
+            body?: string;
+            localDate?: string;
+            utcOffsetMinutes?: number;
+          },
+        );
+        const requestNumber = requestBodies.length;
+        if (requestNumber === 2) {
+          observeSecondRequest?.();
+          await secondRequestReleased;
+        }
+        const userTurnId = requestNumber * 2 - 1;
+        const assistantTurnId = requestNumber * 2;
+        const quickReplies =
+          requestNumber === 1
+            ? [
+                { label: "Пустой урок", message: "Пустой урок" },
+                { label: "Готовый урок", message: "Готовый урок" },
+              ]
+            : [];
+        const assistantBody =
+          requestNumber === 1
+            ? "Вам нужен пустой урок-заготовка или сразу наполненный урок с содержанием и заданиями?"
+            : "Хорошо, подготовлю пустой урок.";
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            exchange: {
+              userTurn: {
+                id: userTurnId,
+                role: "user",
+                deliveryKind: "interactive",
+                body: requestBodies.at(-1)?.body,
+                payload: {},
+                createdAt: `2026-08-16T08:0${userTurnId}:00.000Z`,
+              },
+              assistantTurn: {
+                id: assistantTurnId,
+                role: "assistant",
+                deliveryKind: "interactive",
+                body: assistantBody,
+                payload: {
+                  replyToTurnId: userTurnId,
+                  reply: {
+                    requestId: `assistant-browser-${requestNumber}`,
+                    model: "test-model",
+                    provider: "test-provider",
+                    usage,
+                    proposedAction: null,
+                    quickReplies,
+                    sharedHistoryUsed: false,
+                  },
+                },
+                createdAt: `2026-08-16T08:0${assistantTurnId}:00.000Z`,
+              },
+              proposedAction: null,
+              quickReplies,
+              sharedHistoryUsed: false,
+              usage,
+            },
+          }),
+        });
+      },
+    );
 
     await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
     await runtime.page
-      .getByRole("button", { name: "Открыть ИИ-ассистента", exact: true })
+      .getByRole("button", { name: "Открыть сообщения", exact: true })
       .click();
     const panel = runtime.page.getByRole("dialog", {
-      name: "Shidao ИИ",
+      name: "Сообщения",
       exact: true,
     });
-    const composer = panel.getByLabel("Сообщение ИИ-ассистенту");
+    await panel
+      .locator(".communication-center-header")
+      .getByRole("button", { name: "Новый диалог", exact: true })
+      .click();
+    await panel
+      .getByRole("button", { name: /Новый диалог с ShiDao ИИ/ })
+      .click();
+    const composer = panel.getByLabel("Сообщение ShiDao ИИ");
     await composer.fill("Сделай четвёртый урок");
     await composer.press("Enter");
 
@@ -3695,22 +3802,13 @@ test("browser smoke: assistant quick reply is one-time and sends its structured 
     assert.equal(await emptyLesson.count(), 0);
     assert.equal(await readyLesson.count(), 0);
     assert.equal(requestBodies.length, 2);
-    assert.deepEqual(requestBodies[1]?.messages?.at(-1), {
-      role: "user",
-      content: "Пустой урок",
-    });
-    assert.deepEqual(
-      requestBodies[1]?.messages?.map((message) => message.content),
-      [
-        "Сделай четвёртый урок",
-        "Вам нужен пустой урок-заготовка или сразу наполненный урок с содержанием и заданиями?",
-        "Пустой урок",
-      ],
-    );
+    assert.equal(requestBodies[1]?.body, "Пустой урок");
+    assert.match(requestBodies[1]?.localDate ?? "", /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(typeof requestBodies[1]?.utcOffsetMinutes, "number");
 
     releaseSecondRequest?.();
     await runtime.page
-      .locator(".system-assistant-message.is-assistant")
+      .locator(".communication-message-bubble")
       .getByText("Хорошо, подготовлю пустой урок.", { exact: true })
       .waitFor();
   } finally {
@@ -7561,7 +7659,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       await learnerActionMenu
         .getByRole("menuitem", { name: /Написать сообщение/ })
         .getAttribute("disabled"),
-      "",
+      null,
     );
     await learnerActionMenu
       .getByRole("menuitem", { name: "Убрать из списка", exact: true })

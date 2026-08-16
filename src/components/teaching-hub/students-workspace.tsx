@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
+import { useCommunicationCenterActions } from "@/components/communication/communication-center-provider";
 import { usePrimaryHeaderSummary } from "@/components/navigation/primary-header-summary-provider";
 import { ObservingWorkspace } from "@/components/learner-identity/observing-workspace";
 import {
@@ -123,6 +124,7 @@ export function StudentsWorkspace({
   initialView = "learners",
 }: StudentsWorkspaceProps) {
   const router = useRouter();
+  const { openDirect } = useCommunicationCenterActions();
   const [profiles, setProfiles] = useState<LearnerProfile[] | null>(null);
   const [activeDirectory, setActiveDirectory] = useState<
     TeacherLearnerDirectoryItem[] | null
@@ -738,6 +740,9 @@ export function StudentsWorkspace({
                 setMutationError(null);
                 setCourseLearner(profile);
               }}
+              onMessage={(profile) =>
+                openDirect(profile.id, profile.displayName)
+              }
               onArchive={(profile) => void removeLearner(profile)}
               onRestore={(learner) => void restoreLearner(learner)}
               onPermanentlyDelete={(learner) =>
@@ -759,6 +764,9 @@ export function StudentsWorkspace({
                 setMutationError(null);
                 setCourseLearner(profile);
               }}
+              onMessage={(profile) =>
+                openDirect(profile.id, profile.displayName)
+              }
               onArchive={(profile) => void removeLearner(profile)}
               onRestore={(learner) => void restoreLearner(learner)}
               onPermanentlyDelete={(learner) =>

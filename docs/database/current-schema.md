@@ -3,17 +3,20 @@
 **Статус:** current production learner-identity M6 + Course publication
 catalog + Course Component D1 + A1 atomic Course archive + E1 educator Course
 и Account attestation + E2 educator governance/self-learning + E2A authenticated
-content-guard correction + U1 unified Text authored data + AV1 Account avatars.
-AV1 DB-first contract применён; зависимый web/API contract сохраняется в
-текущем functional source `1d4e5deff83cbdc1b479b16e4220cf799327009f`.
+content-guard correction + U1 unified Text authored data + AV1 Account avatars
+и CC1 Communication Center database contract + A2 atomic Assistant schedule
+guard. CC1 и A2 DB-first contracts применены; зависимый Communication Center
+web/API deployment ещё не выполнен и не считается current application
+surface.
 
 **Production schema head:**
-`20260814050347_account_profile_avatars.sql`. Она применена к production с
-exact `COMMIT` 14 августа 2026 года после read-only sanity, полного rollback
-rehearsal и verified backup. Migration добавляет обязательное состояние avatar
-в `account`, приватный server-only Storage bucket `profile-avatars` и
-revision-aware setter RPC. Exact SHA-256 —
-`001f6d9161ce53797456e0e886486fce1a9aa9ab13fe1cd769f764b9f2025201`.
+`20260816072345_atomic_assistant_lesson_run_schedule.sql`. Она применена к
+production с exact `COMMIT` 16 августа 2026 года после read-only sanity,
+полного rollback rehearsal и verified backup. A2 добавляет один узкий
+authenticated-only atomic LessonRun guard поверх CC1; current Communication
+Center boundary содержит 17 authenticated user RPC, два service-only producer
+RPC и два trigger. Exact A2 SHA-256 —
+`61ddca91ad28d60aac5ebdbbbb12e0d8e0ef2b8b52a0501de792d416052c6834`.
 
 **Последняя применённая authored-data-only migration:**
 exact tracked `20260813063716_unify_heading_rich_text_components.sql` применён
@@ -34,10 +37,10 @@ Admin create/delete probe
 
 **SQL snapshot:**
 [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
-содержит live production dump после AV1, снятый штатным script через read-only
-SSH transport в `2026-08-14T05:53:08Z`. Strict signature осталась
+содержит live production dump после A2, снятый штатным script через read-only
+SSH transport в `2026-08-16T07:42:38Z`. Strict signature осталась
 `shidao-v2-contract`, SHA-256 snapshot —
-`3ca847164526568def44d2deed9a6b1d6cd1742e168462376b4f41fe6383ef97`.
+`a91aefb693fc5857e1ae921e7226bc688230d0dd3c7e9373197c1006b4314a7d`.
 Локальный PostgreSQL 16 dump не принимается как замена production 15.8
 snapshot из-за version/encoding/default-ACL drift.
 
@@ -71,6 +74,8 @@ snapshot из-за version/encoding/default-ACL drift.
 | U1    | `20260813063716_unify_heading_rich_text_components.sql`                | applied production data-only unified Text cleanup без physical-schema и immutable-publication changes                                          |
 | E2A   | `20260813113041_fix_educator_course_content_guard_acl.sql`             | applied production invoker guard correction с inlined predicate и неизменным закрытым helper ACL                                               |
 | AV1   | `20260814050347_account_profile_avatars.sql`                           | applied production required Account avatar, 20 preset keys, private server-only WebP Storage и optimistic setter RPC                           |
+| CC1   | `20260816053117_communication_center.sql`                              | applied production unified inbox persistence: human threads, system notifications и persisted assistant conversations                          |
+| A2    | `20260816072345_atomic_assistant_lesson_run_schedule.sql`              | applied production atomic compare-and-schedule guard для confirmed Assistant LessonRun proposal                                                |
 
 M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
 первого deploy и применена только после доказательства, что running и rollback
@@ -82,6 +87,66 @@ backup. Он перевёл authored `heading` в title-only `rich_text` и об
 только непосредственные `heading → rich_text` при одинаковых visibility,
 `student_slide_id` и placement. Immutable `course_publication_revision`
 snapshots остались неизменными.
+
+### Production CC1 Communication Center
+
+DB-first rollout завершён 16 августа 2026 года; dependent web/API deployment
+остаётся следующим отдельным шагом:
+
+- read-only preflight под `supabase_admin` подтвердил PostgreSQL `15.8`,
+  canonical counts Account/Course/Lesson/Component/LessonRun `19/6/22/84/2`
+  и полное отсутствие Communication Center objects;
+- exact rollback rehearsal завершилась `ROLLBACK`; Communication Center
+  objects после неё отсутствовали, canonical counts не изменились;
+- verified full-format backup
+  `/root/shidao-db-backups/shidao-before-communication-center-20260816T065707Z.dump`
+  имеет size `1336766`, mode `600`, `1618` restore-list entries и SHA-256
+  `95b60a4c6f2b6ee8d0a13f849063dcf2ff838aee75ca2ec351ee7ed5bec6c665`;
+- exact tracked migration с SHA-256
+  `d2e0c836974b93e8f2414b539ce65ecd012bcd4d317550577f9af367971be82d`
+  завершила `COMMIT`;
+- postflight сохранил counts `19/6/22/84/2` и подтвердил шесть RLS tables,
+  ноль raw table privileges для `anon/authenticated`, ноль policies, ноль
+  persisted rows, 16 authenticated-only user RPC, два service-role-only
+  producer RPC и два enabled trigger;
+- user-JWT smoke вернул валидный inbox object, один system item и `0` unread;
+  production snapshot strict stage `contract` имеет SHA-256
+  `1e8d7ac420be9deb5018f37a20db82d2bb84c7aafd7e3e3ba361f43795c02060`.
+
+Self-hosted contour не содержит
+`supabase_migrations.schema_migrations`; факт rollout подтверждают exact
+tracked checksum, наблюдаемый `COMMIT`, read-only postflight и production
+snapshot, а не отсутствующая history row.
+
+### Production A2 atomic Assistant LessonRun schedule guard
+
+DB-first rollout завершён 16 августа 2026 года; dependent Communication Center
+web/API deployment остаётся pending:
+
+- read-only preflight под `supabase_admin` подтвердил PostgreSQL `15.8`,
+  canonical counts Account/Course/Lesson/Component/LessonRun `19/6/22/84/2`,
+  присутствующие пустые CC1 tables и отсутствие atomic guard;
+- exact rollback rehearsal завершилась `ROLLBACK`; guard остался absent, CC1
+  rows и canonical counts не изменились;
+- verified full-format backup
+  `/root/shidao-db-backups/shidao-before-atomic-assistant-schedule-20260816T074048Z.dump`
+  имеет size `1466747`, mode `600`, `1751` restore-list entries и SHA-256
+  `a2283f466f5ec421f515c41e422af81628afb291a6c5462021fdc7cc049c9dbc`;
+- exact tracked migration с SHA-256
+  `61ddca91ad28d60aac5ebdbbbb12e0d8e0ef2b8b52a0501de792d416052c6834`
+  завершила `COMMIT`;
+- postflight подтвердил `SECURITY DEFINER`, пустой `search_path`, `EXECUTE`
+  только для `postgres/authenticated` и отсутствие доступа у
+  `PUBLIC`/`anon`/`service_role`; canonical counts и CC1 row counts не
+  изменились;
+- production contract snapshot strict stage `contract` снят
+  `2026-08-16T07:42:38Z`; SHA-256
+  `a91aefb693fc5857e1ae921e7226bc688230d0dd3c7e9373197c1006b4314a7d`,
+  current authenticated user RPC total — `17`.
+
+Self-hosted contour по-прежнему не содержит
+`supabase_migrations.schema_migrations`; A2 rollout подтверждают exact
+checksum, наблюдаемый `COMMIT`, read-only postflight и production snapshot.
 
 ### Production U1 unified Text authored-data cleanup
 
@@ -448,10 +513,66 @@ postflight:
 и guest HTTP postflight. Unified Text data cleanup не добавлял database
 objects, Storage buckets или physical-schema shape. Текущий application
 source `1d4e5deff83cbdc1b479b16e4220cf799327009f` сохраняет этот contract, а
-актуальные AV1 schema head и generated snapshot зафиксированы в начале
+актуальные A2 schema head и generated snapshot зафиксированы в начале
 документа.
 
 ## Current repository tables
+
+### Communication Center (current CC1 + A2 database contract)
+
+CC1 даёт одну inbox projection, но сохраняет разные persistence contracts и не
+складывает human messages, trusted system facts и assistant turns в одну
+полиморфную таблицу:
+
+| Table                      | Назначение                                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------------------------- |
+| `communication_thread`     | unique direct Account pair либо один Course thread; cached last-message cursor                    |
+| `communication_message`    | human-authored message до 6000 символов с idempotent client UUID                                  |
+| `communication_read_state` | Account-scoped last-read cursor human thread                                                      |
+| `assistant_conversation`   | несколько Account-owned AI dialogs, nullable Course/Lesson context и archive/read cursors         |
+| `assistant_turn`           | persisted user/assistant turns, delivery kind, 6000-character body и payload до 64 KiB            |
+| `system_notification`      | trusted Account recipient fact, severity, payload до 16 KiB, dedupe key, occurred/read timestamps |
+
+Все шесть tables имеют RLS, но намеренно не имеют policies и raw table
+privileges для `anon` или `authenticated`. Supported user boundary — 17
+`SECURITY DEFINER` RPC с пустым `search_path`, доступных только
+`authenticated`: 16 CC1 messaging RPC и один A2 atomic schedule guard; два
+producer RPC доступны только `service_role`. Browser DTO не раскрывают
+Account/Auth UUID: direct thread открывается по actor-scoped
+`learnerProfileId`, а message projection возвращает `isOwn` и `senderLabel`.
+
+Membership проверяется динамически при каждом read/write:
+
+- direct thread доступен только пока teacher-local `teacher_learner` relation
+  active; archive скрывает весь dialog, restore возвращает полный history;
+- Course thread доступен текущему owner и текущей effective direct/group
+  audience; присоединившийся участник видит полную историю, вышедший теряет
+  доступ;
+- Account erasure и Course deletion каскадно удаляют связанные human threads;
+  удаление Course/Lesson context у assistant conversation использует
+  `ON DELETE SET NULL`, поэтому AI history сохраняется;
+- message-delete trigger атомарно пересчитывает cached last message и не
+  оставляет dangling cursor после cascade sender deletion.
+
+Deferred LessonRun producer создаёт deduplicated system facts для
+schedule/reschedule, duration/roster changes, removal from schedule,
+cancellation и completion. Owner получает aggregate completion metrics;
+learner получает только собственные attendance/repeat/duration и явно shared
+teacher comment. Private comments и чужие learner metrics в learner payload не
+попадают.
+
+Confirmed Assistant `lesson.schedule_run` использует A2
+`schedule_lesson_run_if_unchanged`: create атомарно требует отсутствие open Run
+и точное совпадение current effective Course audience, reschedule — exact open
+Run id/`updated_at` и draft LearningRecord roster. RPC берёт deterministic
+Account/Course/Lesson/Run/roster и audience locks, повторно сравнивает proposal
+snapshot и только затем вызывает canonical `schedule_lesson_run` в той же
+transaction. Любое расхождение возвращает `lesson_run_changed`/SQLSTATE
+`55000`; Account/Auth UUID в browser arguments отсутствуют.
+
+Physical DB contract является current. Communication Center web/API/UI и
+provider-backed AI execution пока pending; наличие persisted assistant tables
+само по себе не доказывает развёрнутый AI adapter или action workflow.
 
 ### Course Builder, audience и history
 
@@ -861,6 +982,7 @@ contacts, exact timestamps, foreign titles и private comments не возвра
 | `learner_profile`                              | own canonical row `SELECT`; no direct mutation                                                                                  | supported identity workflows                                 |
 | `teacher_learner`, groups, audience, runs      | existing teacher-scoped read; mutation via aggregate RPC                                                                        | actor ownership                                              |
 | raw `learning_record`                          | recorder-scoped teacher `SELECT` only                                                                                           | lifecycle RPC                                                |
+| Communication Center raw tables                | none for `anon/authenticated`; RLS enabled, policies absent                                                                     | 17 authenticated RPC + 2 service-only producer RPC           |
 | Account credential/identity/observer/AI tables | none for `anon/authenticated`                                                                                                   | narrow RPC/server adapter                                    |
 | learner-safe self/observer history             | no raw table access                                                                                                             | safe projection RPC                                          |
 
@@ -889,6 +1011,9 @@ Snapshot обязан сохранить:
   atomic Account/profile bootstrap;
 - `trg_auth_user_sync_provisional_account` на `auth.users.raw_app_meta_data`,
   вызывающий narrow trusted same-transaction M6 sync;
+- deferred `trg_lesson_run_communication_notifications` на `lesson_run` и
+  `trg_communication_message_recompute_thread_after_delete` на
+  `communication_message`;
 - private bucket `storage.buckets.course-assets`;
 - private bucket `storage.buckets.course-publication-assets` с лимитом 10 MiB,
   allowlisted MIME и без browser policies;
@@ -902,9 +1027,11 @@ Snapshot обязан сохранить:
   `<account UUID>/<UUID-v4>.webp` path;
 - grants/default ACL.
 
-Current AV1 public snapshot дополнительно сохраняет `archive_course`, все
+Current CC1+A2 public snapshot дополнительно сохраняет `archive_course`, все
 четыре guard functions/triggers, `SECURITY DEFINER` у двух private touch-helper,
-закрытые function ACL и column-only Course/Lesson update grants.
+закрытые function ACL, column-only Course/Lesson update grants и полный
+Communication Center RPC/trigger/ACL contract и atomic Assistant schedule
+guard.
 
 ## Absent from active model
 
@@ -916,12 +1043,17 @@ status, Homework persistence, parsing/RAG, learner enrollment/consumption
 является Parent/Guardian role, а
 AI consent не является Course access.
 
+CC1 добавляет persisted assistant conversations/turns, но до отдельного
+dependent web/API rollout в current application нет доступной пользователю
+Communication Center surface или доказанного provider-backed action executor.
+
 ## Snapshot refresh workflow
 
 `scripts/refresh-schema-snapshot.sh` принимает ровно два строгих compatibility
 stage: `expand` сохраняет полный legacy compatibility contract, `contract`
 требует завершённый M4 cleanup. Оба stage дополнительно требуют полный M1–M3
-identity contract, M5/M6 Auth hardening и current A1/E1/E2 database contract.
+identity contract, M5/M6 Auth hardening и current A1/E1/E2/CC1/A2 database
+contract.
 В обоих
 signature проверяет:
 
@@ -939,6 +1071,10 @@ signature проверяет:
   browser ACL;
 - AV1 Account avatar columns/checks, server-only setter ACL, private
   `profile-avatars` bucket и полное отсутствие Storage policies для него;
+- все шесть CC1 tables, RLS без policies/raw browser ACL, 16 CC1
+  authenticated user RPC, один authenticated-only A2 atomic schedule guard и
+  два service-only producer RPC с `SECURITY DEFINER`/пустым `search_path`, а
+  также оба CC1 trigger;
 - сохранность cross-schema Auth/Storage section.
 
 Перед refresh выполнить read-only ShiDao identity/schema sanity check:
@@ -963,6 +1099,9 @@ capability, exact review/approval, revision-scoped progress, official license
 `a34a5a5919ea406050a5c0cb7f39310d1a9e807725e608166f63becb8f2260a4`.
 После E2A тот же workflow зафиксировал исправленный content-guard contract, а
 после production AV1 — обязательное Account avatar state, private
-`profile-avatars` bucket и server-only setter. Текущий snapshot снят
-`2026-08-14T05:53:08Z`, SHA-256
-`3ca847164526568def44d2deed9a6b1d6cd1742e168462376b4f41fe6383ef97`.
+`profile-avatars` bucket и server-only setter. После production CC1 snapshot
+`2026-08-16T07:08:18Z` зафиксировал шесть Communication Center tables,
+закрытый RPC-only ACL и два trigger. После production A2 current snapshot
+`2026-08-16T07:42:38Z` добавляет atomic Assistant schedule guard и подтверждает
+total `17` authenticated user RPC; SHA-256
+`a91aefb693fc5857e1ae921e7226bc688230d0dd3c7e9373197c1006b4314a7d`.

@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
       actor,
       courseService: service,
       lessonPlanningService: lessonPlanner,
+      learningService,
     });
     const result = await runIdempotentAiAssistantAction(
       actor.authUserId,

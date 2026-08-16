@@ -669,7 +669,11 @@ test("students manages one learner and group directory with durable history", ()
   }
   assert.match(
     studentDirectoryTableSource,
-    /id: "message",[\s\S]*?label: "Написать сообщение",[\s\S]*?hint: "Сообщения пока недоступны",[\s\S]*?disabled: true/,
+    /id: "message",[\s\S]*?label: "Написать сообщение",[\s\S]*?identityState === "offline"[\s\S]*?identityState !== "claimed"[\s\S]*?identityState !== "merged"[\s\S]*?onSelect: \(\) => onMessage\(entry\.profile\)/,
+  );
+  assert.match(
+    studentsWorkspaceSource,
+    /openDirect\(profile\.id, profile\.displayName\)/,
   );
   assert.match(
     studentDirectoryTableSource,

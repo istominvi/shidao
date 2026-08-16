@@ -7,9 +7,14 @@ import {
   systemAssistantRequestSchema,
 } from "./system-assistant-contracts";
 
-const COURSE_ID = "11111111-1111-4111-8111-111111111111";
-const LESSON_ID = "22222222-2222-4222-8222-222222222222";
-const COMPONENT_ID = "44444444-4444-4444-8444-444444444444";
+// PostgreSQL uuid values imported from deterministic legacy data are not
+// guaranteed to carry RFC version/variant bits. Browser contracts must accept
+// their canonical textual GUID form without weakening any ownership check.
+const COURSE_ID = "11111111-1111-1111-1111-111111111111";
+const LESSON_ID = "22222222-2222-2222-2222-222222222222";
+const LEARNER_ID = "33333333-3333-3333-3333-333333333331";
+const SECOND_LEARNER_ID = "33333333-3333-3333-3333-333333333332";
+const COMPONENT_ID = "44444444-4444-4444-4444-444444444444";
 const CONTEXT_FINGERPRINT = "a".repeat(64);
 
 function lessonPlanApplyInput(lessonId: string | null) {
@@ -50,6 +55,8 @@ function parseProviderTurn(raw: Record<string, unknown>) {
   return systemAssistantProviderTurnSchema.parse({
     lessonRef: "",
     instruction: "",
+    scheduledAt: "",
+    plannedDurationMinutes: 0,
     ...raw,
   });
 }
@@ -183,9 +190,16 @@ test("provider intents distinguish empty, planned, fill, and delete Lesson actio
     targetLessonCount: 0,
     teacherPreferences: "",
     summary: "",
+    scheduledAt: "",
+    plannedDurationMinutes: 0,
   };
 
-  for (const kind of ["add_lesson_with_plan", "fill_lesson", "delete_lesson"]) {
+  for (const kind of [
+    "add_lesson_with_plan",
+    "fill_lesson",
+    "delete_lesson",
+    "schedule_lesson",
+  ]) {
     assert.equal(
       systemAssistantProviderTurnSchema.safeParse({
         ...baseTurn,
@@ -193,8 +207,16 @@ test("provider intents distinguish empty, planned, fill, and delete Lesson actio
         ...(kind === "add_lesson_with_plan"
           ? { title: "Числа от 1 до 10" }
           : {}),
-        ...(kind === "fill_lesson" || kind === "delete_lesson"
+        ...(kind === "fill_lesson" ||
+        kind === "delete_lesson" ||
+        kind === "schedule_lesson"
           ? { lessonRef: "current_lesson" }
+          : {}),
+        ...(kind === "schedule_lesson"
+          ? {
+              scheduledAt: "2026-08-11T15:00:00+09:00",
+              plannedDurationMinutes: 45,
+            }
           : {}),
       }).success,
       true,
@@ -226,6 +248,22 @@ test("planned Lesson actions reuse the canonical lesson-plan Apply contract", ()
     lessonTitle: "В аэропорту",
     baseLessonFingerprint: "b".repeat(64),
   };
+  const scheduleLesson = {
+    type: "lesson.schedule_run",
+    courseId: COURSE_ID,
+    courseTitle: "Математика для дошкольников",
+    lessonId: LESSON_ID,
+    lessonTitle: "В аэропорту",
+    scheduledAt: "2026-08-11T15:00:00+09:00",
+    plannedDurationMinutes: 45,
+    utcOffsetMinutes: 540,
+    participantCount: 2,
+    existingLessonRunId: null,
+    expectedLessonRunUpdatedAt: null,
+    expectedLearnerProfileIds: [LEARNER_ID, SECOND_LEARNER_ID],
+    baseRunFingerprint: null,
+    baseAudienceFingerprint: "e".repeat(64),
+  };
 
   assert.equal(
     systemAssistantActionSchema.safeParse(addFilledLesson).success,
@@ -235,6 +273,26 @@ test("planned Lesson actions reuse the canonical lesson-plan Apply contract", ()
   assert.equal(
     systemAssistantActionSchema.safeParse(deleteLesson).success,
     true,
+  );
+  assert.equal(
+    systemAssistantActionSchema.safeParse(scheduleLesson).success,
+    true,
+  );
+  assert.equal(
+    systemAssistantActionSchema.safeParse({
+      ...scheduleLesson,
+      expectedLearnerProfileIds: [SECOND_LEARNER_ID, LEARNER_ID],
+    }).success,
+    false,
+    "the signed DB guard must keep its canonical learner order",
+  );
+  assert.equal(
+    systemAssistantActionSchema.safeParse({
+      ...scheduleLesson,
+      existingLessonRunId: LESSON_ID,
+    }).success,
+    false,
+    "a reschedule guard must include the expected Run version",
   );
   assert.equal(
     systemAssistantApplyRequestSchema.safeParse({

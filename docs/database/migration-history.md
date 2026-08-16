@@ -89,6 +89,44 @@ ShiDao хранит два обязательных слоя:
   завершился `COMMIT`; postflight `12/12`, unchanged counts `19/6/22/85`,
   rollback-verified authenticated educator `rich_text` update и live snapshot
   `2026-08-13T11:43:48Z` подтверждены.
+- `20260816053117_communication_center.sql` — applied production CC1 DB-first
+  contract для unified inbox persistence при раздельных human message, system
+  notification и assistant conversation/turn tables. Exact SHA-256
+  `d2e0c836974b93e8f2414b539ce65ecd012bcd4d317550577f9af367971be82d`;
+  preflight под PostgreSQL `15.8`/`supabase_admin` подтвердил canonical counts
+  Account/Course/Lesson/Component/LessonRun `19/6/22/84/2` и отсутствие CC1
+  objects. Exact rehearsal завершилась `ROLLBACK`, оставив objects absent и
+  counts unchanged. Verified backup
+  `/root/shidao-db-backups/shidao-before-communication-center-20260816T065707Z.dump`
+  имеет size `1336766`, mode `600`, `1618` restore entries и SHA-256
+  `95b60a4c6f2b6ee8d0a13f849063dcf2ff838aee75ca2ec351ee7ed5bec6c665`.
+  Exact tracked SQL завершил `COMMIT`; postflight сохранил canonical counts и
+  подтвердил `6` RLS tables, `0` raw browser table ACL, `0` policies, `0`
+  rows, `16` authenticated-only user RPC, `2` service-role-only producer RPC,
+  `2` triggers и user-JWT smoke `object/1 system/0 unread`. Self-hosted contour
+  не имеет `supabase_migrations.schema_migrations`; применение подтверждают
+  checksum/`COMMIT`/postflight. Production contract snapshot SHA-256 —
+  `1e8d7ac420be9deb5018f37a20db82d2bb84c7aafd7e3e3ba361f43795c02060`.
+  Database rollout current; dependent Communication Center web/API deployment
+  pending.
+- `20260816072345_atomic_assistant_lesson_run_schedule.sql` — applied
+  production A2 forward guard для confirmed Assistant `lesson.schedule_run`.
+  Exact SHA-256
+  `61ddca91ad28d60aac5ebdbbbb12e0d8e0ef2b8b52a0501de792d416052c6834`;
+  preflight PostgreSQL `15.8`/`supabase_admin` подтвердил canonical counts
+  `19/6/22/84/2`, пустые CC1 tables и отсутствие guard. Exact rehearsal
+  завершилась `ROLLBACK`, оставив guard absent и rows/counts unchanged.
+  Verified backup
+  `/root/shidao-db-backups/shidao-before-atomic-assistant-schedule-20260816T074048Z.dump`
+  имеет size `1466747`, mode `600`, `1751` restore entries и SHA-256
+  `a2283f466f5ec421f515c41e422af81628afb291a6c5462021fdc7cc049c9dbc`.
+  Exact SQL завершил `COMMIT`; postflight подтвердил authenticated-only
+  `SECURITY DEFINER` RPC с пустым `search_path`, без доступа у
+  `PUBLIC`/`anon`/`service_role`, при unchanged canonical/CC1 rows. Current
+  production snapshot снят `2026-08-16T07:42:38Z`, SHA-256
+  `a91aefb693fc5857e1ae921e7226bc688230d0dd3c7e9373197c1006b4314a7d`;
+  authenticated user RPC total — `17`. Database rollout complete; dependent
+  Communication Center web/API deployment pending.
 
 Backfill details являются историей этих migrations и не должны повторяться в
 current-schema guide как действующая domain model.

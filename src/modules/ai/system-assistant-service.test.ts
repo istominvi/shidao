@@ -136,9 +136,14 @@ function courseWorkspace(title = courseSummary().title): CourseWorkspace {
 type CourseService = SystemAssistantDependencies["courseService"];
 type ProviderTurnFixture = Omit<
   SystemAssistantProviderTurn,
-  "lessonRef" | "instruction"
+  "lessonRef" | "instruction" | "scheduledAt" | "plannedDurationMinutes"
 > &
-  Partial<Pick<SystemAssistantProviderTurn, "lessonRef" | "instruction">>;
+  Partial<
+    Pick<
+      SystemAssistantProviderTurn,
+      "lessonRef" | "instruction" | "scheduledAt" | "plannedDurationMinutes"
+    >
+  >;
 
 type LessonPlanningService = {
   planLesson(courseId: string, input: unknown): Promise<AiLessonPlanPreview>;
@@ -340,13 +345,19 @@ function inMemoryLessonPlanningService(
 }
 
 function futureProviderTurn(
-  kind: "add_lesson_with_plan" | "fill_lesson" | "delete_lesson",
+  kind:
+    | "add_lesson_with_plan"
+    | "fill_lesson"
+    | "delete_lesson"
+    | "schedule_lesson",
   fields: {
     title?: string;
     courseRef?: string;
     lessonRef?: string;
     instruction?: string;
     summary?: string;
+    scheduledAt?: string;
+    plannedDurationMinutes?: number;
   } = {},
 ): ProviderTurnFixture {
   return {
@@ -355,12 +366,16 @@ function futureProviderTurn(
     courseRef: fields.courseRef ?? "current_course",
     lessonRef:
       fields.lessonRef ??
-      (kind === "fill_lesson" || kind === "delete_lesson"
+      (kind === "fill_lesson" ||
+      kind === "delete_lesson" ||
+      kind === "schedule_lesson"
         ? "current_lesson"
         : ""),
     instruction: fields.instruction ?? "",
     title: fields.title ?? "",
     summary: fields.summary ?? "",
+    scheduledAt: fields.scheduledAt ?? "",
+    plannedDurationMinutes: fields.plannedDurationMinutes ?? 0,
   };
 }
 
@@ -411,6 +426,8 @@ function parseProviderTurn<T>(
     ...turn,
     lessonRef: turn.lessonRef ?? "",
     instruction: turn.instruction ?? "",
+    scheduledAt: turn.scheduledAt ?? "",
+    plannedDurationMinutes: turn.plannedDurationMinutes ?? 0,
   });
 }
 
@@ -447,8 +464,18 @@ function learningService(
     async listSchedule() {
       return [];
     },
+    async listLessonHistory() {
+      return [];
+    },
     async listCourseHistory() {
       return [];
+    },
+    async getCourseAudience() {
+      return {
+        directLearners: [],
+        groups: [],
+        effectiveLearners: [],
+      };
     },
     async getCourseAudienceLearningRecords() {
       return {
@@ -459,6 +486,9 @@ function learningService(
         },
         records: [],
       };
+    },
+    async applyAssistantScheduleRun() {
+      throw new Error("Unexpected assistant lesson scheduling");
     },
     ...overrides,
   };
@@ -1466,6 +1496,303 @@ test("filled and delete Lesson intents reject unknown refs and forged targets wi
   assert.equal(state.createCalls, 0);
   assert.equal(state.addLessonCalls, 0);
   assert.equal(state.deleteLessonCalls, 0);
+});
+
+test("lesson scheduling is proposed with an exact audience snapshot and applied only after confirmation", async () => {
+  const state = inMemoryCourseService();
+  const learnerProfileId = "15151515-1515-4515-8515-151515151515";
+  const scheduledAt = "2026-08-11T15:00:00+09:00";
+  const learner = {
+    id: learnerProfileId,
+    displayName: "Анна Тестова",
+    archivedAt: null,
+  };
+  const audience = {
+    directLearners: [learner],
+    groups: [],
+    effectiveLearners: [learner],
+  };
+  const proposalReply = await createSystemAssistantService({
+    actor: ACTOR,
+    courseService: state.service,
+    learningService: learningService({
+      async getCourseAudienceLearningRecords() {
+        return { audience, records: [] } as never;
+      },
+      async listLessonHistory() {
+        return [];
+      },
+    }),
+    provider: provider(
+      futureProviderTurn("schedule_lesson", {
+        scheduledAt,
+        plannedDurationMinutes: 45,
+      }),
+    ),
+    audit: () => undefined,
+  }).chat({
+    ...request("lesson"),
+    messages: [
+      { role: "user", content: "Запланируй этот урок" },
+      {
+        role: "assistant",
+        content: "На какую дату и время назначить занятие?",
+      },
+      { role: "user", content: "Завтра в 15:00" },
+    ],
+  });
+
+  const proposal = proposalReply.proposedAction;
+  assert.ok(proposal);
+  assert.equal(proposal.action.type, "lesson.schedule_run");
+  if (proposal.action.type !== "lesson.schedule_run") return;
+  assert.equal(proposal.action.scheduledAt, scheduledAt);
+  assert.equal(proposal.action.plannedDurationMinutes, 45);
+  assert.equal(proposal.action.participantCount, 1);
+  assert.equal(proposal.action.existingLessonRunId, null);
+  assert.equal(proposal.action.expectedLessonRunUpdatedAt, null);
+  assert.deepEqual(proposal.action.expectedLearnerProfileIds, [
+    learnerProfileId,
+  ]);
+  assert.equal(proposal.action.baseRunFingerprint, null);
+  assert.match(proposal.action.baseAudienceFingerprint ?? "", /^[a-f0-9]{64}$/);
+  assert.match(proposalReply.message.content, /11 августа 2026.*15:00/u);
+  assert.match(proposalReply.message.content, /участников: 1/u);
+
+  let scheduleCalls = 0;
+  let scheduledInput: unknown;
+  const result = await createSystemAssistantService({
+    actor: ACTOR,
+    courseService: state.service,
+    learningService: learningService({
+      async getCourseAudience() {
+        return audience as never;
+      },
+      async listLessonHistory() {
+        return [];
+      },
+      async applyAssistantScheduleRun(_actor, lessonId, input) {
+        scheduleCalls += 1;
+        scheduledInput = input;
+        return {
+          id: "16161616-1616-4616-8616-161616161616",
+          lessonId,
+          courseId: COURSE_ID,
+          lessonTitle: "В аэропорту",
+          courseTitle: courseSummary().title,
+          scheduledAt,
+          plannedDurationMinutes: 45,
+          startedAt: null,
+          endedAt: null,
+          cancelledAt: null,
+          teacherReport: "",
+          records: [{ learnerProfileId }],
+          createdAt: NOW,
+          updatedAt: NOW,
+        } as never;
+      },
+    }),
+    audit: () => undefined,
+  }).applyAction(proposal.action);
+
+  assert.equal(scheduleCalls, 1);
+  assert.deepEqual(scheduledInput, {
+    scheduledAt,
+    plannedDurationMinutes: 45,
+    expectedLessonRunId: null,
+    expectedLessonRunUpdatedAt: null,
+    expectedLearnerProfileIds: [learnerProfileId],
+  });
+  assert.equal(result.type, "lesson.schedule_run");
+  if (result.type === "lesson.schedule_run") {
+    assert.equal(result.participantCount, 1);
+    assert.equal(result.href, "/schedule?date=2026-08-11");
+  }
+});
+
+test("lesson rescheduling applies the exact Run guard and rejects it after the Run changed", async () => {
+  const state = inMemoryCourseService();
+  const learnerProfileId = "17171717-1717-4717-8717-171717171717";
+  const runId = "18181818-1818-4818-8818-181818181818";
+  const scheduledAt = "2026-08-11T15:00:00+09:00";
+  const learner = {
+    id: learnerProfileId,
+    displayName: "Анна Тестова",
+    archivedAt: null,
+  };
+  const audience = {
+    directLearners: [learner],
+    groups: [],
+    effectiveLearners: [learner],
+  };
+  const openRun = {
+    id: runId,
+    lessonId: LESSON_ID,
+    courseId: COURSE_ID,
+    lessonTitle: "В аэропорту",
+    courseTitle: courseSummary().title,
+    scheduledAt: "2026-08-11T12:00:00+09:00",
+    plannedDurationMinutes: 45,
+    startedAt: null,
+    endedAt: null,
+    cancelledAt: null,
+    teacherReport: "",
+    records: [{ learnerProfileId }],
+    createdAt: NOW,
+    updatedAt: NOW,
+  };
+  const reply = await createSystemAssistantService({
+    actor: ACTOR,
+    courseService: state.service,
+    learningService: learningService({
+      async getCourseAudienceLearningRecords() {
+        return { audience, records: [] } as never;
+      },
+      async listLessonHistory() {
+        return [openRun] as never;
+      },
+    }),
+    provider: provider(
+      futureProviderTurn("schedule_lesson", {
+        scheduledAt,
+        plannedDurationMinutes: 45,
+      }),
+    ),
+    audit: () => undefined,
+  }).chat({
+    ...request("lesson"),
+    messages: [{ role: "user", content: "Перенеси этот урок завтра в 15:00" }],
+  });
+  const proposal = reply.proposedAction;
+  assert.ok(proposal);
+  assert.equal(proposal.action.type, "lesson.schedule_run");
+  if (proposal.action.type !== "lesson.schedule_run") return;
+  assert.equal(proposal.action.existingLessonRunId, runId);
+  assert.equal(proposal.action.expectedLessonRunUpdatedAt, NOW);
+  assert.deepEqual(proposal.action.expectedLearnerProfileIds, [
+    learnerProfileId,
+  ]);
+  assert.match(proposal.action.baseRunFingerprint ?? "", /^[a-f0-9]{64}$/);
+
+  let confirmedInput: unknown;
+  await createSystemAssistantService({
+    actor: ACTOR,
+    courseService: state.service,
+    learningService: learningService({
+      async listLessonHistory() {
+        return [openRun] as never;
+      },
+      async applyAssistantScheduleRun(_actor, _lessonId, input) {
+        confirmedInput = input;
+        return {
+          ...openRun,
+          scheduledAt,
+        } as never;
+      },
+    }),
+    audit: () => undefined,
+  }).applyAction(proposal.action);
+  assert.deepEqual(confirmedInput, {
+    scheduledAt,
+    plannedDurationMinutes: 45,
+    expectedLessonRunId: runId,
+    expectedLessonRunUpdatedAt: NOW,
+    expectedLearnerProfileIds: [learnerProfileId],
+  });
+
+  let rescheduleCalls = 0;
+  await assert.rejects(
+    createSystemAssistantService({
+      actor: ACTOR,
+      courseService: state.service,
+      learningService: learningService({
+        async listLessonHistory() {
+          return [
+            {
+              ...openRun,
+              scheduledAt: "2026-08-11T13:00:00+09:00",
+            },
+          ] as never;
+        },
+        async applyAssistantScheduleRun() {
+          rescheduleCalls += 1;
+          throw new Error("must not reschedule a stale proposal");
+        },
+      }),
+      audit: () => undefined,
+    }).applyAction(proposal.action),
+    (error: unknown) =>
+      error instanceof CourseBuilderConflictError &&
+      error.code === "ai_action_stale",
+  );
+  assert.equal(rescheduleCalls, 0);
+});
+
+test("lesson scheduling fails closed when the confirmed Course audience became stale", async () => {
+  const state = inMemoryCourseService();
+  const learnerProfileId = "19191919-1919-4919-8919-191919191919";
+  let scheduleCalls = 0;
+  await assert.rejects(
+    createSystemAssistantService({
+      actor: ACTOR,
+      courseService: state.service,
+      learningService: learningService({
+        async getCourseAudience() {
+          return {
+            directLearners: [],
+            groups: [],
+            effectiveLearners: [],
+          };
+        },
+        async listLessonHistory() {
+          return [];
+        },
+        async applyAssistantScheduleRun() {
+          scheduleCalls += 1;
+          throw new Error("must not schedule a stale proposal");
+        },
+      }),
+      audit: () => undefined,
+    }).applyAction({
+      type: "lesson.schedule_run",
+      courseId: COURSE_ID,
+      courseTitle: courseSummary().title,
+      lessonId: LESSON_ID,
+      lessonTitle: "В аэропорту",
+      scheduledAt: "2026-08-11T15:00:00+09:00",
+      plannedDurationMinutes: 45,
+      utcOffsetMinutes: 540,
+      participantCount: 1,
+      existingLessonRunId: null,
+      expectedLessonRunUpdatedAt: null,
+      expectedLearnerProfileIds: [learnerProfileId],
+      baseRunFingerprint: null,
+      baseAudienceFingerprint: "a".repeat(64),
+    }),
+    (error: unknown) =>
+      error instanceof CourseBuilderConflictError &&
+      error.code === "ai_action_stale",
+  );
+  assert.equal(scheduleCalls, 0);
+});
+
+test("provider cannot propose scheduling without an explicit scheduling request", async () => {
+  const state = inMemoryCourseService();
+  const reply = await createSystemAssistantService({
+    actor: ACTOR,
+    courseService: state.service,
+    learningService: learningService({}),
+    provider: provider(
+      futureProviderTurn("schedule_lesson", {
+        scheduledAt: "2026-08-11T15:00:00+09:00",
+        plannedDurationMinutes: 45,
+      }),
+    ),
+    audit: () => undefined,
+  }).chat(request("lesson"));
+
+  assert.equal(reply.proposedAction, null);
+  assert.match(reply.message.content, /явн.{0,40}просьб|дат.{0,20}врем/iu);
 });
 
 test("unknown Course ref and forged action fields fail closed without writes", async () => {

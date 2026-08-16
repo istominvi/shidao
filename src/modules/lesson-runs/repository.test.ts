@@ -350,6 +350,52 @@ test("rescheduleRun sends the expected Run ID to reject a stale target", async (
   );
 });
 
+test("scheduleRunIfUnchanged sends the complete AI guard to one atomic RPC", async () => {
+  await withMockSupabase(
+    [
+      { payload: runRow() },
+      {
+        payload: [{ id: LESSON_ID, course_id: COURSE_ID, title: "Знакомство" }],
+      },
+      {
+        payload: [
+          {
+            id: COURSE_ID,
+            owner_account_id: ACCOUNT_ID,
+            title: "Китайский с нуля",
+            subject: "Китайский язык",
+          },
+        ],
+      },
+      { payload: [recordRow()] },
+      { payload: [profileRow()] },
+    ],
+    async (repository, requests) => {
+      await repository.scheduleRunIfUnchanged({
+        lessonId: LESSON_ID,
+        scheduledAt: "2026-08-09T01:00:00.000Z",
+        plannedDurationMinutes: 60,
+        expectedLessonRunId: RUN_ID,
+        expectedLessonRunUpdatedAt: NOW,
+        expectedLearnerProfileIds: [LEARNER_ID],
+      });
+
+      assert.equal(
+        requests[0]?.url,
+        `${API_URL}/rest/v1/rpc/schedule_lesson_run_if_unchanged`,
+      );
+      assert.deepEqual(requests[0]?.body, {
+        p_lesson_id: LESSON_ID,
+        p_scheduled_at: "2026-08-09T01:00:00.000Z",
+        p_planned_duration_minutes: 60,
+        p_expected_lesson_run_id: RUN_ID,
+        p_expected_lesson_run_updated_at: NOW,
+        p_expected_learner_profile_ids: [LEARNER_ID],
+      });
+    },
+  );
+});
+
 test("schedule window has a stable hard result limit", async () => {
   await withMockSupabase([{ payload: [] }], async (repository, requests) => {
     await repository.listSchedule(

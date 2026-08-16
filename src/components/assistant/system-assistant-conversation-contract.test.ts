@@ -115,9 +115,11 @@ test("assistant renders every action kind and warns before destructive lesson de
     "course.add_lesson_with_plan",
     "lesson.fill",
     "lesson.delete",
+    "lesson.schedule_run",
   ]) {
     assert.match(titles, new RegExp(`case [\"']${actionType}[\"']:`));
   }
+  assert.match(titles, /Назначить урок/);
 
   const card = between(
     assistant,
@@ -128,6 +130,7 @@ test("assistant renders every action kind and warns before destructive lesson de
   assert.match(card, /action\.type === "lesson\.fill"/);
   assert.match(card, /action\.input\.plan\.components\.map/);
   assert.match(card, /action\.type === "lesson\.delete"/);
+  assert.match(card, /action\.type === "lesson\.schedule_run"/);
   assert.match(card, /Будет удалён урок/);
   assert.match(
     card,

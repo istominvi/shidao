@@ -115,6 +115,100 @@ Worktree должен содержать только изменения тек�
 
 ## 4. Если release содержит DB migration
 
+### A2 atomic Assistant LessonRun schedule guard — production DB execution record
+
+Forward migration
+`20260816072345_atomic_assistant_lesson_run_schedule.sql` применена к
+production ShiDao DB с `COMMIT` 16 августа 2026 года. Это DB-first hardening
+поверх CC1: atomic guard уже current, но dependent Communication Center web/API
+deployment и production API/browser postflight остаются pending.
+
+Production evidence:
+
+- project-local read-only sanity под `supabase_admin` подтвердил PostgreSQL
+  `15.8`, canonical Account/Course/Lesson/Component/LessonRun counts
+  `19/6/22/84/2`, присутствующие пустые CC1 tables и отсутствие guard;
+- exact tracked SQL rollback rehearsal дошла до конца и завершилась
+  `ROLLBACK`; guard остался absent, canonical counts и CC1 rows — unchanged;
+- final migration SHA-256 —
+  `61ddca91ad28d60aac5ebdbbbb12e0d8e0ef2b8b52a0501de792d416052c6834`;
+- verified full-format backup
+  `/root/shidao-db-backups/shidao-before-atomic-assistant-schedule-20260816T074048Z.dump`
+  имеет size `1466747`, mode `600`, `1751` restore-list entries и SHA-256
+  `a2283f466f5ec421f515c41e422af81628afb291a6c5462021fdc7cc049c9dbc`;
+- exact tracked SQL применён через owner connection с stop-on-error; output
+  завершился `COMMIT`;
+- read-only postflight подтвердил
+  `schedule_lesson_run_if_unchanged(uuid,timestamptz,integer,uuid,timestamptz,uuid[])`
+  как `SECURITY DEFINER` с пустым `search_path`, `EXECUTE` для
+  `postgres/authenticated` и без доступа у `PUBLIC`/`anon`/`service_role`;
+  canonical counts и CC1 row counts не изменились;
+- штатный read-only snapshot снят strict stage `contract` в
+  `2026-08-16T07:42:38Z`; SHA-256
+  `a91aefb693fc5857e1ae921e7226bc688230d0dd3c7e9373197c1006b4314a7d`,
+  authenticated user RPC total — `17`.
+
+Guard принимает canonical schedule inputs, expected open Run id/`updated_at`
+или expected null для create и exact sorted LearnerProfile audience. Он
+детерминированно блокирует Account/Course/Lesson, open Run/draft roster и
+текущие Course audience rows, повторно сравнивает proposal state и только затем
+вызывает canonical `schedule_lesson_run` в той же transaction. Stale state
+возвращает `lesson_run_changed`/SQLSTATE `55000`; browser contract не получает
+Account/Auth UUID.
+
+Self-hosted contour не содержит `supabase_migrations.schema_migrations`;
+evidence применения — exact checksum, наблюдаемый `COMMIT`, read-only
+postflight и production snapshot. Повторно выполнять migration нельзя: её
+preflight fail closed, если guard уже существует. При DB-дефекте остановить
+dependent web rollout и выпускать новую forward migration; восстановление
+backup выше является отдельной maintenance-операцией после явного решения.
+
+### CC1 Communication Center — production DB execution record
+
+Forward migration `20260816053117_communication_center.sql` применена к
+production ShiDao DB с `COMMIT` 16 августа 2026 года. Это DB-first expand:
+physical/RPC contract уже current, а зависимый Communication Center web/API
+deployment остаётся pending и не должен описываться как deployed surface до
+собственного release/postflight.
+
+Production evidence:
+
+- project-local read-only sanity подтвердил PostgreSQL `15.8`, owner
+  `supabase_admin`, canonical Account/Course/Lesson/Component/LessonRun counts
+  `19/6/22/84/2` и полное отсутствие всех Communication Center objects;
+- exact tracked SQL rollback rehearsal дошла до конца и завершилась
+  `ROLLBACK`; objects остались absent, canonical counts — unchanged;
+- final migration SHA-256 —
+  `d2e0c836974b93e8f2414b539ce65ecd012bcd4d317550577f9af367971be82d`;
+- verified full-format backup
+  `/root/shidao-db-backups/shidao-before-communication-center-20260816T065707Z.dump`
+  имеет size `1336766`, mode `600`, `1618` restore-list entries и SHA-256
+  `95b60a4c6f2b6ee8d0a13f849063dcf2ff838aee75ca2ec351ee7ed5bec6c665`;
+- exact tracked SQL применён через owner connection с stop-on-error; output
+  завершился `COMMIT`;
+- read-only postflight сохранил canonical counts `19/6/22/84/2` и подтвердил
+  шесть RLS tables, aggregate raw table ACL `0` для `anon/authenticated`,
+  policies `0`, persisted rows `0`, 16 authenticated-only user RPC, два
+  service-role-only producer RPC и два enabled trigger;
+- user-JWT smoke вернул валидный inbox object, один system item и `0` unread;
+- штатный read-only snapshot снят strict stage `contract` в
+  `2026-08-16T07:08:18Z`; SHA-256
+  `1e8d7ac420be9deb5018f37a20db82d2bb84c7aafd7e3e3ba361f43795c02060`.
+
+Два postflight trigger — deferred LessonRun notification producer и
+`communication_message` delete-repair для cached last-message cursor. Все 18
+RPC являются `SECURITY DEFINER` с пустым `search_path`; user set доступен только
+`authenticated`, producer set — только `service_role`, raw tables браузеру не
+выдаются.
+
+Self-hosted contour не содержит
+`supabase_migrations.schema_migrations`; evidence применения — exact tracked
+checksum, наблюдаемый `COMMIT`, read-only postflight и production snapshot.
+Повторно выполнять migration нельзя: её preflight fail closed на существующих
+CC1 objects. При DB-дефекте остановить dependent web rollout и выпускать новую
+forward migration; verified backup выше восстанавливается только как отдельная
+maintenance-операция после явного решения.
+
 ### AV1 Account avatars — production DB execution record
 
 Forward migration `20260814050347_account_profile_avatars.sql` применена к

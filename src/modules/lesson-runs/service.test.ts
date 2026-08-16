@@ -552,6 +552,22 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
     return this.scheduleRun(input);
   }
 
+  async scheduleRunIfUnchanged(input: {
+    lessonId: string;
+    scheduledAt: string;
+    plannedDurationMinutes: number;
+    expectedLessonRunId: string | null;
+    expectedLessonRunUpdatedAt: string | null;
+    expectedLearnerProfileIds: string[];
+  }) {
+    return this.scheduleRun({
+      lessonId: input.lessonId,
+      scheduledAt: input.scheduledAt,
+      plannedDurationMinutes: input.plannedDurationMinutes,
+      learnerProfileIds: input.expectedLearnerProfileIds,
+    });
+  }
+
   async startRun(runId: string) {
     const context = this.runs.get(runId);
     if (!context) throw new Error("run not found");
@@ -890,6 +906,61 @@ test("a stale reschedule target becomes a stable conflict instead of changing a 
     (error: unknown) =>
       error instanceof CourseBuilderConflictError &&
       error.code === "lesson_run_changed",
+  );
+});
+
+test("assistant scheduling passes the complete confirmed guard to the atomic repository adapter", async () => {
+  const repository = new InMemoryLessonRunsRepository();
+  const service = createLessonRunsService({ repository });
+  let capturedInput:
+    Parameters<LessonRunsRepository["scheduleRunIfUnchanged"]>[0] | null = null;
+  const scheduleRunIfUnchanged =
+    repository.scheduleRunIfUnchanged.bind(repository);
+  repository.scheduleRunIfUnchanged = async (input) => {
+    capturedInput = input;
+    return scheduleRunIfUnchanged(input);
+  };
+
+  const run = await service.applyAssistantScheduleRun(alice, ALICE_LESSON_ID, {
+    scheduledAt: "2026-08-12T01:00:00Z",
+    plannedDurationMinutes: 50,
+    expectedLessonRunId: null,
+    expectedLessonRunUpdatedAt: null,
+    expectedLearnerProfileIds: [ANNA_ID, IVAN_ID],
+  });
+
+  assert.deepEqual(capturedInput, {
+    lessonId: ALICE_LESSON_ID,
+    scheduledAt: "2026-08-12T01:00:00Z",
+    plannedDurationMinutes: 50,
+    expectedLessonRunId: null,
+    expectedLessonRunUpdatedAt: null,
+    expectedLearnerProfileIds: [ANNA_ID, IVAN_ID],
+  });
+  assert.deepEqual(
+    run.records.map((record) => record.learnerProfileId),
+    [ANNA_ID, IVAN_ID],
+  );
+});
+
+test("assistant scheduling maps an atomic stale guard failure to ai_action_stale", async () => {
+  const repository = new InMemoryLessonRunsRepository();
+  const service = createLessonRunsService({ repository });
+  repository.scheduleRunIfUnchanged = async () => {
+    throw new CourseBuilderRepositoryError("lesson_run_changed", 409, "55000");
+  };
+
+  await assert.rejects(
+    service.applyAssistantScheduleRun(alice, ALICE_LESSON_ID, {
+      scheduledAt: "2026-08-12T01:00:00Z",
+      plannedDurationMinutes: 50,
+      expectedLessonRunId: null,
+      expectedLessonRunUpdatedAt: null,
+      expectedLearnerProfileIds: [ANNA_ID],
+    }),
+    (error: unknown) =>
+      error instanceof CourseBuilderConflictError &&
+      error.code === "ai_action_stale",
   );
 });
 

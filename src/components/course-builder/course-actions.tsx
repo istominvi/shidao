@@ -4,6 +4,7 @@ import {
   BookCopy,
   ExternalLink,
   MoreVertical,
+  MessageSquare,
   RefreshCw,
   Send,
   Trash2,
@@ -13,6 +14,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { usePageTransition } from "@/components/navigation/page-transition-provider";
+import { useCommunicationCenterActions } from "@/components/communication/communication-center-provider";
 import { courseBuilderRequest } from "@/components/course-builder/course-builder-client";
 import { ActionMenu, type ActionMenuItem } from "@/components/ui/action-menu";
 import { Button } from "@/components/ui/button";
@@ -136,6 +138,7 @@ export function CourseActions({
 }: CourseActionsProps) {
   const router = useRouter();
   const pageTransition = usePageTransition();
+  const { openCourse } = useCommunicationCenterActions();
   const [dialogMode, setDialogMode] = useState<CourseActionDialogMode | null>(
     null,
   );
@@ -261,6 +264,13 @@ export function CourseActions({
   const items: ActionMenuItem[] = educatorCourse
     ? []
     : [
+        {
+          id: "message-course",
+          label: "Открыть чат курса",
+          icon: MessageSquare,
+          disabled: Boolean(busyAction),
+          onSelect: () => openCourse(course.id, course.title),
+        },
         {
           id: "duplicate",
           label: busyAction === "duplicate" ? "Дублируем…" : "Дублировать",
