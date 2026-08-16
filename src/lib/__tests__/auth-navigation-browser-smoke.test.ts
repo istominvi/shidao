@@ -3727,6 +3727,63 @@ test("browser smoke: protected pages expose the unified messages center with key
       "rgb(255, 255, 255)",
     );
 
+    const systemRow = panel.locator(
+      '.communication-inbox-item:has-text("Новое системное сообщение")',
+    );
+    const systemAvatar = systemRow.locator(".communication-avatar.is-system");
+    await systemAvatar.waitFor();
+    assert.deepEqual(
+      await systemAvatar.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return {
+          text: element.textContent,
+          svgCount: element.querySelectorAll("svg").length,
+          backgroundColor: style.backgroundColor,
+          color: style.color,
+        };
+      }),
+      {
+        text: "S",
+        svgCount: 0,
+        backgroundColor: "rgb(20, 20, 20)",
+        color: "rgb(255, 255, 255)",
+      },
+    );
+    await systemRow.click();
+    const systemInfo = panel.getByRole("button", {
+      name: "О ленте ShiDao",
+      exact: true,
+    });
+    await systemInfo.waitFor();
+    assert.equal(await systemInfo.getAttribute("aria-expanded"), "false");
+    assert.equal(await panel.getByRole("note").count(), 0);
+    await systemInfo.click();
+    const systemNote = panel.getByRole("note");
+    await systemNote.waitFor();
+    assert.equal(await systemInfo.getAttribute("aria-expanded"), "true");
+    assert.equal(
+      await systemInfo.getAttribute("aria-controls"),
+      await systemNote.getAttribute("id"),
+    );
+    assert.equal(
+      (await systemNote.textContent())?.trim(),
+      "ShiDao сообщает здесь только о подтверждённых событиях и результатах.",
+    );
+    await systemInfo.press("Escape");
+    await systemNote.waitFor({ state: "detached" });
+    assert.equal(await systemInfo.getAttribute("aria-expanded"), "false");
+    assert.equal(
+      await runtime.page.evaluate(() =>
+        document.activeElement?.getAttribute("aria-label"),
+      ),
+      "О ленте ShiDao",
+    );
+    assert.equal(await panel.count(), 1);
+    await panel
+      .getByRole("button", { name: "Назад к сообщениям", exact: true })
+      .click();
+    await panel.getByLabel("Найти диалог").waitFor();
+
     const newDialog = panel.getByRole("button", {
       name: "Новый диалог",
       exact: true,
@@ -4024,6 +4081,70 @@ test("browser smoke: persisted AI quick reply is one-time and sends one atomic t
     await panel
       .getByRole("button", { name: /Новый диалог с ShiDao ИИ/ })
       .click();
+    const capabilities = panel.getByRole("heading", {
+      name: "Что может делать ИИ",
+      exact: true,
+      level: 3,
+    });
+    await capabilities.waitFor();
+    assert.equal(
+      await panel
+        .locator(".communication-assistant-empty .communication-avatar")
+        .count(),
+      0,
+    );
+    assert.equal(
+      await panel.getByText(/Контекст закреплён|разрешённый контекст/).count(),
+      0,
+    );
+    const assistantAvatars = panel.locator(
+      ".communication-avatar.is-assistant",
+    );
+    assert.equal(await assistantAvatars.count(), 1);
+    assert.deepEqual(
+      await assistantAvatars.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return {
+          backgroundColor: style.backgroundColor,
+          color: style.color,
+        };
+      }),
+      {
+        backgroundColor: "rgb(20, 20, 20)",
+        color: "rgb(255, 255, 255)",
+      },
+    );
+    const capabilityGroup = panel.getByRole("group", {
+      name: "Что можно попросить ИИ",
+      exact: true,
+    });
+    assert.deepEqual(
+      await capabilityGroup.getByRole("button").allTextContents(),
+      [
+        "Расскажи о моих курсах",
+        "Сравни мои курсы",
+        "Создай новый курс",
+        "Добавь пустой урок в курс",
+        "Создай готовый урок в курсе",
+      ],
+    );
+    const firstCapability = capabilityGroup.getByRole("button").nth(0);
+    const capabilityPresentation = await firstCapability.evaluate((element) => {
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return {
+        height: Math.round(rect.height),
+        borderRadius: style.borderRadius,
+        color: style.color,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+      };
+    });
+    assert.ok(capabilityPresentation.height >= 44);
+    assert.equal(capabilityPresentation.borderRadius, "999px");
+    assert.equal(capabilityPresentation.color, "rgb(20, 20, 20)");
+    assert.equal(capabilityPresentation.fontSize, "14.08px");
+    assert.equal(capabilityPresentation.fontWeight, "400");
     const composer = panel.getByLabel("Сообщение ShiDao ИИ");
     await composer.fill("Сделай четвёртый урок");
     await composer.press("Enter");

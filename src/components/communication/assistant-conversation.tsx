@@ -1,6 +1,6 @@
 "use client";
 
-import { LoaderCircle, Send, Sparkles } from "lucide-react";
+import { LoaderCircle, Send } from "lucide-react";
 import {
   useEffect,
   useMemo,
@@ -93,12 +93,41 @@ function errorMessage(caught: unknown, fallback: string) {
 
 function assistantPrompts(conversation: AssistantConversationSummary) {
   if (conversation.contextLessonId) {
-    return ["Что важно в этом уроке?", "Помоги дополнить урок"];
+    return [
+      "Что важно в этом уроке?",
+      "Проверь структуру урока",
+      "Что увидит ученик?",
+      "Покажи результаты урока",
+      "Дополни этот урок",
+      "Создай следующий урок",
+      "Запланируй этот урок",
+      "Перенеси этот урок",
+      "Удали этот урок",
+    ];
   }
   if (conversation.contextCourseId) {
-    return ["Проверь структуру курса", "Помоги создать следующий урок"];
+    return [
+      "Проверь структуру курса",
+      "Что улучшить в курсе?",
+      "Кто учится на курсе?",
+      "Покажи последние результаты",
+      "Кому нужно повторение?",
+      "Какие материалы прикреплены?",
+      "Создай пустой урок",
+      "Создай готовый урок",
+      "Дополни урок содержанием",
+      "Запланируй урок",
+      "Перенеси урок",
+      "Удали урок",
+    ];
   }
-  return ["Расскажи о моих курсах", "Создай черновик нового курса"];
+  return [
+    "Расскажи о моих курсах",
+    "Сравни мои курсы",
+    "Создай новый курс",
+    "Добавь пустой урок в курс",
+    "Создай готовый урок в курсе",
+  ];
 }
 
 export function AssistantConversationView({
@@ -386,11 +415,6 @@ export function AssistantConversationView({
 
   return (
     <div className="communication-conversation communication-assistant-conversation">
-      <p className="communication-context-chip">
-        Контекст закреплён за этим диалогом. Изменения выполняются только после
-        подтверждения.
-      </p>
-
       <div
         className="communication-message-log"
         role="log"
@@ -415,19 +439,14 @@ export function AssistantConversationView({
             Загружаем диалог…
           </div>
         ) : turns.length === 0 && !pending && !error ? (
-          <div className="communication-assistant-empty" role="status">
-            <span
-              className="communication-avatar is-assistant"
-              aria-hidden="true"
-            >
-              <Sparkles />
-            </span>
-            <strong>Что сделать?</strong>
-            <span>
-              ИИ видит только разрешённый контекст этого диалога и попросит
-              подтверждение перед изменениями.
-            </span>
-            <div aria-label="Быстрые вопросы">
+          <section
+            className="communication-assistant-empty"
+            aria-labelledby={`communication-assistant-capabilities-${conversation.id}`}
+          >
+            <h3 id={`communication-assistant-capabilities-${conversation.id}`}>
+              Что может делать ИИ
+            </h3>
+            <div role="group" aria-label="Что можно попросить ИИ">
               {assistantPrompts(conversation).map((prompt) => (
                 <button
                   key={prompt}
@@ -439,7 +458,7 @@ export function AssistantConversationView({
                 </button>
               ))}
             </div>
-          </div>
+          </section>
         ) : (
           turns.map((turn) => {
             const turnMetadata = metadata(turn);

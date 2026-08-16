@@ -109,7 +109,13 @@ export function CommunicationAvatar({
 
   return (
     <span className={className} aria-hidden="true">
-      {kind === "direct" ? communicationInitials(title) || <Icon /> : <Icon />}
+      {kind === "direct" ? (
+        communicationInitials(title) || <Icon />
+      ) : kind === "system" ? (
+        <span className="communication-system-mark">S</span>
+      ) : (
+        <Icon />
+      )}
     </span>
   );
 }

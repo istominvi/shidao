@@ -56,15 +56,25 @@ test("one communication center owns messages, system events and persisted AI dia
 });
 
 test("communication center keeps one narrow flow, quiet initial focus and canonical retry controls", async () => {
-  const [center, provider, inbox, newConversation, system, css] =
-    await Promise.all([
-      source("src/components/communication/communication-center.tsx"),
-      source("src/components/communication/communication-center-provider.tsx"),
-      source("src/components/communication/communication-inbox.tsx"),
-      source("src/components/communication/new-conversation-view.tsx"),
-      source("src/components/communication/system-conversation.tsx"),
-      source("src/app/styles/communication-center.css"),
-    ]);
+  const [
+    center,
+    provider,
+    inbox,
+    newConversation,
+    system,
+    assistant,
+    presenters,
+    css,
+  ] = await Promise.all([
+    source("src/components/communication/communication-center.tsx"),
+    source("src/components/communication/communication-center-provider.tsx"),
+    source("src/components/communication/communication-inbox.tsx"),
+    source("src/components/communication/new-conversation-view.tsx"),
+    source("src/components/communication/system-conversation.tsx"),
+    source("src/components/communication/assistant-conversation.tsx"),
+    source("src/components/communication/communication-presenters.tsx"),
+    source("src/app/styles/communication-center.css"),
+  ]);
 
   assert.doesNotMatch(center, /\bExpand\b|Minimize2|twoColumn|toggleExpanded/);
   assert.doesNotMatch(provider, /\bexpanded\b|toggleExpanded/);
@@ -91,6 +101,52 @@ test("communication center keeps one narrow flow, quiet initial focus and canoni
     /\.communication-center-icon-button\s*\{[\s\S]*?color: #141414;/,
   );
   assert.match(css, /\.communication-center-panel:focus\s*\{\s*outline: none;/);
+
+  assert.match(presenters, /communication-system-mark">S<\/span>/);
+  assert.match(
+    css,
+    /\.communication-avatar\.is-assistant\s*\{\s*background: #141414;\s*color: #fff;/,
+  );
+  assert.match(
+    css,
+    /\.communication-avatar\.is-system\s*\{\s*background: #141414;\s*color: #fff;/,
+  );
+  assert.match(center, /aria-label="О ленте ShiDao"/);
+  assert.match(center, /aria-expanded=\{open\}/);
+  assert.match(center, /aria-controls=\{SYSTEM_CHANNEL_NOTE_ID\}/);
+  assert.match(center, /role="note"/);
+  assert.match(center, /event\.key !== "Escape" \|\| !open/);
+  assert.doesNotMatch(
+    system,
+    /Здесь ShiDao сообщает только о подтверждённых событиях и результатах/,
+  );
+  assert.doesNotMatch(assistant, /Контекст закреплён|разрешённый контекст/);
+  assert.doesNotMatch(assistant, /<Sparkles/);
+  assert.doesNotMatch(css, /communication-context-chip/);
+  assert.match(assistant, /Что может делать ИИ/);
+  assert.match(assistant, /Создай новый курс/);
+  assert.doesNotMatch(assistant, /Создай черновик нового курса/);
+  for (const prompt of [
+    "Сравни мои курсы",
+    "Кто учится на курсе?",
+    "Кому нужно повторение?",
+    "Что увидит ученик?",
+    "Перенеси этот урок",
+  ]) {
+    assert.match(assistant, new RegExp(prompt.replace("?", "\\?")));
+  }
+  assert.match(
+    css,
+    /\.communication-assistant-conversation\s*\{\s*grid-template-rows: minmax\(0, 1fr\) auto auto auto;/,
+  );
+  assert.match(
+    css,
+    /\.communication-system-conversation\s*\{\s*grid-template-rows: minmax\(0, 1fr\) auto auto;/,
+  );
+  assert.match(
+    css,
+    /\.communication-assistant-empty button\s*\{[\s\S]*?font-size: var\(--course-demo-control-font-size, 0\.88rem\);[\s\S]*?font-weight: var\(--course-demo-control-font-weight, 400\);/,
+  );
 });
 
 test("communication client uses only the canonical V2 API and atomic persisted AI exchange", async () => {

@@ -897,6 +897,11 @@ Course только открывают этот же центр на нужно�
   и conversation заменяют друг друга без expand/two-column mode. Main header
   без subtitle, initial open не фокусирует search, а Retry использует общий
   canonical product button;
+- system и assistant avatars используют единый black/white visual contract:
+  wordmark-style `S` и Sparkles соответственно. Persistent green context
+  callouts удалены; system explanation доступно по neutral `?` disclosure рядом
+  с ShiDao. Empty AI dialogue не дублирует icon и показывает расширенные,
+  context-aware и allowlist-accurate prompt chips обычной tab typography;
 - forward schema/migrations, RPC/application/API и responsive UI current.
   Production DB CC1 + A2, snapshot и postflight current; dependent web/API
   initial rollout развёрнут exact source

@@ -86,10 +86,7 @@ export function SystemConversation({
   }
 
   return (
-    <div className="communication-conversation">
-      <p className="communication-context-chip">
-        Здесь ShiDao сообщает только о подтверждённых событиях и результатах.
-      </p>
+    <div className="communication-conversation communication-system-conversation">
       <div
         className="communication-system-feed"
         role="log"

@@ -157,7 +157,15 @@ Desktop использует одну узкую non-modal panel без expand/t
 initial open фокусирует panel, а не search input. Контекстные действия
 «Написать» и «Чат курса» открывают тот же глобальный центр в нужном диалоге и
 не создают второй UI-flow. Central retry actions используют общий canonical
-product `Button` contract.
+product `Button` contract. System source обозначается чёрным avatar с белой
+wordmark-style `S`, assistant source — чёрным avatar с белой Sparkles icon.
+System provenance объясняется только по click/touch disclosure `?` рядом с
+названием ShiDao, а не постоянной callout-плашкой. Пустой AI dialogue не
+дублирует avatar и не показывает privacy/confirmation callout: он сразу даёт
+контекстно честный набор prompt chips. Global prompts ограничены Course list и
+созданием Course/Lesson; Course/Lesson conversations дополнительно предлагают
+только реально allowlisted read/actions текущего контекста. Chips используют
+обычную типографику product tabs, не bold helper style.
 
 ## Authorization and persistence boundary
 

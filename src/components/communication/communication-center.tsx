@@ -56,6 +56,7 @@ import type {
 } from "@/modules/communication/domain";
 
 const PANEL_ID = "communication-center-panel";
+const SYSTEM_CHANNEL_NOTE_ID = "communication-system-channel-note";
 const MOBILE_MEDIA = "(max-width: 640px)";
 const POLL_INTERVAL_MS = 30_000;
 
@@ -114,6 +115,63 @@ function useMobileViewport() {
     return () => media.removeEventListener("change", update);
   }, []);
   return mobile;
+}
+
+function SystemChannelInfo() {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        !rootRef.current?.contains(event.target)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, [open]);
+
+  return (
+    <span
+      className="communication-system-info"
+      ref={rootRef}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setOpen(false);
+        }
+      }}
+    >
+      <button
+        type="button"
+        className="communication-system-info-button"
+        aria-label="О ленте ShiDao"
+        aria-expanded={open}
+        aria-controls={SYSTEM_CHANNEL_NOTE_ID}
+        onClick={() => setOpen((current) => !current)}
+        onKeyDown={(event) => {
+          if (event.key !== "Escape" || !open) return;
+          event.preventDefault();
+          event.stopPropagation();
+          setOpen(false);
+        }}
+      >
+        <span aria-hidden="true">?</span>
+      </button>
+      {open ? (
+        <span
+          id={SYSTEM_CHANNEL_NOTE_ID}
+          className="communication-system-info-note"
+          role="note"
+        >
+          ShiDao сообщает здесь только о подтверждённых событиях и результатах.
+        </span>
+      ) : null}
+    </span>
+  );
 }
 
 function ConversationHeader({
@@ -196,8 +254,11 @@ function ConversationHeader({
         </span>
       )}
       <div className="communication-conversation-heading">
-        <strong>{title}</strong>
-        <span>{subtitle}</span>
+        <div className="communication-conversation-title-row">
+          <strong>{title}</strong>
+          {view.type === "system" ? <SystemChannelInfo /> : null}
+        </div>
+        <span className="communication-conversation-subtitle">{subtitle}</span>
       </div>
       {view.type === "assistant" && assistant ? (
         <ActionMenu

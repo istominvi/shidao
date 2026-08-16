@@ -22,7 +22,12 @@ Course chat, read-only лента **ShiDao · Система** и несколь
 «Написать» в Students и «Чат курса» открывают тот же центр сразу на нужном
 диалоге; отдельного параллельного messaging flow нет. Desktop panel использует
 один узкий режим: inbox и выбранный диалог сменяют друг друга внутри
-той же поверхности. Mobile использует полноэкранную поверхность.
+той же поверхности. Mobile использует полноэкранную поверхность. ShiDao system
+source имеет чёрный avatar с белой `S`, а ShiDao ИИ — чёрный avatar с белой
+Sparkles icon. Постоянные system/AI callout-плашки удалены: пояснение system
+feed открывается через маленькую нейтральную `?` рядом с ShiDao, а пустой AI
+dialogue сразу показывает контекстный набор фактически доступных prompt chips
+без второй центральной иконки.
 
 Direct target задаётся только через `LearnerProfile` и требует active accepted
 teacher/learner relation с linked Account; archived/pending relation запрещает
@@ -1738,6 +1743,13 @@ application service/contracts внутри authenticated web request.
   inbox, выбор адресата и диалог сменяют друг друга. Main header не содержит
   supporting subtitle, а initial open фокусирует dialog surface, не search.
   Retry в центральных error states использует общий `Button` contract.
+- System avatar использует белую wordmark-style `S` на чёрном фоне, assistant
+  avatar — белую Sparkles icon на таком же чёрном фоне. Постоянные зелёные
+  system/AI helper callouts отсутствуют: provenance system feed раскрывается
+  маленькой доступной `?` рядом с ShiDao. Empty AI state не повторяет header
+  avatar и показывает расширенные context-aware prompt chips обычным
+  tab-weight шрифтом. Global dialogue не обещает directory/schedule context;
+  Course/Lesson prompts соответствуют текущему closed action allowlist.
 - Direct conversation открывается из Students по `learnerProfileId`, только
   если у адресата есть linked Account и active accepted teacher/learner
   relation. После открытия browser использует opaque `threadId`; Account/Auth
