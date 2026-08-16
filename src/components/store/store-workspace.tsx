@@ -1,11 +1,9 @@
 "use client";
 
 import {
-  Blocks,
   BookOpenText,
-  Brush,
   GalleryHorizontalEnd,
-  GraduationCap,
+  Grid3X3,
   LayoutGrid,
   NotebookPen,
   PackageOpen,
@@ -15,7 +13,6 @@ import {
   Search,
   ShoppingBag,
   ShoppingCart,
-  Table2,
   type LucideIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
@@ -25,18 +22,6 @@ import { useSessionView } from "@/components/use-session-view";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProductSelect } from "@/components/ui/product-select";
-import {
-  ProductTable,
-  ProductTableActionCell,
-  ProductTableBody,
-  ProductTableCell,
-  ProductTableHead,
-  ProductTableHeaderCell,
-  ProductTableHeaderRow,
-  ProductTablePrimaryCell,
-  ProductTableRow,
-  ProductTableTruncate,
-} from "@/components/ui/product-table";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import {
@@ -57,14 +42,14 @@ import {
   type StoreCategory,
   type StoreFilters,
   type StoreProduct,
-  type StoreProductVisualKey,
 } from "@/components/store/store-catalog";
+import { StoreProductCarousel } from "@/components/store/store-product-carousel";
 import {
   StoreCheckoutDialog,
   type StoreCheckoutStep,
 } from "@/components/store/store-checkout-dialog";
 
-type StoreView = "grid" | "table";
+type StoreView = "comfortable" | "compact";
 
 const STORE_TABS_ID = "store-categories";
 
@@ -84,50 +69,21 @@ const STORE_CATEGORY_ICONS: Record<StoreCategory, LucideIcon> = {
   toys: Puzzle,
 };
 
-const STORE_PRODUCT_VISUALS: Record<
-  StoreProductVisualKey,
-  { icon: LucideIcon; glyph: string }
-> = {
-  "hanzi-first-steps": { icon: NotebookPen, glyph: "永" },
-  "rice-grid-notebook": { icon: NotebookPen, glyph: "田" },
-  "childrens-chinese-book": { icon: BookOpenText, glyph: "你好" },
-  "teacher-method-book": { icon: GraduationCap, glyph: "教" },
-  "first-words-cards": { icon: GalleryHorizontalEnd, glyph: "水" },
-  "radicals-teacher-cards": { icon: GalleryHorizontalEnd, glyph: "木" },
-  "young-calligrapher-kit": { icon: PencilRuler, glyph: "写" },
-  "brush-marker-set": { icon: Brush, glyph: "画" },
-  "build-a-hanzi-game": { icon: Blocks, glyph: "明" },
-};
-
 const CATEGORY_LABELS = Object.fromEntries(
   STORE_CATEGORIES.map((category) => [category.value, category.label]),
 ) as Record<StoreCategory, string>;
-
-function StoreProductVisual({ product }: { product: StoreProduct }) {
-  const visual = STORE_PRODUCT_VISUALS[product.visualKey];
-  const Icon = visual.icon;
-
-  return (
-    <div
-      className="store-product-visual"
-      data-visual={product.visualKey}
-      aria-hidden="true"
-    >
-      <Icon className="store-product-visual-icon" />
-      <span>{visual.glyph}</span>
-    </div>
-  );
-}
 
 function StoreProductCard({
   product,
   quantity,
   highlighted,
+  compact,
   onAdd,
 }: {
   product: StoreProduct;
   quantity: number;
   highlighted: boolean;
+  compact: boolean;
   onAdd: (product: StoreProduct) => void;
 }) {
   return (
@@ -140,7 +96,7 @@ function StoreProductCard({
         className="store-product-card-surface"
         bodyClassName="store-product-card-inner"
       >
-        <StoreProductVisual product={product} />
+        <StoreProductCarousel product={product} compact={compact} />
         <div className="store-product-card-body">
           <div className="store-product-card-meta">
             <span>{CATEGORY_LABELS[product.category]}</span>
@@ -158,102 +114,21 @@ function StoreProductCard({
             ))}
           </div>
           <div className="store-product-card-footer">
-            <div>
-              <strong>{formatStorePrice(product.priceKopeks)}</strong>
-              <span className={product.stock > 0 ? "" : "is-unavailable"}>
-                {product.stock > 0 ? "В наличии" : "Нет в наличии"}
-              </span>
-            </div>
+            <strong>{formatStorePrice(product.priceKopeks)}</strong>
             <Button
-              disabled={product.stock === 0}
+              className="store-product-add"
               aria-label={`Добавить в корзину: ${product.title}`}
               onClick={() => onAdd(product)}
             >
               <ShoppingBag className="h-4 w-4" aria-hidden="true" />
-              {quantity > 0 ? `Ещё · ${quantity}` : "В корзину"}
+              <span className="store-product-add-label">
+                {quantity > 0 ? `Ещё · ${quantity}` : "В корзину"}
+              </span>
             </Button>
           </div>
         </div>
       </SurfaceCard>
     </article>
-  );
-}
-
-function StoreProductTable({
-  products,
-  cartQuantities,
-  onAdd,
-}: {
-  products: StoreProduct[];
-  cartQuantities: Record<string, number>;
-  onAdd: (product: StoreProduct) => void;
-}) {
-  return (
-    <div
-      className="product-table-wrap store-product-table-wrap"
-      role="region"
-      aria-label="Товары таблицей"
-      tabIndex={0}
-    >
-      <ProductTable className="store-product-table">
-        <caption className="sr-only">Каталог учебных товаров</caption>
-        <ProductTableHead>
-          <ProductTableHeaderRow>
-            <ProductTableHeaderCell className="store-table-title-column">
-              Товар
-            </ProductTableHeaderCell>
-            <ProductTableHeaderCell>Категория</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Для кого</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Наличие</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Цена</ProductTableHeaderCell>
-            <ProductTableHeaderCell aria-label="Действия" />
-          </ProductTableHeaderRow>
-        </ProductTableHead>
-        <ProductTableBody>
-          {products.map((product) => {
-            const quantity = cartQuantities[product.slug] ?? 0;
-            return (
-              <ProductTableRow key={product.id}>
-                <ProductTablePrimaryCell className="overflow-hidden">
-                  <ProductTableTruncate title={product.title}>
-                    {product.title}
-                  </ProductTableTruncate>
-                </ProductTablePrimaryCell>
-                <ProductTableCell className="overflow-hidden">
-                  <ProductTableTruncate>
-                    {CATEGORY_LABELS[product.category]}
-                  </ProductTableTruncate>
-                </ProductTableCell>
-                <ProductTableCell className="overflow-hidden">
-                  <ProductTableTruncate>
-                    {product.audience === "teacher"
-                      ? "Преподавателю"
-                      : "Ученику"}
-                  </ProductTableTruncate>
-                </ProductTableCell>
-                <ProductTableCell>
-                  {product.stock > 0 ? "В наличии" : "Нет"}
-                </ProductTableCell>
-                <ProductTableCell className="whitespace-nowrap">
-                  {formatStorePrice(product.priceKopeks)}
-                </ProductTableCell>
-                <ProductTableActionCell>
-                  <Button
-                    variant={quantity > 0 ? "secondary" : "primary"}
-                    disabled={product.stock === 0}
-                    aria-label={`Добавить в корзину: ${product.title}`}
-                    onClick={() => onAdd(product)}
-                  >
-                    <ShoppingBag className="h-4 w-4" aria-hidden="true" />
-                    {quantity > 0 ? quantity : "Добавить"}
-                  </Button>
-                </ProductTableActionCell>
-              </ProductTableRow>
-            );
-          })}
-        </ProductTableBody>
-      </ProductTable>
-    </div>
   );
 }
 
@@ -269,7 +144,7 @@ export function StoreWorkspace({
     ...DEFAULT_STORE_FILTERS,
     category: targetProduct?.category ?? "all",
   }));
-  const [view, setView] = useState<StoreView>("grid");
+  const [view, setView] = useState<StoreView>("comfortable");
   const [cartState, dispatchCart] = useReducer(storeCartReducer, {});
   const [checkoutStep, setCheckoutStep] = useState<StoreCheckoutStep | null>(
     null,
@@ -343,7 +218,6 @@ export function StoreWorkspace({
       <AppPageHeader
         title="Магазин"
         metric={`Товаров: ${visibleProducts.length} · в корзине: ${cart.count}`}
-        meta={<span className="store-demo-label">Демо · без оплаты</span>}
         actions={
           <Button
             className="store-cart-trigger"
@@ -428,15 +302,15 @@ export function StoreWorkspace({
                 iconOnly
                 items={[
                   {
-                    value: "table",
-                    label: "Таблица",
-                    ariaLabel: "Показать товары таблицей",
-                    icon: Table2,
+                    value: "compact",
+                    label: "Компактные карточки",
+                    ariaLabel: "Показать компактные карточки товаров",
+                    icon: Grid3X3,
                   },
                   {
-                    value: "grid",
-                    label: "Карточки",
-                    ariaLabel: "Показать товары карточками",
+                    value: "comfortable",
+                    label: "Крупные карточки",
+                    ariaLabel: "Показать крупные карточки товаров",
                     icon: LayoutGrid,
                   },
                 ]}
@@ -457,24 +331,27 @@ export function StoreWorkspace({
                 Показать все товары
               </Button>
             </SurfaceCard>
-          ) : view === "grid" ? (
-            <div className="store-product-grid" aria-label="Товары карточками">
+          ) : (
+            <div
+              className={`store-product-grid store-product-grid-${view}`}
+              aria-label={
+                view === "compact"
+                  ? "Товары компактными карточками"
+                  : "Товары крупными карточками"
+              }
+              data-density={view}
+            >
               {visibleProducts.map((product) => (
                 <StoreProductCard
                   key={product.id}
                   product={product}
                   quantity={cartState[product.slug] ?? 0}
                   highlighted={targetProduct?.slug === product.slug}
+                  compact={view === "compact"}
                   onAdd={addProduct}
                 />
               ))}
             </div>
-          ) : (
-            <StoreProductTable
-              products={visibleProducts}
-              cartQuantities={cartState}
-              onAdd={addProduct}
-            />
           )}
         </div>
 

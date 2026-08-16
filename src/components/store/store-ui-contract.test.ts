@@ -8,6 +8,7 @@ function source(path: string) {
 
 const page = source("src/app/(app)/store/page.tsx");
 const workspace = source("src/components/store/store-workspace.tsx");
+const carousel = source("src/components/store/store-product-carousel.tsx");
 const productSelect = source("src/components/ui/product-select.tsx");
 const checkout = source("src/components/store/store-checkout-dialog.tsx");
 const catalog = source("src/components/store/store-catalog.ts");
@@ -22,7 +23,7 @@ test("Store is an Account page built from the shared product shell", () => {
 
   assert.match(workspace, /<AppPageHeader/);
   assert.match(workspace, /title="Магазин"/);
-  assert.match(workspace, /Демо · без оплаты/);
+  assert.doesNotMatch(workspace, /Демо · без оплаты|store-demo-label/);
   assert.match(workspace, /Открыть корзину/);
   assert.match(workspace, /<WorkspaceTabs/);
   assert.match(workspace, /ariaLabel="Категории магазина"/);
@@ -50,8 +51,14 @@ test("Store is an Account page built from the shared product shell", () => {
   );
   assert.match(workspace, /<SegmentedControl/);
   assert.match(workspace, /ariaLabel="Вид товаров"/);
-  assert.match(workspace, /<StoreProductTable/);
+  assert.match(workspace, /value: "compact"/);
+  assert.match(workspace, /label: "Компактные карточки"/);
+  assert.match(workspace, /value: "comfortable"/);
+  assert.match(workspace, /label: "Крупные карточки"/);
   assert.match(workspace, /<StoreProductCard/);
+  assert.match(workspace, /<StoreProductCarousel/);
+  assert.doesNotMatch(workspace, /StoreProductTable|ProductTable|Таблиц/);
+  assert.doesNotMatch(workspace, /product\.stock|В наличии|Нет в наличии/);
   assert.match(workspace, /surface: "other"/);
   assert.match(workspace, /label: "Магазин"/);
 
@@ -69,6 +76,46 @@ test("Store is an Account page built from the shared product shell", () => {
   assert.match(catalog, /value: "cards", label: "Карточки"/);
   assert.match(catalog, /value: "stationery", label: "Канцелярия"/);
   assert.match(catalog, /value: "toys", label: "Игры и игрушки"/);
+  assert.match(catalog, /images: \[/);
+  assert.match(catalog, /\/store\/products\/[^/]+\/cover\.webp/);
+  assert.doesNotMatch(catalog, /visualKey|\bstock:/);
+});
+
+test("Store cards use square photo carousels with tap, swipe, and arrow controls", () => {
+  assert.match(carousel, /import Image from "next\/image"/);
+  assert.match(carousel, /className="store-product-carousel"/);
+  assert.match(carousel, /className="store-product-image"/);
+  assert.match(carousel, /alt=\{image\.alt\}/);
+  assert.match(carousel, /unoptimized/);
+  assert.match(carousel, /Показать следующее фото товара/);
+  assert.match(carousel, /Предыдущее фото товара/);
+  assert.match(carousel, /Следующее фото товара/);
+  assert.match(carousel, /onPointerDown=\{handlePointerDown\}/);
+  assert.match(carousel, /onPointerUp=\{handlePointerUp\}/);
+  assert.match(
+    carousel,
+    /Фото \{imageIndex \+ 1\} из \{product\.images\.length\}/,
+  );
+  assert.match(carousel, /aria-live="polite"/);
+
+  assert.match(styles, /\.store-product-carousel\s*\{[^}]*aspect-ratio: 1;/);
+  assert.match(styles, /\.store-product-image\s*\{[^}]*object-fit: cover;/);
+  assert.match(
+    styles,
+    /\.store-product-grid-comfortable\s*\{[^}]*repeat\(3, minmax\(0, 1fr\)\)/,
+  );
+  assert.match(
+    styles,
+    /\.store-product-grid-compact\s*\{[^}]*repeat\(6, minmax\(0, 1fr\)\)/,
+  );
+  assert.match(
+    styles,
+    /\.store-product-card-footer\s*\{[^}]*align-items: center;[^}]*margin-top: auto;/,
+  );
+  assert.match(
+    styles,
+    /\.store-product-card-footer strong\s*\{[^}]*font-size: 1\.18rem;/,
+  );
 });
 
 test("Store sort menu and cards adopt canonical raised surfaces", () => {
@@ -133,11 +180,11 @@ test("Store demo checkout is explicit, keyboard-closeable, and has no payment fi
 test("Store layout has contained tablet and mobile fallbacks", () => {
   assert.match(
     styles,
-    /@media \(max-width: 1050px\)[\s\S]*?\.store-product-grid\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/,
+    /@media \(max-width: 1050px\)[\s\S]*?\.store-product-grid-comfortable\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)[\s\S]*?\.store-product-grid-compact\s*\{[^}]*repeat\(4, minmax\(0, 1fr\)\)/,
   );
   assert.match(
     styles,
-    /@media \(max-width: 720px\)[\s\S]*?\.store-product-grid\s*\{[^}]*minmax\(0, 1fr\)/,
+    /@media \(max-width: 720px\)[\s\S]*?\.store-product-grid-comfortable\s*\{[^}]*minmax\(0, 1fr\)[\s\S]*?\.store-product-grid-compact\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/,
   );
   assert.match(
     styles,

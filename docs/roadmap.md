@@ -1021,17 +1021,27 @@ optional self-study deadlines.
 
 **Current production:** `/store` добавлен четвёртым пунктом
 universal Account navigation. Типизированный статический каталог поддерживает
-категории, поиск, audience/price/availability filters, сортировку, карточки и
-таблицу. Header action открывает локальную корзину и checkout с именем,
-телефоном, email и адресом. Последний шаг явно помечен как demo: card fields,
-network request, persisted order и оплата отсутствуют. Стабильный в текущем
-demo-каталоге product slug позволяет открыть `/store?product=<slug>`, но Lesson
-contracts пока не
-изменяются.
+категории, поиск, сортировку и два вида над одним результатом; отдельные
+audience/price/availability filters удалены. Header action открывает локальную
+корзину и checkout с именем, телефоном, email и адресом. Последний шаг явно
+помечен как demo: card fields, network request, persisted order и оплата
+отсутствуют. Стабильный в текущем demo-каталоге product slug позволяет открыть
+`/store?product=<slug>`, но Lesson contracts пока не изменяются.
+
+**Current source / next production:** 19 квадратных фото девяти товаров
+нормализованы в `public/store/products/<slug>/` и связаны ordered-массивами с
+fixtures. Каждая карточка листает свою галерею тапом, клавиатурой, swipe или
+стрелками. Placeholder icons/glyphs, availability, stock gating и header demo
+chip удалены; честная demo-маркировка checkout сохранена. Прежняя таблица
+заменена compact cards: широкий экран переключается между `3` и `6` колонками,
+tablet — `2/4`, mobile — `1/2`. Цена увеличена и выровнена с кнопкой корзины.
+Это application/public-assets slice без Product, Inventory, API, Supabase
+Storage, schema или migration.
 
 **Next:** отдельно спроектировать Product/Order/Inventory, admin catalog,
-изображения и документы, delivery/legal contract и платёжного провайдера.
-Только после этого добавить forward migration, canonical services/API,
+управляемые изображения и документы в Storage, delivery/legal contract и
+платёжного провайдера. Текущие source-controlled demo-фото не подменяют эту
+модель. Только после этого добавить forward migration, canonical services/API,
 idempotent order/payment flow и reconciliation с обновлением current-schema
 snapshot/docs.
 
@@ -1044,8 +1054,10 @@ Definition of Done текущего demo:
 
 - guest `/store` fail-closed следует действующему login flow, Account видит
   четвёртый nav item и active state;
-- category tabs, поиск, custom product sort и оба вида используют один
-  детерминированный набор; отдельной filter-кнопки нет;
+- category tabs, поиск, custom product sort и крупный/компактный виды используют
+  один детерминированный набор; отдельной filter-кнопки и таблицы нет;
+- все 19 square product images загружаются, а tap/swipe/обе стрелки изменяют
+  только текущую карточку; availability и stock gating отсутствуют;
 - cart quantity/subtotal и checkout validation работают с клавиатуры и на
   mobile без page-level overflow;
 - UI не запрашивает банковские реквизиты, не выполняет order/payment request и

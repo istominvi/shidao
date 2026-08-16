@@ -3198,9 +3198,12 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
     await runtime.page
       .getByRole("heading", { name: "Магазин", exact: true, level: 1 })
       .waitFor();
-    await runtime.page
-      .getByText("Демо · без оплаты", { exact: true })
-      .waitFor();
+    assert.equal(
+      await runtime.page
+        .getByText("Демо · без оплаты", { exact: true })
+        .count(),
+      0,
+    );
     const workbookTab = runtime.page.getByRole("tab", {
       name: /Прописи и тетради/,
     });
@@ -3210,6 +3213,125 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
       await runtime.page.evaluate(() => document.activeElement?.id),
       "store-product-store-product-001",
     );
+    assert.equal(
+      await runtime.page.getByText("В наличии", { exact: true }).count(),
+      0,
+    );
+    assert.equal(
+      await runtime.page.getByText("Нет в наличии", { exact: true }).count(),
+      0,
+    );
+    assert.equal(await runtime.page.locator(".store-product-table").count(), 0);
+
+    const firstProduct = runtime.page.locator(
+      "#store-product-store-product-001",
+    );
+    const firstCarousel = firstProduct.getByRole("group", {
+      name: "Фотографии товара: Прописи «Первые китайские иероглифы»",
+      exact: true,
+    });
+    const firstProductImage = firstCarousel.locator("img");
+    await firstProductImage.waitFor();
+    await runtime.page.waitForFunction(() => {
+      const image = document.querySelector<HTMLImageElement>(
+        "#store-product-store-product-001 .store-product-carousel img",
+      );
+      return Boolean(image?.complete && image.naturalWidth > 0);
+    });
+    const firstImageState = await firstProductImage.evaluate((node) => {
+      const image = node as HTMLImageElement;
+      const rect = image.getBoundingClientRect();
+      return {
+        complete: image.complete,
+        naturalWidth: image.naturalWidth,
+        width: rect.width,
+        height: rect.height,
+      };
+    });
+    assert.equal(firstImageState.complete, true);
+    assert.ok(firstImageState.naturalWidth > 0);
+    assert.ok(Math.abs(firstImageState.width - firstImageState.height) < 1);
+    assert.equal(await firstCarousel.getAttribute("data-image-index"), "0");
+
+    const secondCarousel = runtime.page
+      .locator("#store-product-store-product-002")
+      .getByRole("group", {
+        name: "Фотографии товара: Тетрадь мицзыгэ для каллиграфии",
+        exact: true,
+      });
+    assert.equal(await secondCarousel.getAttribute("data-image-index"), "0");
+    await firstCarousel
+      .getByRole("button", {
+        name: "Показать следующее фото товара: Прописи «Первые китайские иероглифы»",
+        exact: true,
+      })
+      .click();
+    assert.equal(await firstCarousel.getAttribute("data-image-index"), "1");
+    assert.equal(await secondCarousel.getAttribute("data-image-index"), "0");
+    await firstCarousel
+      .getByRole("button", {
+        name: "Следующее фото товара: Прописи «Первые китайские иероглифы»",
+        exact: true,
+      })
+      .click();
+    assert.equal(await firstCarousel.getAttribute("data-image-index"), "2");
+    await firstCarousel
+      .getByRole("button", {
+        name: "Предыдущее фото товара: Прописи «Первые китайские иероглифы»",
+        exact: true,
+      })
+      .click();
+    assert.equal(await firstCarousel.getAttribute("data-image-index"), "1");
+
+    const comfortableView = runtime.page.getByRole("button", {
+      name: "Показать крупные карточки товаров",
+      exact: true,
+    });
+    const compactView = runtime.page.getByRole("button", {
+      name: "Показать компактные карточки товаров",
+      exact: true,
+    });
+    assert.equal(await comfortableView.getAttribute("aria-pressed"), "true");
+    const comfortableGrid = runtime.page.locator(
+      '.store-product-grid[data-density="comfortable"]',
+    );
+    const productTitles = await comfortableGrid
+      .locator(".store-product-card h2")
+      .allTextContents();
+    assert.equal(
+      await comfortableGrid.evaluate(
+        (grid) => getComputedStyle(grid).gridTemplateColumns.split(" ").length,
+      ),
+      3,
+    );
+    await compactView.click();
+    const compactGrid = runtime.page.locator(
+      '.store-product-grid[data-density="compact"]',
+    );
+    await compactGrid.waitFor();
+    assert.deepEqual(
+      await compactGrid.locator(".store-product-card h2").allTextContents(),
+      productTitles,
+    );
+    assert.equal(
+      await compactGrid.evaluate(
+        (grid) => getComputedStyle(grid).gridTemplateColumns.split(" ").length,
+      ),
+      6,
+    );
+    await comfortableView.click();
+
+    const stationeryTab = runtime.page.getByRole("tab", {
+      name: /Канцелярия/,
+    });
+    await stationeryTab.click();
+    const markerAddButton = runtime.page.getByRole("button", {
+      name: "Добавить в корзину: Маркеры-кисточки для каллиграфии",
+      exact: true,
+    });
+    await markerAddButton.waitFor();
+    assert.equal(await markerAddButton.isEnabled(), true);
+    await workbookTab.click();
     assert.equal(
       await runtime.page.locator(".store-toolbar .store-filter-menu").count(),
       0,
@@ -3490,6 +3612,7 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
       { clientWidth: 900, scrollWidth: 900 },
     );
 
+    await compactView.click();
     await runtime.page.setViewportSize({ width: 375, height: 812 });
     assert.deepEqual(
       await runtime.page.evaluate(() => ({

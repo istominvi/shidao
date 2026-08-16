@@ -1,17 +1,3 @@
-.store-demo-label {
-  display: inline-flex;
-  width: max-content;
-  min-height: 1.75rem;
-  align-items: center;
-  border: 1px solid rgba(20, 20, 20, 0.12);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  padding-inline: 0.7rem;
-  color: rgba(20, 20, 20, 0.68);
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
 .store-cart-trigger {
   position: relative;
 }
@@ -58,9 +44,17 @@
 .store-product-grid {
   display: grid;
   min-width: 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   margin-top: 1rem;
+}
+
+.store-product-grid-comfortable {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.store-product-grid-compact {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
 .store-product-card {
@@ -92,85 +86,103 @@
   box-shadow: var(--product-raised-surface-shadow);
 }
 
-.store-product-visual {
+.store-product-carousel {
   position: relative;
-  display: flex;
-  height: 10.5rem;
+  isolation: isolate;
+  aspect-ratio: 1;
   flex: 0 0 auto;
-  align-items: flex-end;
-  justify-content: space-between;
   overflow: hidden;
   border-radius: var(--course-demo-element-radius, 0.75rem);
-  padding: 1rem;
-  color: #141414;
+  background: #f4f4f2;
 }
 
-.store-product-visual::after {
+.store-product-image {
+  object-fit: cover;
+  user-select: none;
+}
+
+.store-product-carousel-tap {
   position: absolute;
-  top: -2.25rem;
-  right: -1.6rem;
-  width: 7rem;
-  height: 7rem;
-  transform: rotate(18deg);
-  border-radius: 2rem;
-  background: rgba(255, 255, 255, 0.42);
-  content: "";
-}
-
-.store-product-visual[data-visual="hanzi-first-steps"] {
-  background: #dcecff;
-}
-
-.store-product-visual[data-visual="rice-grid-notebook"] {
-  background: #fff0c7;
-}
-
-.store-product-visual[data-visual="childrens-chinese-book"] {
-  background: #e4f5d2;
-}
-
-.store-product-visual[data-visual="teacher-method-book"] {
-  background: #e9e1ff;
-}
-
-.store-product-visual[data-visual="first-words-cards"] {
-  background: #ffe0f2;
-}
-
-.store-product-visual[data-visual="radicals-teacher-cards"] {
-  background: #d9f2f0;
-}
-
-.store-product-visual[data-visual="young-calligrapher-kit"] {
-  background: #f6e3bd;
-}
-
-.store-product-visual[data-visual="brush-marker-set"] {
-  background: #f0d8ff;
-}
-
-.store-product-visual[data-visual="build-a-hanzi-game"] {
-  background: #ddecff;
-}
-
-.store-product-visual-icon {
-  position: relative;
+  inset: 0;
   z-index: 1;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 0.8rem;
-  background: rgba(255, 255, 255, 0.72);
-  padding: 0.7rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.store-product-visual > span {
-  position: relative;
-  z-index: 1;
-  font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
-  font-size: clamp(2.8rem, 5vw, 4.6rem);
-  font-weight: 700;
-  letter-spacing: -0.08em;
-  line-height: 0.82;
+.store-product-carousel-tap:focus-visible {
+  outline: 3px solid rgba(20, 20, 20, 0.56);
+  outline-offset: -3px;
+}
+
+.store-product-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  border: 1px solid rgba(20, 20, 20, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #141414;
+  box-shadow: 0 2px 10px rgba(20, 20, 20, 0.14);
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+.store-product-carousel-arrow:hover {
+  background: #fff;
+}
+
+.store-product-carousel-arrow:focus-visible {
+  outline: 2px solid #141414;
+  outline-offset: 2px;
+}
+
+.store-product-carousel-arrow svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.store-product-carousel-previous {
+  left: 0.5rem;
+}
+
+.store-product-carousel-next {
+  right: 0.5rem;
+}
+
+.store-product-carousel-dots {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 0.35rem 0.45rem;
+  box-shadow: 0 1px 6px rgba(20, 20, 20, 0.12);
+  pointer-events: none;
+}
+
+.store-product-carousel-dots > span {
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 999px;
+  background: rgba(20, 20, 20, 0.3);
+}
+
+.store-product-carousel-dots > span.is-active {
+  background: #141414;
 }
 
 .store-product-card-body {
@@ -219,71 +231,67 @@
 }
 
 .store-product-tags {
-  margin-top: auto;
+  margin-top: 0;
 }
 
 .store-product-card-footer {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+  margin-top: auto;
   border-top: 1px solid rgba(20, 20, 20, 0.08);
   padding-top: 0.75rem;
 }
 
-.store-product-card-footer > div {
-  display: grid;
-  gap: 0.22rem;
-}
-
 .store-product-card-footer strong {
   color: #141414;
-  font-size: 1.05rem;
+  font-size: 1.18rem;
   font-weight: 700;
   white-space: nowrap;
-}
-
-.store-product-card-footer span {
-  color: #36714c;
-  font-size: 0.7rem;
-}
-
-.store-product-card-footer span.is-unavailable {
-  color: #8d5252;
 }
 
 .store-product-card-footer .product-btn {
   flex: 0 0 auto;
 }
 
-.store-product-table-wrap {
-  margin-top: 1rem;
+.store-product-grid-compact .store-product-card-surface {
+  padding: 0.5rem;
 }
 
-.store-product-table {
-  min-width: 58rem;
+.store-product-grid-compact .store-product-card-body {
+  gap: 0.5rem;
+  padding: 0.6rem 0.1rem 0.1rem;
 }
 
-.store-product-table .store-table-title-column {
-  width: 36%;
+.store-product-grid-compact .store-product-card-meta,
+.store-product-grid-compact .store-product-card-body > p,
+.store-product-grid-compact .store-product-tags {
+  display: none;
 }
 
-.store-product-table thead th:last-child,
-.store-product-table tbody td:last-child {
-  width: 1%;
+.store-product-grid-compact .store-product-card h2 {
+  font-size: 0.86rem;
+  line-height: 1.3;
 }
 
-.store-product-table .product-btn {
-  height: var(--product-inner-control-size, 2rem);
-  min-height: var(--product-inner-control-size, 2rem);
-  border-radius: var(--product-inner-control-radius, 0.5rem);
-  padding-inline: 0.65rem;
-  font-size: 0.78rem;
+.store-product-grid-compact .store-product-card-footer {
+  gap: 0.4rem;
+  padding-top: 0.55rem;
 }
 
-.store-product-table-wrap:focus-visible {
-  outline: 2px solid rgba(20, 20, 20, 0.34);
-  outline-offset: 2px;
+.store-product-grid-compact .store-product-card-footer strong {
+  font-size: 1rem;
+}
+
+.store-product-grid-compact .store-product-add {
+  width: 2.5rem;
+  min-width: 2.5rem;
+  padding-inline: 0;
+}
+
+.store-product-grid-compact .store-product-add-label {
+  display: none;
 }
 
 .course-demo-shell .store-empty-state {
@@ -602,8 +610,12 @@
 }
 
 @media (max-width: 1050px) {
-  .store-product-grid {
+  .store-product-grid-comfortable {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .store-product-grid-compact {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -618,8 +630,12 @@
 }
 
 @media (max-width: 720px) {
-  .store-product-grid {
+  .store-product-grid-comfortable {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .store-product-grid-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .store-cart-layout,
@@ -645,15 +661,6 @@
     width: min(100%, 13rem);
     min-width: min(100%, 13rem);
     flex: 1 1 11rem;
-  }
-
-  .store-product-card-footer {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .store-product-card-footer .product-btn {
-    width: 100%;
   }
 
   .store-cart-line {

@@ -7,16 +7,10 @@ export type StoreAudience = "learner" | "teacher";
 
 export type StoreSort = "popular" | "price-asc" | "price-desc" | "title";
 
-export type StoreProductVisualKey =
-  | "hanzi-first-steps"
-  | "rice-grid-notebook"
-  | "childrens-chinese-book"
-  | "teacher-method-book"
-  | "first-words-cards"
-  | "radicals-teacher-cards"
-  | "young-calligrapher-kit"
-  | "brush-marker-set"
-  | "build-a-hanzi-game";
+export type StoreProductImage = {
+  src: string;
+  alt: string;
+};
 
 export type StoreProduct = {
   id: string;
@@ -28,8 +22,11 @@ export type StoreProduct = {
   tags: readonly string[];
   priceKopeks: number;
   popularity: number;
-  stock: number;
-  visualKey: StoreProductVisualKey;
+  images: readonly [
+    StoreProductImage,
+    StoreProductImage,
+    ...StoreProductImage[],
+  ];
 };
 
 export type StoreFilters = {
@@ -86,8 +83,20 @@ export const STORE_PRODUCTS: readonly StoreProduct[] = [
     tags: ["китайский язык", "иероглифы", "каллиграфия", "для ребёнка"],
     priceKopeks: 59000,
     popularity: 100,
-    stock: 28,
-    visualKey: "hanzi-first-steps",
+    images: [
+      {
+        src: "/store/products/propisi-pervye-kitaiskie-ieroglify/cover.webp",
+        alt: "Голубая обложка прописей с крупным иероглифом 永 на светлом фоне",
+      },
+      {
+        src: "/store/products/propisi-pervye-kitaiskie-ieroglify/detail-01.webp",
+        alt: "Разворот прописей с упражнениями для иероглифов 水 и 人 и схемами порядка черт",
+      },
+      {
+        src: "/store/products/propisi-pervye-kitaiskie-ieroglify/detail-02.webp",
+        alt: "Открытые прописи с упражнениями для 永, 一, 二, 三 и 十 рядом с голубой обложкой",
+      },
+    ],
   },
   {
     id: "store-product-002",
@@ -100,8 +109,16 @@ export const STORE_PRODUCTS: readonly StoreProduct[] = [
     tags: ["китайский язык", "письмо", "мицзыгэ", "тетрадь"],
     priceKopeks: 39000,
     popularity: 82,
-    stock: 41,
-    visualKey: "rice-grid-notebook",
+    images: [
+      {
+        src: "/store/products/tetrad-mitszyge-48-listov/cover.webp",
+        alt: "Бежевая обложка тетради мицзыгэ с сеткой и крупным иероглифом 永",
+      },
+      {
+        src: "/store/products/tetrad-mitszyge-48-listov/detail-01.webp",
+        alt: "Разворот тетради с базовыми штрихами, сетками и упражнениями для 永, 木, 水, 火 и 山",
+      },
+    ],
   },
   {
     id: "store-product-003",
@@ -114,8 +131,16 @@ export const STORE_PRODUCTS: readonly StoreProduct[] = [
     tags: ["китайский язык", "учебник", "начальный уровень", "детям"],
     priceKopeks: 89000,
     popularity: 94,
-    stock: 16,
-    visualKey: "childrens-chinese-book",
+    images: [
+      {
+        src: "/store/products/uchebnik-kitaiskii-dlya-detei-start/cover.webp",
+        alt: "Зелёная обложка первого учебника китайского для детей с надписью 你好",
+      },
+      {
+        src: "/store/products/uchebnik-kitaiskii-dlya-detei-start/detail-01.webp",
+        alt: "Разворот урока знакомства с пандой, драконом, диалогами и письменными упражнениями",
+      },
+    ],
   },
   {
     id: "store-product-004",
@@ -128,8 +153,16 @@ export const STORE_PRODUCTS: readonly StoreProduct[] = [
     tags: ["методика", "преподавателю", "сценарии уроков", "игры"],
     priceKopeks: 129000,
     popularity: 88,
-    stock: 9,
-    visualKey: "teacher-method-book",
+    images: [
+      {
+        src: "/store/products/metodika-igrovykh-urokov-kitaiskogo/cover.webp",
+        alt: "Бежевая обложка методики игровых уроков с кубиком, карточками и репликой 你好",
+      },
+      {
+        src: "/store/products/metodika-igrovykh-urokov-kitaiskogo/detail-01.webp",
+        alt: "Разворот урока «Моя семья» со структурой занятия, лексикой, игрой и рефлексией",
+      },
+    ],
   },
   {
     id: "store-product-005",
@@ -142,8 +175,16 @@ export const STORE_PRODUCTS: readonly StoreProduct[] = [
     tags: ["слова", "пиньинь", "лексика", "карточки"],
     priceKopeks: 49000,
     popularity: 97,
-    stock: 35,
-    visualKey: "first-words-cards",
+    images: [
+      {
+        src: "/store/products/kartochki-100-kitaiskikh-slov/cover.webp",
+        alt: "Закрытая розовая коробка карточек «100 первых китайских слов» с иероглифом 水",
+      },
+      {
+        src: "/store/products/kartochki-100-kitaiskikh-slov/detail-01.webp",
+        alt: "Розовая коробка и набор карточек со словами «вода», «рот» и «человек»",
+      },
+    ],
   },
   {
     id: "store-product-006",
@@ -156,22 +197,38 @@ export const STORE_PRODUCTS: readonly StoreProduct[] = [
     tags: ["ключи", "радикалы", "наглядные материалы", "урок"],
     priceKopeks: 69000,
     popularity: 76,
-    stock: 12,
-    visualKey: "radicals-teacher-cards",
+    images: [
+      {
+        src: "/store/products/kartochki-kliuchi-kitaiskikh-ieroglifov/cover.webp",
+        alt: "Закрытая сиреневая коробка карточек «Ключи китайских иероглифов» с ключом 氵",
+      },
+      {
+        src: "/store/products/kartochki-kliuchi-kitaiskikh-ieroglifov/detail-01.webp",
+        alt: "Открытая коробка и разложенные карточки с ключами 氵, 亻, 女, 木 и 口",
+      },
+    ],
   },
   {
     id: "store-product-007",
     slug: "kantselyarskii-nabor-yunyi-kalligraf",
     title: "Канцелярский набор «Юный каллиграф»",
     description:
-      "Карандаши, линейка, ластик, точилка и пенал — всё необходимое для занятий письмом в одном наборе.",
+      "Кисти, тушь, маркеры, прописи, линейка и карточки — всё необходимое для первых занятий каллиграфией.",
     category: "stationery",
     audience: "learner",
-    tags: ["канцелярия", "школа", "письмо", "пенал"],
+    tags: ["канцелярия", "каллиграфия", "кисти", "прописи"],
     priceKopeks: 75000,
     popularity: 71,
-    stock: 22,
-    visualKey: "young-calligrapher-kit",
+    images: [
+      {
+        src: "/store/products/kantselyarskii-nabor-yunyi-kalligraf/cover.webp",
+        alt: "Набор для каллиграфии с коробкой, тушью, кистями, маркерами, прописями, линейкой и карточками",
+      },
+      {
+        src: "/store/products/kantselyarskii-nabor-yunyi-kalligraf/detail-01.webp",
+        alt: "Открытые прописи, коробка набора, тушь, кисти, маркеры и листы с упражнениями",
+      },
+    ],
   },
   {
     id: "store-product-008",
@@ -184,8 +241,16 @@ export const STORE_PRODUCTS: readonly StoreProduct[] = [
     tags: ["маркеры", "кисти", "каллиграфия", "рисование"],
     priceKopeks: 109000,
     popularity: 65,
-    stock: 0,
-    visualKey: "brush-marker-set",
+    images: [
+      {
+        src: "/store/products/markery-kistochki-dlya-kalligrafii/cover.webp",
+        alt: "Шесть маркеров-кисточек с цветными наконечниками в прозрачной упаковке",
+      },
+      {
+        src: "/store/products/markery-kistochki-dlya-kalligrafii/detail-01.webp",
+        alt: "Маркеры рядом с упаковкой и рука, пишущая иероглиф 永 на листе для практики",
+      },
+    ],
   },
   {
     id: "store-product-009",
@@ -198,8 +263,16 @@ export const STORE_PRODUCTS: readonly StoreProduct[] = [
     tags: ["настольная игра", "деревянные детали", "иероглифы", "семья"],
     priceKopeks: 149000,
     popularity: 91,
-    stock: 7,
-    visualKey: "build-a-hanzi-game",
+    images: [
+      {
+        src: "/store/products/igra-soberi-ieroglif/cover.webp",
+        alt: "Зелёная коробка игры и плитки с иероглифами, включая собранный из четырёх частей 好",
+      },
+      {
+        src: "/store/products/igra-soberi-ieroglif/detail-01.webp",
+        alt: "Разложенные светлые плитки с китайскими знаками и собранный из четырёх частей иероглиф 好 в центре",
+      },
+    ],
   },
 ];
 

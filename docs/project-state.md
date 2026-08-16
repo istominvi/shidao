@@ -426,6 +426,19 @@ typecheck, lint, format, production build, `581/581` unit/API, `23/23` strict
 production-mode browser scenarios и `72/72` schema/migration subset, включая
 Store deep link, cart/checkout, focus return и mobile no-overflow.
 
+**Current source / next production Store photo catalog:** девять статических
+demo-товаров теперь используют 19 квадратных WebP из
+`public/store/products/<slug>/`: три кадра у прописей и по два у остальных.
+Каждая карточка имеет независимую галерею с tap/keyboard advance,
+горизонтальным swipe, предыдущей/следующей стрелками и доступным индексом.
+Прежние декоративные иконки/иероглифы, availability-текст, stock gating и
+header-chip «Демо · без оплаты» удалены; demo boundary остаётся явно указан на
+checkout. Вместо таблицы один и тот же набор переключается между крупными и
+компактными карточками: `3/6` колонок на широком экране, `2/4` на tablet и
+`1/2` на mobile. Цена увеличена и выровнена по центру с кнопкой корзины.
+Изображения остаются source-controlled UI assets, а не Product/Inventory или
+Supabase Storage; API, schema, migrations и Lesson contracts не меняются.
+
 Historical identity-program acceptance на прежнем совместимом production
 release подтвердила authenticated browser postflight: roleless navigation и
 реальные пустые состояния `/courses`, `/schedule`, `/students`, всех вкладок
@@ -1118,13 +1131,21 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 ### Магазин
 
-- **Current production:** `/store` — Account-level UI-only
-  demo учебного магазина. Каталог содержит учебники и методические книги,
-  прописи и тетради, карточки, канцелярию и обучающие игры. Current source
-  вычисляет category tabs, поиск, сортировку и режимы «Карточки / Таблица» над
-  типизированными fixtures в application code; отдельные
-  audience/price/availability filters удалены. Sort использует product
-  dropdown ShiDao вместо native platform `select`.
+- **Current production baseline:** `/store` — Account-level UI-only demo
+  учебного магазина. Каталог содержит учебники и методические книги, прописи и
+  тетради, карточки, канцелярию и обучающие игры; category tabs, поиск и
+  сортировка вычисляются над типизированными fixtures в application code.
+  Отдельные audience/price/availability filters удалены, а sort использует
+  product dropdown ShiDao вместо native platform `select`.
+- **Current source / next production:** каждый из девяти товаров ссылается на
+  ordered-массив из двух или трёх квадратных фотографий; все 19 оптимизированных
+  WebP находятся в `public/store/products/<slug>/`. Галерея внутри карточки
+  листается тапом, клавиатурой, swipe и обеими стрелками без перехода на
+  отдельную страницу. Тумблер выбирает крупные (`3` desktop columns) или
+  компактные (`6`) карточки вместо прежней таблицы; responsive projection —
+  `2/4` на tablet и `1/2` на mobile. Декоративные visual icons/glyphs,
+  availability, stock gating и header-chip удалены. Цена крупнее и стоит на
+  одной centerline с кнопкой корзины.
 - Кнопка «Корзина» находится в action-секции общего `AppPageHeader`. В одном
   `DialogShell` можно менять количество и удалять позиции, затем заполнить имя,
   телефон, email и адрес. Платёжный экран — честная заглушка без card fields и
@@ -2252,7 +2273,7 @@ positions, а плотность поддерживают текущие service
 | Fullscreen preview                   | `src/components/course-builder/student-screen-preview.tsx`                                                                                                                                                                                                                        |
 | Account Schedule                     | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`, `src/components/teaching-hub/schedule-date-picker.tsx`, `src/components/teaching-hub/schedule-period.ts`                                                                      |
 | Account Students                     | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`, `src/components/teaching-hub/student-directory-table.tsx`                                                                                                                     |
-| Account Store demo                   | `src/app/(app)/store/`, `src/components/store/`, `src/app/styles/store.css`, `docs/product/store-demo.md`                                                                                                                                                                         |
+| Account Store demo                   | `src/app/(app)/store/`, `src/components/store/`, `src/app/styles/store.css`, `public/store/products/`, `docs/product/store-demo.md`                                                                                                                                               |
 | Legacy-named Account route boundary  | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                                                                                                                                                                                                  |
 | V2 API routes                        | `src/app/api/v2/`                                                                                                                                                                                                                                                                 |
 | Standalone historical demo           | `src/app/demo/`, `public/og-demo-v2.png`                                                                                                                                                                                                                                          |

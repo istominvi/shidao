@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import test from "node:test";
 import {
   DEFAULT_STORE_FILTERS,
@@ -40,9 +42,14 @@ test("store demo catalog has nine stable, complete, realistic products", () => {
   assert.equal(STORE_PRODUCTS.length, 9);
   assert.equal(new Set(STORE_PRODUCTS.map((product) => product.id)).size, 9);
   assert.equal(new Set(STORE_PRODUCTS.map((product) => product.slug)).size, 9);
-  assert.equal(
-    new Set(STORE_PRODUCTS.map((product) => product.visualKey)).size,
-    9,
+  const imagePaths = STORE_PRODUCTS.flatMap((product) =>
+    product.images.map((image) => image.src),
+  );
+  assert.equal(imagePaths.length, 19);
+  assert.equal(new Set(imagePaths).size, imagePaths.length);
+  assert.deepEqual(
+    STORE_PRODUCTS.map((product) => product.images.length),
+    [3, 2, 2, 2, 2, 2, 2, 2, 2],
   );
 
   for (const product of STORE_PRODUCTS) {
@@ -55,8 +62,23 @@ test("store demo catalog has nine stable, complete, realistic products", () => {
     assert.ok(product.priceKopeks > 0);
     assert.ok(Number.isInteger(product.popularity));
     assert.ok(product.popularity >= 0);
-    assert.ok(Number.isInteger(product.stock));
-    assert.ok(product.stock >= 0);
+    assert.equal("stock" in product, false);
+    assert.equal("visualKey" in product, false);
+    assert.ok(product.images.length >= 2);
+
+    for (const image of product.images) {
+      assert.ok(
+        image.src.startsWith(`/store/products/${product.slug}/`),
+        `${image.src} must belong to ${product.slug}`,
+      );
+      assert.match(image.src, /\/(?:cover|detail-\d{2})\.webp$/);
+      assert.ok(image.alt.length > 24);
+      assert.equal(
+        existsSync(join(process.cwd(), "public", image.src.slice(1))),
+        true,
+        `${image.src} must exist in public`,
+      );
+    }
   }
 
   assert.deepEqual(
@@ -139,10 +161,9 @@ test("store combines category and query with AND semantics", () => {
     ["metodika-igrovykh-urokov-kitaiskogo"],
   );
   assert.deepEqual(
-    filtered({
-      category: "stationery",
-      query: "маркеры",
-    }).map((product) => product.slug),
+    filtered({ category: "stationery", query: "рисование" }).map(
+      (product) => product.slug,
+    ),
     ["markery-kistochki-dlya-kalligrafii"],
   );
 });
@@ -263,6 +284,15 @@ test("cart reducer caps quantity at 99 and ignores unknown or absent slugs", () 
     ),
     { [slug]: 99 },
   );
+});
+
+test("every demo product can be added without inventory gating", () => {
+  for (const product of STORE_PRODUCTS) {
+    assert.deepEqual(
+      storeCartReducer({}, { type: "add", slug: product.slug }),
+      { [product.slug]: 1 },
+    );
+  }
 });
 
 test("derived cart returns ordered lines, total item count, and kopek totals", () => {
