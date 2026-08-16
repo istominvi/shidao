@@ -58,6 +58,21 @@ test("service validates the learner-domain direct target before repository acces
   );
 });
 
+test("bare inbox request reaches the repository with canonical query defaults", async () => {
+  let received: InboxQuery | null = null;
+  const repository = {
+    async listInbox(input: InboxQuery) {
+      received = input;
+      return { items: [], nextCursor: null, totalUnread: 0 };
+    },
+  } as unknown as CommunicationRepository;
+  const service = createCommunicationService({ repository });
+
+  await service.listInbox(actor, {});
+
+  assert.deepEqual(received, emptyInboxQuery);
+});
+
 test("service maps repository auth, access, conflict and outage errors", async (t) => {
   const cases = [
     {

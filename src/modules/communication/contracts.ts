@@ -4,11 +4,13 @@ const MAX_MESSAGE_LENGTH = 6_000;
 const MAX_TITLE_LENGTH = 160;
 
 const nullableQueryString = z
-  .union([z.string(), z.null(), z.undefined()])
+  .union([z.string(), z.null()])
+  .optional()
   .transform((value) => (value === "" || value == null ? null : value));
 
 const nullablePositiveIntegerQuery = z
-  .union([z.string(), z.number(), z.null(), z.undefined()])
+  .union([z.string(), z.number(), z.null()])
+  .optional()
   .transform((value, context) => {
     if (value === "" || value == null) return null;
     const number = Number(value);
@@ -24,7 +26,8 @@ const nullablePositiveIntegerQuery = z
 
 const limitQuery = (defaultValue: number) =>
   z
-    .union([z.string(), z.number(), z.undefined()])
+    .union([z.string(), z.number()])
+    .optional()
     .transform((value, context) => {
       const number = value === undefined ? defaultValue : Number(value);
       if (!Number.isSafeInteger(number) || number < 1 || number > 50) {
@@ -110,12 +113,8 @@ export const markCommunicationThreadReadInputSchema = z
 export const assistantConversationListQuerySchema = z
   .object({
     includeArchived: z
-      .union([
-        z.literal("true"),
-        z.literal("false"),
-        z.boolean(),
-        z.undefined(),
-      ])
+      .union([z.literal("true"), z.literal("false"), z.boolean()])
+      .optional()
       .transform((value) => value === true || value === "true"),
     limit: limitQuery(50),
   })
@@ -262,8 +261,9 @@ export function parseCommunicationContract<T>(
 ): T {
   const result = schema.safeParse(value);
   if (result.success) return result.data;
+  const issue = result.error.issues[0];
   throw new CommunicationApplicationError(
-    result.error.issues[0]?.message ?? "Проверьте данные сообщения.",
+    issue?.code === "custom" ? issue.message : "Проверьте данные сообщения.",
     400,
     "communication_validation_error",
   );

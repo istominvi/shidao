@@ -6,12 +6,12 @@ catalog + Course Component D1 + A1 atomic Course archive + E1 educator Course
 content-guard correction + U1 unified Text authored data + AV1 Account avatars
 и CC1 Communication Center database contract + A2 atomic Assistant schedule
 guard. CC1 и A2 DB-first contracts применены; зависимый Communication Center
-web/API/UI current production из exact source
+web/API/UI initial production rollout выполнен из exact source
 `2efaa86851fffc7e444af904fb900d9984caa6a8`.
 
 **Production schema head:**
-`20260816072345_atomic_assistant_lesson_run_schedule.sql`. Она применена к
-production с exact `COMMIT` 16 августа 2026 года после read-only sanity,
+`20260816072345_atomic_assistant_lesson_run_schedule.sql`. Она применена к production
+с exact `COMMIT` 16 августа 2026 года после read-only sanity,
 полного rollback rehearsal и verified backup. A2 добавляет один узкий
 authenticated-only atomic LessonRun guard поверх CC1; current Communication
 Center boundary содержит 17 authenticated user RPC, два service-only producer

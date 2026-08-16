@@ -8,7 +8,8 @@
 persisted System Assistant conversations и unified inbox
 
 **Deployment boundary:** production DB current через CC1 + A2 atomic Assistant
-schedule guard. Communication Center web/API/UI current на `v2.shidao.ru` из
+schedule guard. Initial Communication Center web/API/UI rollout на
+`v2.shidao.ru` выполнен из
 exact source `2efaa86851fffc7e444af904fb900d9984caa6a8`; Coolify deployment
 `otekp2zseg5ig2r05v6taabu` и production HTTP/auth/CSRF boundary postflight
 успешны.
@@ -119,8 +120,7 @@ LearnerProfile audience. При Apply authenticated RPC
 и draft roster. Только после успешного сравнения он вызывает canonical
 `schedule_lesson_run`; mismatch становится stale action
 (`lesson_run_changed`, SQLSTATE `55000`). Browser не передаёт Account/Auth UUID.
-Это current database/source behavior, а не доказательство уже развёрнутого
-Communication Center web flow.
+Это current production database и application behavior.
 
 ИИ может инициативно написать owner в исходный диалог после завершения ранее
 запущенной durable задачи или в ответ на разрешённый system event. Это не даёт
@@ -143,6 +143,11 @@ assistant conversations. Он задаёт сортировку, preview и об
 - AI unread считается по unseen assistant turns.
 - Простое открытие центра не отмечает все источники прочитанными; read cursor
   меняется только при открытии конкретного диалога.
+- Отсутствующие query keys на первом GET являются нормальным browser input:
+  server contract подставляет canonical `null` cursor/filter и bounded default
+  `limit` до repository/RPC. Это правило одинаково для inbox, targets,
+  human/AI history и system feed. Default internal Zod diagnostics не
+  показываются пользователю.
 
 Desktop использует non-modal panel с возможностью расширения, mobile —
 полноэкранную поверхность. Контекстные действия «Написать» и «Чат курса»

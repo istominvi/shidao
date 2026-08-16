@@ -888,9 +888,14 @@ Course только открывают этот же центр на нужно�
 - inbox использует cursor reads, polling раз в 30 секунд, focus refresh и
   `visibilitychange` для read cursor выбранного диалога. Realtime/presence,
   push/email, attachments и background AI worker в первый slice не входят;
+- parameterless communication GET получает canonical cursor/filter/limit
+  defaults server-side. Первый inbox и остальные первые страницы не требуют
+  явных `undefined`/`null` keys от browser; internal default Zod diagnostics не
+  показываются пользователю;
 - forward schema/migrations, RPC/application/API и responsive UI current.
   Production DB CC1 + A2, snapshot и postflight current; dependent web/API
-  развёрнут exact source `2efaa86851fffc7e444af904fb900d9984caa6a8`
+  initial rollout развёрнут exact source
+  `2efaa86851fffc7e444af904fb900d9984caa6a8`
   через Coolify deployment `otekp2zseg5ig2r05v6taabu`, а production
   HTTP/auth/CSRF boundary postflight пройден.
 

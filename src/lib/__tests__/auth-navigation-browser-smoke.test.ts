@@ -608,6 +608,7 @@ let e2eCourseAudienceReplacement: {
   learnerGroupIds: string[];
 } | null = null;
 const e2eSupabaseReferers: string[] = [];
+const e2eCommunicationInboxRpcPayloads: Record<string, unknown>[] = [];
 
 type PlaywrightLocator = {
   boundingBox: () => Promise<{
@@ -937,7 +938,7 @@ type PlaywrightChromium = {
         url: () => string;
         waitForResponse: (
           predicate: (response: { url: () => string }) => boolean,
-        ) => Promise<{ url: () => string }>;
+        ) => Promise<{ url: () => string; status: () => number }>;
         waitForURL: (
           url: string | RegExp,
           options?: {
@@ -1342,6 +1343,17 @@ async function handleMockSupabase(
         avatar_updated_at: "2026-08-14T00:00:00.000Z",
       },
     ]);
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/rpc/list_my_communication_inbox") {
+    const body = await readJsonBody(request);
+    e2eCommunicationInboxRpcPayloads.push(body);
+    json(response, 200, {
+      items: [],
+      nextCursor: null,
+      totalUnread: 0,
+    });
     return;
   }
 
@@ -3477,11 +3489,25 @@ test("browser smoke: protected pages expose the unified messages center with key
     return;
   }
 
+  e2eCommunicationInboxRpcPayloads.length = 0;
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
 
   try {
     await runtime.page.setViewportSize({ width: 375, height: 812 });
+    const inboxResponsePromise = runtime.page.waitForResponse(
+      (response) => new URL(response.url()).pathname === "/api/v2/inbox",
+    );
     await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
+    const inboxResponse = await inboxResponsePromise;
+    const inboxUrl = new URL(inboxResponse.url());
+    assert.equal(inboxUrl.search, "");
+    assert.equal(inboxResponse.status(), 200);
+    assert.deepEqual(e2eCommunicationInboxRpcPayloads.at(-1), {
+      p_cursor_activity_at: null,
+      p_cursor_kind: null,
+      p_cursor_id: null,
+      p_limit: 30,
+    });
 
     const launcher = runtime.page.getByRole("button", {
       name: "Открыть сообщения",
@@ -3529,6 +3555,13 @@ test("browser smoke: protected pages expose the unified messages center with key
       exact: true,
     });
     await panel.waitFor();
+    await panel
+      .getByText(
+        "Сообщений пока нет. Начните диалог с ИИ, учеником или курсом.",
+        { exact: true },
+      )
+      .waitFor();
+    assert.equal(await panel.getByRole("alert").count(), 0);
     await panel.evaluate(async (element) => {
       await Promise.all(
         element.getAnimations().map((animation) => animation.finished),

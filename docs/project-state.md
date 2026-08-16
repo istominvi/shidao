@@ -4,7 +4,7 @@
 **Актуально на:** 16 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Текущий functional application source:**
+**Initial Communication Center functional application source:**
 `2efaa86851fffc7e444af904fb900d9984caa6a8`
 (`704/704` unit/API, `27/27` strict production-mode browser scenarios,
 typecheck, lint, repository-wide format check и production build)
@@ -54,13 +54,22 @@ read cursor выбранного диалога учитывает `visibilitych
 presence, push/email, attachments, richer metric producers и generalized
 background notifications в первый production slice не входят. Production DB
 CC1 + A2 применены, DB postflight и contract snapshot current. Dependent
-web/API развёрнут exact source
+web/API initial rollout развёрнут exact source
 `2efaa86851fffc7e444af904fb900d9984caa6a8`: Coolify deployment
 `otekp2zseg5ig2r05v6taabu` завершён `finished`; initial functional rollout container
 `g9x4d9zn60jv35r7zf0xl6xj-075303148584` использует matching image и
 `SOURCE_COMMIT`, restart count `0`. HTTP postflight подтвердил V2 login/robots,
 guest redirect, новые unauthenticated inbox/assistant boundaries, landing-only
 изоляцию и exact Origin CSRF boundary.
+
+Current application query boundary нормализует полностью отсутствующие
+параметры всех communication GET в canonical defaults до repository/RPC.
+Поэтому первый `GET /api/v2/inbox` без query, а также первые страницы targets,
+messages, AI conversations/turns и system notifications не требуют, чтобы
+browser явно отправлял `null` и default `limit`. Internal Zod diagnostics не
+выводятся пользователю: non-custom validation failure получает локализованное
+сообщение. Browser regression проходит реальный parameterless inbox route,
+проверяет default RPC args, `200`, empty state и отсутствие `role=alert`.
 
 **Current production — page headers and motion:** supporting
 copy в `AppPageHeader` теперь действительно optional и допускает только
@@ -1757,12 +1766,16 @@ application service/contracts внутри authenticated web request.
 - Inbox/read model использует cursor pagination, polling каждые 30 секунд,
   refresh при focus и `visibilitychange` для read cursor выбранного диалога.
   Realtime/presence, push/email и visible receipts не заявляются.
+- Parameterless communication GET нормализует отсутствующие cursor/filter/limit
+  keys в canonical defaults до вызова repository. Это относится к inbox,
+  targets, human/AI history и system feed; internal default Zod diagnostics не
+  становятся пользовательским текстом ошибки.
 - Source boundary находится в `src/modules/communication/`,
   `src/app/api/v2/{inbox,message-targets,communication-threads,system-notifications}`,
   `src/app/api/v2/assistant/conversations/`,
   `src/components/communication/` и current forward migration/schema.
   Production DB CC1 + A2 применены, DB postflight и contract snapshot current;
-  dependent web/API deployment `otekp2zseg5ig2r05v6taabu` exact source
+  initial dependent web/API deployment `otekp2zseg5ig2r05v6taabu` exact source
   `2efaa86851fffc7e444af904fb900d9984caa6a8` и production HTTP/auth/CSRF
   postflight завершены.
   Durable action/job ledger, distributed idempotency и reliable background
