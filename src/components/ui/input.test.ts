@@ -23,7 +23,7 @@ test("single-line product inputs use one static raised typography contract", () 
   );
   assert.match(
     globalStyles,
-    /:root\s*\{[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: 1px solid var\(--product-surface-border-color\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);[^}]*--product-entry-control-shadow: var\(--product-raised-surface-shadow\);[^}]*--product-control-focus-halo: rgba\(20, 20, 20, 0\.58\);[^}]*--product-entry-control-foreground: #171717;[^}]*--product-entry-control-font-size: 0\.9rem;[^}]*--product-entry-control-font-weight: 600;[^}]*--product-entry-control-line-height: 1;/,
+    /:root\s*\{[^}]*--product-control-height: 2\.5rem;[^}]*--product-control-radius: var\(--product-element-radius\);[^}]*--product-control-icon-size: 1rem;[^}]*--product-control-icon-stroke-width: 2px;[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);[^}]*--product-entry-control-shadow: var\(--product-raised-surface-shadow\);[^}]*--product-control-focus-halo: rgba\(20, 20, 20, 0\.58\);[^}]*--product-entry-control-foreground: #171717;[^}]*--product-entry-control-font-size: 0\.9rem;[^}]*--product-entry-control-font-weight: 600;[^}]*--product-entry-control-line-height: 1;/,
   );
   assert.match(
     globalStyles,
@@ -31,7 +31,7 @@ test("single-line product inputs use one static raised typography contract", () 
   );
   assert.match(
     globalStyles,
-    /\.product-control\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*color: var\(--product-entry-control-foreground\);[^}]*font-family: inherit;[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*line-height: var\(--product-entry-control-line-height\);/,
+    /\.product-control\s*\{[^}]*height: var\(--product-control-height\);[^}]*border: var\(--product-surface-border\);[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*color: var\(--product-entry-control-foreground\);[^}]*font-family: inherit;[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*line-height: var\(--product-entry-control-line-height\);/,
   );
   assert.match(
     globalStyles,
@@ -39,7 +39,7 @@ test("single-line product inputs use one static raised typography contract", () 
   );
   assert.match(
     globalStyles,
-    /input\.field-input\s*\{[^}]*height: var\(--product-control-height, 2\.5rem\);[^}]*border: var\(--product-surface-border\);[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*color: var\(--product-entry-control-foreground\);[^}]*font-family: inherit;[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*line-height: var\(--product-entry-control-line-height\);[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
+    /:is\(input, select\)\.field-input\s*\{[^}]*height: var\(--product-control-height\);[^}]*border: var\(--product-surface-border\);[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*padding-block: 0;[^}]*color: var\(--product-entry-control-foreground\);[^}]*font-family: inherit;[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*line-height: var\(--product-entry-control-line-height\);[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
   assert.match(
     globalStyles,
@@ -48,7 +48,7 @@ test("single-line product inputs use one static raised typography contract", () 
   assert.doesNotMatch(
     /\.field-input\s*\{[^}]*\}/.exec(globalStyles)?.[0] ?? "",
     /product-entry-control-shadow/,
-    "textarea/select consumers of field-input must not inherit the single-line surface",
+    "the multiline field-input base must not inherit the single-line shadow",
   );
 });
 
@@ -157,7 +157,14 @@ test("narrow and coarse-touch editable controls prevent iOS focus zoom without d
 
   assert.ok(touchMediaStart >= 0);
 
-  const touchStyles = globalStyles.slice(touchMediaStart);
+  const narrowMediaStart = globalStyles.indexOf(
+    "@media (max-width: 767px)",
+    touchMediaStart + touchMediaQuery.length,
+  );
+
+  assert.ok(narrowMediaStart > touchMediaStart);
+
+  const touchStyles = globalStyles.slice(touchMediaStart, narrowMediaStart);
   const editableRuleStart = touchStyles.indexOf(":where(");
   const editableRuleEnd = touchStyles.indexOf("\n  }", editableRuleStart);
   const editableRule = touchStyles.slice(
@@ -180,6 +187,23 @@ test("narrow and coarse-touch editable controls prevent iOS focus zoom without d
   ]) {
     assert.match(editableRule, new RegExp(`\\[type="${nonEditableType}"\\]`));
   }
+
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell\s*\{[^}]*--product-control-icon-size: 1\.25rem;[^}]*--course-demo-control-font-size: 1rem;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-btn,\s*\.course-demo-shell \.product-control,\s*\.course-demo-shell :is\(input, select\)\.field-input,\s*\.course-demo-shell \.teaching-date-navigator,\s*\.course-demo-shell \.teaching-hub-search\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: 1rem;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-control-search\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: 1rem;/,
+  );
+  assert.doesNotMatch(
+    touchStyles,
+    /--(?:course-demo|product)-control-height:\s*(?:3rem|48px)/,
+  );
 
   assert.match(appLayoutSource, /viewportFit: "cover"/);
   assert.doesNotMatch(

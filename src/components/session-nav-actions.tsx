@@ -222,8 +222,7 @@ export function SessionNavActions({
             <span className="nav-dropdown-item-content inline-flex items-center">
               {item.icon ? (
                 <item.icon
-                  size={24}
-                  className="text-neutral-500"
+                  className="nav-mobile-action-icon text-neutral-500"
                   aria-hidden="true"
                 />
               ) : null}
@@ -246,8 +245,7 @@ export function SessionNavActions({
         >
           <span className="nav-dropdown-item-content inline-flex items-center">
             <UserRound
-              size={24}
-              className="text-neutral-500"
+              className="nav-mobile-action-icon text-neutral-500"
               aria-hidden="true"
             />
             Профиль
@@ -271,9 +269,15 @@ export function SessionNavActions({
           className="nav-user-trigger nav-account-menu-trigger inline-flex cursor-pointer items-center justify-center md:hidden"
         >
           {open ? (
-            <X className="nav-main-menu-icon" aria-hidden="true" />
+            <X
+              className="nav-main-menu-icon nav-mobile-action-icon"
+              aria-hidden="true"
+            />
           ) : (
-            <Menu className="nav-main-menu-icon" aria-hidden="true" />
+            <Menu
+              className="nav-main-menu-icon nav-mobile-action-icon"
+              aria-hidden="true"
+            />
           )}
         </button>
       ) : null}

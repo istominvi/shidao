@@ -102,46 +102,54 @@ type OpaqueWhiteSurfaceContract = {
   backdropFilter: string;
 };
 
+type LucideGlyphContract = {
+  width: number;
+  height: number;
+  strokeWidth: string;
+  vectorEffect: string;
+};
+
+type RaisedControlSurfaceContract = {
+  borderTopWidth: string;
+  borderTopStyle: string;
+  borderTopColor: string;
+  borderRadius: string;
+  backgroundColor: string;
+  backgroundImage: string;
+  backgroundClip: string;
+  boxShadow: string;
+};
+
 type TouchSegmentedControlContract = {
   group: {
+    width: number;
     height: number;
     padding: string;
+    gap: string;
     borderRadius: string;
     backgroundColor: string;
     boxShadow: string;
   };
-  track: {
-    content: string;
-    height: number;
-    borderRadius: string;
-    backgroundColor: string;
-    pointerEvents: string;
-  };
+  groupBeforeContent: string;
+  optionWidths: number[];
   optionHeights: number[];
+  seamGaps: number[];
   optionRadii: string[];
-  iconSizes: Array<{ width: number; height: number }>;
+  iconStyles: LucideGlyphContract[];
+  referenceButton: RaisedControlSurfaceContract;
   selected: {
-    backgroundColor: string;
-    backgroundImage: string;
-    boxShadow: string;
+    surface: RaisedControlSurfaceContract;
     transform: string;
-    plate: {
-      content: string;
-      width: number;
-      height: number;
-      borderRadius: string;
-      backgroundColor: string;
-      backgroundImage: string;
-      opacity: string;
-      boxShadow: string;
-      pointerEvents: string;
-    };
+    beforeContent: string;
   };
   inactive: {
+    borderTopWidth: string;
+    borderTopStyle: string;
     backgroundColor: string;
     backgroundImage: string;
     boxShadow: string;
     transform: string;
+    beforeContent: string;
   };
 };
 
@@ -166,70 +174,104 @@ function assertTouchSegmentedControl(
   assert.deepEqual(
     actual.group,
     {
-      height: 48,
-      padding: "2px",
+      width: 80,
+      height: 40,
+      padding: "0px",
+      gap: "0px",
       borderRadius: "12px",
-      backgroundColor: "rgba(0, 0, 0, 0)",
+      backgroundColor: E2E_SEGMENTED_CONTROL_BACKGROUND,
       boxShadow: "none",
     },
-    `${label}: 48px transparent touch group`,
+    `${label}: exact 80x40 two-cell group with no inset or gap`,
   );
-  assert.deepEqual(
-    actual.track,
-    {
-      content: '\"\"',
-      height: 40,
-      borderRadius: "12px",
-      backgroundColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
-      pointerEvents: "none",
-    },
-    `${label}: 40px border-color track`,
+  assert.ok(
+    ["none", "normal"].includes(actual.groupBeforeContent),
+    `${label}: group must not paint a ::before track`,
   );
-  assert.deepEqual(actual.optionHeights, [44, 44], `${label}: 44px targets`);
+  assert.deepEqual(actual.optionWidths, [40, 40], `${label}: 40px cells`);
+  assert.deepEqual(actual.optionHeights, [40, 40], `${label}: 40px cells`);
+  assert.deepEqual(actual.seamGaps, [0], `${label}: zero-width seam`);
   assert.deepEqual(actual.optionRadii, ["12px", "12px"]);
-  assert.deepEqual(actual.iconSizes, [
-    { width: 20, height: 20 },
-    { width: 20, height: 20 },
+  assert.deepEqual(actual.iconStyles, [
+    {
+      width: 20,
+      height: 20,
+      strokeWidth: "2px",
+      vectorEffect: "non-scaling-stroke",
+    },
+    {
+      width: 20,
+      height: 20,
+      strokeWidth: "2px",
+      vectorEffect: "non-scaling-stroke",
+    },
   ]);
   assert.deepEqual(
+    actual.referenceButton,
     {
-      backgroundColor: actual.selected.backgroundColor,
-      backgroundImage: actual.selected.backgroundImage,
-      boxShadow: actual.selected.boxShadow,
-      transform: actual.selected.transform,
-    },
-    {
-      backgroundColor: "rgba(0, 0, 0, 0)",
-      backgroundImage: "none",
-      boxShadow: "none",
-      transform: "none",
-    },
-    `${label}: selected target stays visually transparent`,
-  );
-  assert.deepEqual(
-    actual.selected.plate,
-    {
-      content: '\"\"',
-      width: 38,
-      height: 38,
-      borderRadius: "11px",
+      borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+      borderTopStyle: "solid",
+      borderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
+      borderRadius: "12px",
       backgroundColor: "rgb(255, 255, 255)",
       backgroundImage: "none",
-      opacity: "1",
+      backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
       boxShadow: E2E_RAISED_CONTROL_SHADOW,
-      pointerEvents: "none",
     },
-    `${label}: concentric 38px opaque selected plate`,
+    `${label}: live ordinary button surface`,
+  );
+  assert.equal(
+    actual.group.backgroundColor,
+    actual.referenceButton.borderTopColor,
+    `${label}: group track reuses the ordinary button border color`,
+  );
+  assert.deepEqual(
+    {
+      borderTopWidth: actual.selected.surface.borderTopWidth,
+      borderTopStyle: actual.selected.surface.borderTopStyle,
+      borderTopColor: actual.selected.surface.borderTopColor,
+    },
+    {
+      borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+      borderTopStyle: "solid",
+      borderTopColor: "rgba(0, 0, 0, 0)",
+    },
+    `${label}: selected option keeps a transparent one-pixel border over the shared track`,
+  );
+  assert.deepEqual(
+    {
+      borderRadius: actual.selected.surface.borderRadius,
+      backgroundColor: actual.selected.surface.backgroundColor,
+      backgroundImage: actual.selected.surface.backgroundImage,
+      backgroundClip: actual.selected.surface.backgroundClip,
+      boxShadow: actual.selected.surface.boxShadow,
+    },
+    {
+      borderRadius: actual.referenceButton.borderRadius,
+      backgroundColor: actual.referenceButton.backgroundColor,
+      backgroundImage: actual.referenceButton.backgroundImage,
+      backgroundClip: actual.referenceButton.backgroundClip,
+      boxShadow: actual.referenceButton.boxShadow,
+    },
+    `${label}: selected option reuses the ordinary button radius, fill, clip, and shadow`,
+  );
+  assert.equal(actual.selected.transform, "none");
+  assert.ok(
+    ["none", "normal"].includes(actual.selected.beforeContent),
+    `${label}: selected option must not paint a ::before plate`,
   );
   assert.deepEqual(
     actual.inactive,
     {
+      borderTopWidth: "0px",
+      borderTopStyle: "none",
       backgroundColor: "rgba(0, 0, 0, 0)",
       backgroundImage: "none",
       boxShadow: "none",
       transform: "none",
+      beforeContent: "none",
     },
-    `${label}: inactive target stays transparent and stable`,
+    `${label}: inactive option stays transparent over the group track`,
   );
 }
 
@@ -3097,6 +3139,10 @@ async function readMobileEditableContract(page: BrowserSmokePage) {
           control.getAttribute("name") ??
           control.id,
         fontSize: Number.parseFloat(getComputedStyle(control).fontSize),
+        height: control.getBoundingClientRect().height,
+        canonicalSingleLine: control.matches(
+          "input.product-control-input, input.product-control-search, input.field-input, select.product-control, select.field-input",
+        ),
       })),
     };
   });
@@ -3120,6 +3166,12 @@ function assertMobileEditableContract(
   assert.ok(
     contract.controls.every((control) => control.fontSize >= 16),
     `${label}: visible editable controls must be at least 16px: ${JSON.stringify(contract.controls)}`,
+  );
+  assert.ok(
+    contract.controls
+      .filter((control) => control.canonicalSingleLine)
+      .every((control) => Math.abs(control.height - 40) < 0.5),
+    `${label}: canonical single-line controls must be exactly 40px: ${JSON.stringify(contract.controls)}`,
   );
 }
 
@@ -6177,6 +6229,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     const restoredMonthWindow = await shiftPeriod("Предыдущий месяц");
     assert.deepEqual(restoredMonthWindow, monthWindow);
     await expectDateTriggerLabel("Авг 2026");
+    await runtime.page
+      .locator(".teaching-date-trigger-chevron")
+      .evaluate(async (chevron) => {
+        await Promise.all(
+          chevron
+            .getAnimations()
+            .map((animation) => animation.finished.catch(() => undefined)),
+        );
+      });
 
     const scheduleContract = await runtime.page.evaluate(() => {
       const shell = document.querySelector<HTMLElement>(".course-demo-shell");
@@ -6213,6 +6274,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       );
       const viewToggle = document.querySelector<HTMLElement>(
         ".teaching-schedule-view-toggle",
+      );
+      const viewOptions = Array.from(
+        viewToggle?.querySelectorAll<HTMLElement>("button") ?? [],
+      );
+      const viewIcons = Array.from(
+        viewToggle?.querySelectorAll<SVGElement>("button svg.lucide") ?? [],
       );
       const activeViewButton = viewToggle?.querySelector<HTMLElement>(
         'button[aria-pressed="true"]',
@@ -6262,6 +6329,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !dateTriggerControl ||
         dateControlIcons.length === 0 ||
         !viewToggle ||
+        viewOptions.length !== 2 ||
+        viewIcons.length !== 2 ||
         !activeViewButton ||
         !siteHeader ||
         !headerPrimaryButton ||
@@ -6299,6 +6368,19 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const userTriggerRect = userTrigger.getBoundingClientRect();
       const userAvatarRect = userAvatar.getBoundingClientRect();
       const userAvatarStyle = getComputedStyle(userAvatar);
+      const readGlyph = (icon: SVGElement) => {
+        const rect = icon.getBoundingClientRect();
+        const strokePart = icon.querySelector<SVGElement>(
+          "path, line, polyline, polygon, circle, ellipse, rect",
+        );
+        const strokeStyle = getComputedStyle(strokePart ?? icon);
+        return {
+          width: rect.width,
+          height: rect.height,
+          strokeWidth: strokeStyle.strokeWidth,
+          vectorEffect: strokeStyle.vectorEffect,
+        };
+      };
 
       return {
         backgroundColor: getComputedStyle(shell).backgroundColor,
@@ -6369,8 +6451,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           icon: {
             color: primaryIconStyle.color,
             opacity: primaryIconStyle.opacity,
-            width: primaryIconStyle.width,
-            height: primaryIconStyle.height,
+            ...readGlyph(headerPrimaryIcon),
           },
         },
         raisedControlShadow: getComputedStyle(activeViewButton).boxShadow,
@@ -6378,6 +6459,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           backgroundColor: getComputedStyle(viewToggle).backgroundColor,
           borderTopWidth: getComputedStyle(viewToggle).borderTopWidth,
           boxShadow: getComputedStyle(viewToggle).boxShadow,
+        },
+        desktopSegmentedControl: {
+          height: viewToggleRect.height,
+          padding: getComputedStyle(viewToggle).padding,
+          gap: getComputedStyle(viewToggle).gap,
+          optionHeights: viewOptions.map(
+            (option) => option.getBoundingClientRect().height,
+          ),
+          iconStyles: viewIcons.map(readGlyph),
         },
         toolbarText: toolbar.textContent?.trim() ?? "",
         toolbarSurface: {
@@ -6405,7 +6495,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           triggerColor: dateTriggerStyle.color,
           icons: dateControlIcons.map((icon) => {
             const style = getComputedStyle(icon);
-            return { color: style.color, opacity: style.opacity };
+            return {
+              color: style.color,
+              opacity: style.opacity,
+              ...readGlyph(icon),
+            };
           }),
         },
         controlsLayout: {
@@ -6511,8 +6605,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       icon: {
         color: "rgb(20, 20, 20)",
         opacity: "1",
-        width: "16px",
-        height: "16px",
+        width: 16,
+        height: 16,
+        strokeWidth: "2px",
+        vectorEffect: "none",
       },
     });
     assert.equal(
@@ -6523,6 +6619,26 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       backgroundColor: E2E_SEGMENTED_CONTROL_BACKGROUND,
       borderTopWidth: "0px",
       boxShadow: "none",
+    });
+    assert.deepEqual(scheduleContract.desktopSegmentedControl, {
+      height: 40,
+      padding: "4px",
+      gap: "4px",
+      optionHeights: [32, 32],
+      iconStyles: [
+        {
+          width: 16,
+          height: 16,
+          strokeWidth: "2px",
+          vectorEffect: "none",
+        },
+        {
+          width: 16,
+          height: 16,
+          strokeWidth: "2px",
+          vectorEffect: "none",
+        },
+      ],
     });
     const scheduleHeaderPrimaryButton = runtime.page.getByRole("link", {
       name: "Назначить урок",
@@ -6640,8 +6756,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     );
     assert.ok(
       scheduleContract.dateNavigator.icons.every(
-        ({ color, opacity }) => color === "rgb(20, 20, 20)" && opacity === "1",
+        ({ color, opacity, width, height, strokeWidth, vectorEffect }) =>
+          color === "rgb(20, 20, 20)" &&
+          opacity === "1" &&
+          width === 16 &&
+          height === 16 &&
+          strokeWidth === "2px" &&
+          vectorEffect === "none",
       ),
+      `desktop Schedule date glyphs: ${JSON.stringify(scheduleContract.dateNavigator.icons)}`,
     );
     assert.ok(
       Math.abs(scheduleContract.dateNavigator.width - 300) < 0.5,
@@ -10836,76 +10959,99 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         group: HTMLElement,
         selected: HTMLElement,
         inactive: HTMLElement,
+        referenceButton: HTMLElement,
       ) => {
         const groupRect = group.getBoundingClientRect();
         const groupStyle = getComputedStyle(group);
-        const trackStyle = getComputedStyle(group, "::before");
-        const selectedRect = selected.getBoundingClientRect();
+        const groupBeforeStyle = getComputedStyle(group, "::before");
         const selectedStyle = getComputedStyle(selected);
-        const selectedPlateStyle = getComputedStyle(selected, "::before");
+        const selectedBeforeStyle = getComputedStyle(selected, "::before");
         const inactiveStyle = getComputedStyle(inactive);
-        const trackHeight =
-          groupRect.height -
-          Number.parseFloat(trackStyle.top) -
-          Number.parseFloat(trackStyle.bottom);
-        const plateWidth =
-          selectedRect.width -
-          Number.parseFloat(selectedPlateStyle.left) -
-          Number.parseFloat(selectedPlateStyle.right);
-        const plateHeight =
-          selectedRect.height -
-          Number.parseFloat(selectedPlateStyle.top) -
-          Number.parseFloat(selectedPlateStyle.bottom);
+        const inactiveBeforeStyle = getComputedStyle(inactive, "::before");
+        const options = Array.from(
+          group.querySelectorAll<HTMLElement>("button"),
+        );
+        const optionRects = options.map((button) =>
+          button.getBoundingClientRect(),
+        );
+        const readSurface = (element: HTMLElement) => {
+          const style = getComputedStyle(element);
+          return {
+            borderTopWidth: style.borderTopWidth,
+            borderTopStyle: style.borderTopStyle,
+            borderTopColor: style.borderTopColor,
+            borderRadius: style.borderRadius,
+            backgroundColor: style.backgroundColor,
+            backgroundImage: style.backgroundImage,
+            backgroundClip: style.backgroundClip,
+            boxShadow: style.boxShadow,
+          };
+        };
+        const readGlyph = (icon: SVGElement) => {
+          const rect = icon.getBoundingClientRect();
+          const strokePart = icon.querySelector<SVGElement>(
+            "path, line, polyline, polygon, circle, ellipse, rect",
+          );
+          const strokeStyle = getComputedStyle(strokePart ?? icon);
+          return {
+            width: rect.width,
+            height: rect.height,
+            strokeWidth: strokeStyle.strokeWidth,
+            vectorEffect: strokeStyle.vectorEffect,
+          };
+        };
         return {
           group: {
+            width: groupRect.width,
             height: groupRect.height,
             padding: groupStyle.padding,
+            gap: groupStyle.gap,
             borderRadius: groupStyle.borderRadius,
             backgroundColor: groupStyle.backgroundColor,
             boxShadow: groupStyle.boxShadow,
           },
-          track: {
-            content: trackStyle.content,
-            height: trackHeight,
-            borderRadius: trackStyle.borderRadius,
-            backgroundColor: trackStyle.backgroundColor,
-            pointerEvents: trackStyle.pointerEvents,
-          },
-          optionHeights: Array.from(
-            group.querySelectorAll<HTMLElement>("button"),
-          ).map((button) => button.getBoundingClientRect().height),
-          optionRadii: Array.from(
-            group.querySelectorAll<HTMLElement>("button"),
-          ).map((button) => getComputedStyle(button).borderRadius),
-          iconSizes: Array.from(
-            group.querySelectorAll<SVGElement>("button svg"),
-          ).map((icon) => {
-            const rect = icon.getBoundingClientRect();
-            return { width: rect.width, height: rect.height };
-          }),
+          groupBeforeContent: groupBeforeStyle.content,
+          optionWidths: optionRects.map((rect) => rect.width),
+          optionHeights: optionRects.map((rect) => rect.height),
+          seamGaps: optionRects
+            .slice(1)
+            .map((rect, index) =>
+              Number((rect.left - optionRects[index]!.right).toFixed(3)),
+            ),
+          optionRadii: options.map(
+            (button) => getComputedStyle(button).borderRadius,
+          ),
+          iconStyles: Array.from(
+            group.querySelectorAll<SVGElement>("button svg.lucide"),
+          ).map(readGlyph),
+          referenceButton: readSurface(referenceButton),
           selected: {
-            backgroundColor: selectedStyle.backgroundColor,
-            backgroundImage: selectedStyle.backgroundImage,
-            boxShadow: selectedStyle.boxShadow,
+            surface: readSurface(selected),
             transform: selectedStyle.transform,
-            plate: {
-              content: selectedPlateStyle.content,
-              width: plateWidth,
-              height: plateHeight,
-              borderRadius: selectedPlateStyle.borderRadius,
-              backgroundColor: selectedPlateStyle.backgroundColor,
-              backgroundImage: selectedPlateStyle.backgroundImage,
-              opacity: selectedPlateStyle.opacity,
-              boxShadow: selectedPlateStyle.boxShadow,
-              pointerEvents: selectedPlateStyle.pointerEvents,
-            },
+            beforeContent: selectedBeforeStyle.content,
           },
           inactive: {
+            borderTopWidth: inactiveStyle.borderTopWidth,
+            borderTopStyle: inactiveStyle.borderTopStyle,
             backgroundColor: inactiveStyle.backgroundColor,
             backgroundImage: inactiveStyle.backgroundImage,
             boxShadow: inactiveStyle.boxShadow,
             transform: inactiveStyle.transform,
+            beforeContent: inactiveBeforeStyle.content,
           },
+        };
+      };
+      const readGlyph = (icon: SVGElement) => {
+        const rect = icon.getBoundingClientRect();
+        const strokePart = icon.querySelector<SVGElement>(
+          "path, line, polyline, polygon, circle, ellipse, rect",
+        );
+        const strokeStyle = getComputedStyle(strokePart ?? icon);
+        return {
+          width: rect.width,
+          height: rect.height,
+          strokeWidth: strokeStyle.strokeWidth,
+          vectorEffect: strokeStyle.vectorEffect,
         };
       };
       const viewportWidth = document.documentElement.clientWidth;
@@ -10929,6 +11075,8 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         externalPeriodSwitchCount: document.querySelectorAll(
           ".teaching-schedule-period-switch",
         ).length,
+        primaryActionHeight: primaryAction.getBoundingClientRect().height,
+        navigatorHeight: navigator.getBoundingClientRect().height,
         viewToggleHeight: viewToggle.getBoundingClientRect().height,
         viewTogglePadding: getComputedStyle(viewToggle).padding,
         viewToggleButtonHeights: Array.from(
@@ -10946,10 +11094,24 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
           emptyCard: readOpaqueWhiteSurface(emptyCard),
           dateNavigator: readOpaqueWhiteSurface(navigator),
         },
+        iconMatrix: {
+          primaryAction: readGlyph(
+            primaryAction.querySelector<SVGElement>("svg.lucide")!,
+          ),
+          dateNavigator: Array.from(
+            navigator.querySelectorAll<SVGElement>("svg.lucide"),
+          )
+            .filter((icon) => icon.getClientRects().length > 0)
+            .map(readGlyph),
+          viewToggle: Array.from(
+            viewToggle.querySelectorAll<SVGElement>("svg.lucide"),
+          ).map(readGlyph),
+        },
         viewToggle: readTouchSegmentedControl(
           viewToggle,
           selectedViewOption,
           inactiveViewOption,
+          primaryAction,
         ),
       };
     });
@@ -10964,6 +11126,8 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         controlsEndInset: mobileScheduleContract.controlsEndInset,
         externalPeriodSwitchCount:
           mobileScheduleContract.externalPeriodSwitchCount,
+        primaryActionHeight: mobileScheduleContract.primaryActionHeight,
+        navigatorHeight: mobileScheduleContract.navigatorHeight,
         viewToggleHeight: mobileScheduleContract.viewToggleHeight,
         viewTogglePadding: mobileScheduleContract.viewTogglePadding,
         viewToggleButtonHeights: mobileScheduleContract.viewToggleButtonHeights,
@@ -10978,15 +11142,35 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         controlsStartInset: 0,
         controlsEndInset: 0,
         externalPeriodSwitchCount: 0,
-        viewToggleHeight: 48,
-        viewTogglePadding: "2px",
-        viewToggleButtonHeights: [44, 44],
+        primaryActionHeight: 40,
+        navigatorHeight: 40,
+        viewToggleHeight: 40,
+        viewTogglePadding: "0px",
+        viewToggleButtonHeights: [40, 40],
         viewToggleIconSizes: [
           { width: 20, height: 20 },
           { width: 20, height: 20 },
         ],
       },
     );
+    assert.deepEqual(mobileScheduleContract.iconMatrix.primaryAction, {
+      width: 20,
+      height: 20,
+      strokeWidth: "2px",
+      vectorEffect: "non-scaling-stroke",
+    });
+    assert.ok(mobileScheduleContract.iconMatrix.dateNavigator.length >= 3);
+    for (const glyph of [
+      ...mobileScheduleContract.iconMatrix.dateNavigator,
+      ...mobileScheduleContract.iconMatrix.viewToggle,
+    ]) {
+      assert.deepEqual(glyph, {
+        width: 20,
+        height: 20,
+        strokeWidth: "2px",
+        vectorEffect: "non-scaling-stroke",
+      });
+    }
     for (const [surfaceName, surface] of Object.entries(
       mobileScheduleContract.whiteSurfaces,
     )) {
@@ -10996,6 +11180,57 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       mobileScheduleContract.viewToggle,
       "Schedule mobile view toggle",
     );
+    await runtime.page.emulateMedia({ reducedMotion: "reduce" });
+    const reducedMotionSegmentedTransitions = await runtime.page
+      .locator(".teaching-schedule-view-toggle button")
+      .evaluateAll((options) =>
+        options.map((option) => {
+          const style = getComputedStyle(option);
+          return {
+            transitionProperty: style.transitionProperty,
+            transitionDurationSeconds: Number.parseFloat(
+              style.transitionDuration,
+            ),
+            transitionDelaySeconds: Number.parseFloat(style.transitionDelay),
+          };
+        }),
+      );
+    assert.equal(reducedMotionSegmentedTransitions.length, 2);
+    assert.ok(
+      reducedMotionSegmentedTransitions.every(
+        ({
+          transitionProperty,
+          transitionDurationSeconds,
+          transitionDelaySeconds,
+        }) =>
+          transitionProperty === "none" &&
+          transitionDurationSeconds <= 0.00001 &&
+          transitionDelaySeconds === 0,
+      ),
+      "Schedule mobile segmented options must stop transitioning under reduced motion",
+    );
+    await runtime.page.emulateMedia({ reducedMotion: "no-preference" });
+    const mobileSelectedViewOption = runtime.page.locator(
+      '.teaching-schedule-view-toggle button[aria-pressed="true"]',
+    );
+    await mobileSelectedViewOption.hover();
+    await runtime.page.waitForTimeout(220);
+    assert.deepEqual(
+      await mobileSelectedViewOption.evaluate((option) => {
+        const style = getComputedStyle(option);
+        return {
+          backgroundColor: style.backgroundColor,
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+        };
+      }),
+      {
+        backgroundColor: "rgb(255, 255, 255)",
+        boxShadow: E2E_RAISED_CONTROL_SHADOW,
+        transform: "none",
+      },
+    );
+    await runtime.page.mouse.move(1, 300);
 
     const mobileDateTrigger = runtime.page.locator(".teaching-date-trigger");
     await mobileDateTrigger.click();
@@ -11022,6 +11257,9 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         ),
         periodSwitchHeight: periodSwitch.getBoundingClientRect().height,
         periodSwitchPadding: getComputedStyle(periodSwitch).padding,
+        periodSwitchGap: getComputedStyle(periodSwitch).gap,
+        periodSwitchBeforeContent: getComputedStyle(periodSwitch, "::before")
+          .content,
         periodButtonHeights: Array.from(
           periodSwitch.querySelectorAll<HTMLElement>("button"),
         ).map((button) => button.getBoundingClientRect().height),
@@ -11032,9 +11270,11 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       scrollWidth: 375,
       popoverInsideViewport: true,
       periodLabels: ["День", "Неделя", "Месяц"],
-      periodSwitchHeight: 48,
-      periodSwitchPadding: "2px",
-      periodButtonHeights: [44, 44, 44],
+      periodSwitchHeight: 40,
+      periodSwitchPadding: "0px",
+      periodSwitchGap: "0px",
+      periodSwitchBeforeContent: "none",
+      periodButtonHeights: [40, 40, 40],
     });
 
     await runtime.page.setViewportSize({ width: 320, height: 812 });
@@ -11291,7 +11531,6 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       }
       const viewportWidth = document.documentElement.clientWidth;
       const triggerRect = trigger.getBoundingClientRect();
-      const burgerRect = burger.getBoundingClientRect();
       const menuRect = menu.getBoundingClientRect();
       const profileHeaderRect = profileHeader.getBoundingClientRect();
       const profileAvatarRect = profileAvatar.getBoundingClientRect();
@@ -11299,6 +11538,19 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       const menuStyle = getComputedStyle(menu);
       const profileHeaderStyle = getComputedStyle(profileHeader);
       const headerStyle = getComputedStyle(header);
+      const readGlyph = (icon: SVGElement) => {
+        const rect = icon.getBoundingClientRect();
+        const strokePart = icon.querySelector<SVGElement>(
+          "path, line, polyline, polygon, circle, ellipse, rect",
+        );
+        const strokeStyle = getComputedStyle(strokePart ?? icon);
+        return {
+          width: rect.width,
+          height: rect.height,
+          strokeWidth: strokeStyle.strokeWidth,
+          vectorEffect: strokeStyle.vectorEffect,
+        };
+      };
       const visibleMenuItems = Array.from(
         menu.querySelectorAll<HTMLElement>('[role="menuitem"]'),
       ).filter((item) => item.getClientRects().length > 0);
@@ -11306,8 +11558,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         trigger: {
           width: triggerRect.width,
           height: triggerRect.height,
-          burgerWidth: burgerRect.width,
-          burgerHeight: burgerRect.height,
+          burger: readGlyph(burger),
           visibleAvatarCount:
             avatar && avatar.getClientRects().length > 0 ? 1 : 0,
         },
@@ -11376,11 +11627,10 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         itemFontSizes: visibleMenuItems.map(
           (item) => getComputedStyle(item).fontSize,
         ),
-        itemIconSizes: visibleMenuItems.map((item) => {
+        itemIconStyles: visibleMenuItems.map((item) => {
           const icon = item.querySelector<SVGElement>("svg");
           if (!icon) throw new Error("Mobile account menu icon is missing");
-          const rect = icon.getBoundingClientRect();
-          return { width: rect.width, height: rect.height };
+          return readGlyph(icon);
         }),
         visibleMenuItems: visibleMenuItems.map(
           (item) => item.textContent?.trim() ?? "",
@@ -11390,8 +11640,12 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     assert.deepEqual(mobileAccountMenuContract.trigger, {
       width: 48,
       height: 48,
-      burgerWidth: 24,
-      burgerHeight: 24,
+      burger: {
+        width: 20,
+        height: 20,
+        strokeWidth: "2px",
+        vectorEffect: "non-scaling-stroke",
+      },
       visibleAvatarCount: 0,
     });
     assert.equal(mobileAccountMenuContract.profileName, "E2E Adult");
@@ -11454,13 +11708,15 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       "20px",
       "20px",
     ]);
-    assert.deepEqual(mobileAccountMenuContract.itemIconSizes, [
-      { width: 24, height: 24 },
-      { width: 24, height: 24 },
-      { width: 24, height: 24 },
-      { width: 24, height: 24 },
-      { width: 24, height: 24 },
-    ]);
+    assert.deepEqual(
+      mobileAccountMenuContract.itemIconStyles,
+      Array.from({ length: 5 }, () => ({
+        width: 20,
+        height: 20,
+        strokeWidth: "2px",
+        vectorEffect: "non-scaling-stroke",
+      })),
+    );
     assert.deepEqual(mobileAccountMenuContract.visibleMenuItems, [
       "Расписание",
       "Ученики",
@@ -11751,6 +12007,15 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       const activeViewButton = viewSwitch?.querySelector<HTMLElement>(
         'button[aria-pressed="true"]',
       );
+      const inactiveViewButton = viewSwitch?.querySelector<HTMLElement>(
+        'button[aria-pressed="false"]',
+      );
+      const search = toolbar?.querySelector<HTMLElement>(
+        ".teaching-hub-search",
+      );
+      const primaryAction = document.querySelector<HTMLElement>(
+        ".app-page-header .app-page-actions > .product-btn",
+      );
       const tableWrap = document.querySelector<HTMLElement>(
         ".student-directory-table-wrap",
       );
@@ -11771,6 +12036,9 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         !membershipSwitch ||
         !viewSwitch ||
         !activeViewButton ||
+        !inactiveViewButton ||
+        !search ||
+        !primaryAction ||
         !tableWrap ||
         !table ||
         !groupCell ||
@@ -11788,6 +12056,42 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       const tableRect = table.getBoundingClientRect();
       const groupRect = groupCell.getBoundingClientRect();
       const actionRect = actionCell.getBoundingClientRect();
+      const readSurface = (element: HTMLElement) => {
+        const style = getComputedStyle(element);
+        return {
+          borderTopWidth: style.borderTopWidth,
+          borderTopStyle: style.borderTopStyle,
+          borderTopColor: style.borderTopColor,
+          borderRadius: style.borderRadius,
+          backgroundColor: style.backgroundColor,
+          backgroundImage: style.backgroundImage,
+          backgroundClip: style.backgroundClip,
+          boxShadow: style.boxShadow,
+        };
+      };
+      const readGlyph = (icon: SVGElement) => {
+        const rect = icon.getBoundingClientRect();
+        const strokePart = icon.querySelector<SVGElement>(
+          "path, line, polyline, polygon, circle, ellipse, rect",
+        );
+        const strokeStyle = getComputedStyle(strokePart ?? icon);
+        return {
+          width: rect.width,
+          height: rect.height,
+          strokeWidth: strokeStyle.strokeWidth,
+          vectorEffect: strokeStyle.vectorEffect,
+        };
+      };
+      const viewSwitchRect = viewSwitch.getBoundingClientRect();
+      const viewSwitchStyle = getComputedStyle(viewSwitch);
+      const viewOptions = Array.from(
+        viewSwitch.querySelectorAll<HTMLElement>("button"),
+      );
+      const viewOptionRects = viewOptions.map((button) =>
+        button.getBoundingClientRect(),
+      );
+      const activeViewStyle = getComputedStyle(activeViewButton);
+      const inactiveViewStyle = getComputedStyle(inactiveViewButton);
       return {
         clientWidth: viewportWidth,
         scrollWidth: document.documentElement.scrollWidth,
@@ -11801,8 +12105,20 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         railOverflowX: getComputedStyle(rail).overflowX,
         railFlexWrap: getComputedStyle(rail).flexWrap,
         railScrollIsContained: rail.scrollWidth > rail.clientWidth,
+        searchHeight: search.getBoundingClientRect().height,
+        primaryActionHeight: primaryAction.getBoundingClientRect().height,
+        workspaceTabHeights: Array.from(
+          document.querySelectorAll<HTMLElement>(".workspace-tab"),
+        )
+          .filter((tab) => tab.getClientRects().length > 0)
+          .map((tab) => tab.getBoundingClientRect().height),
         membershipSwitchHeight: getComputedStyle(membershipSwitch).height,
         membershipSwitchPadding: getComputedStyle(membershipSwitch).padding,
+        membershipSwitchGap: getComputedStyle(membershipSwitch).gap,
+        membershipSwitchBeforeContent: getComputedStyle(
+          membershipSwitch,
+          "::before",
+        ).content,
         membershipButtonHeights: Array.from(
           membershipSwitch.querySelectorAll<HTMLElement>("button"),
         ).map((button) => button.getBoundingClientRect().height),
@@ -11841,6 +12157,48 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
             pressed: button.getAttribute("aria-pressed"),
           }),
         ),
+        viewToggle: {
+          group: {
+            width: viewSwitchRect.width,
+            height: viewSwitchRect.height,
+            padding: viewSwitchStyle.padding,
+            gap: viewSwitchStyle.gap,
+            borderRadius: viewSwitchStyle.borderRadius,
+            backgroundColor: viewSwitchStyle.backgroundColor,
+            boxShadow: viewSwitchStyle.boxShadow,
+          },
+          groupBeforeContent: getComputedStyle(viewSwitch, "::before").content,
+          optionWidths: viewOptionRects.map((rect) => rect.width),
+          optionHeights: viewOptionRects.map((rect) => rect.height),
+          seamGaps: viewOptionRects
+            .slice(1)
+            .map((rect, index) =>
+              Number((rect.left - viewOptionRects[index]!.right).toFixed(3)),
+            ),
+          optionRadii: viewOptions.map(
+            (button) => getComputedStyle(button).borderRadius,
+          ),
+          iconStyles: Array.from(
+            viewSwitch.querySelectorAll<SVGElement>("button svg.lucide"),
+          ).map(readGlyph),
+          referenceButton: readSurface(primaryAction),
+          selected: {
+            surface: readSurface(activeViewButton),
+            transform: activeViewStyle.transform,
+            beforeContent: getComputedStyle(activeViewButton, "::before")
+              .content,
+          },
+          inactive: {
+            borderTopWidth: inactiveViewStyle.borderTopWidth,
+            borderTopStyle: inactiveViewStyle.borderTopStyle,
+            backgroundColor: inactiveViewStyle.backgroundColor,
+            backgroundImage: inactiveViewStyle.backgroundImage,
+            boxShadow: inactiveViewStyle.boxShadow,
+            transform: inactiveViewStyle.transform,
+            beforeContent: getComputedStyle(inactiveViewButton, "::before")
+              .content,
+          },
+        },
         hasFilterTrigger: Boolean(rail.querySelector(".course-filter-trigger")),
         nativeSelectCount: rail.querySelectorAll("select").length,
         tableWrapInsideViewport:
@@ -11876,9 +12234,19 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     assert.equal(mobileContract.railOverflowX, "visible");
     assert.equal(mobileContract.railFlexWrap, "wrap");
     assert.equal(mobileContract.railScrollIsContained, false);
-    assert.equal(mobileContract.membershipSwitchHeight, "48px");
-    assert.equal(mobileContract.membershipSwitchPadding, "2px");
-    assert.deepEqual(mobileContract.membershipButtonHeights, [44, 44, 44]);
+    assert.equal(mobileContract.searchHeight, 40);
+    assert.equal(mobileContract.primaryActionHeight, 40);
+    assert.ok(mobileContract.workspaceTabHeights.length >= 2);
+    assert.ok(
+      mobileContract.workspaceTabHeights.every((height) => height === 40),
+    );
+    assert.equal(mobileContract.membershipSwitchHeight, "40px");
+    assert.equal(mobileContract.membershipSwitchPadding, "0px");
+    assert.equal(mobileContract.membershipSwitchGap, "0px");
+    assert.ok(
+      ["none", "normal"].includes(mobileContract.membershipSwitchBeforeContent),
+    );
+    assert.deepEqual(mobileContract.membershipButtonHeights, [40, 40, 40]);
     assert.deepEqual(mobileContract.membershipButtonFontSizes, [
       "16px",
       "16px",
@@ -11890,14 +12258,18 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       { label: "В группе", pressed: "false" },
       { label: "Без группы", pressed: "false" },
     ]);
-    assert.equal(mobileContract.viewSwitchHeight, "48px");
-    assert.equal(mobileContract.viewSwitchPadding, "2px");
-    assert.deepEqual(mobileContract.viewButtonHeights, [44, 44]);
+    assert.equal(mobileContract.viewSwitchHeight, "40px");
+    assert.equal(mobileContract.viewSwitchPadding, "0px");
+    assert.deepEqual(mobileContract.viewButtonHeights, [40, 40]);
     assert.deepEqual(mobileContract.viewIconSizes, [
       { width: 20, height: 20 },
       { width: 20, height: 20 },
     ]);
-    assert.equal(mobileContract.activeViewButtonHeight, "44px");
+    assert.equal(mobileContract.activeViewButtonHeight, "40px");
+    assertTouchSegmentedControl(
+      mobileContract.viewToggle,
+      "Students mobile view toggle",
+    );
     assert.equal(mobileContract.viewSwitchInsideViewport, true);
     assert.deepEqual(mobileContract.viewButtons, [
       { label: "Показать таблицей", pressed: "true" },
@@ -15419,6 +15791,14 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
           listInsideViewport:
             mobileListRect.left >= 0 && mobileListRect.right <= viewportWidth,
           visibleCardCount: visibleMobileCards.length,
+          cardActionHeights: visibleMobileCards
+            .map((card) =>
+              card.querySelector<HTMLElement>(
+                ".product-btn.action-menu-trigger",
+              ),
+            )
+            .filter((trigger): trigger is HTMLElement => Boolean(trigger))
+            .map((trigger) => trigger.getBoundingClientRect().height),
           wideTableDisplay: getComputedStyle(wideTableWrap).display,
           wideTableVisible: wideTableWrap.getClientRects().length > 0,
         },
@@ -15474,15 +15854,15 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       position: "fixed",
       top: "0px",
     });
-    assert.equal(mobileCoursesToolbar.shellHeight, "48px");
-    assert.equal(mobileCoursesToolbar.shellPadding, "2px");
-    assert.equal(mobileCoursesToolbar.activeButtonHeight, "44px");
-    assert.ok(mobileCoursesToolbar.searchHeight >= 48);
+    assert.equal(mobileCoursesToolbar.shellHeight, "40px");
+    assert.equal(mobileCoursesToolbar.shellPadding, "0px");
+    assert.equal(mobileCoursesToolbar.activeButtonHeight, "40px");
+    assert.equal(mobileCoursesToolbar.searchHeight, 40);
     assert.ok(Number.parseFloat(mobileCoursesToolbar.searchFontSize) >= 16);
     assert.ok(
-      mobileCoursesToolbar.workspaceTabHeights.every((height) => height >= 48),
+      mobileCoursesToolbar.workspaceTabHeights.every((height) => height === 40),
     );
-    assert.deepEqual(mobileCoursesToolbar.viewButtonHeights, [44, 44]);
+    assert.deepEqual(mobileCoursesToolbar.viewButtonHeights, [40, 40]);
     assert.deepEqual(mobileCoursesToolbar.viewButtonFontSizes, [
       "16px",
       "16px",
@@ -15491,7 +15871,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       { width: 20, height: 20 },
       { width: 20, height: 20 },
     ]);
-    assert.ok(mobileCoursesToolbar.pageHeader.actionHeight >= 48);
+    assert.equal(mobileCoursesToolbar.pageHeader.actionHeight, 40);
     assert.notEqual(mobileCoursesToolbar.mobileProjection.listDisplay, "none");
     assert.equal(mobileCoursesToolbar.mobileProjection.listVisible, true);
     assert.equal(
@@ -15499,6 +15879,14 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       true,
     );
     assert.ok(mobileCoursesToolbar.mobileProjection.visibleCardCount > 0);
+    assert.ok(
+      mobileCoursesToolbar.mobileProjection.cardActionHeights.length > 0,
+    );
+    assert.ok(
+      mobileCoursesToolbar.mobileProjection.cardActionHeights.every(
+        (height) => height === 40,
+      ),
+    );
     assert.equal(
       mobileCoursesToolbar.mobileProjection.wideTableDisplay,
       "none",
@@ -15607,14 +15995,40 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       };
       const viewSwitchRect = viewSwitch.getBoundingClientRect();
       const viewSwitchStyle = getComputedStyle(viewSwitch);
-      const trackStyle = getComputedStyle(viewSwitch, "::before");
-      const selectedRect = selectedViewOption.getBoundingClientRect();
       const selectedStyle = getComputedStyle(selectedViewOption);
-      const selectedPlateStyle = getComputedStyle(
-        selectedViewOption,
-        "::before",
-      );
       const inactiveStyle = getComputedStyle(inactiveViewOption);
+      const viewOptions = Array.from(
+        viewSwitch.querySelectorAll<HTMLElement>("button"),
+      );
+      const viewOptionRects = viewOptions.map((button) =>
+        button.getBoundingClientRect(),
+      );
+      const readSurface = (element: HTMLElement) => {
+        const style = getComputedStyle(element);
+        return {
+          borderTopWidth: style.borderTopWidth,
+          borderTopStyle: style.borderTopStyle,
+          borderTopColor: style.borderTopColor,
+          borderRadius: style.borderRadius,
+          backgroundColor: style.backgroundColor,
+          backgroundImage: style.backgroundImage,
+          backgroundClip: style.backgroundClip,
+          boxShadow: style.boxShadow,
+        };
+      };
+      const readGlyph = (icon: SVGElement) => {
+        const rect = icon.getBoundingClientRect();
+        const strokePart = icon.querySelector<SVGElement>(
+          "path, line, polyline, polygon, circle, ellipse, rect",
+        );
+        const strokeStyle = getComputedStyle(strokePart ?? icon);
+        return {
+          width: rect.width,
+          height: rect.height,
+          strokeWidth: strokeStyle.strokeWidth,
+          vectorEffect: strokeStyle.vectorEffect,
+        };
+      };
       return {
         clientWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
@@ -15656,62 +16070,44 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         },
         viewToggle: {
           group: {
+            width: viewSwitchRect.width,
             height: viewSwitchRect.height,
             padding: viewSwitchStyle.padding,
+            gap: viewSwitchStyle.gap,
             borderRadius: viewSwitchStyle.borderRadius,
             backgroundColor: viewSwitchStyle.backgroundColor,
             boxShadow: viewSwitchStyle.boxShadow,
           },
-          track: {
-            content: trackStyle.content,
-            height:
-              viewSwitchRect.height -
-              Number.parseFloat(trackStyle.top) -
-              Number.parseFloat(trackStyle.bottom),
-            borderRadius: trackStyle.borderRadius,
-            backgroundColor: trackStyle.backgroundColor,
-            pointerEvents: trackStyle.pointerEvents,
-          },
-          optionHeights: Array.from(
-            viewSwitch.querySelectorAll<HTMLElement>("button"),
-          ).map((button) => button.getBoundingClientRect().height),
-          optionRadii: Array.from(
-            viewSwitch.querySelectorAll<HTMLElement>("button"),
-          ).map((button) => getComputedStyle(button).borderRadius),
-          iconSizes: Array.from(
-            viewSwitch.querySelectorAll<SVGElement>("button svg"),
-          ).map((icon) => {
-            const rect = icon.getBoundingClientRect();
-            return { width: rect.width, height: rect.height };
-          }),
+          groupBeforeContent: getComputedStyle(viewSwitch, "::before").content,
+          optionWidths: viewOptionRects.map((rect) => rect.width),
+          optionHeights: viewOptionRects.map((rect) => rect.height),
+          seamGaps: viewOptionRects
+            .slice(1)
+            .map((rect, index) =>
+              Number((rect.left - viewOptionRects[index]!.right).toFixed(3)),
+            ),
+          optionRadii: viewOptions.map(
+            (button) => getComputedStyle(button).borderRadius,
+          ),
+          iconStyles: Array.from(
+            viewSwitch.querySelectorAll<SVGElement>("button svg.lucide"),
+          ).map(readGlyph),
+          referenceButton: readSurface(primaryAction),
           selected: {
-            backgroundColor: selectedStyle.backgroundColor,
-            backgroundImage: selectedStyle.backgroundImage,
-            boxShadow: selectedStyle.boxShadow,
+            surface: readSurface(selectedViewOption),
             transform: selectedStyle.transform,
-            plate: {
-              content: selectedPlateStyle.content,
-              width:
-                selectedRect.width -
-                Number.parseFloat(selectedPlateStyle.left) -
-                Number.parseFloat(selectedPlateStyle.right),
-              height:
-                selectedRect.height -
-                Number.parseFloat(selectedPlateStyle.top) -
-                Number.parseFloat(selectedPlateStyle.bottom),
-              borderRadius: selectedPlateStyle.borderRadius,
-              backgroundColor: selectedPlateStyle.backgroundColor,
-              backgroundImage: selectedPlateStyle.backgroundImage,
-              opacity: selectedPlateStyle.opacity,
-              boxShadow: selectedPlateStyle.boxShadow,
-              pointerEvents: selectedPlateStyle.pointerEvents,
-            },
+            beforeContent: getComputedStyle(selectedViewOption, "::before")
+              .content,
           },
           inactive: {
+            borderTopWidth: inactiveStyle.borderTopWidth,
+            borderTopStyle: inactiveStyle.borderTopStyle,
             backgroundColor: inactiveStyle.backgroundColor,
             backgroundImage: inactiveStyle.backgroundImage,
             boxShadow: inactiveStyle.boxShadow,
             transform: inactiveStyle.transform,
+            beforeContent: getComputedStyle(inactiveViewOption, "::before")
+              .content,
           },
         },
       };
@@ -15736,21 +16132,21 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         scrollWidth: 844,
         coarsePointer: true,
         noHover: true,
-        segmentedHeight: 48,
-        segmentedPadding: "2px",
-        segmentedButtonHeights: [44, 44],
+        segmentedHeight: 40,
+        segmentedPadding: "0px",
+        segmentedButtonHeights: [40, 40],
         segmentedButtonFontSizes: ["16px", "16px"],
         segmentedIconSizes: [
           { width: 20, height: 20 },
           { width: 20, height: 20 },
         ],
-        searchHeight: 48,
+        searchHeight: 40,
         searchFontSize: 16,
       },
     );
-    assert.ok(mobileLandscapeContract.primaryActionHeight >= 48);
+    assert.equal(mobileLandscapeContract.primaryActionHeight, 40);
     assert.ok(
-      mobileLandscapeContract.tabHeights.every((height) => height >= 48),
+      mobileLandscapeContract.tabHeights.every((height) => height === 40),
     );
     assert.ok(mobileLandscapeContract.launcher.width >= 56);
     assert.ok(mobileLandscapeContract.launcher.height >= 56);
@@ -16256,14 +16652,40 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         };
         const groupRect = viewToggle.getBoundingClientRect();
         const groupStyle = getComputedStyle(viewToggle);
-        const trackStyle = getComputedStyle(viewToggle, "::before");
-        const selectedRect = selectedViewOption.getBoundingClientRect();
         const selectedStyle = getComputedStyle(selectedViewOption);
-        const selectedPlateStyle = getComputedStyle(
-          selectedViewOption,
-          "::before",
-        );
         const inactiveStyle = getComputedStyle(inactiveViewOption);
+        const options = Array.from(
+          viewToggle.querySelectorAll<HTMLElement>("button"),
+        );
+        const optionRects = options.map((button) =>
+          button.getBoundingClientRect(),
+        );
+        const readSurface = (element: HTMLElement) => {
+          const style = getComputedStyle(element);
+          return {
+            borderTopWidth: style.borderTopWidth,
+            borderTopStyle: style.borderTopStyle,
+            borderTopColor: style.borderTopColor,
+            borderRadius: style.borderRadius,
+            backgroundColor: style.backgroundColor,
+            backgroundImage: style.backgroundImage,
+            backgroundClip: style.backgroundClip,
+            boxShadow: style.boxShadow,
+          };
+        };
+        const readGlyph = (icon: SVGElement) => {
+          const rect = icon.getBoundingClientRect();
+          const strokePart = icon.querySelector<SVGElement>(
+            "path, line, polyline, polygon, circle, ellipse, rect",
+          );
+          const strokeStyle = getComputedStyle(strokePart ?? icon);
+          return {
+            width: rect.width,
+            height: rect.height,
+            strokeWidth: strokeStyle.strokeWidth,
+            vectorEffect: strokeStyle.vectorEffect,
+          };
+        };
         return {
           whiteSurfaces: {
             header: readOpaqueWhiteSurface(header),
@@ -16273,62 +16695,45 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
           },
           viewToggle: {
             group: {
+              width: groupRect.width,
               height: groupRect.height,
               padding: groupStyle.padding,
+              gap: groupStyle.gap,
               borderRadius: groupStyle.borderRadius,
               backgroundColor: groupStyle.backgroundColor,
               boxShadow: groupStyle.boxShadow,
             },
-            track: {
-              content: trackStyle.content,
-              height:
-                groupRect.height -
-                Number.parseFloat(trackStyle.top) -
-                Number.parseFloat(trackStyle.bottom),
-              borderRadius: trackStyle.borderRadius,
-              backgroundColor: trackStyle.backgroundColor,
-              pointerEvents: trackStyle.pointerEvents,
-            },
-            optionHeights: Array.from(
-              viewToggle.querySelectorAll<HTMLElement>("button"),
-            ).map((button) => button.getBoundingClientRect().height),
-            optionRadii: Array.from(
-              viewToggle.querySelectorAll<HTMLElement>("button"),
-            ).map((button) => getComputedStyle(button).borderRadius),
-            iconSizes: Array.from(
-              viewToggle.querySelectorAll<SVGElement>("button svg"),
-            ).map((icon) => {
-              const rect = icon.getBoundingClientRect();
-              return { width: rect.width, height: rect.height };
-            }),
+            groupBeforeContent: getComputedStyle(viewToggle, "::before")
+              .content,
+            optionWidths: optionRects.map((rect) => rect.width),
+            optionHeights: optionRects.map((rect) => rect.height),
+            seamGaps: optionRects
+              .slice(1)
+              .map((rect, index) =>
+                Number((rect.left - optionRects[index]!.right).toFixed(3)),
+              ),
+            optionRadii: options.map(
+              (button) => getComputedStyle(button).borderRadius,
+            ),
+            iconStyles: Array.from(
+              viewToggle.querySelectorAll<SVGElement>("button svg.lucide"),
+            ).map(readGlyph),
+            referenceButton: readSurface(primaryAction),
             selected: {
-              backgroundColor: selectedStyle.backgroundColor,
-              backgroundImage: selectedStyle.backgroundImage,
-              boxShadow: selectedStyle.boxShadow,
+              surface: readSurface(selectedViewOption),
               transform: selectedStyle.transform,
-              plate: {
-                content: selectedPlateStyle.content,
-                width:
-                  selectedRect.width -
-                  Number.parseFloat(selectedPlateStyle.left) -
-                  Number.parseFloat(selectedPlateStyle.right),
-                height:
-                  selectedRect.height -
-                  Number.parseFloat(selectedPlateStyle.top) -
-                  Number.parseFloat(selectedPlateStyle.bottom),
-                borderRadius: selectedPlateStyle.borderRadius,
-                backgroundColor: selectedPlateStyle.backgroundColor,
-                backgroundImage: selectedPlateStyle.backgroundImage,
-                opacity: selectedPlateStyle.opacity,
-                boxShadow: selectedPlateStyle.boxShadow,
-                pointerEvents: selectedPlateStyle.pointerEvents,
-              },
+              beforeContent: getComputedStyle(selectedViewOption, "::before")
+                .content,
             },
             inactive: {
+              borderTopWidth: inactiveStyle.borderTopWidth,
+              borderTopStyle: inactiveStyle.borderTopStyle,
               backgroundColor: inactiveStyle.backgroundColor,
               backgroundImage: inactiveStyle.backgroundImage,
               boxShadow: inactiveStyle.boxShadow,
               transform: inactiveStyle.transform,
+              beforeContent: getComputedStyle(inactiveViewOption, "::before")
+                .content,
             },
           },
         };
@@ -16382,10 +16787,10 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         document.body.append(systemProbe, highlightProbe);
 
         const groupStyle = getComputedStyle(group);
-        const trackStyle = getComputedStyle(group, "::before");
+        const groupBeforeStyle = getComputedStyle(group, "::before");
         const selectedStyle = getComputedStyle(selected);
         const selectedGlyph = selected.querySelector<HTMLElement>("svg, span");
-        const selectedPlateStyle = getComputedStyle(selected, "::before");
+        const selectedBeforeStyle = getComputedStyle(selected, "::before");
         const inactiveStyle = getComputedStyle(inactive);
         const systemStyle = getComputedStyle(systemProbe);
         const highlightStyle = getComputedStyle(highlightProbe);
@@ -16403,13 +16808,12 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
             outlineWidth: groupStyle.outlineWidth,
             outlineColor: groupStyle.outlineColor,
             outlineOffset: groupStyle.outlineOffset,
-          },
-          track: {
-            backgroundColor: trackStyle.backgroundColor,
-            pointerEvents: trackStyle.pointerEvents,
+            backgroundColor: groupStyle.backgroundColor,
+            beforeContent: groupBeforeStyle.content,
           },
           inactive: {
             color: inactiveStyle.color,
+            backgroundColor: inactiveStyle.backgroundColor,
             transform: inactiveStyle.transform,
           },
           selected: {
@@ -16418,8 +16822,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
               ? getComputedStyle(selectedGlyph).color
               : null,
             transform: selectedStyle.transform,
-            plateBackgroundColor: selectedPlateStyle.backgroundColor,
-            platePointerEvents: selectedPlateStyle.pointerEvents,
+            backgroundColor: selectedStyle.backgroundColor,
+            borderTopColor: selectedStyle.borderTopColor,
+            beforeContent: selectedBeforeStyle.content,
           },
         };
         systemProbe.remove();
@@ -16433,26 +16838,26 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         outlineWidth: "1px",
         outlineColor: forcedColorsToggle.system.canvasText,
         outlineOffset: "-1px",
-      });
-      assert.deepEqual(forcedColorsToggle.track, {
         backgroundColor: forcedColorsToggle.system.buttonFace,
-        pointerEvents: "none",
+        beforeContent: "none",
       });
       assert.deepEqual(forcedColorsToggle.inactive, {
         color: forcedColorsToggle.system.buttonText,
+        backgroundColor: "rgba(0, 0, 0, 0)",
         transform: "none",
       });
       assert.notEqual(
         forcedColorsToggle.inactive.color,
-        forcedColorsToggle.track.backgroundColor,
+        forcedColorsToggle.group.backgroundColor,
         "Forced-colors inactive glyph must contrast with the toggle track",
       );
       assert.deepEqual(forcedColorsToggle.selected, {
         color: forcedColorsToggle.system.highlightText,
         glyphColor: forcedColorsToggle.system.highlightText,
         transform: "none",
-        plateBackgroundColor: forcedColorsToggle.system.highlight,
-        platePointerEvents: "none",
+        backgroundColor: forcedColorsToggle.system.highlight,
+        borderTopColor: forcedColorsToggle.system.highlight,
+        beforeContent: "none",
       });
 
       await runtime.page.keyboard.press("Tab");
@@ -16584,9 +16989,15 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         ),
         shellHeight: getComputedStyle(viewSwitch).height,
         shellPadding: getComputedStyle(viewSwitch).padding,
+        shellGap: getComputedStyle(viewSwitch).gap,
+        shellWidth: viewSwitch.getBoundingClientRect().width,
+        shellBeforeContent: getComputedStyle(viewSwitch, "::before").content,
         viewButtonHeights: Array.from(
           viewSwitch.querySelectorAll<HTMLElement>("button"),
         ).map((button) => button.getBoundingClientRect().height),
+        viewButtonWidths: Array.from(
+          viewSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => button.getBoundingClientRect().width),
         viewButtonFontSizes: Array.from(
           viewSwitch.querySelectorAll<HTMLElement>("button"),
         ).map((button) => getComputedStyle(button).fontSize),
@@ -16598,6 +17009,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         }),
         audienceShellHeight: getComputedStyle(audienceSwitch).height,
         audienceShellPadding: getComputedStyle(audienceSwitch).padding,
+        audienceShellGap: getComputedStyle(audienceSwitch).gap,
+        audienceShellBeforeContent: getComputedStyle(audienceSwitch, "::before")
+          .content,
         audienceButtonHeights: Array.from(
           audienceSwitch.querySelectorAll<HTMLElement>("button"),
         ).map((button) => button.getBoundingClientRect().height),
@@ -16656,9 +17070,13 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         visibleResultCount: 0,
       },
     );
-    assert.equal(mobileCatalogToolbar.shellHeight, "48px");
-    assert.equal(mobileCatalogToolbar.shellPadding, "2px");
-    assert.deepEqual(mobileCatalogToolbar.viewButtonHeights, [44, 44]);
+    assert.equal(mobileCatalogToolbar.shellHeight, "40px");
+    assert.equal(mobileCatalogToolbar.shellPadding, "0px");
+    assert.equal(mobileCatalogToolbar.shellGap, "0px");
+    assert.equal(mobileCatalogToolbar.shellWidth, 80);
+    assert.equal(mobileCatalogToolbar.shellBeforeContent, "none");
+    assert.deepEqual(mobileCatalogToolbar.viewButtonHeights, [40, 40]);
+    assert.deepEqual(mobileCatalogToolbar.viewButtonWidths, [40, 40]);
     assert.deepEqual(mobileCatalogToolbar.viewButtonFontSizes, [
       "16px",
       "16px",
@@ -16667,14 +17085,16 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       { width: 20, height: 20 },
       { width: 20, height: 20 },
     ]);
-    assert.equal(mobileCatalogToolbar.audienceShellHeight, "48px");
-    assert.equal(mobileCatalogToolbar.audienceShellPadding, "2px");
-    assert.deepEqual(mobileCatalogToolbar.audienceButtonHeights, [44, 44]);
+    assert.equal(mobileCatalogToolbar.audienceShellHeight, "40px");
+    assert.equal(mobileCatalogToolbar.audienceShellPadding, "0px");
+    assert.equal(mobileCatalogToolbar.audienceShellGap, "0px");
+    assert.equal(mobileCatalogToolbar.audienceShellBeforeContent, "none");
+    assert.deepEqual(mobileCatalogToolbar.audienceButtonHeights, [40, 40]);
     assert.deepEqual(mobileCatalogToolbar.audienceButtonFontSizes, [
       "16px",
       "16px",
     ]);
-    assert.ok(mobileCatalogToolbar.searchHeight >= 48);
+    assert.equal(mobileCatalogToolbar.searchHeight, 40);
     assert.ok(Number.parseFloat(mobileCatalogToolbar.searchFontSize) >= 16);
     assert.notEqual(mobileCatalogToolbar.mobileProjection.listDisplay, "none");
     assert.equal(mobileCatalogToolbar.mobileProjection.listVisible, true);
@@ -16724,7 +17144,10 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         ".course-lessons-table-wrap",
       );
       const addButton = toolbar?.querySelector<HTMLElement>(".product-btn");
-      if (!toolbar || !wrapper || !addButton) {
+      const searchInput = toolbar?.querySelector<HTMLInputElement>(
+        "input.product-control-search",
+      );
+      if (!toolbar || !wrapper || !addButton || !searchInput) {
         throw new Error("Mobile Course Lessons controls are missing");
       }
       const viewportWidth = document.documentElement.clientWidth;
@@ -16741,6 +17164,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         toolbarPaddingLeft: toolbarStyle.paddingLeft,
         toolbarPaddingRight: toolbarStyle.paddingRight,
         addButtonHeight: getComputedStyle(addButton).height,
+        searchHeight: searchInput.getBoundingClientRect().height,
         wrapperOverflowX: getComputedStyle(wrapper).overflowX,
         wrapperClientWidth: wrapper.clientWidth,
         wrapperScrollWidth: wrapper.scrollWidth,
@@ -16755,6 +17179,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         toolbarPaddingLeft: mobileCourseLessons.toolbarPaddingLeft,
         toolbarPaddingRight: mobileCourseLessons.toolbarPaddingRight,
         addButtonHeight: mobileCourseLessons.addButtonHeight,
+        searchHeight: mobileCourseLessons.searchHeight,
         wrapperOverflowX: mobileCourseLessons.wrapperOverflowX,
       },
       {
@@ -16764,7 +17189,8 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         wrapperInsideViewport: true,
         toolbarPaddingLeft: "0px",
         toolbarPaddingRight: "0px",
-        addButtonHeight: "48px",
+        addButtonHeight: "40px",
+        searchHeight: 40,
         wrapperOverflowX: "auto",
       },
     );
@@ -16782,6 +17208,63 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         level: 1,
       })
       .waitFor();
+    const mobileFileComponentEdit = runtime.page.getByRole("button", {
+      name: "Редактировать «Файл»",
+      exact: true,
+    });
+    await mobileFileComponentEdit.waitFor();
+    await mobileFileComponentEdit.click();
+    const mobileFileComponentDialog = runtime.page.getByRole("dialog", {
+      name: "1. Файл",
+      exact: true,
+    });
+    await mobileFileComponentDialog.waitFor();
+    const mobileRawFieldContract = await mobileFileComponentDialog.evaluate(
+      (dialog) => {
+        const selects = Array.from(
+          dialog.querySelectorAll<HTMLSelectElement>(
+            "select.field-input:not([multiple])",
+          ),
+        ).filter((select) => select.getClientRects().length > 0);
+        const textareas = Array.from(
+          dialog.querySelectorAll<HTMLTextAreaElement>("textarea.field-input"),
+        ).filter((textarea) => textarea.getClientRects().length > 0);
+        return {
+          selects: selects.map((select) => ({
+            height: select.getBoundingClientRect().height,
+            fontSize: getComputedStyle(select).fontSize,
+          })),
+          textareaHeights: textareas.map(
+            (textarea) => textarea.getBoundingClientRect().height,
+          ),
+          documentClientWidth: document.documentElement.clientWidth,
+          documentScrollWidth: document.documentElement.scrollWidth,
+        };
+      },
+    );
+    assert.ok(
+      mobileRawFieldContract.selects.length >= 2,
+      "Mobile File editor must expose its raw select.field-input consumers",
+    );
+    assert.ok(
+      mobileRawFieldContract.selects.every(
+        ({ height, fontSize }) => height === 40 && fontSize === "16px",
+      ),
+      "Every mobile raw select.field-input must be exactly 40px tall and remain anti-zoom safe",
+    );
+    assert.ok(
+      mobileRawFieldContract.textareaHeights.length > 0 &&
+        mobileRawFieldContract.textareaHeights.every((height) => height > 40),
+      "Mobile textarea.field-input must retain its flexible multi-line height",
+    );
+    assert.equal(
+      mobileRawFieldContract.documentScrollWidth,
+      mobileRawFieldContract.documentClientWidth,
+    );
+    await mobileFileComponentDialog
+      .getByRole("button", { name: "Отмена", exact: true })
+      .click();
+    await mobileFileComponentDialog.waitFor({ state: "detached" });
     await runtime.page
       .getByRole("tab", { name: "План", exact: true })
       .press("End");
@@ -16931,6 +17414,11 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         ),
         selectedTab: selectedTab.textContent?.trim() ?? "",
         selectedTabAriaSelected: selectedTab.getAttribute("aria-selected"),
+        visibleTabHeights: Array.from(
+          tabStrip.querySelectorAll<HTMLElement>(".workspace-tab"),
+        )
+          .filter((tab) => tab.getClientRects().length > 0)
+          .map((tab) => tab.getBoundingClientRect().height),
         selectedTabLeft: selectedTabRect.left,
         selectedTabRight: selectedTabRect.right,
         tabStripLeft: tabStripRect.left,
@@ -17002,6 +17490,8 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     assert.equal(mobileVisual.baselineVisualHeight, 1.2);
     assert.match(mobileVisual.selectedTab, /^История/);
     assert.equal(mobileVisual.selectedTabAriaSelected, "true");
+    assert.ok(mobileVisual.visibleTabHeights.length >= 5);
+    assert.ok(mobileVisual.visibleTabHeights.every((height) => height === 40));
     assert.ok(mobileVisual.selectedTabLeft >= mobileVisual.tabStripLeft - 1);
     assert.ok(mobileVisual.selectedTabRight <= mobileVisual.tabStripRight + 1);
   } finally {

@@ -146,15 +146,6 @@
   opacity: 1;
 }
 
-.nav-user-trigger > .nav-main-menu-icon,
-.site-header-shell-demo .nav-user-trigger > .nav-main-menu-icon {
-  width: 1.25rem;
-  height: 1.25rem;
-  flex: 0 0 1.25rem;
-  color: currentColor;
-  opacity: 1;
-}
-
 .site-header-shell-demo .nav-dropdown-item {
   border: 0;
   font-weight: var(--course-demo-control-font-weight, 400);
@@ -669,11 +660,17 @@
     background: rgba(20, 20, 20, 0.06);
   }
 
-  .nav-user-trigger > .nav-main-menu-icon,
-  .site-header-shell-demo .nav-user-trigger > .nav-main-menu-icon {
-    width: 1.5rem;
-    height: 1.5rem;
-    flex-basis: 1.5rem;
+  .site-header-shell-demo .nav-mobile-action-icon {
+    width: var(--course-demo-control-icon-size, 1.25rem);
+    height: var(--course-demo-control-icon-size, 1.25rem);
+    flex: 0 0 var(--course-demo-control-icon-size, 1.25rem);
+    stroke-width: var(--product-control-icon-stroke-width, 2px);
+  }
+
+  .site-header-shell-demo
+    .nav-mobile-action-icon
+    :is(path, line, polyline, polygon, circle, ellipse, rect) {
+    vector-effect: non-scaling-stroke;
   }
 
   .nav-account-menu-mobile {
@@ -757,12 +754,6 @@
     outline: 2px solid #141414;
     outline-offset: -2px;
     box-shadow: none;
-  }
-
-  .nav-account-menu-mobile .nav-dropdown-item svg {
-    width: 1.5rem;
-    height: 1.5rem;
-    flex: 0 0 1.5rem;
   }
 }
 

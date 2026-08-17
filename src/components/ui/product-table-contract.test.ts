@@ -43,7 +43,7 @@ test("product tables use the element radius instead of the card radius", () => {
   );
   assert.match(
     styles,
-    /:root\s*\{[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: 1px solid var\(--product-surface-border-color\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
+    /:root\s*\{[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border:\s*var\(--product-surface-border-width\) solid\s*var\(--product-surface-border-color\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
   );
   assert.match(
     styles,

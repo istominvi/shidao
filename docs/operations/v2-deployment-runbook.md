@@ -1107,9 +1107,11 @@ ShiDao V2 application:
 - Course, Lesson и остальные active-product `WorkspaceTabs` используют
   edge-to-edge baseline 1.2 px цвета `oklch(0.19 0 0 / 0.4)` без внешнего
   inline-inset и квадратный чёрный active segment 4 px без radius. Inactive
-  label и 16 px иконка имеют цвет `oklch(0.19 0 0 / 0.6)`, gap между tab-кнопками и верхний radius
-  равны 12 px; светлый hover не перекрывает baseline. Каждый tab имеет 16 px
-  иконку. Только positive numeric count показан маленьким приподнятым `sup` с
+  label и base/desktop `16 px` иконка имеют цвет
+  `oklch(0.19 0 0 / 0.6)`, gap между tab-кнопками и верхний radius равны 12 px;
+  светлый hover не перекрывает baseline. На narrow/coarse viewport tab-glyph
+  равен `20 px` с физическим Lucide stroke `2 px`. Только positive numeric
+  count показан маленьким приподнятым `sup` с
   weight 500, а ноль не рендерится; каждый `aria-controls` tab разрешается в matching
   `tabpanel` с обратным `aria-labelledby`, а на mobile вкладки скроллятся
   внутри strip без document overflow. При смене вкладки один общий indicator
@@ -1312,8 +1314,10 @@ flow как permanent delete.
   дату/время. Измерить inline-padding обычных header/data cells: ровно 12 px
   слева и справа. Для последней body action-cell ожидать inset 4 px и
   единственный `MoreVertical` trigger 32 × 32 px с радиусом 8 px: внутри 40 px
-  строки его отступы сверху, справа и снизу должны быть по 4 px, как у active
-  option в 40 px переключателе вида. На hover строки назначенного урока
+  строки его отступы сверху, справа и снизу должны быть по 4 px, как у
+  base/desktop active option `32 × 32 px` внутри `40 px` segmented shell;
+  narrow/coarse options используют отдельную геометрию `40 px / 12 px`. На
+  hover строки назначенного урока
   computed cursor должен быть `pointer`. Вертикальное троеточие постоянно
   доступно с клавиатуры и touch, его portal-menu не обрезается горизонтальным
   scroll wrapper и для ожидающего Run содержит ровно «Начать урок / Изменить /
@@ -1340,8 +1344,9 @@ flow как permanent delete.
   `1px solid CanvasText`. Native `select`, самостоятельный modal dialog и
   reference/demo-only surface не должны получать universal dropdown class;
   календарная panel остаётся в contract, несмотря на `role="dialog"`.
-  Каждый пункт portal-menu имеет exact 40 px, радиус 8 px как у active view
-  option, вертикально центрированные иконку и текст, `.88rem/400` и canonical inset/gap.
+  Каждый пункт portal-menu имеет exact 40 px, радиус 8 px как у base/desktop
+  active view option, вертикально центрированные иконку и текст, `.88rem/400`
+  и canonical inset/gap.
   Отдельно проверить
   canonical active V2 controls: exact `40 px / 12 px / .88rem / 400`, active
   navigation без inset/shadow/translate, icon opacity `1` и contrast-aware
@@ -1357,9 +1362,10 @@ flow как permanent delete.
   `.product-btn` state-contract и сохранять одинаковые width/height во всех
   состояниях: внешний control остаётся `40 px`, внутренняя client-area —
   `38 px`, border не исчезает на hover, active или focus. Белый
-  Current-source `.site-header-shell-demo` имеет `64 px / 20 px`, `12 px`
-  block-padding, exact `40 px` inner container-row с общей vertical centerline
-  для brand/navigation/actions-avatar и единственную computed shadow
+  Current-source `.site-header-shell-demo` имеет `64 px / 20 px`: на desktop
+  `12 px` block-padding образует exact `40 px` inner container-row, а protected
+  mobile сохраняет `48 px` inner row и burger target. В обеих плотностях зоны
+  лежат на общей vertical centerline; shell имеет единственную computed shadow
   `oklch(0 0 0 / 0.05) 0px 6px 12px 0px` без inset-слоёв. Nav/action wrappers
   не должны увеличивать высоту ряда. Прежний deployed `68 px` sticky shell
   остаётся историческим release evidence. После завершения
@@ -1371,16 +1377,19 @@ flow как permanent delete.
   что row ellipsis и Component-card icon-actions остаются
   transparent/borderless/no-shadow, а contextual menu panels/items сохраняют
   border `0`.
-  На narrow/coarse viewport compound toggle сохраняет `48 px` group и `44 px`
-  hit targets. Его `::before` рисует `40 px` track с radius `12 px` и цветом
-  `--product-surface-border-color`; selected option остаётся прозрачной, а её
-  `::before` рисует непрозрачную белую `38 px` пластину с radius `11 px`
-  и base shadow. Для icon-only её размер точно `38 × 38 px`; между ней и
-  track остаётся `1 px` контур того же цвета, что рамка обычной кнопки.
-  Actual buttons не масштабируются при pressed; keyboard focus сохраняет
-  видимый inset outline. В `forced-colors` проверить контрастные
-  `ButtonFace / ButtonText` для track/inactive option и
-  `Highlight / HighlightText` для selected plate. Menu items сохраняют border `0`.
+  На narrow/coarse viewport ordinary product controls, Schedule date navigator
+  и compound toggle имеют точную внешнюю высоту `40 px`; action-glyphs равны
+  `20 px`, computed Lucide stroke — `2 px`. Toggle имеет `padding: 0`,
+  `gap: 0` и настоящие `40 px` options; две icon-only options дают ровно
+  `80 × 40 px`, а их соседние границы совпадают без зазора. Selected actual
+  option использует непрозрачный белый surface, radius `12 px` и base shadow,
+  что обычная `.product-btn`; её прозрачный `1 px` border показывает ровно один
+  слой track цвета `--product-surface-border-color`, совпадающего с видимой рамкой
+  обычной кнопки; inactive option прозрачна над тем же track. Pseudo-layer
+  отсутствует, actual buttons не масштабируются при pressed, keyboard focus
+  сохраняет видимый inset outline. В `forced-colors` проверить контрастные
+  `ButtonFace / ButtonText` и `Highlight / HighlightText` на actual surfaces.
+  Menu items сохраняют border `0`.
   Повторить этот visual check на authenticated `/profile` и вкладках
   `?tab=observers|settings`: единый раздел использует beige product shell и
   solid-white demo TopNav; desktop Account avatar-link имеет ровно
@@ -1392,6 +1401,9 @@ flow как permanent delete.
   вкладку и не рендерить отдельный side-nav. Auth-кнопки, построенные
   на canonical `.product-btn`, следуют тому же контракту; raw Landing controls
   и non-product controls полноэкранного Student Screen не должны измениться;
+  mobile burger остаётся `48 × 48 px` с glyph `20 px / 2 px`, navigation rows —
+  `68 px` с теми же glyphs, а Messages launcher — `56 × 56 px` с glyph не
+  меньше `24 px`. Это категорийные исключения, а не ordinary product controls;
 - для current source compact-toolbar follow-up проверить, что Course и Store
   не рендерят filter trigger/panel и не применяют удалённые advanced-filter
   predicates. Students рендерит один inline membership control **Все / В

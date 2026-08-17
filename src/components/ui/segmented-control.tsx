@@ -34,10 +34,7 @@ export function SegmentedControl<T extends string>({
     <div
       role="group"
       aria-label={ariaLabel}
-      className={classNames(
-        "product-segmented-control inline-flex h-10 shrink-0 items-center gap-1 rounded-xl p-1",
-        className,
-      )}
+      className={classNames("product-segmented-control", className)}
     >
       {items.map((item) => {
         const Icon = item.icon;
@@ -55,20 +52,19 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(item.value)}
             aria-busy={item.busy || undefined}
             className={classNames(
-              "product-segmented-control-option inline-flex h-8 min-h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg text-[0.88rem] font-medium leading-none transition",
+              "product-segmented-control-option",
               iconOnly
-                ? "product-segmented-control-option-icon-only w-8 px-0"
-                : "px-3",
+                ? "product-segmented-control-option-icon-only"
+                : undefined,
               isSelected
-                ? "product-segmented-control-option-selected bg-white text-neutral-950"
-                : "text-neutral-600 hover:bg-neutral-950/[0.06] hover:text-neutral-950",
-              isDisabled ? "cursor-not-allowed opacity-60" : undefined,
+                ? "product-segmented-control-option-selected"
+                : undefined,
             )}
           >
-            {Icon ? <Icon className="h-4 w-4" aria-hidden="true" /> : null}
+            {Icon ? <Icon aria-hidden="true" /> : null}
             {!iconOnly ? <span>{item.label}</span> : null}
             {!iconOnly && item.count !== undefined ? (
-              <span className="min-w-4 text-center text-[0.68rem] text-neutral-500">
+              <span className="product-segmented-control-option-count">
                 {item.count}
               </span>
             ) : null}

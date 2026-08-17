@@ -183,6 +183,9 @@ Mobile navigation menu:
 На desktop Account avatar `40 × 40 px` с radius `12 px` ведёт напрямую в
 `/profile` и не открывает второе Account menu. На mobile его заменяет
 burger `48 × 48 px`; панель имеет viewport inset/gap `12 px` и radius `16 px`.
+Burger и все пять navigation-item glyphs используют общий mobile action-icon
+token `20 px` с физическим Lucide stroke `2 px`; крупные `48/68 px` targets
+остаются отдельной navigation-геометрией.
 Её profile header показывает `48 px` avatar, имя и допустимый email с
 равными верхним/нижним inset и отделён от navigation items одним
 full-bleed светлым divider. Mobile navigation menu входит в общий

@@ -90,7 +90,7 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
   );
   assert.match(
     navigation,
-    /<X className="nav-main-menu-icon" aria-hidden="true" \/>[\s\S]*?<Menu className="nav-main-menu-icon" aria-hidden="true" \/>/,
+    /<X[\s\S]*?className="nav-main-menu-icon nav-mobile-action-icon"[\s\S]*?\/>[\s\S]*?<Menu[\s\S]*?className="nav-main-menu-icon nav-mobile-action-icon"[\s\S]*?\/>/,
   );
   assert.match(
     navigation,
@@ -108,8 +108,15 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
     navigation,
     /<div className="nav-dropdown-profile">[\s\S]*?<AvatarImage[\s\S]*?avatar=\{state\.avatar\}[\s\S]*?initials=\{state\.initials\}[\s\S]*?size=\{48\}[\s\S]*?className="nav-user-trigger-avatar nav-dropdown-profile-avatar"/,
   );
-  assert.match(navigation, /<item\.icon[\s\S]*?size=\{24\}/);
-  assert.match(navigation, /<UserRound[\s\S]*?size=\{24\}/);
+  assert.match(
+    navigation,
+    /<item\.icon[\s\S]*?className="nav-mobile-action-icon text-neutral-500"/,
+  );
+  assert.match(
+    navigation,
+    /<UserRound[\s\S]*?className="nav-mobile-action-icon text-neutral-500"/,
+  );
+  assert.doesNotMatch(navigation, /size=\{24\}/);
   assert.match(avatarImage, /rounded-xl/);
   assert.match(avatarImage, /style=\{\{ width: size, height: size \}\}/);
   assert.match(avatarImage, /width=\{size\}/);
@@ -133,14 +140,18 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
   );
   const mobileTriggerStyles =
     /\.nav-account-menu-trigger\s*\{[^}]*\}/.exec(navigationCss)?.[0] ?? "";
+  const mobileNavigationStart = navigationCss.indexOf(
+    "@media (max-width: 767px)",
+  );
+  const baseNavigationStyles = navigationCss.slice(0, mobileNavigationStart);
   const mobileTriggerIconStyles =
-    Array.from(
-      navigationCss.matchAll(
-        /\.nav-user-trigger\s*>\s*\.nav-main-menu-icon,[\s\S]*?\.site-header-shell-demo \.nav-user-trigger\s*>\s*\.nav-main-menu-icon\s*\{[^}]*\}/g,
-      ),
-    )
-      .map((match) => match[0])
-      .find((rule) => /(?:1\.5rem|24px)/.test(rule)) ?? "";
+    /\.site-header-shell-demo \.nav-mobile-action-icon\s*\{[^}]*\}/.exec(
+      navigationCss,
+    )?.[0] ?? "";
+  const mobileIconShapeStyles =
+    /\.site-header-shell-demo\s+\.nav-mobile-action-icon\s+:is\(path, line, polyline, polygon, circle, ellipse, rect\)\s*\{[^}]*\}/.exec(
+      navigationCss,
+    )?.[0] ?? "";
   const mobileMenuStyles =
     /\.nav-account-menu-mobile\s*\{[^}]*\}/.exec(navigationCss)?.[0] ?? "";
   const mobileMenuSurfaceStyles =
@@ -186,8 +197,27 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
     mobileTriggerStyles,
     /-webkit-tap-highlight-color: transparent;/,
   );
-  assert.match(mobileTriggerIconStyles, /width: (?:1\.5rem|24px);/);
-  assert.match(mobileTriggerIconStyles, /height: (?:1\.5rem|24px);/);
+  assert.match(
+    mobileTriggerIconStyles,
+    /width: var\(--course-demo-control-icon-size, 1\.25rem\);/,
+  );
+  assert.match(
+    mobileTriggerIconStyles,
+    /height: var\(--course-demo-control-icon-size, 1\.25rem\);/,
+  );
+  assert.match(
+    mobileTriggerIconStyles,
+    /flex: 0 0 var\(--course-demo-control-icon-size, 1\.25rem\);/,
+  );
+  assert.match(
+    mobileTriggerIconStyles,
+    /stroke-width: var\(--product-control-icon-stroke-width, 2px\);/,
+  );
+  assert.match(mobileIconShapeStyles, /vector-effect: non-scaling-stroke;/);
+  assert.doesNotMatch(
+    baseNavigationStyles,
+    /vector-effect:\s*non-scaling-stroke/,
+  );
   assert.match(mobileBrandStyles, /font-size: (?:1\.625rem|26px);/);
   assert.match(demoHeaderStyles, /border-radius:/);
   assert.match(
@@ -254,7 +284,7 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
   );
   assert.match(
     globalStyles,
-    /:root\s*\{[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: 1px solid var\(--product-surface-border-color\);[^}]*--product-dropdown-background: var\(--product-surface-background\);[^}]*--product-dropdown-shadow: 0 24px 32px -24px rgba\(20, 20, 20, 0\.24\);[^}]*\}[\s\S]*?\.product-dropdown-surface\s*\{[^}]*border: 0;[^}]*--product-element-radius, 0\.75rem[^}]*background: var\(--product-dropdown-background, #fff\);[^}]*padding: var\(--product-dropdown-inset, 0\.375rem\);[^}]*backdrop-filter: none;/,
+    /:root\s*\{[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);[^}]*--product-dropdown-background: var\(--product-surface-background\);[^}]*--product-dropdown-shadow: 0 24px 32px -24px rgba\(20, 20, 20, 0\.24\);[^}]*\}[\s\S]*?\.product-dropdown-surface\s*\{[^}]*border: 0;[^}]*--product-element-radius, 0\.75rem[^}]*background: var\(--product-dropdown-background, #fff\);[^}]*padding: var\(--product-dropdown-inset, 0\.375rem\);[^}]*backdrop-filter: none;/,
   );
   assert.match(
     navigationCss,

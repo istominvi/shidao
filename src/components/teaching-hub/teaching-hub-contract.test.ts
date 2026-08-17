@@ -882,7 +882,7 @@ test("teaching hub inputs, membership control, and data surfaces use canonical t
   );
 });
 
-test("narrow and coarse-touch teaching toggles share 48px hits with 40/38px visual surfaces", () => {
+test("narrow and coarse-touch teaching controls share the canonical 40px geometry", () => {
   const touchMediaQuery =
     "@media (max-width: 767px), (hover: none) and (pointer: coarse)";
   const touchMediaStart = globalStyleSource.indexOf(touchMediaQuery);
@@ -897,55 +897,73 @@ test("narrow and coarse-touch teaching toggles share 48px hits with 40/38px visu
     touchMediaStart,
     narrowMediaStart,
   );
+  const baseStyles = globalStyleSource.slice(0, touchMediaStart);
 
   assert.match(
     globalStyleSource,
-    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control\s*\{[^}]*outline: 1px solid CanvasText;[^}]*outline-offset: -1px;/,
+    /:root\s*\{[^}]*--product-control-height: 2\.5rem;[^}]*--product-control-radius: var\(--product-element-radius\);[^}]*--product-control-icon-size: 1rem;[^}]*--product-control-icon-stroke-width: 2px;[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);/,
   );
   assert.match(
     globalStyleSource,
-    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option\s*\{[^}]*color: ButtonText;/,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control\s*\{[^}]*background: ButtonFace !important;[^}]*outline: 1px solid CanvasText;[^}]*outline-offset: -1px;[^}]*box-shadow: none;[^}]*forced-color-adjust: none;/,
   );
   assert.match(
     globalStyleSource,
-    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control::before\s*\{[^}]*background: ButtonFace !important;/,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option\s*\{[^}]*color: ButtonText !important;/,
   );
   assert.match(
     globalStyleSource,
-    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option-selected\s*\{[^}]*background: Highlight !important;[^}]*color: HighlightText !important;[^}]*forced-color-adjust: none;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected::before\s*\{[^}]*background: Highlight !important;/,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option-selected\s*\{[^}]*border: 1px solid Highlight !important;[^}]*background: Highlight !important;[^}]*color: HighlightText !important;[^}]*box-shadow: none !important;[^}]*forced-color-adjust: none;/,
   );
   assert.match(
     globalStyleSource,
-    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid Highlight;[^}]*outline-offset: -2px;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected:focus-visible\s*\{[^}]*outline-color: HighlightText !important;/,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid Highlight !important;[^}]*outline-offset: -2px;[^}]*box-shadow: none !important;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected:focus-visible\s*\{[^}]*outline-color: HighlightText !important;/,
+  );
+  assert.match(
+    globalStyleSource,
+    /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.product-segmented-control-option\s*\{[^}]*transition: none;/,
   );
 
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control\s*\{[^}]*height: 3rem;[^}]*min-height: 3rem;[^}]*padding: 0\.125rem;[^}]*background: transparent;/,
+    /\.course-demo-shell\s*\{[^}]*--product-control-icon-size: 1\.25rem;[^}]*--course-demo-control-font-size: 1rem;/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control::before\s*\{[^}]*position: absolute;[^}]*inset: 0\.25rem;[^}]*border-radius: var\(--course-demo-control-radius, 0\.75rem\);[^}]*background: var\(--product-segmented-control-background\);[^}]*pointer-events: none;/,
+    /\.course-demo-shell \.product-btn,\s*\.course-demo-shell \.product-control,\s*\.course-demo-shell :is\(input, select\)\.field-input,\s*\.course-demo-shell \.teaching-date-navigator,\s*\.course-demo-shell \.teaching-hub-search\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: 1rem;/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*min-width: 2\.75rem;[^}]*height: 2\.75rem;[^}]*min-height: 2\.75rem;[^}]*border-radius: var\(--course-demo-control-radius, 0\.75rem\);[^}]*background: transparent;[^}]*font-size: 1rem;[^}]*box-shadow: none;[^}]*touch-action: manipulation;/,
+    /\.workspace-tab\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option-icon-only\s*\{[^}]*width: 2\.75rem;[^}]*padding-inline: 0;/,
+    /\.course-demo-shell \.product-segmented-control\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*gap: 0;[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*padding: 0;/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option svg\s*\{[^}]*width: 1\.25rem;[^}]*height: 1\.25rem;/,
+    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*min-width: var\(--product-control-height\);[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*border: 0;[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*background: transparent;[^}]*font-size: 1rem;[^}]*box-shadow: none;[^}]*touch-action: manipulation;/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option-selected::before\s*\{[^}]*inset: 0\.1875rem;[^}]*border-radius: calc\(\s*var\(--course-demo-control-radius, 0\.75rem\) - 0\.0625rem\s*\);[^}]*background-color: var\(--product-surface-background\);[^}]*background-image: none;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*pointer-events: none;/,
+    /\.course-demo-shell \.product-segmented-control-option-icon-only\s*\{[^}]*width: var\(--product-control-height\);[^}]*min-width: var\(--product-control-height\);[^}]*flex: 0 0 var\(--product-control-height\);[^}]*padding-inline: 0;/,
+  );
+  assert.match(
+    globalStyleSource,
+    /\.product-segmented-control-option svg\.lucide\s*\{[^}]*width: var\(--product-control-icon-size\);[^}]*height: var\(--product-control-icon-size\);[^}]*flex: 0 0 var\(--product-control-icon-size\);/,
   );
   assert.match(
     touchStyles,
-    /\.product-segmented-control-option-selected:not\(:disabled\):active::before\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);/,
+    /\.course-demo-shell\s+:is\([\s\S]*?\.product-segmented-control-option,[\s\S]*?\)\s+svg\.lucide\s+\*\s*\{[^}]*stroke-width: var\(--product-control-icon-stroke-width\);[^}]*vector-effect: non-scaling-stroke;/,
+  );
+  assert.doesNotMatch(baseStyles, /vector-effect:\s*non-scaling-stroke/);
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-segmented-control-option-selected\s*\{[^}]*border: var\(--product-surface-border-width\) solid transparent;[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
+  );
+  assert.match(
+    touchStyles,
+    /\.product-segmented-control-option-selected:not\(:disabled\):active\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);[^}]*transform: none;/,
   );
   assert.match(
     touchStyles,
@@ -954,6 +972,10 @@ test("narrow and coarse-touch teaching toggles share 48px hits with 40/38px visu
   assert.match(
     touchStyles,
     /\.course-demo-shell \.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: -2px;/,
+  );
+  assert.doesNotMatch(
+    globalStyleSource,
+    /\.product-segmented-control(?:::before|[^\s,{]*::before)/,
   );
   assert.doesNotMatch(touchStyles, /transform: scale\(/);
 });

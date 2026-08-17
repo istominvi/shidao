@@ -283,11 +283,11 @@ test("shared course controls preserve pressed-button semantics", () => {
   );
   assert.match(
     globalStyles,
-    /:root\s*\{[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: 1px solid var\(--product-surface-border-color\);[^}]*--product-segmented-control-background: var\(--product-surface-border-color\);/,
+    /:root\s*\{[^}]*--product-control-height: 2\.5rem;[^}]*--product-control-radius: var\(--product-element-radius\);[^}]*--product-control-icon-size: 1rem;[^}]*--product-control-icon-stroke-width: 2px;[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);[^}]*--product-segmented-control-background: var\(--product-surface-border-color\);/,
   );
   assert.match(
     globalStyles,
-    /\.product-segmented-control\s*\{[^}]*border: 0;[^}]*background: var\(--product-segmented-control-background\);[^}]*box-shadow: none;/,
+    /\.product-segmented-control\s*\{[^}]*display: inline-flex;[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*gap: var\(--product-inner-control-inset\);[^}]*border: 0;[^}]*border-radius: var\(--product-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*padding: var\(--product-inner-control-inset\);[^}]*box-shadow: none;/,
   );
   assert.match(
     globalStyles,
@@ -295,11 +295,15 @@ test("shared course controls preserve pressed-button semantics", () => {
   );
   assert.match(
     globalStyles,
-    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control\s*\{[^}]*outline: 1px solid CanvasText;[^}]*outline-offset: -1px;[^}]*box-shadow: none;[^}]*\}[\s\S]*?\.product-segmented-control-option\s*\{[^}]*color: ButtonText;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected\s*\{[^}]*background: Highlight !important;[^}]*color: HighlightText !important;[^}]*forced-color-adjust: none;[^}]*\}[\s\S]*?\.product-segmented-control::before\s*\{[^}]*background: ButtonFace !important;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected::before\s*\{[^}]*background: Highlight !important;/,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control\s*\{[^}]*background: ButtonFace !important;[^}]*outline: 1px solid CanvasText;[^}]*outline-offset: -1px;[^}]*box-shadow: none;[^}]*forced-color-adjust: none;[^}]*\}[\s\S]*?\.product-segmented-control-option\s*\{[^}]*color: ButtonText !important;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected\s*\{[^}]*border: 1px solid Highlight !important;[^}]*background: Highlight !important;[^}]*color: HighlightText !important;[^}]*box-shadow: none !important;[^}]*forced-color-adjust: none;/,
   );
   assert.match(
     globalStyles,
-    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid Highlight;[^}]*outline-offset: -2px;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected:focus-visible\s*\{[^}]*outline-color: HighlightText !important;/,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid Highlight !important;[^}]*outline-offset: -2px;[^}]*box-shadow: none !important;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected:focus-visible\s*\{[^}]*outline-color: HighlightText !important;/,
+  );
+  assert.match(
+    globalStyles,
+    /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.product-segmented-control-option\s*\{[^}]*transition: none;/,
   );
   assert.doesNotMatch(
     segmentedControlSource,
@@ -307,7 +311,11 @@ test("shared course controls preserve pressed-button semantics", () => {
   );
   assert.match(
     segmentedControlSource,
-    /isSelected[\s\S]*?bg-white text-neutral-950/,
+    /isSelected[\s\S]*?product-segmented-control-option-selected/,
+  );
+  assert.doesNotMatch(
+    segmentedControlSource,
+    /\bh-10\b|\bh-8\b|\bw-8\b|\bgap-1\b|\bp-1\b|\brounded-(?:xl|lg)\b|\bh-4\b|\bw-4\b/,
   );
   assert.match(
     segmentedControlSource,
@@ -318,7 +326,7 @@ test("shared course controls preserve pressed-button semantics", () => {
 test("course tables adopt canonical raised surfaces", () => {
   assert.match(
     globalStyles,
-    /:root\s*\{[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: 1px solid var\(--product-surface-border-color\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
+    /:root\s*\{[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
   );
   assert.match(
     globalStyles,
@@ -336,7 +344,7 @@ test("course tables adopt canonical raised surfaces", () => {
   assert.doesNotMatch(courseCatalogPanelSource, /border-white\/80/);
 });
 
-test("course index keeps ergonomic mobile cards and layered 48/40/38px toggles", () => {
+test("course index keeps ergonomic mobile cards and canonical 40px controls", () => {
   const touchMediaQuery =
     "@media (max-width: 767px), (hover: none) and (pointer: coarse)";
   const touchMediaStart = globalStyles.indexOf(touchMediaQuery);
@@ -348,6 +356,7 @@ test("course index keeps ergonomic mobile cards and layered 48/40/38px toggles",
   assert.ok(narrowMediaStart > touchMediaStart);
 
   const touchStyles = globalStyles.slice(touchMediaStart, narrowMediaStart);
+  const baseStyles = globalStyles.slice(0, touchMediaStart);
 
   for (const panelSource of [
     ownedCoursesPanelSource,
@@ -369,59 +378,60 @@ test("course index keeps ergonomic mobile cards and layered 48/40/38px toggles",
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell\s*\{[^}]*--course-demo-control-height: 3rem;[^}]*--course-demo-control-font-size: 1rem;[^}]*--course-demo-control-icon-size: 1\.125rem;/,
+    /\.course-demo-shell\s*\{[^}]*--product-control-icon-size: 1\.25rem;[^}]*--course-demo-control-font-size: 1rem;/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-control,\s*\.course-demo-shell input\.field-input\s*\{[^}]*--product-control-height: 3rem;[^}]*font-size: 1rem;/,
+    /\.course-demo-shell \.product-btn,\s*\.course-demo-shell \.product-control,\s*\.course-demo-shell :is\(input, select\)\.field-input,\s*\.course-demo-shell \.teaching-date-navigator,\s*\.course-demo-shell \.teaching-hub-search\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: 1rem;/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-control-search\s*\{[^}]*--product-control-height: (?:3rem|48px);[^}]*font-size: (?:1rem|16px);/,
+    /\.course-demo-shell \.product-control-search\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: 1rem;/,
   );
   assert.match(
     touchStyles,
-    /\.workspace-tab\s*\{[^}]*height: (?:3rem|48px);[^}]*min-height: (?:3rem|48px);/,
+    /\.workspace-tab\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control\s*\{[^}]*height: 3rem;[^}]*min-height: 3rem;[^}]*padding: 0\.125rem;[^}]*background: transparent;/,
+    /\.course-demo-shell \.product-segmented-control\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*gap: 0;[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*padding: 0;/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control::before\s*\{[^}]*position: absolute;[^}]*inset: 0\.25rem;[^}]*border-radius: var\(--course-demo-control-radius, 0\.75rem\);[^}]*background: var\(--product-segmented-control-background\);[^}]*pointer-events: none;/,
+    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*min-width: var\(--product-control-height\);[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*border: 0;[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*background: transparent;[^}]*font-size: 1rem;[^}]*box-shadow: none;[^}]*touch-action: manipulation;/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*min-width: 2\.75rem;[^}]*height: 2\.75rem;[^}]*min-height: 2\.75rem;[^}]*border: 0;[^}]*border-radius: var\(--course-demo-control-radius, 0\.75rem\);[^}]*background: transparent;[^}]*font-size: 1rem;[^}]*box-shadow: none;[^}]*touch-action: manipulation;/,
+    /\.course-demo-shell \.product-segmented-control-option-icon-only\s*\{[^}]*width: var\(--product-control-height\);[^}]*min-width: var\(--product-control-height\);[^}]*flex: 0 0 var\(--product-control-height\);[^}]*padding-inline: 0;/,
+  );
+  assert.match(
+    globalStyles,
+    /\.product-segmented-control-option svg\.lucide\s*\{[^}]*width: var\(--product-control-icon-size\);[^}]*height: var\(--product-control-icon-size\);[^}]*flex: 0 0 var\(--product-control-icon-size\);/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option-icon-only\s*\{[^}]*width: 2\.75rem;[^}]*padding-inline: 0;/,
+    /\.course-demo-shell\s+:is\([\s\S]*?\.product-segmented-control-option,[\s\S]*?\)\s+svg\.lucide\s+\*\s*\{[^}]*stroke-width: var\(--product-control-icon-stroke-width\);[^}]*vector-effect: non-scaling-stroke;/,
   );
-  assert.match(
-    touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option svg\s*\{[^}]*width: 1\.25rem;[^}]*height: 1\.25rem;/,
-  );
+  assert.doesNotMatch(baseStyles, /vector-effect:\s*non-scaling-stroke/);
   assert.match(
     globalStyles,
     /@media \(max-width: 767px\)[\s\S]*?\.course-catalog-audience-control[\s\S]*?\.product-segmented-control-option\s*\{[^}]*font-size: 1rem;/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option-selected::before\s*\{[^}]*inset: 0\.1875rem;[^}]*border: 0;[^}]*border-radius: calc\(\s*var\(--course-demo-control-radius, 0\.75rem\) - 0\.0625rem\s*\);[^}]*background-color: var\(--product-surface-background\);[^}]*background-image: none;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*pointer-events: none;/,
+    /\.course-demo-shell \.product-segmented-control-option-selected\s*\{[^}]*border: var\(--product-surface-border-width\) solid transparent;[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option-selected,[\s\S]*?\.product-segmented-control-option:hover\s*\{[^}]*background: transparent;[^}]*box-shadow: none;/,
-  );
-  assert.match(
-    touchStyles,
-    /\.product-segmented-control-option-selected:not\(:disabled\):active::before\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);/,
+    /\.product-segmented-control-option-selected:not\(:disabled\):active\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);[^}]*transform: none;/,
   );
   assert.match(
     touchStyles,
     /\.course-demo-shell \.product-segmented-control-option:not\(:disabled\):active\s*\{[^}]*transform: none;/,
+  );
+  assert.doesNotMatch(
+    globalStyles,
+    /\.product-segmented-control(?:::before|[^\s,{]*::before)/,
   );
   assert.doesNotMatch(touchStyles, /transform: scale\(/);
   assert.match(

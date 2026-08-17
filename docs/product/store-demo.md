@@ -233,9 +233,12 @@ Base `.product-control` / `.field-input`, включая многострочн�
 доставки сохраняет base boundary, но не получает single-line height/entry
 shadow. Native `select`, standalone `DialogShell` и demo-only surfaces исключены
 из universal dropdown contract; Store sort намеренно использует product
-dropdown вместо native `select`. Compound toggles сохраняют
-`48 / 44 px` touch boxes, но рисуют `40 px` track и `38 px` белый selected
-surface с `1 px` контуром из того же цвета, что product border. Это UI-only
+dropdown вместо native `select`. На narrow/coarse viewport обычные Store
+controls имеют внешнюю высоту `40 px` и action-glyph `20 px / 2 px`.
+Compound toggles состоят из настоящих соседних `40 px` options без padding/gap;
+selected option использует тот же белый surface, radius `12 px` и base shadow,
+что обычная кнопка; её прозрачный `1 px` border пропускает один слой track того же
+цвета, что product border. Это UI-only
 acceptance без Product/Order/Inventory, API,
 persistence, schema, migration,
 оплаты или delivery integration. Этот follow-up является current source / next

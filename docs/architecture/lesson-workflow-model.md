@@ -719,9 +719,11 @@ Visual contract Course routes не меняет эту навигационну�
   Course/Lesson state update без анимации, сохраняя синхронный route dispatch;
 - основные кнопки и header controls — высотой 40 px с радиусом 12 px и шрифтом
   `.88rem/400`; ordinary control использует белый surface, общий product
-  border и raised base/hover/pressed contract, иконки имеют единый 16 px rhythm,
-  полную непрозрачность и наследуют контрастный цвет, а contextual menu items
-  остаются плоскими и borderless;
+  border и raised base/hover/pressed contract. Base/desktop action-glyphs имеют
+  единый `16 px` rhythm; на narrow/coarse viewport shared token приводит их к
+  `20 px` с физическим Lucide stroke `2 px`. Иконки полностью непрозрачны и
+  наследуют контрастный цвет, а contextual menu items остаются плоскими и
+  borderless;
 - исторический header-only baseline для всех product buttons внутри
   `AppPageHeader` задавал белый surface высотой
   `40 px`, получает border `0` и общий двухслойный
@@ -859,8 +861,9 @@ Visual contract Course routes не меняет эту навигационну�
   opacity/clipped-reveal entrance без layout animation и горизонтального
   document overflow. Быстрый повторный выбор
   отменяет прежнюю panel animation, ResizeObserver сохраняет indicator после
-  resize, а reduced-motion делает оба эффекта мгновенными. Каждый tab имеет
-  16 px Lucide icon; только positive numeric
+  resize, а reduced-motion делает оба эффекта мгновенными. Base/desktop tab
+  имеет `16 px` Lucide icon; narrow/coarse token вычисляется в `20 px / 2 px`.
+  Только positive numeric
   count показывается маленьким приподнятым `sup` с weight 500, а `0` отсутствует. Каждый tab
   ссылается на постоянный matching `tabpanel`, который возвращает его id через
   `aria-labelledby`. В current source / next production native scrollbar скрыт
@@ -1017,15 +1020,20 @@ actions`; пять data headers сортируют полную client-loaded pr
   filters или persisted данные. До `767 px` широкая table projection скрыта и
   тот же набор данных выводится semantic list/card projection без page-level
   horizontal scroll. На ширине до `767 px` и при любом coarse/touch pointer
-  search, tabs и основные actions имеют touch target минимум `48 px`, а
-  segmented group/options сохраняют `48 / 44 px` touch boxes, но
-  видимые track/selected surface равны `40 / 38 px`; icon-only selected surface —
-  `38 × 38 px`. Общий цвет product border рисует и track, и `1 px` контур
-  вокруг белой пластины; радиусы равны `12 / 11 px`, labels — `16 px`,
-  glyphs — `20 px`. Schedule использует тот же shared `SegmentedControl`.
-  `forced-colors` использует контрастные пары
-  `ButtonFace / ButtonText` для track/inactive item и
-  `Highlight / HighlightText` для selected plate. Все
+  search, однострочные inputs/selects, tabs, основные actions и Schedule date
+  navigator используют один `40 px` control token. Action-glyphs равны
+  `20 px` с физическим Lucide stroke `2 px`. Segmented group имеет высоту
+  `40 px`, нулевые padding/gap и настоящие `40 px` options; две icon-only
+  options образуют ровно `80 × 40 px`. Track использует цвет product border,
+  inactive option прозрачна, а selected actual option получает тот же
+  непрозрачный белый surface, radius `12 px` и base shadow, что обычная
+  кнопка. Прозрачный `1 px` border selected option пропускает только
+  один слой track, поэтому её видимый контур совпадает с product border без
+  двойного затемнения. Прежние pseudo-слои `48 / 44 / 40 / 38 px` удалены.
+  Schedule использует тот же shared `SegmentedControl`; desktop сохраняет
+  `40 px` group с `32 px` options и `16 px` glyphs. `forced-colors` использует
+  контрастные пары `ButtonFace / ButtonText` и
+  `Highlight / HighlightText` на actual surfaces. Все
   редактируемые app
   inputs/selects/textareas имеют computed font не меньше `16 px`, чтобы iOS не
   выполнял focus zoom в portrait или landscape, при этом viewport не запрещает
@@ -1081,9 +1089,10 @@ header показывает `48 px` Account avatar, Account name и только
 публичный email, использует равные block-insets и отделён от navigation
 full-bleed светлым divider, а
 visible items ограничены «Расписание / Ученики / Курсы / Магазин / Профиль».
-Burger target равен `48 × 48 px`, icon — `24 px`; panel остаётся внутри
+Burger target равен `48 × 48 px`, action-glyph — `20 px` с физическим stroke
+`2 px`; panel остаётся внутри
 viewport с inset/gap `12 px`, радиусом `16 px`, строками `68 px`, текстом
-`20 px` и иконками `24 px`. Pointer-open не переводит focus на первый пункт;
+`20 px` и теми же `20 px / 2 px` action-glyphs. Pointer-open не переводит focus на первый пункт;
 keyboard-open сохраняет inset focus indicator, стрелки, Home/End, Escape и
 focus-return semantics.
 На protected desktop и authenticated landing avatar является прямой ссылкой

@@ -15,6 +15,10 @@
   --product-element-radius: 0.75rem;
   --product-card-radius: 1.25rem;
   --product-row-height: 2.5rem;
+  --product-control-height: 2.5rem;
+  --product-control-radius: var(--product-element-radius);
+  --product-control-icon-size: 1rem;
+  --product-control-icon-stroke-width: 2px;
   --product-table-divider-color: #ececef;
   --product-table-body-color: #141414;
   --product-table-body-font-size: 0.88rem;
@@ -27,8 +31,10 @@
   --product-raised-control-shadow-hover: 0 4px 10px -2px oklch(0% 0 0 / 0.16);
   --product-raised-control-shadow-pressed: 0 1px 3px 0px oklch(0% 0 0 / 0.14);
   --product-surface-background: #fff;
+  --product-surface-border-width: 1px;
   --product-surface-border-color: oklch(0 0 0 / 0.1);
-  --product-surface-border: 1px solid var(--product-surface-border-color);
+  --product-surface-border: var(--product-surface-border-width) solid
+    var(--product-surface-border-color);
   --product-raised-control-hover-translate-y: -1px;
   --product-raised-control-transition: 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --product-raised-surface-shadow: var(--product-raised-control-shadow);
@@ -106,8 +112,8 @@ a {
   --course-demo-card-radius: var(--product-card-radius);
   --course-demo-table-radius: var(--course-demo-element-radius);
   --course-demo-table-row-height: var(--product-row-height);
-  --course-demo-control-height: var(--product-row-height);
-  --course-demo-control-radius: var(--course-demo-element-radius);
+  --course-demo-control-height: var(--product-control-height);
+  --course-demo-control-radius: var(--product-control-radius);
   --course-demo-control-padding-inline: 0.75rem;
   --course-demo-content-inset: 0.75rem;
   --course-demo-control-font-size: 0.88rem;
@@ -115,7 +121,7 @@ a {
   --course-demo-control-line-height: 1.2;
   --course-demo-control-border: rgba(20, 20, 20, 0.14);
   --course-demo-control-foreground: #141414;
-  --course-demo-control-icon-size: 1rem;
+  --course-demo-control-icon-size: var(--product-control-icon-size);
   --product-entry-control-foreground: var(--course-demo-control-foreground);
   --product-entry-control-font-size: var(--course-demo-control-font-size);
   --product-entry-control-font-weight: var(--course-demo-control-font-weight);
@@ -1847,8 +1853,8 @@ a {
   outline: none;
 }
 
-input.field-input {
-  height: var(--product-control-height, 2.5rem);
+:is(input, select).field-input {
+  height: var(--product-control-height);
   border: var(--product-surface-border);
   background: var(--product-surface-background);
   background-clip: padding-box;
@@ -1867,7 +1873,7 @@ input.field-input::placeholder {
 }
 
 .course-demo-shell .field-input {
-  border-radius: 0.75rem;
+  border-radius: var(--course-demo-control-radius);
 }
 
 .field-input:focus {
@@ -1936,7 +1942,6 @@ input.field-input:focus {
 }
 
 .product-control {
-  --product-control-height: 2.5rem;
   height: var(--product-control-height);
   border-radius: 0.95rem;
   border: var(--product-surface-border);
@@ -1954,7 +1959,7 @@ input.field-input:focus {
 }
 
 .course-demo-shell .product-control {
-  border-radius: 0.75rem;
+  border-radius: var(--course-demo-control-radius);
 }
 
 .product-control:focus-visible {
@@ -2152,18 +2157,71 @@ input.product-control-search::placeholder {
 
 .product-segmented-control {
   position: relative;
+  display: inline-flex;
+  height: var(--product-control-height);
+  min-height: var(--product-control-height);
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--product-inner-control-inset);
   isolation: isolate;
   border: 0;
+  border-radius: var(--product-control-radius);
   background: var(--product-segmented-control-background);
+  padding: var(--product-inner-control-inset);
   box-shadow: none;
 }
 
 .product-segmented-control-option {
   position: relative;
   z-index: 1;
+  display: inline-flex;
+  width: auto;
+  height: var(--product-inner-control-size);
+  min-height: var(--product-inner-control-size);
+  flex: 0 0 auto;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
   isolation: isolate;
   box-sizing: border-box;
   border: 0;
+  border-radius: var(--product-inner-control-radius);
+  background: transparent;
+  padding-inline: 0.75rem;
+  color: var(--color-neutral-600, #525252);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1;
+  transform: none;
+  transition:
+    border-color var(--product-raised-control-transition),
+    background-color var(--product-raised-control-transition),
+    color var(--product-raised-control-transition),
+    box-shadow var(--product-raised-control-transition);
+}
+
+.product-segmented-control-option-icon-only {
+  width: var(--product-inner-control-size);
+  min-width: var(--product-inner-control-size);
+  flex-basis: var(--product-inner-control-size);
+  padding-inline: 0;
+}
+
+.product-segmented-control-option svg.lucide {
+  width: var(--product-control-icon-size);
+  height: var(--product-control-icon-size);
+  flex: 0 0 var(--product-control-icon-size);
+  color: currentColor;
+  opacity: 1;
+}
+
+.product-segmented-control-option:hover:not(:disabled):not(
+    .product-segmented-control-option-selected
+  ) {
+  background: oklch(0.145 0 0 / 0.06);
+  color: var(--color-neutral-950, #0a0a0a);
 }
 
 .product-segmented-control-option:focus-visible {
@@ -2174,14 +2232,28 @@ input.product-control-search::placeholder {
 .product-segmented-control-option-selected {
   background: var(--product-surface-background);
   background-clip: padding-box;
+  color: var(--color-neutral-950, #0a0a0a);
   box-shadow: var(--product-raised-control-shadow);
 }
 
+.product-segmented-control-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.product-segmented-control-option-count {
+  min-width: 1rem;
+  color: var(--color-neutral-500, #737373);
+  font-size: 0.68rem;
+  line-height: 1;
+  text-align: center;
+}
+
 .product-btn {
-  --product-control-height: 2.5rem;
   display: inline-flex;
   cursor: pointer;
   height: var(--product-control-height);
+  min-height: var(--product-control-height);
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
@@ -2204,7 +2276,6 @@ input.product-control-search::placeholder {
 }
 
 .course-demo-shell .product-btn {
-  --product-control-height: var(--course-demo-control-height);
   gap: 0.42rem;
   border-radius: var(--course-demo-control-radius);
   background-color: #fff;
@@ -2215,7 +2286,17 @@ input.product-control-search::placeholder {
   line-height: var(--course-demo-control-line-height);
 }
 
-.course-demo-shell .product-btn svg {
+.course-demo-shell
+  :is(
+    .product-btn,
+    .teaching-date-navigator,
+    .teaching-hub-search,
+    .product-search-wrap,
+    .product-select-wrap,
+    .workspace-tab,
+    .fade-chevron-control
+  )
+  svg.lucide {
   width: var(--course-demo-control-icon-size);
   height: var(--course-demo-control-icon-size);
   flex: 0 0 var(--course-demo-control-icon-size);
@@ -2395,6 +2476,7 @@ input.product-control-search::placeholder {
 .product-btn.component-card-visibility-action {
   width: var(--product-inner-control-size);
   height: var(--product-inner-control-size);
+  min-height: var(--product-inner-control-size);
   border: 0;
   border-radius: var(--product-inner-control-radius);
   background: transparent;
@@ -2786,6 +2868,10 @@ input.product-control-search::placeholder {
     transform: none;
   }
 
+  .product-segmented-control-option {
+    transition: none;
+  }
+
   .lesson-component-card-actions,
   .lesson-component-card-actions .component-card-action,
   .lesson-component-card-actions .component-card-visibility-action {
@@ -3036,36 +3122,29 @@ input.product-control-search::placeholder {
   }
 
   .product-segmented-control {
+    background: ButtonFace !important;
     outline: 1px solid CanvasText;
     outline-offset: -1px;
-    box-shadow: none;
-  }
-
-  .product-segmented-control-option {
-    color: ButtonText;
-  }
-
-  .product-segmented-control-option-selected {
-    border: 1px solid Highlight;
-    background: Highlight !important;
-    color: HighlightText !important;
     box-shadow: none;
     forced-color-adjust: none;
   }
 
-  .product-segmented-control::before {
-    background: ButtonFace !important;
+  .product-segmented-control-option {
+    color: ButtonText !important;
   }
 
-  .product-segmented-control-option-selected::before {
+  .product-segmented-control-option-selected {
+    border: 1px solid Highlight !important;
     background: Highlight !important;
+    color: HighlightText !important;
     box-shadow: none !important;
+    forced-color-adjust: none;
   }
 
   .product-segmented-control-option:focus-visible {
-    outline: 2px solid Highlight;
+    outline: 2px solid Highlight !important;
     outline-offset: -2px;
-    box-shadow: none;
+    box-shadow: none !important;
   }
 
   .product-segmented-control-option-selected:focus-visible {
@@ -3660,63 +3739,69 @@ input.product-control-search::placeholder {
   }
 
   .course-demo-shell {
-    --course-demo-control-height: 3rem;
+    --product-control-icon-size: 1.25rem;
     --course-demo-control-padding-inline: 0.875rem;
     --course-demo-control-font-size: 1rem;
-    --course-demo-control-icon-size: 1.125rem;
   }
 
+  .course-demo-shell
+    :is(
+      .product-btn,
+      .product-segmented-control-option,
+      .teaching-date-navigator,
+      .teaching-hub-search,
+      .product-search-wrap,
+      .product-select-wrap,
+      .workspace-tab,
+      .fade-chevron-control
+    )
+    svg.lucide
+    * {
+    stroke-width: var(--product-control-icon-stroke-width);
+    vector-effect: non-scaling-stroke;
+  }
+
+  .course-demo-shell .product-btn,
   .course-demo-shell .product-control,
-  .course-demo-shell input.field-input {
-    --product-control-height: 3rem;
+  .course-demo-shell :is(input, select).field-input,
+  .course-demo-shell .teaching-date-navigator,
+  .course-demo-shell .teaching-hub-search {
+    height: var(--product-control-height);
+    min-height: var(--product-control-height);
 
     font-size: 1rem;
   }
 
   .course-demo-shell .product-control-search {
-    --product-control-height: 3rem;
-
     height: var(--product-control-height);
+    min-height: var(--product-control-height);
     font-size: 1rem;
   }
 
-  .course-demo-shell .product-search-icon {
-    width: 1.125rem;
-    height: 1.125rem;
-  }
-
   .workspace-tab {
-    height: 3rem;
-    min-height: 3rem;
+    height: var(--product-control-height);
+    min-height: var(--product-control-height);
     padding-inline: 0.875rem;
     font-size: 1rem;
     touch-action: manipulation;
   }
 
   .course-demo-shell .product-segmented-control {
-    height: 3rem;
-    min-height: 3rem;
-    padding: 0.125rem;
-    background: transparent;
-  }
-
-  .course-demo-shell .product-segmented-control::before {
-    position: absolute;
-    z-index: 0;
-    inset: 0.25rem;
-    border-radius: var(--course-demo-control-radius, 0.75rem);
+    height: var(--product-control-height);
+    min-height: var(--product-control-height);
+    gap: 0;
+    border-radius: var(--course-demo-control-radius);
     background: var(--product-segmented-control-background);
-    content: "";
-    pointer-events: none;
+    padding: 0;
   }
 
   .course-demo-shell .product-segmented-control-option {
     width: auto;
-    min-width: 2.75rem;
-    height: 2.75rem;
-    min-height: 2.75rem;
+    min-width: var(--product-control-height);
+    height: var(--product-control-height);
+    min-height: var(--product-control-height);
     border: 0;
-    border-radius: var(--course-demo-control-radius, 0.75rem);
+    border-radius: var(--course-demo-control-radius);
     background: transparent;
     padding-inline: 0.875rem;
     font-size: 1rem;
@@ -3725,43 +3810,23 @@ input.product-control-search::placeholder {
   }
 
   .course-demo-shell .product-segmented-control-option-icon-only {
-    width: 2.75rem;
+    width: var(--product-control-height);
+    min-width: var(--product-control-height);
+    flex: 0 0 var(--product-control-height);
     padding-inline: 0;
   }
 
-  .course-demo-shell .product-segmented-control-option > :is(svg, span) {
-    position: relative;
-    z-index: 1;
-  }
-
-  .course-demo-shell .product-segmented-control-option svg {
-    width: 1.25rem;
-    height: 1.25rem;
-  }
-
-  .course-demo-shell .product-segmented-control-option-selected::before {
-    position: absolute;
-    z-index: 0;
-    inset: 0.1875rem;
-    border: 0;
-    border-radius: calc(var(--course-demo-control-radius, 0.75rem) - 0.0625rem);
-    background-color: var(--product-surface-background);
-    background-image: none;
+  .course-demo-shell .product-segmented-control-option-selected {
+    border: var(--product-surface-border-width) solid transparent;
+    background: var(--product-surface-background);
+    background-clip: padding-box;
     box-shadow: var(--product-raised-control-shadow);
-    content: "";
-    opacity: 1;
-    pointer-events: none;
-  }
-
-  .course-demo-shell .product-segmented-control-option-selected,
-  .course-demo-shell .product-segmented-control-option:hover {
-    background: transparent;
-    box-shadow: none;
   }
 
   .course-demo-shell
-    .product-segmented-control-option-selected:not(:disabled):active::before {
+    .product-segmented-control-option-selected:not(:disabled):active {
     box-shadow: var(--product-raised-control-shadow-pressed);
+    transform: none;
   }
 
   .course-demo-shell .product-segmented-control-option:not(:disabled):active {
@@ -3896,10 +3961,10 @@ input.product-control-search::placeholder {
   .course-index-mobile-card
     .course-index-table-action-menu
     .product-btn.action-menu-trigger {
-    width: 3rem;
-    min-width: 3rem;
-    height: 3rem;
-    min-height: 3rem;
+    width: var(--product-control-height);
+    min-width: var(--product-control-height);
+    height: var(--product-control-height);
+    min-height: var(--product-control-height);
     border-radius: 0.75rem;
   }
 

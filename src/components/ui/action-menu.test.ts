@@ -55,7 +55,7 @@ test("contextual action menus use one borderless surface without separators", ()
 
   assert.match(
     rootStyles,
-    /--product-surface-background: #fff;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: 1px solid var\(--product-surface-border-color\);[^}]*--product-dropdown-background: var\(--product-surface-background\);[^}]*--product-dropdown-radius: var\(--product-element-radius\);[^}]*--product-dropdown-inset: 0\.375rem;[^}]*--product-dropdown-shadow: 0 24px 32px -24px rgba\(20, 20, 20, 0\.24\);/,
+    /--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border:\s*var\(--product-surface-border-width\) solid\s*var\(--product-surface-border-color\);[^}]*--product-dropdown-background: var\(--product-surface-background\);[^}]*--product-dropdown-radius: var\(--product-element-radius\);[^}]*--product-dropdown-inset: 0\.375rem;[^}]*--product-dropdown-shadow: 0 24px 32px -24px rgba\(20, 20, 20, 0\.24\);/,
   );
   assert.match(
     rootStyles,

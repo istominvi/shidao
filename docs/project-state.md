@@ -241,7 +241,7 @@ title/metric и intrinsic action остаются в одной строке, ac
 краю, а при реальной нехватке места безопасно переносится вниз. Общий
 `WorkspaceTabs` сохраняет touch/swipe и `overflow-x: auto`, но скрывает native
 scrollbar во всех браузерах; доступное продолжение обозначают fade и отдельные
-chevron-кнопки с прокруткой (`40 px` desktop, `48 px` mobile), direction-aware
+chevron-кнопки с прокруткой (`40 px` во всех плотностях), direction-aware
 состоянием и возвратом фокуса. Product shell клипует только transient
 document-level horizontal overflow route entrance, не внутренние scroll
 containers. В protected mobile
@@ -265,29 +265,34 @@ viewport вместо WebKit-sensitive sticky positioning: прозрачный 
 с `12 px` бежевым fade пропускает content под полностью непрозрачный белый
 surface без blur, а reserved flow-height предотвращает начальный layout jump.
 Wordmark увеличен до `26 px`, закрытый burger остаётся на чистом белом фоне без
-залипающего touch-hover/focus halo. Mobile burger имеет target `48 × 48 px` и icon `24 px`;
+залипающего touch-hover/focus halo. Mobile burger имеет target `48 × 48 px` и
+канонический action-glyph `20 px` с физической толщиной stroke `2 px`;
 открытый panel занимает ширину viewport с inset `12 px`, gap `12 px`, радиусом
 `16 px`, показывает `48 px` Account avatar, отделяет одинаково отцентрованный
 profile header full-bleed светлым divider и использует строки `68 px`, текст
-`20 px` и иконки `24 px`. Pointer-open не переводит фокус на первый пункт;
+`20 px` и те же `20 px / 2 px` action-glyphs. Pointer-open не переводит фокус на первый пункт;
 keyboard-open, стрелки, Home/End, Escape, outside-click и focus-return остаются
 полностью доступны с компактным inset focus indicator вместо внешнего halo.
 
-На ширине до `767 px` и при любом coarse/touch pointer Course toolbars, search,
-основные actions и tabs получают touch target не меньше `48 px`; compound
-segmented controls сохраняют общую внешнюю высоту `48 px` и реальные
-options `44 px`, но видимый серый track равен `40 px`, а выбранная белая
-пластина — `38 px` (`38 × 38 px` для icon-only). Track использует тот же
-`--product-surface-border-color`, что и рамка обычных кнопок, и образует
-вокруг белой пластины точный `1 px` контур; радиусы `12 / 11 px`
-концентричны. Подписи остаются `16 px`, glyphs — `20 px`, а Schedule
-переиспользует тот же shared `SegmentedControl` без отдельной CSS-копии.
-В `forced-colors` track использует `ButtonFace` с контуром `CanvasText`,
-неактивные пункты — `ButtonText`, а выбранная пластина —
-`Highlight / HighlightText`, поэтому трек и glyph не сливаются в обеих
-системных high-contrast темах.
-Так touch target не уменьшается ради видимой геометрии и совпадает по
-масштабу с соседними controls, в том числе в landscape на iPhone. Все
+На ширине до `767 px` и при любом coarse/touch pointer обычные рабочие
+Course controls канонизированы в один внешний размер `40 px`: это search,
+однострочные inputs/selects, primary actions, Schedule date navigator,
+WorkspaceTabs и segmented controls. Их action-glyphs используют один token
+`20 px` и физический Lucide stroke `2 px`; статусные glyphs, иллюстрации,
+`56 px` Messages launcher и крупные navigation rows остаются явными
+категорийными исключениями. Compound segmented control имеет высоту `40 px`,
+нулевые padding/gap и настоящие соседние options высотой `40 px`; две
+icon-only options дают ровно `80 × 40 px`. Неактивная option прозрачна над
+track цвета `--product-surface-border-color`, а выбранная option является
+непрозрачной белой кнопкой с теми же radius `12 px` и
+`--product-raised-control-shadow`, что соседняя `.product-btn`. Её прозрачный
+`1 px` border резервирует край, через который track рисует ровно
+один слой того же цвета, что и рамка обычной кнопки. Прежние
+pseudo-слои `48 / 44 / 40 / 38 px` удалены. Подписи остаются `16 px`, Schedule
+переиспользует shared `SegmentedControl`, а desktop сохраняет исходную
+геометрию `40 px` shell / `4 px` inset+gap / `32 px` options / `16 px` glyphs.
+В `forced-colors` actual track/options используют контрастные системные
+`ButtonFace / ButtonText` и `Highlight / HighlightText`. Все
 редактируемые app
 `input` / `select` / `textarea`
 вычисляются не меньше `16 px`, чтобы iOS не увеличивал страницу при focus;
@@ -1502,7 +1507,8 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   Container, baseline и scroll-row используют канонический `inline-inset: 0`
   на всех поверхностях. Неактивный label использует тот же 50%-black token,
   tab-кнопки разделены gap 12 px и имеют верхние радиусы 12 px; baseline
-  остаётся видимым поверх hover-фона. Каждый tab имеет 16 px иконку. Только
+  остаётся видимым поверх hover-фона. Base/desktop tab имеет `16 px` иконку,
+  narrow/coarse — `20 px` с физическим stroke `2 px`. Только
   положительный числовой count отображается маленьким приподнятым `sup`, без
   badge, с weight 500 — на один шаг плотнее основного текста вкладки;
   каждый tab владеет существующим persistent `tabpanel` через симметричные

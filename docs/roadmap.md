@@ -50,8 +50,9 @@
   реальной нехватке ширины intrinsic action rail переносится в отдельный ряд.
 - Slice UI-only: API, schema, migrations и Lesson hierarchy не меняются.
   Следующий release step — UI gates, обычный Coolify rollout и authenticated
-  desktop/mobile scroll/hover postflight с проверкой `64 px` shell, `40 px`
-  inner row, равных `12 px` отступов, общей вертикальной centerline TopNav и
+  desktop/mobile scroll/hover postflight с проверкой `64 px` shell, desktop
+  inner row `40 px`, protected-mobile inner row и burger target `48 px`, равных
+  `12 px` отступов, общей вертикальной centerline TopNav и
   совпадения нижних границ H1/action rail в `AppPageHeader` с пустой и
   заполненной backlink-row.
 
@@ -65,7 +66,8 @@
   и показывает только доступные fade-chevron направления; кнопки прокручивают
   ленту, не выбирая вкладку, а keyboard/ARIA/indicator остаются прежними.
 - Protected mobile header использует непрозрачный белый shell, wordmark
-  `26 px` и burger `48 × 48 px` с icon `24 px`. Закрытый burger остаётся
+  `26 px` и burger `48 × 48 px` с каноническим action-glyph `20 px / 2 px`.
+  Закрытый burger остаётся
   белым без sticky touch-hover/focus halo; pointer-open не фокусирует первый
   пункт, а keyboard-open сохраняет видимый inset focus, стрелки, Home/End,
   Escape и focus return. Короткое главное меню
@@ -75,19 +77,23 @@
   в `/profile`. Panel занимает viewport с inset `12 px`, gap `12 px`, радиусом
   `16 px`; Account header показывает `48 px` avatar, имеет равные block-insets
   и full-bleed светлый divider. Menu rows равны `68 px`, текст — `20 px`,
-  icons — `24 px`.
+  action-glyphs — `20 px / 2 px`.
 - App viewport использует `viewport-fit=cover`; app `theme-color`, manifest,
   `html`, `body` и shell согласованы на `#f5f1e8`, а shell покрывает минимум
   `100dvh`. iOS browser chrome и elastic overscroll получают тот же цвет без
   отключения нативного bounce; safe-area применяется к fixed header и нижнему
   краю content.
-- На ширине до `767 px` и при любом coarse/touch pointer Course search, primary
-  actions и tabs имеют минимум `48 px`, а segmented/toggle shells используют
-  `48 px` с `44 px` options для touch hit-testing, но рисуют точный
-  `40 px` track и `38 px` selected surface (`38 × 38 px` для icon-only).
-  Track/ring и product-button border используют один цвет, радиусы
-  `12 / 11 px` концентричны, labels равны `16 px`, glyphs — `20 px`; Schedule
-  использует общий `SegmentedControl`. Все
+- На ширине до `767 px` и при любом coarse/touch pointer обычные Course
+  search/input/select, actions, Schedule date navigator, WorkspaceTabs и
+  segmented controls имеют одну внешнюю высоту `40 px`. Action-glyphs равны
+  `20 px` с физическим stroke `2 px`. Segmented shell имеет `padding: 0` и
+  `gap: 0`; каждая option равна `40 px`, поэтому две icon-only options дают
+  ровно `80 × 40 px`. Выбранная actual option переиспользует белый surface,
+  radius `12 px` и base shadow обычной кнопки; её прозрачный `1 px`
+  border показывает ровно один слой track того же цвета, что product
+  border. Неактивная option прозрачна над тем же track.
+  Прежние pseudo-слои `48 / 44 / 40 / 38 px` удалены; Schedule использует
+  общий `SegmentedControl`, desktop-геометрия `40 / 32 px` не меняется. Все
   редактируемые app
   inputs/selects/textareas имеют computed font не меньше `16 px`, предотвращая
   iOS focus zoom в portrait и landscape без запрета pinch zoom. Launcher
@@ -180,8 +186,9 @@
   один `WorkspaceTabs`: 40 px, roving keyboard/ARIA, horizontal scroll,
   baseline 1.2 px и inactive label общего 50%-black цвета с
   `inline-inset: 0`, gap 12 px, верхние радиусы 12 px и квадратный чёрный
-  active-сегмент 4 px. Каждый tab передаёт 16 px иконку; только positive count
-  показывается маленьким приподнятым `sup`, а `0` не рендерится.
+  active-сегмент 4 px. Base/desktop tab-glyph равен `16 px`, а narrow/coarse
+  token приводит его к `20 px` с физическим Lucide stroke `2 px`; только
+  positive count показывается маленьким приподнятым `sup`, а `0` не рендерится.
   Current production motion follow-up заменяет отдельные active pseudo-elements
   одним измеряемым indicator: он мягко меняет ширину и положение, а новая
   tab-panel слегка проявляется по направлению выбора. Header action rail

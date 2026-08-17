@@ -553,16 +553,32 @@ test("product buttons share one animated raised-control elevation contract", () 
     /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\n\}/.exec(
       styles,
     )?.[0] ?? "";
+  const touchMediaQuery =
+    "@media (max-width: 767px), (hover: none) and (pointer: coarse)";
+  const touchMediaStart = styles.indexOf(touchMediaQuery);
+  const narrowMediaStart = styles.indexOf(
+    "@media (max-width: 767px)",
+    touchMediaStart + touchMediaQuery.length,
+  );
+  const baseStyles = styles.slice(0, touchMediaStart);
+  const touchStyles = styles.slice(touchMediaStart, narrowMediaStart);
   const productFocusStyles =
     /\.product-btn:focus-visible\s*\{[^}]*\}/.exec(styles)?.[0] ?? "";
 
+  assert.ok(touchMediaStart >= 0);
+  assert.ok(narrowMediaStart > touchMediaStart);
+
   assert.match(
     styles,
-    /:root\s*\{[\s\S]*?--product-element-radius: 0\.75rem;[\s\S]*?--product-card-radius: 1\.25rem;[\s\S]*?--product-row-height: 2\.5rem;[\s\S]*?\.course-demo-shell\s*\{[\s\S]*?--course-demo-element-radius: var\(--product-element-radius\);[\s\S]*?--course-demo-card-radius: var\(--product-card-radius\);[\s\S]*?--course-demo-table-radius: var\(--course-demo-element-radius\);[\s\S]*?--course-demo-table-row-height: var\(--product-row-height\);[\s\S]*?--course-demo-control-height: var\(--product-row-height\);[\s\S]*?--course-demo-control-radius: var\(--course-demo-element-radius\);[\s\S]*?--course-demo-control-padding-inline: 0\.75rem;[\s\S]*?--course-demo-content-inset: 0\.75rem;[\s\S]*?--course-demo-control-font-size: 0\.88rem;[\s\S]*?--course-demo-control-font-weight: 400;[\s\S]*?--course-demo-control-icon-size: 1rem;/,
+    /:root\s*\{[\s\S]*?--product-element-radius: 0\.75rem;[\s\S]*?--product-card-radius: 1\.25rem;[\s\S]*?--product-row-height: 2\.5rem;[\s\S]*?--product-control-height: 2\.5rem;[\s\S]*?--product-control-radius: var\(--product-element-radius\);[\s\S]*?--product-control-icon-size: 1rem;[\s\S]*?--product-control-icon-stroke-width: 2px;[\s\S]*?\.course-demo-shell\s*\{[\s\S]*?--course-demo-element-radius: var\(--product-element-radius\);[\s\S]*?--course-demo-card-radius: var\(--product-card-radius\);[\s\S]*?--course-demo-table-radius: var\(--course-demo-element-radius\);[\s\S]*?--course-demo-table-row-height: var\(--product-row-height\);[\s\S]*?--course-demo-control-height: var\(--product-control-height\);[\s\S]*?--course-demo-control-radius: var\(--product-control-radius\);[\s\S]*?--course-demo-control-padding-inline: 0\.75rem;[\s\S]*?--course-demo-content-inset: 0\.75rem;[\s\S]*?--course-demo-control-font-size: 0\.88rem;[\s\S]*?--course-demo-control-font-weight: 400;[\s\S]*?--course-demo-control-icon-size: var\(--product-control-icon-size\);/,
   );
   assert.match(
     styles,
-    /:root\s*\{[^}]*--product-raised-control-shadow:\s*0 1px 6px 0px oklch\(0% 0 0 \/ 0\.05\);[^}]*--product-raised-control-shadow-hover:\s*0 4px 10px -2px\s+oklch\(0% 0 0 \/ 0\.16\);[^}]*--product-raised-control-shadow-pressed:\s*0 1px 3px 0px\s+oklch\(0% 0 0 \/ 0\.14\);[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: 1px solid var\(--product-surface-border-color\);[^}]*--product-raised-control-hover-translate-y: -1px;[^}]*--product-raised-control-transition: 160ms\s+cubic-bezier\(0\.2, 0\.8, 0\.2, 1\);/,
+    /:root\s*\{[^}]*--product-inner-control-size: 2rem;[^}]*--product-inner-control-radius: 0\.5rem;[^}]*--product-inner-control-inset: 0\.25rem;/,
+  );
+  assert.match(
+    styles,
+    /:root\s*\{[^}]*--product-raised-control-shadow:\s*0 1px 6px 0px oklch\(0% 0 0 \/ 0\.05\);[^}]*--product-raised-control-shadow-hover:\s*0 4px 10px -2px\s+oklch\(0% 0 0 \/ 0\.16\);[^}]*--product-raised-control-shadow-pressed:\s*0 1px 3px 0px\s+oklch\(0% 0 0 \/ 0\.14\);[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);[^}]*--product-raised-control-hover-translate-y: -1px;[^}]*--product-raised-control-transition: 160ms\s+cubic-bezier\(0\.2, 0\.8, 0\.2, 1\);/,
   );
   assert.match(
     styles,
@@ -575,7 +591,7 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-btn\s*\{[^}]*--product-control-height: var\(--course-demo-control-height\);[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*background-color: #fff;[^}]*font-size: var\(--course-demo-control-font-size\);[^}]*font-weight: var\(--course-demo-control-font-weight\);/,
+    /\.course-demo-shell \.product-btn\s*\{[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*background-color: #fff;[^}]*font-size: var\(--course-demo-control-font-size\);[^}]*font-weight: var\(--course-demo-control-font-weight\);/,
   );
   const courseProductStyles =
     /\.course-demo-shell \.product-btn\s*\{[^}]*\}/.exec(styles)?.[0] ?? "";
@@ -585,8 +601,17 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-btn svg\s*\{[^}]*width: var\(--course-demo-control-icon-size\);[^}]*color: currentColor;[^}]*opacity: 1;/,
+    /\.course-demo-shell\s+:is\([\s\S]*?\.product-btn,[\s\S]*?\.teaching-date-navigator,[\s\S]*?\.teaching-hub-search,[\s\S]*?\.product-search-wrap,[\s\S]*?\.product-select-wrap,[\s\S]*?\.workspace-tab,[\s\S]*?\.fade-chevron-control[\s\S]*?\)\s+svg\.lucide\s*\{[^}]*width: var\(--course-demo-control-icon-size\);[^}]*height: var\(--course-demo-control-icon-size\);[^}]*flex: 0 0 var\(--course-demo-control-icon-size\);[^}]*color: currentColor;[^}]*opacity: 1;/,
   );
+  assert.match(
+    styles,
+    /\.product-segmented-control-option svg\.lucide\s*\{[^}]*width: var\(--product-control-icon-size\);[^}]*height: var\(--product-control-icon-size\);[^}]*flex: 0 0 var\(--product-control-icon-size\);[^}]*color: currentColor;[^}]*opacity: 1;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell\s+:is\([\s\S]*?\.product-btn,[\s\S]*?\.product-segmented-control-option,[\s\S]*?\.teaching-date-navigator,[\s\S]*?\.teaching-hub-search,[\s\S]*?\.product-search-wrap,[\s\S]*?\.product-select-wrap,[\s\S]*?\.workspace-tab,[\s\S]*?\.fade-chevron-control[\s\S]*?\)\s+svg\.lucide\s+\*\s*\{[^}]*stroke-width: var\(--product-control-icon-stroke-width\);[^}]*vector-effect: non-scaling-stroke;/,
+  );
+  assert.doesNotMatch(baseStyles, /vector-effect:\s*non-scaling-stroke/);
   assert.match(
     styles,
     /\.course-demo-shell \.product-search-icon,[\s\S]*?\.course-demo-shell \.product-select-icon\s*\{[^}]*color: var\(--course-demo-control-foreground\);[^}]*opacity: 1;/,
@@ -640,6 +665,10 @@ test("product buttons share one animated raised-control elevation contract", () 
   assert.match(reducedMotionStyles, /\.product-btn\.product-btn,/);
   assert.match(reducedMotionStyles, /transition: none;/);
   assert.match(reducedMotionStyles, /transform: none;/);
+  assert.match(
+    reducedMotionStyles,
+    /\.product-segmented-control-option\s*\{[^}]*transition: none;/,
+  );
 
   assert.match(
     styles,
@@ -656,11 +685,15 @@ test("product buttons share one animated raised-control elevation contract", () 
 
   assert.match(
     styles,
-    /\.product-segmented-control\s*\{[^}]*position: relative;[^}]*isolation: isolate;[^}]*border: 0;[^}]*background: var\(--product-segmented-control-background\);[^}]*box-shadow: none;/,
+    /\.product-segmented-control\s*\{[^}]*position: relative;[^}]*display: inline-flex;[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*gap: var\(--product-inner-control-inset\);[^}]*isolation: isolate;[^}]*border: 0;[^}]*border-radius: var\(--product-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*padding: var\(--product-inner-control-inset\);[^}]*box-shadow: none;/,
   );
   assert.match(
     styles,
-    /\.product-segmented-control-option\s*\{[^}]*position: relative;[^}]*z-index: 1;[^}]*isolation: isolate;[^}]*box-sizing: border-box;[^}]*border: 0;/,
+    /\.product-segmented-control-option\s*\{[^}]*position: relative;[^}]*z-index: 1;[^}]*display: inline-flex;[^}]*height: var\(--product-inner-control-size\);[^}]*min-height: var\(--product-inner-control-size\);[^}]*isolation: isolate;[^}]*box-sizing: border-box;[^}]*border: 0;[^}]*border-radius: var\(--product-inner-control-radius\);[^}]*background: transparent;[^}]*transform: none;/,
+  );
+  assert.match(
+    styles,
+    /\.product-segmented-control-option-icon-only\s*\{[^}]*width: var\(--product-inner-control-size\);[^}]*min-width: var\(--product-inner-control-size\);[^}]*flex-basis: var\(--product-inner-control-size\);[^}]*padding-inline: 0;/,
   );
   assert.match(
     styles,
@@ -670,39 +703,35 @@ test("product buttons share one animated raised-control elevation contract", () 
     styles,
     /\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: -2px;/,
   );
-  assert.match(segmentedControl, /product-segmented-control inline-flex/);
   assert.match(
     segmentedControl,
-    /product-segmented-control-option inline-flex/,
+    /classNames\("product-segmented-control", className\)/,
   );
+  assert.match(segmentedControl, /"product-segmented-control-option"/);
   assert.match(segmentedControl, /product-segmented-control-option-icon-only/);
   assert.doesNotMatch(
     segmentedControl,
-    /bg-neutral-950\/\[0\.05\]|shadow-\[inset|shadow-\[0_1px_3px|focus-visible:ring|focus-visible:outline-none|product-raised-control-shadow-hover|product-raised-control-shadow-pressed/,
+    /\bh-10\b|\bh-8\b|\bw-8\b|\bgap-1\b|\bp-1\b|\brounded-(?:xl|lg)\b|\bh-4\b|\bw-4\b|bg-neutral-950\/\[0\.05\]|shadow-\[inset|shadow-\[0_1px_3px|focus-visible:ring|focus-visible:outline-none|product-raised-control-shadow-hover|product-raised-control-shadow-pressed/,
+  );
+  assert.match(
+    touchStyles,
+    /@media \(max-width: 767px\), \(hover: none\) and \(pointer: coarse\)[\s\S]*?\.course-demo-shell\s*\{[^}]*--product-control-icon-size: 1\.25rem;[^}]*\}[\s\S]*?\.course-demo-shell \.product-segmented-control\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*gap: 0;[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*padding: 0;/,
   );
   assert.match(
     styles,
-    /@media \(max-width: 767px\), \(hover: none\) and \(pointer: coarse\)[\s\S]*?\.course-demo-shell \.product-segmented-control\s*\{[^}]*height: 3rem;[^}]*min-height: 3rem;[^}]*padding: 0\.125rem;[^}]*background: transparent;/,
+    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*min-width: var\(--product-control-height\);[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*background: transparent;[^}]*box-shadow: none;[^}]*touch-action: manipulation;/,
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-segmented-control::before\s*\{[^}]*inset: 0\.25rem;[^}]*border-radius: var\(--course-demo-control-radius, 0\.75rem\);[^}]*background: var\(--product-segmented-control-background\);[^}]*pointer-events: none;/,
+    /\.course-demo-shell \.product-segmented-control-option-icon-only\s*\{[^}]*width: var\(--product-control-height\);[^}]*min-width: var\(--product-control-height\);[^}]*flex: 0 0 var\(--product-control-height\);[^}]*padding-inline: 0;/,
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*min-width: 2\.75rem;[^}]*height: 2\.75rem;[^}]*min-height: 2\.75rem;[^}]*border-radius: var\(--course-demo-control-radius, 0\.75rem\);[^}]*background: transparent;[^}]*box-shadow: none;[^}]*touch-action: manipulation;/,
+    /\.course-demo-shell \.product-segmented-control-option-selected\s*\{[^}]*border: var\(--product-surface-border-width\) solid transparent;[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-segmented-control-option-icon-only\s*\{[^}]*width: 2\.75rem;[^}]*padding-inline: 0;/,
-  );
-  assert.match(
-    styles,
-    /\.course-demo-shell \.product-segmented-control-option-selected::before\s*\{[^}]*inset: 0\.1875rem;[^}]*border-radius: calc\(\s*var\(--course-demo-control-radius, 0\.75rem\) - 0\.0625rem\s*\);[^}]*background-color: var\(--product-surface-background\);[^}]*background-image: none;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*pointer-events: none;/,
-  );
-  assert.match(
-    styles,
-    /\.product-segmented-control-option-selected:not\(:disabled\):active::before\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);/,
+    /\.product-segmented-control-option-selected:not\(:disabled\):active\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);[^}]*transform: none;/,
   );
   assert.match(
     styles,
@@ -710,7 +739,13 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.doesNotMatch(
     styles,
-    /\.course-demo-shell \.product-segmented-control-option[^}]*transform: scale\(/,
+    /\.product-segmented-control(?:::before|[^\s,{]*::before)/,
+  );
+  assert.doesNotMatch(
+    /@media \(max-width: 767px\), \(hover: none\) and \(pointer: coarse\)[\s\S]*?@media \(max-width: 767px\)/.exec(
+      styles,
+    )?.[0] ?? "",
+    /transform: scale\(/,
   );
   assert.match(
     learningProfile,
@@ -743,27 +778,19 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     forcedColorsStyles,
-    /\.product-segmented-control\s*\{[^}]*outline: 1px solid CanvasText;[^}]*outline-offset: -1px;[^}]*box-shadow: none;/,
+    /\.product-segmented-control\s*\{[^}]*background: ButtonFace !important;[^}]*outline: 1px solid CanvasText;[^}]*outline-offset: -1px;[^}]*box-shadow: none;[^}]*forced-color-adjust: none;/,
   );
   assert.match(
     forcedColorsStyles,
-    /\.product-segmented-control-option\s*\{[^}]*color: ButtonText;/,
+    /\.product-segmented-control-option\s*\{[^}]*color: ButtonText !important;/,
   );
   assert.match(
     forcedColorsStyles,
-    /\.product-segmented-control-option-selected\s*\{[^}]*border: 1px solid Highlight;[^}]*background: Highlight !important;[^}]*color: HighlightText !important;[^}]*box-shadow: none;[^}]*forced-color-adjust: none;/,
+    /\.product-segmented-control-option-selected\s*\{[^}]*border: 1px solid Highlight !important;[^}]*background: Highlight !important;[^}]*color: HighlightText !important;[^}]*box-shadow: none !important;[^}]*forced-color-adjust: none;/,
   );
   assert.match(
     forcedColorsStyles,
-    /\.product-segmented-control::before\s*\{[^}]*background: ButtonFace !important;/,
-  );
-  assert.match(
-    forcedColorsStyles,
-    /\.product-segmented-control-option-selected::before\s*\{[^}]*background: Highlight !important;[^}]*box-shadow: none !important;/,
-  );
-  assert.match(
-    forcedColorsStyles,
-    /\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid Highlight;[^}]*outline-offset: -2px;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected:focus-visible\s*\{[^}]*outline-color: HighlightText !important;/,
+    /\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid Highlight !important;[^}]*outline-offset: -2px;[^}]*box-shadow: none !important;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected:focus-visible\s*\{[^}]*outline-color: HighlightText !important;/,
   );
   assert.match(
     styles,
@@ -1341,6 +1368,10 @@ test("component cards render content with accessible overlay actions and modal e
   assert.ok(
     componentActionStyles,
     "component action styles must remain present",
+  );
+  assert.match(
+    componentActionStyles,
+    /width: var\(--product-inner-control-size\);[^}]*height: var\(--product-inner-control-size\);[^}]*min-height: var\(--product-inner-control-size\);/,
   );
   assert.match(componentActionStyles, /border: 0/);
   assert.match(componentActionStyles, /background: transparent/);
