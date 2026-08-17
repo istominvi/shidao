@@ -30,8 +30,8 @@ test("catalog learning audience is shareable, server-filtered, and resets list s
   assert.match(coursesIndex, /onLearningAudienceChange=/);
 
   assert.match(catalog, /ariaLabel="Направление обучения"/);
-  assert.match(catalog, /label: "Обучение детей"/);
-  assert.match(catalog, /label: "Обучение педагогов"/);
+  assert.match(catalog, /label: "Дети",\s*ariaLabel: "Обучение детей"/);
+  assert.match(catalog, /label: "Педагоги",\s*ariaLabel: "Обучение педагогов"/);
   assert.match(
     catalog,
     /className="compact-page-toolbar course-catalog-toolbar"[\s\S]*?className="course-catalog-toolbar-main"[\s\S]*?className="compact-toolbar-search product-search-wrap"[\s\S]*?className="compact-toolbar-rail"[\s\S]*?\{learningAudienceControl\}[\s\S]*?<SegmentedControl[\s\S]*?ariaLabel="Вид каталога курсов"/,
@@ -59,8 +59,11 @@ test("only authorized creators choose educator audience and persisted audience i
   assert.match(newCourse, /name="learningAudience"/);
   assert.match(newCourse, /useState<CourseLearningAudience>\("children"\)/);
   assert.match(newCourse, /ariaLabel="Направление обучения"/);
-  assert.match(newCourse, /label: "Обучение детей"/);
-  assert.match(newCourse, /label: "Обучение педагогов"/);
+  assert.match(newCourse, /label: "Дети",\s*ariaLabel: "Обучение детей"/);
+  assert.match(
+    newCourse,
+    /label: "Педагоги",\s*ariaLabel: "Обучение педагогов"/,
+  );
   assert.match(newCourse, /canAuthorEducatorCourses \? \(/);
   assert.match(
     newCourse,

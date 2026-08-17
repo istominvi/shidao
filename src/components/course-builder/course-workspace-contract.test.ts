@@ -567,6 +567,11 @@ test("product buttons share one animated raised-control elevation contract", () 
 
   assert.ok(touchMediaStart >= 0);
   assert.ok(narrowMediaStart > touchMediaStart);
+  const segmentedForcedColorsStart = styles.lastIndexOf(
+    "@media (forced-colors: active)",
+    touchMediaStart,
+  );
+  assert.ok(segmentedForcedColorsStart >= 0);
 
   assert.match(
     styles,
@@ -574,7 +579,11 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
-    /:root\s*\{[^}]*--product-inner-control-size: 2rem;[^}]*--product-inner-control-radius: 0\.5rem;[^}]*--product-inner-control-inset: 0\.25rem;/,
+    /:root\s*\{[^}]*--product-control-icon-stroke-width: 2px;[^}]*--product-touch-control-font-size: 1\.2rem;/,
+  );
+  assert.match(
+    styles,
+    /:root\s*\{[\s\S]*?--product-segmented-control-height: var\(--product-control-height\);[\s\S]*?--product-segmented-control-radius: var\(--product-control-radius\);[\s\S]*?--product-segmented-control-option-size: calc\(\s*var\(--product-segmented-control-height\) -\s*var\(--product-surface-border-width\) - var\(--product-surface-border-width\)\s*\);[\s\S]*?--product-segmented-control-option-radius: calc\(\s*var\(--product-segmented-control-radius\) -\s*var\(--product-surface-border-width\)\s*\);[\s\S]*?--product-segmented-control-gap: calc\(\s*var\(--product-surface-border-width\) \+ var\(--product-surface-border-width\)\s*\);/,
   );
   assert.match(
     styles,
@@ -616,9 +625,9 @@ test("product buttons share one animated raised-control elevation contract", () 
     styles,
     /\.course-demo-shell \.product-search-icon,[\s\S]*?\.course-demo-shell \.product-select-icon\s*\{[^}]*color: var\(--course-demo-control-foreground\);[^}]*opacity: 1;/,
   );
-  assert.match(
+  assert.doesNotMatch(
     styles,
-    /\.course-demo-shell \.compact-toolbar-rail \[role="group"\] button svg\s*\{[^}]*color: currentColor;[^}]*opacity: 1;/,
+    /\.course-demo-shell \.compact-toolbar-rail \[role="group"\] button\s*\{[^}]*color:/,
   );
   assert.match(
     styles,
@@ -685,49 +694,56 @@ test("product buttons share one animated raised-control elevation contract", () 
 
   assert.match(
     styles,
-    /\.product-segmented-control\s*\{[^}]*position: relative;[^}]*display: inline-flex;[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*gap: var\(--product-inner-control-inset\);[^}]*isolation: isolate;[^}]*border: 0;[^}]*border-radius: var\(--product-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*padding: var\(--product-inner-control-inset\);[^}]*box-shadow: none;/,
+    /\.product-segmented-control\s*\{[^}]*position: relative;[^}]*display: inline-flex;[^}]*box-sizing: border-box;[^}]*height: var\(--product-segmented-control-height\);[^}]*min-height: var\(--product-segmented-control-height\);[^}]*gap: var\(--product-segmented-control-gap\);[^}]*isolation: isolate;[^}]*border: var\(--product-surface-border\);[^}]*border-radius: var\(--product-segmented-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*background-clip: padding-box;[^}]*padding: 0;[^}]*box-shadow: none;/,
   );
   assert.match(
     styles,
-    /\.product-segmented-control-option\s*\{[^}]*position: relative;[^}]*z-index: 1;[^}]*display: inline-flex;[^}]*height: var\(--product-inner-control-size\);[^}]*min-height: var\(--product-inner-control-size\);[^}]*isolation: isolate;[^}]*box-sizing: border-box;[^}]*border: 0;[^}]*border-radius: var\(--product-inner-control-radius\);[^}]*background: transparent;[^}]*transform: none;/,
+    /\.product-segmented-control-option\s*\{[^}]*position: relative;[^}]*z-index: 1;[^}]*display: inline-flex;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*min-height: var\(--product-segmented-control-option-size\);[^}]*min-width: var\(--product-segmented-control-option-size\);[^}]*isolation: isolate;[^}]*box-sizing: border-box;[^}]*border: 0;[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background: transparent;[^}]*font-size: 0\.88rem;[^}]*transform: none;/,
   );
   assert.match(
     styles,
-    /\.product-segmented-control-option-icon-only\s*\{[^}]*width: var\(--product-inner-control-size\);[^}]*min-width: var\(--product-inner-control-size\);[^}]*flex-basis: var\(--product-inner-control-size\);[^}]*padding-inline: 0;/,
+    /\.product-segmented-control-option-icon-only\s*\{[^}]*width: var\(--product-segmented-control-option-size\);[^}]*min-width: var\(--product-segmented-control-option-size\);[^}]*flex-basis: var\(--product-segmented-control-option-size\);[^}]*padding-inline: 0;/,
   );
   assert.match(
     styles,
-    /\.product-segmented-control-option-selected\s*\{[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
+    /\.product-segmented-control-option-selected\s*\{[^}]*border: 0;[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
   );
   assert.match(
     styles,
-    /\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: -2px;/,
+    /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.product-segmented-control-option:hover:not\(:disabled\):not\(\s*\.product-segmented-control-option-selected\s*\)\s*\{[^}]*background: transparent;[^}]*color: var\(--color-neutral-950, #0a0a0a\);[^}]*box-shadow: none;/,
+  );
+  assert.match(
+    styles,
+    /\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: -2px;/,
+  );
+  const segmentedSourceOrder = [
+    styles.indexOf(".product-segmented-control {"),
+    styles.indexOf(".product-segmented-control-option {"),
+    styles.indexOf("@media (hover: hover) and (pointer: fine)"),
+    styles.indexOf(".product-segmented-control-option:focus-visible"),
+    styles.indexOf(".product-segmented-control-option-selected {"),
+    styles.indexOf("@media (prefers-reduced-motion: reduce)"),
+    segmentedForcedColorsStart,
+    touchMediaStart,
+  ];
+  assert.ok(segmentedSourceOrder.every((index) => index >= 0));
+  assert.deepEqual(
+    segmentedSourceOrder,
+    [...segmentedSourceOrder].sort((left, right) => left - right),
   );
   assert.match(
     segmentedControl,
-    /classNames\("product-segmented-control", className\)/,
+    /classNames\(\s*"product-segmented-control",\s*iconOnly\s*\?\s*"product-segmented-control-icon-only"\s*:\s*"product-segmented-control-text",\s*className,\s*\)/,
   );
   assert.match(segmentedControl, /"product-segmented-control-option"/);
   assert.match(segmentedControl, /product-segmented-control-option-icon-only/);
+  assert.match(
+    segmentedControl,
+    /iconOnly\s*\?\s*"product-segmented-control-icon-only"\s*:\s*"product-segmented-control-text"/,
+  );
   assert.doesNotMatch(
     segmentedControl,
     /\bh-10\b|\bh-8\b|\bw-8\b|\bgap-1\b|\bp-1\b|\brounded-(?:xl|lg)\b|\bh-4\b|\bw-4\b|bg-neutral-950\/\[0\.05\]|shadow-\[inset|shadow-\[0_1px_3px|focus-visible:ring|focus-visible:outline-none|product-raised-control-shadow-hover|product-raised-control-shadow-pressed/,
-  );
-  assert.match(
-    touchStyles,
-    /@media \(max-width: 767px\), \(hover: none\) and \(pointer: coarse\)[\s\S]*?\.course-demo-shell\s*\{[^}]*--product-control-icon-size: 1\.25rem;[^}]*\}[\s\S]*?\.course-demo-shell \.product-segmented-control\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*gap: 0;[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*padding: 0;/,
-  );
-  assert.match(
-    styles,
-    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*min-width: var\(--product-control-height\);[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*background: transparent;[^}]*box-shadow: none;[^}]*touch-action: manipulation;/,
-  );
-  assert.match(
-    styles,
-    /\.course-demo-shell \.product-segmented-control-option-icon-only\s*\{[^}]*width: var\(--product-control-height\);[^}]*min-width: var\(--product-control-height\);[^}]*flex: 0 0 var\(--product-control-height\);[^}]*padding-inline: 0;/,
-  );
-  assert.match(
-    styles,
-    /\.course-demo-shell \.product-segmented-control-option-selected\s*\{[^}]*border: var\(--product-surface-border-width\) solid transparent;[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
   );
   assert.match(
     styles,
@@ -735,7 +751,7 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-segmented-control-option:not\(:disabled\):active\s*\{[^}]*transform: none;/,
+    /\.product-segmented-control-option:not\(:disabled\):active\s*\{[^}]*transform: none;/,
   );
   assert.doesNotMatch(
     styles,
@@ -746,6 +762,38 @@ test("product buttons share one animated raised-control elevation contract", () 
       styles,
     )?.[0] ?? "",
     /transform: scale\(/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell\s*\{[^}]*--product-control-icon-size: 1\.25rem;[^}]*--course-demo-control-font-size: 1rem;/,
+  );
+  assert.doesNotMatch(
+    /\.course-demo-shell\s*\{[^}]*\}/.exec(touchStyles)?.[0] ?? "",
+    /--product-entry-control-font-size/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell\s+:where\(\s*\.product-control,\s*\.field-input,\s*\.teaching-hub-search input,\s*\.student-directory-picker-search input\s*\)\s*\{[^}]*font-size: var\(--product-touch-control-font-size\) !important;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*padding-inline: 0\.875rem;[^}]*font-size: var\(--product-touch-control-font-size\);[^}]*touch-action: manipulation;/,
+  );
+  assert.doesNotMatch(
+    touchStyles,
+    /\.course-demo-shell \.product-segmented-control(?:-option(?:-icon-only|-selected)?)?\s*\{[^}]*(?:height|min-height|width|min-width|gap|border|border-radius|background|box-shadow|transform):/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-segmented-control-text\s*\{[^}]*max-width: 100%;[^}]*min-width: 0;[^}]*flex-shrink: 1;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell\s+\.product-segmented-control-text\s*> \.product-segmented-control-option\s*\{[^}]*min-width: 0;[^}]*flex: 1 1 0;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.product-segmented-control-text[\s\S]*?> \.product-segmented-control-option[\s\S]*?> span:not\(\.product-segmented-control-option-count\)\s*\{[^}]*overflow: hidden;[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/,
   );
   assert.match(
     learningProfile,
@@ -778,7 +826,7 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     forcedColorsStyles,
-    /\.product-segmented-control\s*\{[^}]*background: ButtonFace !important;[^}]*outline: 1px solid CanvasText;[^}]*outline-offset: -1px;[^}]*box-shadow: none;[^}]*forced-color-adjust: none;/,
+    /\.product-segmented-control\s*\{[^}]*background: ButtonFace !important;[^}]*border: var\(--product-surface-border-width\) solid CanvasText;[^}]*outline: 0;[^}]*box-shadow: none;[^}]*forced-color-adjust: none;/,
   );
   assert.match(
     forcedColorsStyles,

@@ -50,7 +50,8 @@ facets остаются совместимым server-side contract внутри
 `current_account_auth_context()`.
 
 - Обычный Account создаёт только Course для обучения детей.
-- Active Account с capability видит в `/courses/new` выбор «Обучение детей /
+- Active Account с capability видит в `/courses/new` компактный выбор
+  «Дети / Педагоги»; полные accessible labels остаются «Обучение детей /
   Обучение педагогов».
 - После создания `learning_audience` курса immutable. Отзыв capability
   останавливает дальнейшие educator content mutations, но не меняет Course на

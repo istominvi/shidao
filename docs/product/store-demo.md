@@ -234,11 +234,23 @@ Base `.product-control` / `.field-input`, включая многострочн�
 shadow. Native `select`, standalone `DialogShell` и demo-only surfaces исключены
 из universal dropdown contract; Store sort намеренно использует product
 dropdown вместо native `select`. На narrow/coarse viewport обычные Store
-controls имеют внешнюю высоту `40 px` и action-glyph `20 px / 2 px`.
-Compound toggles состоят из настоящих соседних `40 px` options без padding/gap;
-selected option использует тот же белый surface, radius `12 px` и base shadow,
-что обычная кнопка; её прозрачный `1 px` border пропускает один слой track того же
-цвета, что product border. Это UI-only
+controls имеют внешнюю высоту `40 px`, action-glyph `20 px / 2 px` и общий
+`--product-touch-control-font-size: 1.2rem` для buttons, inputs/search/select,
+segmented options и WorkspaceTabs. При стандартном root `16 px` это
+`19.2 px`; token остаётся масштабируемым вместе с пользовательским root. Это
+scope ordinary product editables/controls: он не расширяется на authored
+Lesson/Component или exercise content fields, которые сохраняют собственную
+content typography и независимый `16 px` anti-zoom floor.
+Compound toggle использует тот же контракт на desktop и touch: shell
+`80 × 40 px` для двух icon-only cells, настоящая product-рамка `1 px`,
+`padding: 0`, gap `2 px`, radius `12 px` и две actual options
+`38 × 38 px` с концентрическим radius `11 px`. Selected option имеет
+`border: 0`, чисто-белый surface и base shadow обычной кнопки. Inactive option
+не получает фон или тень при hover — меняется только цвет. Exact `80 × 40 px`
+относится только к icon-only projection. В current source / next production
+semantic text groups на narrow/coarse сжимаются в пределах parent; options
+имеют `min-width: 0` и `flex: 1 1 0`, visible labels используют однострочный
+ellipsis, а полное accessible name кнопки остаётся доступным. Это UI-only
 acceptance без Product/Order/Inventory, API,
 persistence, schema, migration,
 оплаты или delivery integration. Этот follow-up является current source / next

@@ -282,20 +282,44 @@ test("shared course controls preserve pressed-button semantics", () => {
     /product-segmented-control-option-icon-only/,
   );
   assert.match(
-    globalStyles,
-    /:root\s*\{[^}]*--product-control-height: 2\.5rem;[^}]*--product-control-radius: var\(--product-element-radius\);[^}]*--product-control-icon-size: 1rem;[^}]*--product-control-icon-stroke-width: 2px;[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);[^}]*--product-segmented-control-background: var\(--product-surface-border-color\);/,
+    segmentedControlSource,
+    /iconOnly\s*\?\s*"product-segmented-control-icon-only"\s*:\s*"product-segmented-control-text"/,
   );
   assert.match(
     globalStyles,
-    /\.product-segmented-control\s*\{[^}]*display: inline-flex;[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*gap: var\(--product-inner-control-inset\);[^}]*border: 0;[^}]*border-radius: var\(--product-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*padding: var\(--product-inner-control-inset\);[^}]*box-shadow: none;/,
+    /:root\s*\{[^}]*--product-control-height: 2\.5rem;[^}]*--product-control-radius: var\(--product-element-radius\);[^}]*--product-control-icon-size: 1rem;[^}]*--product-control-icon-stroke-width: 2px;[^}]*--product-touch-control-font-size: 1\.2rem;[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);[^}]*--product-segmented-control-background: var\(--product-surface-border-color\);/,
   );
   assert.match(
     globalStyles,
-    /\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: -2px;/,
+    /:root\s*\{[\s\S]*?--product-segmented-control-height: var\(--product-control-height\);[\s\S]*?--product-segmented-control-radius: var\(--product-control-radius\);[\s\S]*?--product-segmented-control-option-size: calc\(\s*var\(--product-segmented-control-height\) -\s*var\(--product-surface-border-width\) - var\(--product-surface-border-width\)\s*\);[\s\S]*?--product-segmented-control-option-radius: calc\(\s*var\(--product-segmented-control-radius\) -\s*var\(--product-surface-border-width\)\s*\);[\s\S]*?--product-segmented-control-gap: calc\(\s*var\(--product-surface-border-width\) \+ var\(--product-surface-border-width\)\s*\);/,
   );
   assert.match(
     globalStyles,
-    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control\s*\{[^}]*background: ButtonFace !important;[^}]*outline: 1px solid CanvasText;[^}]*outline-offset: -1px;[^}]*box-shadow: none;[^}]*forced-color-adjust: none;[^}]*\}[\s\S]*?\.product-segmented-control-option\s*\{[^}]*color: ButtonText !important;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected\s*\{[^}]*border: 1px solid Highlight !important;[^}]*background: Highlight !important;[^}]*color: HighlightText !important;[^}]*box-shadow: none !important;[^}]*forced-color-adjust: none;/,
+    /\.product-segmented-control\s*\{[^}]*display: inline-flex;[^}]*height: var\(--product-segmented-control-height\);[^}]*min-height: var\(--product-segmented-control-height\);[^}]*gap: var\(--product-segmented-control-gap\);[^}]*border: var\(--product-surface-border\);[^}]*border-radius: var\(--product-segmented-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*background-clip: padding-box;[^}]*padding: 0;[^}]*box-shadow: none;/,
+  );
+  assert.match(
+    globalStyles,
+    /\.product-segmented-control-option\s*\{[^}]*height: var\(--product-segmented-control-option-size\);[^}]*min-height: var\(--product-segmented-control-option-size\);[^}]*min-width: var\(--product-segmented-control-option-size\);[^}]*border: 0;[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background: transparent;[^}]*transform: none;/,
+  );
+  assert.match(
+    globalStyles,
+    /\.product-segmented-control-option-icon-only\s*\{[^}]*width: var\(--product-segmented-control-option-size\);[^}]*min-width: var\(--product-segmented-control-option-size\);[^}]*flex-basis: var\(--product-segmented-control-option-size\);[^}]*padding-inline: 0;/,
+  );
+  assert.match(
+    globalStyles,
+    /\.product-segmented-control-option-selected\s*\{[^}]*border: 0;[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
+  );
+  assert.match(
+    globalStyles,
+    /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.product-segmented-control-option:hover:not\(:disabled\):not\(\s*\.product-segmented-control-option-selected\s*\)\s*\{[^}]*background: transparent;[^}]*color: var\(--color-neutral-950, #0a0a0a\);[^}]*box-shadow: none;/,
+  );
+  assert.match(
+    globalStyles,
+    /\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: -2px;/,
+  );
+  assert.match(
+    globalStyles,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control\s*\{[^}]*background: ButtonFace !important;[^}]*border: var\(--product-surface-border-width\) solid CanvasText;[^}]*outline: 0;[^}]*box-shadow: none;[^}]*forced-color-adjust: none;[^}]*\}[\s\S]*?\.product-segmented-control-option\s*\{[^}]*color: ButtonText !important;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected\s*\{[^}]*border: 1px solid Highlight !important;[^}]*background: Highlight !important;[^}]*color: HighlightText !important;[^}]*box-shadow: none !important;[^}]*forced-color-adjust: none;/,
   );
   assert.match(
     globalStyles,
@@ -344,7 +368,7 @@ test("course tables adopt canonical raised surfaces", () => {
   assert.doesNotMatch(courseCatalogPanelSource, /border-white\/80/);
 });
 
-test("course index keeps ergonomic mobile cards and canonical 40px controls", () => {
+test("course index keeps ergonomic mobile cards and one segmented geometry", () => {
   const touchMediaQuery =
     "@media (max-width: 767px), (hover: none) and (pointer: coarse)";
   const touchMediaStart = globalStyles.indexOf(touchMediaQuery);
@@ -380,29 +404,29 @@ test("course index keeps ergonomic mobile cards and canonical 40px controls", ()
     touchStyles,
     /\.course-demo-shell\s*\{[^}]*--product-control-icon-size: 1\.25rem;[^}]*--course-demo-control-font-size: 1rem;/,
   );
-  assert.match(
-    touchStyles,
-    /\.course-demo-shell \.product-btn,\s*\.course-demo-shell \.product-control,\s*\.course-demo-shell :is\(input, select\)\.field-input,\s*\.course-demo-shell \.teaching-date-navigator,\s*\.course-demo-shell \.teaching-hub-search\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: 1rem;/,
+  assert.doesNotMatch(
+    /\.course-demo-shell\s*\{[^}]*\}/.exec(touchStyles)?.[0] ?? "",
+    /--product-entry-control-font-size/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-control-search\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: 1rem;/,
+    /\.course-demo-shell \.product-btn,\s*\.course-demo-shell \.product-control,\s*\.course-demo-shell :is\(input, select\)\.field-input,\s*\.course-demo-shell \.teaching-date-navigator,\s*\.course-demo-shell \.teaching-hub-search\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: var\(--product-touch-control-font-size\);/,
   );
   assert.match(
     touchStyles,
-    /\.workspace-tab\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);/,
+    /\.course-demo-shell \.product-control-search\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: var\(--product-touch-control-font-size\);/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*gap: 0;[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*padding: 0;/,
+    /\.workspace-tab\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: var\(--product-touch-control-font-size\);/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*min-width: var\(--product-control-height\);[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*border: 0;[^}]*border-radius: var\(--course-demo-control-radius\);[^}]*background: transparent;[^}]*font-size: 1rem;[^}]*box-shadow: none;[^}]*touch-action: manipulation;/,
+    /\.course-demo-shell \.teaching-date-trigger\s*\{[^}]*font-size: var\(--product-touch-control-font-size\);/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option-icon-only\s*\{[^}]*width: var\(--product-control-height\);[^}]*min-width: var\(--product-control-height\);[^}]*flex: 0 0 var\(--product-control-height\);[^}]*padding-inline: 0;/,
+    /\.course-demo-shell\s+:where\(\s*\.product-control,\s*\.field-input,\s*\.teaching-hub-search input,\s*\.student-directory-picker-search input\s*\)\s*\{[^}]*font-size: var\(--product-touch-control-font-size\) !important;/,
   );
   assert.match(
     globalStyles,
@@ -415,27 +439,27 @@ test("course index keeps ergonomic mobile cards and canonical 40px controls", ()
   assert.doesNotMatch(baseStyles, /vector-effect:\s*non-scaling-stroke/);
   assert.match(
     globalStyles,
-    /@media \(max-width: 767px\)[\s\S]*?\.course-catalog-audience-control[\s\S]*?\.product-segmented-control-option\s*\{[^}]*font-size: 1rem;/,
-  );
-  assert.match(
-    touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option-selected\s*\{[^}]*border: var\(--product-surface-border-width\) solid transparent;[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
-  );
-  assert.match(
-    touchStyles,
-    /\.product-segmented-control-option-selected:not\(:disabled\):active\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);[^}]*transform: none;/,
-  );
-  assert.match(
-    touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option:not\(:disabled\):active\s*\{[^}]*transform: none;/,
+    /@media \(max-width: 767px\)[\s\S]*?\.course-catalog-audience-control[\s\S]*?\.product-segmented-control-option\s*\{[^}]*font-size: var\(--product-touch-control-font-size\);/,
   );
   assert.doesNotMatch(
     globalStyles,
     /\.product-segmented-control(?:::before|[^\s,{]*::before)/,
   );
   assert.doesNotMatch(touchStyles, /transform: scale\(/);
+  assert.doesNotMatch(
+    touchStyles,
+    /\.course-demo-shell \.product-segmented-control(?:-option(?:-icon-only|-selected)?)?\s*\{[^}]*(?:height|min-height|width|min-width|gap|border|border-radius|background|box-shadow|transform):/,
+  );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: -2px;/,
+    /\.course-demo-shell \.product-segmented-control-text\s*\{[^}]*max-width: 100%;[^}]*min-width: 0;[^}]*flex-shrink: 1;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell\s+\.product-segmented-control-text\s*> \.product-segmented-control-option\s*\{[^}]*min-width: 0;[^}]*flex: 1 1 0;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.product-segmented-control-text[\s\S]*?> \.product-segmented-control-option[\s\S]*?> span:not\(\.product-segmented-control-option-count\)\s*\{[^}]*overflow: hidden;[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/,
   );
 });

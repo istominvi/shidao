@@ -1314,9 +1314,9 @@ flow как permanent delete.
   дату/время. Измерить inline-padding обычных header/data cells: ровно 12 px
   слева и справа. Для последней body action-cell ожидать inset 4 px и
   единственный `MoreVertical` trigger 32 × 32 px с радиусом 8 px: внутри 40 px
-  строки его отступы сверху, справа и снизу должны быть по 4 px, как у
-  base/desktop active option `32 × 32 px` внутри `40 px` segmented shell;
-  narrow/coarse options используют отдельную геометрию `40 px / 12 px`. На
+  строки его отступы сверху, справа и снизу должны быть по 4 px. Это отдельная
+  dense action-категория; она намеренно меньше actual option `38 × 38 px`
+  единого desktop/narrow/coarse segmented contract. На
   hover строки назначенного урока
   computed cursor должен быть `pointer`. Вертикальное троеточие постоянно
   доступно с клавиатуры и touch, его portal-menu не обрезается горизонтальным
@@ -1348,8 +1348,10 @@ flow как permanent delete.
   active view option, вертикально центрированные иконку и текст, `.88rem/400`
   и canonical inset/gap.
   Отдельно проверить
-  canonical active V2 controls: exact `40 px / 12 px / .88rem / 400`, active
-  navigation без inset/shadow/translate, icon opacity `1` и contrast-aware
+  canonical active V2 controls: exact `40 px / 12 px`, base/desktop
+  `.88rem/400` и narrow/coarse
+  `--product-touch-control-font-size: 1.2rem`; active navigation без
+  inset/shadow/translate, icon opacity `1` и contrast-aware
   `currentColor`. Все канонические `.product-btn` должны быть белыми, иметь
   `--product-surface-border-color: oklch(0 0 0 / .1)` и
   `--product-surface-border: 1px solid var(--product-surface-border-color)`, computed border
@@ -1377,17 +1379,32 @@ flow как permanent delete.
   что row ellipsis и Component-card icon-actions остаются
   transparent/borderless/no-shadow, а contextual menu panels/items сохраняют
   border `0`.
-  На narrow/coarse viewport ordinary product controls, Schedule date navigator
-  и compound toggle имеют точную внешнюю высоту `40 px`; action-glyphs равны
-  `20 px`, computed Lucide stroke — `2 px`. Toggle имеет `padding: 0`,
-  `gap: 0` и настоящие `40 px` options; две icon-only options дают ровно
-  `80 × 40 px`, а их соседние границы совпадают без зазора. Selected actual
-  option использует непрозрачный белый surface, radius `12 px` и base shadow,
-  что обычная `.product-btn`; её прозрачный `1 px` border показывает ровно один
-  слой track цвета `--product-surface-border-color`, совпадающего с видимой рамкой
-  обычной кнопки; inactive option прозрачна над тем же track. Pseudo-layer
-  отсутствует, actual buttons не масштабируются при pressed, keyboard focus
-  сохраняет видимый inset outline. В `forced-colors` проверить контрастные
+  На desktop, narrow и coarse compound toggle имеет точный внешний размер
+  `80 × 40 px` для двух icon-only cells, настоящую product-рамку `1 px`,
+  `padding: 0` и gap `2 px`. Обе actual options равны `38 × 38 px`; shell имеет
+  radius `12 px`, options — концентрический radius `11 px`. Selected actual
+  option использует `border: 0`, чисто-белый surface и base shadow обычной
+  `.product-btn`. Inactive option прозрачна и не получает фон или тень при
+  fine-pointer hover: меняется только цвет glyph. Pseudo-layer отсутствует,
+  actual buttons не масштабируются при pressed, keyboard focus сохраняет
+  видимый inset outline. Desktop glyph остаётся `16 px`; на narrow/coarse
+  action-glyph равен `20 px`, computed Lucide stroke — `2 px`.
+  Отдельно проверить semantic text segmented projection на narrow/coarse:
+  group не шире parent и может сжиматься с `min-width: 0`, options делят
+  доступную ширину через `flex: 1 1 0`, visible labels получают однострочный
+  ellipsis, а accessibility tree сохраняет полные имена кнопок. Эта projection
+  не должна менять exact `80 × 40 px` icon-only contract.
+  Ordinary product buttons/editables, inputs/search/select, Schedule date
+  navigator, segmented options и WorkspaceTabs на narrow/coarse используют общий
+  `--product-touch-control-font-size: 1.2rem`; menu rows и имя в mobile profile
+  header используют тот же token. При стандартном root `16 px` computed size
+  равен `19.2 px`; при ином пользовательском root он масштабируется вместе с
+  ним. Убедиться, что authored Lesson/Component и exercise content fields,
+  включая поля ответа, этот token не наследуют: их content typography и
+  независимый anti-zoom floor `16 px` сохраняются. Это current source / next
+  production acceptance. В `forced-colors` outer border должен стать
+  `1 px CanvasText`, а actual
+  options — сохранить контрастные
   `ButtonFace / ButtonText` и `Highlight / HighlightText` на actual surfaces.
   Menu items сохраняют border `0`.
   Повторить этот visual check на authenticated `/profile` и вкладках

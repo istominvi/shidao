@@ -717,9 +717,11 @@ Visual contract Course routes не меняет эту навигационну�
   устаревший URL или animation. При отсутствии API остаётся безопасный entrance
   fallback, а `prefers-reduced-motion` выполняет навигацию и локальный
   Course/Lesson state update без анимации, сохраняя синхронный route dispatch;
-- основные кнопки и header controls — высотой 40 px с радиусом 12 px и шрифтом
-  `.88rem/400`; ordinary control использует белый surface, общий product
-  border и raised base/hover/pressed contract. Base/desktop action-glyphs имеют
+- основные кнопки и header controls — высотой 40 px с радиусом 12 px;
+  base/desktop шрифт остаётся `.88rem/400`, narrow/coarse использует
+  `--product-touch-control-font-size: 1.2rem`. Ordinary control использует
+  белый surface, общий product border и raised base/hover/pressed contract.
+  Base/desktop action-glyphs имеют
   единый `16 px` rhythm; на narrow/coarse viewport shared token приводит их к
   `20 px` с физическим Lucide stroke `2 px`. Иконки полностью непрозрачны и
   наследуют контрастный цвет, а contextual menu items остаются плоскими и
@@ -736,7 +738,7 @@ Visual contract Course routes не меняет эту навигационну�
   не затрагивает buttons открываемого из header dialog, menu items или controls
   вне header actions. Сам пользовательский выбор фона Course этим UI-only
   slice не реализован;
-- current production refinement распространяет единый raised contract на все
+- current production base распространяет единый raised contract на все
   канонические `.product-btn`: белый surface,
   `--product-surface-border: 1px solid oklch(0 0 0 / .1)`,
   `background-clip: padding-box` и exact однослойная тень
@@ -751,13 +753,17 @@ Visual contract Course routes не меняет эту навигационну�
   danger color и forced-colors fallback сохраняются, а reduced-motion отключает
   transition и translate. Плоские ellipsis в строках и
   Component-card icon-actions остаются transparent/borderless/no-shadow;
-  contextual menu panels/items также исключены. У compound toggles удаляется
-  внешняя обводка, а selected white option использует
-  только base shadow без hover/pressed-анимации; фон shell равен
-  `oklch(0.19 0 0 / 0.1)`. Подзаголовок `AppPageHeader` и inactive tab
+  contextual menu panels/items также исключены. В current source / next
+  production compound toggles используют настоящую внешнюю product-рамку
+  `1 px`; shell `40 px` содержит actual options `38 px` с gap `2 px`. Selected
+  чисто-белая option имеет `border: 0` и base
+  shadow, а inactive option на hover меняет только цвет без фона или тени; фон
+  shell использует `--product-surface-border-color`. Подзаголовок
+  `AppPageHeader` и inactive tab
   text/icon используют `oklch(0.19 0 0 / 0.6)`, а независимый 1.2 px baseline —
-  `oklch(0.19 0 0 / 0.4)`. API/schema/Lesson hierarchy не меняются; refinement
-  развёрнут в release `10888d5` и сохраняется в current application release;
+  `oklch(0.19 0 0 / 0.4)`. API/schema/Lesson hierarchy не меняются. Базовый
+  refinement развёрнут в release `10888d5`; новая segmented-геометрия является
+  current source / next production и не приписывается этому release;
 - current production acceptance расширяет shared visual contract
   без изменения доменной модели. Обычные Auth recovery/check-email,
   onboarding, identity invitation/completion и retry CTA используют
@@ -933,8 +939,9 @@ Current production делает `/schedule` и `/students` доступными
   канонический inline-padding 12 px. Только последняя body action-cell
   использует inline-inset 4 px:
   единственный `MoreVertical` trigger имеет размер 32 × 32 px и радиус 8 px,
-  поэтому внутри точной 40 px строки сохраняет по 4 px сверху, справа и снизу
-  и совпадает с геометрией active option переключателя вида. Контентные по
+  поэтому внутри точной 40 px строки сохраняет по 4 px сверху, справа и снизу.
+  Этот dense action намеренно меньше actual option `38 × 38 px` переключателя
+  вида. Контентные по
   ширине `Дата / Время` прижаты слева,
   `Ученики / Статус` и действия — справа, а `Урок / Курс` делят оставшуюся
   ширину. Все данные чёрные и однострочные, используют ellipsis и полные title;
@@ -1022,22 +1029,35 @@ actions`; пять data headers сортируют полную client-loaded pr
   horizontal scroll. На ширине до `767 px` и при любом coarse/touch pointer
   search, однострочные inputs/selects, tabs, основные actions и Schedule date
   navigator используют один `40 px` control token. Action-glyphs равны
-  `20 px` с физическим Lucide stroke `2 px`. Segmented group имеет высоту
-  `40 px`, нулевые padding/gap и настоящие `40 px` options; две icon-only
-  options образуют ровно `80 × 40 px`. Track использует цвет product border,
-  inactive option прозрачна, а selected actual option получает тот же
-  непрозрачный белый surface, radius `12 px` и base shadow, что обычная
-  кнопка. Прозрачный `1 px` border selected option пропускает только
-  один слой track, поэтому её видимый контур совпадает с product border без
-  двойного затемнения. Прежние pseudo-слои `48 / 44 / 40 / 38 px` удалены.
-  Schedule использует тот же shared `SegmentedControl`; desktop сохраняет
-  `40 px` group с `32 px` options и `16 px` glyphs. `forced-colors` использует
+  `20 px` с физическим Lucide stroke `2 px`. На desktop, narrow и coarse
+  segmented group имеет высоту `40 px`, настоящую внешнюю product-рамку
+  `1 px`, `padding: 0` и gap `2 px`; две actual icon-only options
+  `38 × 38 px` образуют ровно `80 × 40 px`. Shell имеет radius `12 px`,
+  options — концентрический radius `11 px`. Track использует цвет product
+  border; inactive option прозрачна и на hover меняет только цвет без фона или
+  тени. Selected actual option имеет `border: 0`, чисто-белый surface и base
+  shadow обычной кнопки. Прежние pseudo-слои удалены. Schedule использует тот
+  же shared `SegmentedControl`; desktop сохраняет `16 px` glyph.
+  Exact `80 × 40 px` contract принадлежит только двум icon-only cells.
+  Semantic text projection в current source / next production остаётся
+  content-sized на desktop, а на narrow/coarse сжимается внутри parent:
+  `.product-segmented-control-text` использует `max-width: 100%`, `min-width: 0`
+  и `flex-shrink: 1`, каждая option — `min-width: 0` и `flex: 1 1 0`. Видимый
+  label обрезается однострочным ellipsis, но полный DOM-текст кнопки сохраняет
+  её полное accessible name.
+  `forced-colors` использует
   контрастные пары `ButtonFace / ButtonText` и
-  `Highlight / HighlightText` на actual surfaces. Все
-  редактируемые app
-  inputs/selects/textareas имеют computed font не меньше `16 px`, чтобы iOS не
-  выполнял focus zoom в portrait или landscape, при этом viewport не запрещает
-  pinch zoom. Launcher «Сообщения» в том же narrow/coarse contract равен
+  `Highlight / HighlightText` на actual surfaces. Только ordinary product
+  editables/controls — product inputs/selects/textareas, search, ordinary
+  buttons, Schedule date navigator, segmented options и WorkspaceTabs — используют
+  `--product-touch-control-font-size: 1.2rem`; при стандартном root `16 px` это
+  `19.2 px`. Authored Lesson/Component и exercise content fields, включая поля
+  ответа, исключены из этого product token: они сохраняют собственную content
+  typography и независимый anti-zoom floor `16 px`. Поэтому iOS не выполняет
+  focus zoom в portrait или landscape, при этом viewport не запрещает pinch
+  zoom. Это current source / next production boundary, а не изменение authored
+  content model.
+  Launcher «Сообщения» в том же narrow/coarse contract равен
   `56 × 56 px` с glyph минимум `24 px` и safe-area inset; non-fullscreen panel
   находится на `12 px` выше launcher. Его fullscreen mobile projection живёт
   на слое `110` поверх fixed TopNav `100`, оставаясь ниже confirmation dialogs
@@ -1090,9 +1110,11 @@ header показывает `48 px` Account avatar, Account name и только
 full-bleed светлым divider, а
 visible items ограничены «Расписание / Ученики / Курсы / Магазин / Профиль».
 Burger target равен `48 × 48 px`, action-glyph — `20 px` с физическим stroke
-`2 px`; panel остаётся внутри
-viewport с inset/gap `12 px`, радиусом `16 px`, строками `68 px`, текстом
-`20 px` и теми же `20 px / 2 px` action-glyphs. Pointer-open не переводит focus на первый пункт;
+`2 px`; panel остаётся внутри viewport с inset/gap `12 px`, радиусом `16 px` и
+строками `68 px`. Текст menu rows и Account name используют тот же
+`--product-touch-control-font-size: 1.2rem` (`19.2 px` при стандартном root
+`16 px`); action-glyphs остаются `20 px / 2 px`. Pointer-open не переводит
+focus на первый пункт;
 keyboard-open сохраняет inset focus indicator, стрелки, Home/End, Escape и
 focus-return semantics.
 На protected desktop и authenticated landing avatar является прямой ссылкой

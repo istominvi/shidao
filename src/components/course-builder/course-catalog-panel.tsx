@@ -71,8 +71,16 @@ function CatalogLearningAudienceControl({
         onChange={onChange}
         disabled={disabled}
         items={[
-          { value: "children", label: "Обучение детей" },
-          { value: "educators", label: "Обучение педагогов" },
+          {
+            value: "children",
+            label: "Дети",
+            ariaLabel: "Обучение детей",
+          },
+          {
+            value: "educators",
+            label: "Педагоги",
+            ariaLabel: "Обучение педагогов",
+          },
         ]}
       />
     </div>

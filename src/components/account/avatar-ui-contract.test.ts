@@ -170,6 +170,10 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
     /\.nav-account-menu-mobile\s+\.nav-dropdown-profile-avatar\s*\{[^}]*\}/.exec(
       navigationCss,
     )?.[0] ?? "";
+  const mobileProfileNameStyles =
+    /\.nav-account-menu-mobile\s+\.nav-dropdown-profile p:first-child\s*\{[^}]*\}/.exec(
+      navigationCss,
+    )?.[0] ?? "";
   const mobileMenuItemFocusStyles =
     Array.from(
       navigationCss.matchAll(
@@ -254,7 +258,10 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
     "The menu must cancel the 8px shell inset and retain the 12px safe viewport inset",
   );
   assert.match(mobileMenuItemStyles, /min-height: (?:4\.25rem|68px);/);
-  assert.match(mobileMenuItemStyles, /font-size: (?:1\.25rem|20px);/);
+  assert.match(
+    mobileMenuItemStyles,
+    /font-size: var\(--product-touch-control-font-size, 1\.2rem\);/,
+  );
   assert.match(
     mobileMenuItemStyles,
     /-webkit-tap-highlight-color: transparent;/,
@@ -273,6 +280,11 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
   assert.match(mobileProfileAvatarStyles, /width: (?:3rem|48px);/);
   assert.match(mobileProfileAvatarStyles, /height: (?:3rem|48px);/);
   assert.match(mobileProfileAvatarStyles, /font-size: (?:1rem|16px);/);
+  assert.match(
+    mobileProfileNameStyles,
+    /font-size: var\(--product-touch-control-font-size, 1\.2rem\);/,
+  );
+  assert.match(globalStyles, /--product-touch-control-font-size: 1\.2rem;/);
   assert.match(mobileMenuItemFocusStyles, /box-shadow: none;/);
   assert.match(
     navigationPrimitives,

@@ -718,7 +718,7 @@
   }
 
   .nav-account-menu-mobile .nav-dropdown-profile p:first-child {
-    font-size: 1.125rem;
+    font-size: var(--product-touch-control-font-size, 1.2rem);
     line-height: 1.25;
   }
 
@@ -734,7 +734,7 @@
     min-height: 4.25rem;
     border-radius: 0.75rem;
     padding: 0.875rem 1rem;
-    font-size: 1.25rem;
+    font-size: var(--product-touch-control-font-size, 1.2rem);
     font-weight: 500;
     line-height: 1.25;
     -webkit-tap-highlight-color: transparent;

@@ -188,7 +188,19 @@ token `20 px` с физическим Lucide stroke `2 px`; крупные `48/6
 остаются отдельной navigation-геометрией.
 Её profile header показывает `48 px` avatar, имя и допустимый email с
 равными верхним/нижним inset и отделён от navigation items одним
-full-bleed светлым divider. Mobile navigation menu входит в общий
+full-bleed светлым divider. Все menu rows и имя профиля используют общий
+`--product-touch-control-font-size: 1.2rem`; это `19.2 px` только при
+стандартном root `16 px`, а при пользовательском изменении root типографика
+масштабируется. Тот же token обслуживает narrow/coarse ordinary buttons,
+inputs/search/select, Schedule date navigator, segmented options и
+WorkspaceTabs. Это scope только ordinary product editables/controls: authored
+Lesson/Component и exercise content fields, включая поля ответа, его не
+наследуют и сохраняют собственную content typography с независимым минимумом
+`16 px` против iOS focus zoom. В current source / next production text
+segmented groups на narrow/coarse могут сжиматься внутри parent: options
+используют `min-width: 0` и `flex: 1 1 0`, visible label получает однострочный
+ellipsis без сокращения полного accessible name. Exact `80 × 40 px` остаётся
+контрактом только двух icon-only cells. Mobile navigation menu входит в общий
 dropdown surface contract вместе с contextual `ActionMenu`,
 Store sort и Schedule calendar. Course/Students/Store filter popovers в
 current source удалены; Students использует inline membership toggle. Общий

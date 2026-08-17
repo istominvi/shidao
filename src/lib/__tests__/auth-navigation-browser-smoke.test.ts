@@ -40,6 +40,7 @@ const E2E_EDUCATOR_ATTESTATION_ATTEMPT_ID =
 const E2E_LESSON_ID = "44444444-4444-4444-8444-444444444444";
 const E2E_SECOND_LESSON_ID = "44444444-4444-4444-8444-444444444445";
 const E2E_COMPONENT_ID = "77777777-7777-4777-8777-777777777771";
+const E2E_EXERCISE_COMPONENT_ID = "77777777-7777-4777-8777-777777777773";
 const E2E_STUDENT_SLIDE_ID = "77777777-7777-4777-8777-777777777770";
 const E2E_STORED_FILE_ID = "77777777-7777-4777-8777-777777777772";
 const E2E_LEARNER_ANNA_ID = "88888888-8888-4888-8888-888888888881";
@@ -126,8 +127,12 @@ type TouchSegmentedControlContract = {
     height: number;
     padding: string;
     gap: string;
+    borderTopWidth: string;
+    borderTopStyle: string;
+    borderTopColor: string;
     borderRadius: string;
     backgroundColor: string;
+    backgroundClip: string;
     boxShadow: string;
   };
   groupBeforeContent: string;
@@ -177,21 +182,25 @@ function assertTouchSegmentedControl(
       width: 80,
       height: 40,
       padding: "0px",
-      gap: "0px",
+      gap: "2px",
+      borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+      borderTopStyle: "solid",
+      borderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
       borderRadius: "12px",
       backgroundColor: E2E_SEGMENTED_CONTROL_BACKGROUND,
+      backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
       boxShadow: "none",
     },
-    `${label}: exact 80x40 two-cell group with no inset or gap`,
+    `${label}: exact bordered 80x40 two-cell group with a two-pixel seam`,
   );
   assert.ok(
     ["none", "normal"].includes(actual.groupBeforeContent),
     `${label}: group must not paint a ::before track`,
   );
-  assert.deepEqual(actual.optionWidths, [40, 40], `${label}: 40px cells`);
-  assert.deepEqual(actual.optionHeights, [40, 40], `${label}: 40px cells`);
-  assert.deepEqual(actual.seamGaps, [0], `${label}: zero-width seam`);
-  assert.deepEqual(actual.optionRadii, ["12px", "12px"]);
+  assert.deepEqual(actual.optionWidths, [38, 38], `${label}: 38px cells`);
+  assert.deepEqual(actual.optionHeights, [38, 38], `${label}: 38px cells`);
+  assert.deepEqual(actual.seamGaps, [2], `${label}: two-pixel seam`);
+  assert.deepEqual(actual.optionRadii, ["11px", "11px"]);
   assert.deepEqual(actual.iconStyles, [
     {
       width: 20,
@@ -225,35 +234,41 @@ function assertTouchSegmentedControl(
     actual.referenceButton.borderTopColor,
     `${label}: group track reuses the ordinary button border color`,
   );
+  assert.equal(
+    actual.group.borderTopColor,
+    actual.referenceButton.borderTopColor,
+    `${label}: group border reuses the ordinary button border color`,
+  );
   assert.deepEqual(
     {
       borderTopWidth: actual.selected.surface.borderTopWidth,
       borderTopStyle: actual.selected.surface.borderTopStyle,
-      borderTopColor: actual.selected.surface.borderTopColor,
     },
     {
-      borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
-      borderTopStyle: "solid",
-      borderTopColor: "rgba(0, 0, 0, 0)",
+      borderTopWidth: "0px",
+      borderTopStyle: "none",
     },
-    `${label}: selected option keeps a transparent one-pixel border over the shared track`,
+    `${label}: selected option has no independent border over the shared track`,
   );
   assert.deepEqual(
     {
-      borderRadius: actual.selected.surface.borderRadius,
       backgroundColor: actual.selected.surface.backgroundColor,
       backgroundImage: actual.selected.surface.backgroundImage,
       backgroundClip: actual.selected.surface.backgroundClip,
       boxShadow: actual.selected.surface.boxShadow,
     },
     {
-      borderRadius: actual.referenceButton.borderRadius,
       backgroundColor: actual.referenceButton.backgroundColor,
       backgroundImage: actual.referenceButton.backgroundImage,
       backgroundClip: actual.referenceButton.backgroundClip,
       boxShadow: actual.referenceButton.boxShadow,
     },
-    `${label}: selected option reuses the ordinary button radius, fill, clip, and shadow`,
+    `${label}: selected option reuses the ordinary button fill, clip, and shadow`,
+  );
+  assert.equal(
+    actual.selected.surface.borderRadius,
+    "11px",
+    `${label}: selected option radius stays concentric inside the one-pixel group border`,
   );
   assert.equal(actual.selected.transform, "none");
   assert.ok(
@@ -344,6 +359,7 @@ type E2EStudentScreenRpcPayload = {
 };
 
 let e2eComponentLearnerVisible = false;
+let e2eAuthoredExerciseVisible = false;
 const e2eStudentScreenRpcPayloads: E2EStudentScreenRpcPayload[] = [];
 
 function e2eLessonComponentRow() {
@@ -357,10 +373,35 @@ function e2eLessonComponentRow() {
   };
 }
 
+function e2eAuthoredExerciseComponentRow() {
+  return {
+    id: E2E_EXERCISE_COMPONENT_ID,
+    lesson_id: E2E_LESSON_ID,
+    type_key: "fill_blanks" as const,
+    schema_version: 1,
+    position: 2,
+    payload: {
+      instruction: "Заполните пропуски",
+      template: "I have [[1]] there and [[2]] tea.",
+      answers: [{ accepted: ["been"] }, { accepted: ["drunk"] }],
+    },
+    placement_config: { width: "content", compact: false },
+    visibility: "staff_only" as const,
+    student_slide_id: null,
+    created_at: "2026-08-05T08:45:00.000Z",
+    updated_at: "2026-08-05T09:00:00.000Z",
+  };
+}
+
 function e2eLessonRow() {
   return {
     ...E2E_LESSON_BASE_ROW,
-    components: [e2eLessonComponentRow()],
+    components: [
+      e2eLessonComponentRow(),
+      ...(e2eAuthoredExerciseVisible
+        ? [e2eAuthoredExerciseComponentRow()]
+        : []),
+    ],
     studentSlides: e2eComponentLearnerVisible
       ? [
           {
@@ -2476,12 +2517,20 @@ async function handleMockSupabase(
     request.method === "GET"
   ) {
     const requestedComponentId = readEqFilter(requestUrl, "id");
+    const components = [
+      e2eLessonComponentRow(),
+      ...(e2eAuthoredExerciseVisible
+        ? [e2eAuthoredExerciseComponentRow()]
+        : []),
+    ];
     json(
       response,
       200,
-      !requestedComponentId || requestedComponentId === E2E_COMPONENT_ID
-        ? [e2eLessonComponentRow()]
-        : [],
+      requestedComponentId
+        ? components.filter(
+            (component) => component.id === requestedComponentId,
+          )
+        : components,
     );
     return;
   }
@@ -3130,20 +3179,31 @@ async function readMobileEditableContract(page: BrowserSmokePage) {
       clientWidth: document.documentElement.clientWidth,
       documentScrollWidth: document.documentElement.scrollWidth,
       bodyScrollWidth: document.body.scrollWidth,
-      controls: controls.map((control) => ({
-        tag: control.tagName.toLowerCase(),
-        type:
-          control instanceof HTMLInputElement ? control.type.toLowerCase() : "",
-        name:
-          control.getAttribute("aria-label") ??
-          control.getAttribute("name") ??
-          control.id,
-        fontSize: Number.parseFloat(getComputedStyle(control).fontSize),
-        height: control.getBoundingClientRect().height,
-        canonicalSingleLine: control.matches(
-          "input.product-control-input, input.product-control-search, input.field-input, select.product-control, select.field-input",
-        ),
-      })),
+      controls: controls.map((control) => {
+        const ordinaryProductEditable = control.matches(
+          ".product-control, .field-input, .teaching-hub-search input, .student-directory-picker-search input",
+        );
+        return {
+          tag: control.tagName.toLowerCase(),
+          type:
+            control instanceof HTMLInputElement
+              ? control.type.toLowerCase()
+              : "",
+          name:
+            control.getAttribute("aria-label") ??
+            control.getAttribute("name") ??
+            control.id,
+          fontSize: Number.parseFloat(getComputedStyle(control).fontSize),
+          height: control.getBoundingClientRect().height,
+          ordinaryProductEditable,
+          rawAuthoredExercise:
+            !ordinaryProductEditable &&
+            Boolean(control.closest("[data-course-component-type]")),
+          canonicalSingleLine: control.matches(
+            "input.product-control-input, input.product-control-search, input.field-input, select.product-control, select.field-input",
+          ),
+        };
+      }),
     };
   });
 }
@@ -3165,13 +3225,29 @@ function assertMobileEditableContract(
   );
   assert.ok(
     contract.controls.every((control) => control.fontSize >= 16),
-    `${label}: visible editable controls must be at least 16px: ${JSON.stringify(contract.controls)}`,
+    `${label}: every visible editable control must remain at least 16px and avoid iOS focus zoom: ${JSON.stringify(contract.controls)}`,
+  );
+  assert.ok(
+    contract.controls
+      .filter((control) => control.ordinaryProductEditable)
+      .every((control) => Math.abs(control.fontSize - 19.2) < 0.02),
+    `${label}: ordinary product editables must use shared 1.2rem typography: ${JSON.stringify(contract.controls)}`,
+  );
+  assert.ok(
+    contract.controls
+      .filter((control) => control.rawAuthoredExercise)
+      .every((control) => Math.abs(control.fontSize - 16) < 0.02),
+    `${label}: raw authored exercise editables must stay at the 16px anti-zoom floor instead of inheriting product typography: ${JSON.stringify(contract.controls)}`,
   );
   assert.ok(
     contract.controls
       .filter((control) => control.canonicalSingleLine)
-      .every((control) => Math.abs(control.height - 40) < 0.5),
-    `${label}: canonical single-line controls must be exactly 40px: ${JSON.stringify(contract.controls)}`,
+      .every(
+        (control) =>
+          Math.abs(control.height - 40) < 0.5 &&
+          Math.abs(control.fontSize - 19.2) < 0.02,
+      ),
+    `${label}: canonical single-line controls must be exactly 40px with shared 1.2rem typography: ${JSON.stringify(contract.controls)}`,
   );
 }
 
@@ -6284,6 +6360,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const activeViewButton = viewToggle?.querySelector<HTMLElement>(
         'button[aria-pressed="true"]',
       );
+      const inactiveViewButton = viewToggle?.querySelector<HTMLElement>(
+        'button[aria-pressed="false"]',
+      );
       const siteHeader = document.querySelector<HTMLElement>(
         ".site-header-shell-demo",
       );
@@ -6332,6 +6411,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         viewOptions.length !== 2 ||
         viewIcons.length !== 2 ||
         !activeViewButton ||
+        !inactiveViewButton ||
         !siteHeader ||
         !headerPrimaryButton ||
         !headerPrimaryIcon ||
@@ -6379,6 +6459,19 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           height: rect.height,
           strokeWidth: strokeStyle.strokeWidth,
           vectorEffect: strokeStyle.vectorEffect,
+        };
+      };
+      const readSurface = (element: HTMLElement) => {
+        const style = getComputedStyle(element);
+        return {
+          borderTopWidth: style.borderTopWidth,
+          borderTopStyle: style.borderTopStyle,
+          borderRadius: style.borderRadius,
+          backgroundColor: style.backgroundColor,
+          backgroundImage: style.backgroundImage,
+          backgroundClip: style.backgroundClip,
+          boxShadow: style.boxShadow,
+          transform: style.transform,
         };
       };
 
@@ -6461,13 +6554,36 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           boxShadow: getComputedStyle(viewToggle).boxShadow,
         },
         desktopSegmentedControl: {
+          width: viewToggleRect.width,
           height: viewToggleRect.height,
           padding: getComputedStyle(viewToggle).padding,
           gap: getComputedStyle(viewToggle).gap,
+          borderTopWidth: getComputedStyle(viewToggle).borderTopWidth,
+          borderTopStyle: getComputedStyle(viewToggle).borderTopStyle,
+          borderTopColor: getComputedStyle(viewToggle).borderTopColor,
+          borderRadius: getComputedStyle(viewToggle).borderRadius,
+          backgroundColor: getComputedStyle(viewToggle).backgroundColor,
+          backgroundClip: getComputedStyle(viewToggle).backgroundClip,
+          optionWidths: viewOptions.map(
+            (option) => option.getBoundingClientRect().width,
+          ),
           optionHeights: viewOptions.map(
             (option) => option.getBoundingClientRect().height,
           ),
+          seamGaps: viewOptions.slice(1).map((option, index) => {
+            const previousRect = viewOptions[index]!.getBoundingClientRect();
+            return Number(
+              (
+                option.getBoundingClientRect().left - previousRect.right
+              ).toFixed(3),
+            );
+          }),
+          optionRadii: viewOptions.map(
+            (option) => getComputedStyle(option).borderRadius,
+          ),
           iconStyles: viewIcons.map(readGlyph),
+          selected: readSurface(activeViewButton),
+          inactive: readSurface(inactiveViewButton),
         },
         toolbarText: toolbar.textContent?.trim() ?? "",
         toolbarSurface: {
@@ -6617,14 +6733,24 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     );
     assert.deepEqual(scheduleContract.viewToggleSurface, {
       backgroundColor: E2E_SEGMENTED_CONTROL_BACKGROUND,
-      borderTopWidth: "0px",
+      borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
       boxShadow: "none",
     });
     assert.deepEqual(scheduleContract.desktopSegmentedControl, {
+      width: 80,
       height: 40,
-      padding: "4px",
-      gap: "4px",
-      optionHeights: [32, 32],
+      padding: "0px",
+      gap: "2px",
+      borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+      borderTopStyle: "solid",
+      borderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
+      borderRadius: "12px",
+      backgroundColor: E2E_SEGMENTED_CONTROL_BACKGROUND,
+      backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+      optionWidths: [38, 38],
+      optionHeights: [38, 38],
+      seamGaps: [2],
+      optionRadii: ["11px", "11px"],
       iconStyles: [
         {
           width: 16,
@@ -6639,7 +6765,79 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           vectorEffect: "none",
         },
       ],
+      selected: {
+        borderTopWidth: "0px",
+        borderTopStyle: "none",
+        borderRadius: "11px",
+        backgroundColor: "rgb(255, 255, 255)",
+        backgroundImage: "none",
+        backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+        boxShadow: E2E_RAISED_CONTROL_SHADOW,
+        transform: "none",
+      },
+      inactive: {
+        borderTopWidth: "0px",
+        borderTopStyle: "none",
+        borderRadius: "11px",
+        backgroundColor: "rgba(0, 0, 0, 0)",
+        backgroundImage: "none",
+        backgroundClip: "border-box",
+        boxShadow: "none",
+        transform: "none",
+      },
     });
+    const desktopInactiveViewOption = runtime.page.locator(
+      '.teaching-schedule-view-toggle button[aria-pressed="false"]',
+    );
+    const desktopInactiveViewRest = await desktopInactiveViewOption.evaluate(
+      (option) => {
+        const icon = option.querySelector<SVGElement>("svg.lucide");
+        const style = getComputedStyle(option);
+        return {
+          color: style.color,
+          iconColor: icon ? getComputedStyle(icon).color : null,
+          backgroundColor: style.backgroundColor,
+          backgroundImage: style.backgroundImage,
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+        };
+      },
+    );
+    assert.equal(desktopInactiveViewRest.color, "oklch(0.439 0 0)");
+    assert.deepEqual(desktopInactiveViewRest, {
+      color: desktopInactiveViewRest.color,
+      iconColor: desktopInactiveViewRest.color,
+      backgroundColor: "rgba(0, 0, 0, 0)",
+      backgroundImage: "none",
+      boxShadow: "none",
+      transform: "none",
+    });
+    await desktopInactiveViewOption.hover();
+    await runtime.page.waitForTimeout(220);
+    assert.deepEqual(
+      await desktopInactiveViewOption.evaluate((option) => {
+        const icon = option.querySelector<SVGElement>("svg.lucide");
+        const style = getComputedStyle(option);
+        return {
+          color: style.color,
+          iconColor: icon ? getComputedStyle(icon).color : null,
+          backgroundColor: style.backgroundColor,
+          backgroundImage: style.backgroundImage,
+          boxShadow: style.boxShadow,
+          transform: style.transform,
+        };
+      }),
+      {
+        color: "oklch(0.145 0 0)",
+        iconColor: "oklch(0.145 0 0)",
+        backgroundColor: "rgba(0, 0, 0, 0)",
+        backgroundImage: "none",
+        boxShadow: "none",
+        transform: "none",
+      },
+      "Fine-pointer hover must change only the inactive segment foreground",
+    );
+    await runtime.page.mouse.move(0, 0);
     const scheduleHeaderPrimaryButton = runtime.page.getByRole("link", {
       name: "Назначить урок",
       exact: true,
@@ -7161,12 +7359,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             bottom: Math.round(bodyRowRect.bottom - menuTriggerRect.bottom),
             left: Math.round(menuTriggerRect.left - actionCellRect.left),
           },
-          matchesActiveViewOption:
-            menuTriggerRect.width ===
+          isDistinctFromActiveViewOption:
+            menuTriggerRect.width !==
               activeViewButton.getBoundingClientRect().width &&
-            menuTriggerRect.height ===
+            menuTriggerRect.height !==
               activeViewButton.getBoundingClientRect().height &&
-            menuTriggerStyle.borderRadius ===
+            menuTriggerStyle.borderRadius !==
               activeViewButtonStyle.borderRadius,
           menuTriggerOpacity: menuTriggerStyle.opacity,
           menuTriggerVisibility: menuTriggerStyle.visibility,
@@ -7344,7 +7542,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       triggerFlexBasis: "32px",
       triggerPaddings: ["0px", "0px", "0px", "0px"],
       triggerInsets: { top: 4, right: 4, bottom: 4, left: 4 },
-      matchesActiveViewOption: true,
+      isDistinctFromActiveViewOption: true,
       menuTriggerOpacity: "1",
       menuTriggerVisibility: "visible",
       menuTriggerExpanded: "false",
@@ -7516,7 +7714,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         backgroundColor: "rgb(255, 255, 255)",
         borderWidths: ["0px", "0px", "0px", "0px"],
         boxShadow: E2E_DROPDOWN_SHADOW,
-        activeViewOptionBorderRadius: "8px",
+        activeViewOptionBorderRadius: "11px",
         items: [
           {
             height: 40,
@@ -8364,16 +8562,35 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         },
         controlGeometry: {
           membershipHeight: membershipSwitchStyle.height,
+          membershipWidth: membershipSwitch.getBoundingClientRect().width,
+          membershipPadding: membershipSwitchStyle.padding,
+          membershipGap: membershipSwitchStyle.gap,
           membershipBackgroundColor: membershipSwitchStyle.backgroundColor,
+          membershipBackgroundClip: membershipSwitchStyle.backgroundClip,
           membershipBorderTopWidth: membershipSwitchStyle.borderTopWidth,
+          membershipBorderTopStyle: membershipSwitchStyle.borderTopStyle,
+          membershipBorderTopColor: membershipSwitchStyle.borderTopColor,
           membershipBoxShadow: membershipSwitchStyle.boxShadow,
+          membershipButtonHeights: Array.from(
+            membershipSwitch.querySelectorAll<HTMLElement>("button"),
+          ).map((button) => button.getBoundingClientRect().height),
           activeMembershipHeight: activeMembershipButtonStyle.height,
           activeMembershipBoxShadow: activeMembershipButtonStyle.boxShadow,
           activeMembershipTransform: activeMembershipButtonStyle.transform,
           viewSwitchHeight: getComputedStyle(viewSwitch).height,
+          viewSwitchWidth: viewSwitch.getBoundingClientRect().width,
+          viewSwitchPadding: getComputedStyle(viewSwitch).padding,
+          viewSwitchGap: getComputedStyle(viewSwitch).gap,
           viewSwitchBackgroundColor:
             getComputedStyle(viewSwitch).backgroundColor,
+          viewSwitchBackgroundClip: getComputedStyle(viewSwitch).backgroundClip,
+          viewSwitchBorderTopWidth: getComputedStyle(viewSwitch).borderTopWidth,
+          viewSwitchBorderTopStyle: getComputedStyle(viewSwitch).borderTopStyle,
+          viewSwitchBorderTopColor: getComputedStyle(viewSwitch).borderTopColor,
           viewSwitchBoxShadow: getComputedStyle(viewSwitch).boxShadow,
+          viewButtonHeights: Array.from(
+            viewSwitch.querySelectorAll<HTMLElement>("button"),
+          ).map((button) => button.getBoundingClientRect().height),
           activeViewButtonHeight: getComputedStyle(activeViewButton).height,
           activeViewButtonBoxShadow:
             getComputedStyle(activeViewButton).boxShadow,
@@ -8593,20 +8810,36 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     );
     assert.deepEqual(studentsVisual.controlGeometry, {
       membershipHeight: "40px",
+      membershipWidth: studentsVisual.controlGeometry.membershipWidth,
+      membershipPadding: "0px",
+      membershipGap: "2px",
       membershipBackgroundColor: E2E_SEGMENTED_CONTROL_BACKGROUND,
-      membershipBorderTopWidth: "0px",
+      membershipBackgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+      membershipBorderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+      membershipBorderTopStyle: "solid",
+      membershipBorderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
       membershipBoxShadow: "none",
-      activeMembershipHeight: "32px",
+      membershipButtonHeights: [38, 38, 38],
+      activeMembershipHeight: "38px",
       activeMembershipBoxShadow: E2E_RAISED_CONTROL_SHADOW,
       activeMembershipTransform: "none",
       viewSwitchHeight: "40px",
+      viewSwitchWidth: 80,
+      viewSwitchPadding: "0px",
+      viewSwitchGap: "2px",
       viewSwitchBackgroundColor: E2E_SEGMENTED_CONTROL_BACKGROUND,
+      viewSwitchBackgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+      viewSwitchBorderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+      viewSwitchBorderTopStyle: "solid",
+      viewSwitchBorderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
       viewSwitchBoxShadow: "none",
-      activeViewButtonHeight: "32px",
+      viewButtonHeights: [38, 38],
+      activeViewButtonHeight: "38px",
       activeViewButtonBoxShadow: E2E_RAISED_CONTROL_SHADOW,
       viewSwitchInsideControls: true,
       membershipBeforeViewSwitch: true,
     });
+    assert.ok(studentsVisual.controlGeometry.membershipWidth > 80);
     assert.deepEqual(studentsVisual.tableSurface, {
       borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
       borderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
@@ -8668,7 +8901,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           transform: style.transform,
         };
       }),
-      { boxShadow: E2E_RAISED_CONTROL_SHADOW, transform: "none" },
+      { boxShadow: E2E_RAISED_CONTROL_PRESSED_SHADOW, transform: "none" },
     );
     await runtime.page.mouse.move(0, 0);
     await runtime.page.mouse.up();
@@ -10914,6 +11147,9 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       const picker = document.querySelector<HTMLElement>(
         ".teaching-date-picker",
       );
+      const dateTrigger = navigator?.querySelector<HTMLElement>(
+        ".teaching-date-trigger",
+      );
       const viewToggle = document.querySelector<HTMLElement>(
         ".teaching-schedule-view-toggle",
       );
@@ -10937,6 +11173,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         !toolbarActions ||
         !navigator ||
         !picker ||
+        !dateTrigger ||
         !viewToggle ||
         !selectedViewOption ||
         !inactiveViewOption ||
@@ -11006,8 +11243,12 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
             height: groupRect.height,
             padding: groupStyle.padding,
             gap: groupStyle.gap,
+            borderTopWidth: groupStyle.borderTopWidth,
+            borderTopStyle: groupStyle.borderTopStyle,
+            borderTopColor: groupStyle.borderTopColor,
             borderRadius: groupStyle.borderRadius,
             backgroundColor: groupStyle.backgroundColor,
+            backgroundClip: groupStyle.backgroundClip,
             boxShadow: groupStyle.boxShadow,
           },
           groupBeforeContent: groupBeforeStyle.content,
@@ -11076,7 +11317,9 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
           ".teaching-schedule-period-switch",
         ).length,
         primaryActionHeight: primaryAction.getBoundingClientRect().height,
+        primaryActionFontSize: getComputedStyle(primaryAction).fontSize,
         navigatorHeight: navigator.getBoundingClientRect().height,
+        dateTriggerFontSize: getComputedStyle(dateTrigger).fontSize,
         viewToggleHeight: viewToggle.getBoundingClientRect().height,
         viewTogglePadding: getComputedStyle(viewToggle).padding,
         viewToggleButtonHeights: Array.from(
@@ -11127,7 +11370,9 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         externalPeriodSwitchCount:
           mobileScheduleContract.externalPeriodSwitchCount,
         primaryActionHeight: mobileScheduleContract.primaryActionHeight,
+        primaryActionFontSize: mobileScheduleContract.primaryActionFontSize,
         navigatorHeight: mobileScheduleContract.navigatorHeight,
+        dateTriggerFontSize: mobileScheduleContract.dateTriggerFontSize,
         viewToggleHeight: mobileScheduleContract.viewToggleHeight,
         viewTogglePadding: mobileScheduleContract.viewTogglePadding,
         viewToggleButtonHeights: mobileScheduleContract.viewToggleButtonHeights,
@@ -11143,10 +11388,12 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         controlsEndInset: 0,
         externalPeriodSwitchCount: 0,
         primaryActionHeight: 40,
+        primaryActionFontSize: "19.2px",
         navigatorHeight: 40,
+        dateTriggerFontSize: "19.2px",
         viewToggleHeight: 40,
         viewTogglePadding: "0px",
-        viewToggleButtonHeights: [40, 40],
+        viewToggleButtonHeights: [38, 38],
         viewToggleIconSizes: [
           { width: 20, height: 20 },
           { width: 20, height: 20 },
@@ -11186,7 +11433,10 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       .evaluateAll((options) =>
         options.map((option) => {
           const style = getComputedStyle(option);
+          const rect = option.getBoundingClientRect();
           return {
+            width: rect.width,
+            height: rect.height,
             transitionProperty: style.transitionProperty,
             transitionDurationSeconds: Number.parseFloat(
               style.transitionDuration,
@@ -11202,7 +11452,11 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
           transitionProperty,
           transitionDurationSeconds,
           transitionDelaySeconds,
+          width,
+          height,
         }) =>
+          width === 38 &&
+          height === 38 &&
           transitionProperty === "none" &&
           transitionDurationSeconds <= 0.00001 &&
           transitionDelaySeconds === 0,
@@ -11256,13 +11510,25 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
           (button) => button.textContent?.trim() ?? "",
         ),
         periodSwitchHeight: periodSwitch.getBoundingClientRect().height,
+        periodSwitchWidth: periodSwitch.getBoundingClientRect().width,
         periodSwitchPadding: getComputedStyle(periodSwitch).padding,
         periodSwitchGap: getComputedStyle(periodSwitch).gap,
+        periodSwitchBorderTopWidth:
+          getComputedStyle(periodSwitch).borderTopWidth,
+        periodSwitchBorderTopStyle:
+          getComputedStyle(periodSwitch).borderTopStyle,
+        periodSwitchBorderTopColor:
+          getComputedStyle(periodSwitch).borderTopColor,
+        periodSwitchBackgroundClip:
+          getComputedStyle(periodSwitch).backgroundClip,
         periodSwitchBeforeContent: getComputedStyle(periodSwitch, "::before")
           .content,
         periodButtonHeights: Array.from(
           periodSwitch.querySelectorAll<HTMLElement>("button"),
         ).map((button) => button.getBoundingClientRect().height),
+        periodButtonFontSizes: Array.from(
+          periodSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => getComputedStyle(button).fontSize),
       };
     });
     assert.deepEqual(mobilePopoverContract, {
@@ -11271,11 +11537,18 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       popoverInsideViewport: true,
       periodLabels: ["День", "Неделя", "Месяц"],
       periodSwitchHeight: 40,
+      periodSwitchWidth: mobilePopoverContract.periodSwitchWidth,
       periodSwitchPadding: "0px",
-      periodSwitchGap: "0px",
+      periodSwitchGap: "2px",
+      periodSwitchBorderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+      periodSwitchBorderTopStyle: "solid",
+      periodSwitchBorderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
+      periodSwitchBackgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
       periodSwitchBeforeContent: "none",
-      periodButtonHeights: [40, 40, 40],
+      periodButtonHeights: [38, 38, 38],
+      periodButtonFontSizes: ["19.2px", "19.2px", "19.2px"],
     });
+    assert.ok(mobilePopoverContract.periodSwitchWidth > 80);
 
     await runtime.page.setViewportSize({ width: 320, height: 812 });
     assertMobileEditableContract(
@@ -11517,6 +11790,8 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       const profileAvatar = profileHeader?.querySelector<HTMLElement>(
         ".nav-dropdown-profile-avatar",
       );
+      const profileName =
+        profileHeader?.querySelector<HTMLElement>("p:first-child");
       const items = menu?.querySelector<HTMLElement>(".nav-dropdown-items");
       if (
         !trigger ||
@@ -11525,6 +11800,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         !menu ||
         !profileHeader ||
         !profileAvatar ||
+        !profileName ||
         !items
       ) {
         throw new Error("Mobile account menu contract is missing");
@@ -11562,9 +11838,8 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
           visibleAvatarCount:
             avatar && avatar.getClientRects().length > 0 ? 1 : 0,
         },
-        profileName: profileHeader
-          .querySelector("p:first-child")
-          ?.textContent?.trim(),
+        profileName: profileName.textContent?.trim(),
+        profileNameFontSize: getComputedStyle(profileName).fontSize,
         profileEmail: profileHeader
           .querySelector("p:last-child")
           ?.textContent?.trim(),
@@ -11649,6 +11924,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       visibleAvatarCount: 0,
     });
     assert.equal(mobileAccountMenuContract.profileName, "E2E Adult");
+    assert.equal(mobileAccountMenuContract.profileNameFontSize, "19.2px");
     assert.equal(
       mobileAccountMenuContract.profileEmail,
       "adult-e2e@example.test",
@@ -11702,11 +11978,11 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       [68, 68, 68, 68, 68],
     );
     assert.deepEqual(mobileAccountMenuContract.itemFontSizes, [
-      "20px",
-      "20px",
-      "20px",
-      "20px",
-      "20px",
+      "19.2px",
+      "19.2px",
+      "19.2px",
+      "19.2px",
+      "19.2px",
     ]);
     assert.deepEqual(
       mobileAccountMenuContract.itemIconStyles,
@@ -12013,6 +12289,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       const search = toolbar?.querySelector<HTMLElement>(
         ".teaching-hub-search",
       );
+      const searchInput = search?.querySelector<HTMLInputElement>("input");
       const primaryAction = document.querySelector<HTMLElement>(
         ".app-page-header .app-page-actions > .product-btn",
       );
@@ -12038,6 +12315,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         !activeViewButton ||
         !inactiveViewButton ||
         !search ||
+        !searchInput ||
         !primaryAction ||
         !tableWrap ||
         !table ||
@@ -12106,15 +12384,31 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         railFlexWrap: getComputedStyle(rail).flexWrap,
         railScrollIsContained: rail.scrollWidth > rail.clientWidth,
         searchHeight: search.getBoundingClientRect().height,
+        searchFontSize: getComputedStyle(searchInput).fontSize,
         primaryActionHeight: primaryAction.getBoundingClientRect().height,
+        primaryActionFontSize: getComputedStyle(primaryAction).fontSize,
         workspaceTabHeights: Array.from(
           document.querySelectorAll<HTMLElement>(".workspace-tab"),
         )
           .filter((tab) => tab.getClientRects().length > 0)
           .map((tab) => tab.getBoundingClientRect().height),
+        workspaceTabFontSizes: Array.from(
+          document.querySelectorAll<HTMLElement>(".workspace-tab"),
+        )
+          .filter((tab) => tab.getClientRects().length > 0)
+          .map((tab) => getComputedStyle(tab).fontSize),
         membershipSwitchHeight: getComputedStyle(membershipSwitch).height,
+        membershipSwitchWidth: membershipSwitch.getBoundingClientRect().width,
         membershipSwitchPadding: getComputedStyle(membershipSwitch).padding,
         membershipSwitchGap: getComputedStyle(membershipSwitch).gap,
+        membershipSwitchBorderTopWidth:
+          getComputedStyle(membershipSwitch).borderTopWidth,
+        membershipSwitchBorderTopStyle:
+          getComputedStyle(membershipSwitch).borderTopStyle,
+        membershipSwitchBorderTopColor:
+          getComputedStyle(membershipSwitch).borderTopColor,
+        membershipSwitchBackgroundClip:
+          getComputedStyle(membershipSwitch).backgroundClip,
         membershipSwitchBeforeContent: getComputedStyle(
           membershipSwitch,
           "::before",
@@ -12163,8 +12457,12 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
             height: viewSwitchRect.height,
             padding: viewSwitchStyle.padding,
             gap: viewSwitchStyle.gap,
+            borderTopWidth: viewSwitchStyle.borderTopWidth,
+            borderTopStyle: viewSwitchStyle.borderTopStyle,
+            borderTopColor: viewSwitchStyle.borderTopColor,
             borderRadius: viewSwitchStyle.borderRadius,
             backgroundColor: viewSwitchStyle.backgroundColor,
+            backgroundClip: viewSwitchStyle.backgroundClip,
             boxShadow: viewSwitchStyle.boxShadow,
           },
           groupBeforeContent: getComputedStyle(viewSwitch, "::before").content,
@@ -12235,22 +12533,43 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     assert.equal(mobileContract.railFlexWrap, "wrap");
     assert.equal(mobileContract.railScrollIsContained, false);
     assert.equal(mobileContract.searchHeight, 40);
+    assert.equal(mobileContract.searchFontSize, "19.2px");
     assert.equal(mobileContract.primaryActionHeight, 40);
+    assert.equal(mobileContract.primaryActionFontSize, "19.2px");
     assert.ok(mobileContract.workspaceTabHeights.length >= 2);
     assert.ok(
       mobileContract.workspaceTabHeights.every((height) => height === 40),
     );
+    assert.ok(
+      mobileContract.workspaceTabFontSizes.every(
+        (fontSize) => fontSize === "19.2px",
+      ),
+    );
     assert.equal(mobileContract.membershipSwitchHeight, "40px");
+    assert.ok(mobileContract.membershipSwitchWidth > 80);
     assert.equal(mobileContract.membershipSwitchPadding, "0px");
-    assert.equal(mobileContract.membershipSwitchGap, "0px");
+    assert.equal(mobileContract.membershipSwitchGap, "2px");
+    assert.equal(
+      mobileContract.membershipSwitchBorderTopWidth,
+      E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+    );
+    assert.equal(mobileContract.membershipSwitchBorderTopStyle, "solid");
+    assert.equal(
+      mobileContract.membershipSwitchBorderTopColor,
+      E2E_PRODUCT_SURFACE_BORDER_COLOR,
+    );
+    assert.equal(
+      mobileContract.membershipSwitchBackgroundClip,
+      E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+    );
     assert.ok(
       ["none", "normal"].includes(mobileContract.membershipSwitchBeforeContent),
     );
-    assert.deepEqual(mobileContract.membershipButtonHeights, [40, 40, 40]);
+    assert.deepEqual(mobileContract.membershipButtonHeights, [38, 38, 38]);
     assert.deepEqual(mobileContract.membershipButtonFontSizes, [
-      "16px",
-      "16px",
-      "16px",
+      "19.2px",
+      "19.2px",
+      "19.2px",
     ]);
     assert.equal(mobileContract.membershipSwitchInsideViewport, true);
     assert.deepEqual(mobileContract.membershipButtons, [
@@ -12260,12 +12579,12 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     ]);
     assert.equal(mobileContract.viewSwitchHeight, "40px");
     assert.equal(mobileContract.viewSwitchPadding, "0px");
-    assert.deepEqual(mobileContract.viewButtonHeights, [40, 40]);
+    assert.deepEqual(mobileContract.viewButtonHeights, [38, 38]);
     assert.deepEqual(mobileContract.viewIconSizes, [
       { width: 20, height: 20 },
       { width: 20, height: 20 },
     ]);
-    assert.equal(mobileContract.activeViewButtonHeight, "40px");
+    assert.equal(mobileContract.activeViewButtonHeight, "38px");
     assertTouchSegmentedControl(
       mobileContract.viewToggle,
       "Students mobile view toggle",
@@ -12295,6 +12614,77 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       320,
       "Students at 320px",
     );
+    const narrowMembershipContract = await runtime.page.evaluate(() => {
+      const toolbar = document.querySelector<HTMLElement>(
+        ".student-directory-toolbar",
+      );
+      const rail = toolbar?.querySelector<HTMLElement>(
+        ".student-directory-controls",
+      );
+      const group = rail?.querySelector<HTMLElement>(
+        '[role="group"][aria-label="Принадлежность к группе"]',
+      );
+      if (!toolbar || !rail || !group) {
+        throw new Error("320px Students membership control is missing");
+      }
+
+      const viewportWidth = document.documentElement.clientWidth;
+      const toolbarRect = toolbar.getBoundingClientRect();
+      const railRect = rail.getBoundingClientRect();
+      const groupRect = group.getBoundingClientRect();
+      const groupStyle = getComputedStyle(group);
+      const optionRects = Array.from(
+        group.querySelectorAll<HTMLElement>("button"),
+      ).map((button) => button.getBoundingClientRect());
+      return {
+        viewportWidth,
+        toolbarInsideViewport:
+          toolbarRect.left >= 0 && toolbarRect.right <= viewportWidth,
+        railInsideToolbar:
+          railRect.left >= toolbarRect.left - 0.5 &&
+          railRect.right <= toolbarRect.right + 0.5,
+        groupInsideRail:
+          groupRect.left >= railRect.left - 0.5 &&
+          groupRect.right <= railRect.right + 0.5,
+        groupInsideViewport:
+          groupRect.left >= 0 && groupRect.right <= viewportWidth,
+        groupWidth: groupRect.width,
+        availableRailWidth: railRect.width,
+        railRightInset: toolbarRect.right - railRect.right,
+        groupRightInset: railRect.right - groupRect.right,
+        viewportRightInset: viewportWidth - groupRect.right,
+        height: groupRect.height,
+        padding: groupStyle.padding,
+        gap: groupStyle.gap,
+        borderTopWidth: groupStyle.borderTopWidth,
+        borderTopStyle: groupStyle.borderTopStyle,
+        optionHeights: optionRects.map((rect) => rect.height),
+      };
+    });
+    assert.equal(narrowMembershipContract.viewportWidth, 320);
+    assert.equal(narrowMembershipContract.toolbarInsideViewport, true);
+    assert.equal(narrowMembershipContract.railInsideToolbar, true);
+    assert.equal(narrowMembershipContract.groupInsideRail, true);
+    assert.equal(narrowMembershipContract.groupInsideViewport, true);
+    assert.ok(
+      narrowMembershipContract.groupWidth <=
+        narrowMembershipContract.availableRailWidth + 0.5,
+    );
+    assert.ok(Math.abs(narrowMembershipContract.railRightInset) < 0.5);
+    assert.ok(narrowMembershipContract.groupRightInset >= -0.5);
+    assert.ok(
+      narrowMembershipContract.viewportRightInset >= 11.5,
+      `320px Students membership control must preserve the container's 12px right inset; got ${narrowMembershipContract.viewportRightInset}`,
+    );
+    assert.equal(narrowMembershipContract.height, 40);
+    assert.equal(narrowMembershipContract.padding, "0px");
+    assert.equal(narrowMembershipContract.gap, "2px");
+    assert.equal(
+      narrowMembershipContract.borderTopWidth,
+      E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+    );
+    assert.equal(narrowMembershipContract.borderTopStyle, "solid");
+    assert.deepEqual(narrowMembershipContract.optionHeights, [38, 38, 38]);
     await runtime.page.setViewportSize({ width: 375, height: 812 });
   } finally {
     e2eCompletionPhase = null;
@@ -12615,6 +13005,13 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         },
         viewGeometry: {
           shellHeight: getComputedStyle(viewSwitch).height,
+          shellWidth: viewSwitch.getBoundingClientRect().width,
+          shellPadding: getComputedStyle(viewSwitch).padding,
+          shellGap: getComputedStyle(viewSwitch).gap,
+          shellBorderTopWidth: getComputedStyle(viewSwitch).borderTopWidth,
+          shellBorderTopStyle: getComputedStyle(viewSwitch).borderTopStyle,
+          shellBorderTopColor: getComputedStyle(viewSwitch).borderTopColor,
+          shellBackgroundClip: getComputedStyle(viewSwitch).backgroundClip,
           activeButtonHeight: getComputedStyle(activeViewButton).height,
         },
         viewButtons: Array.from(viewSwitch.querySelectorAll("button")).map(
@@ -12689,7 +13086,14 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     });
     assert.deepEqual(coursesVisual.viewGeometry, {
       shellHeight: "40px",
-      activeButtonHeight: "32px",
+      shellWidth: 80,
+      shellPadding: "0px",
+      shellGap: "2px",
+      shellBorderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+      shellBorderTopStyle: "solid",
+      shellBorderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
+      shellBackgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+      activeButtonHeight: "38px",
     });
     assert.deepEqual(coursesVisual.viewButtons, [
       { label: "Показать таблицей", pressed: "true" },
@@ -15593,6 +15997,154 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
   });
 
   try {
+    e2eAuthoredExerciseVisible = true;
+    await runtime.page.setViewportSize({ width: 320, height: 812 });
+    await runtime.page.goto("/courses/new", { waitUntil: "networkidle" });
+    await runtime.page
+      .getByRole("heading", { name: "Новый курс", exact: true, level: 1 })
+      .waitFor();
+    const newCourseAudience = runtime.page.getByRole("group", {
+      name: "Направление обучения",
+      exact: true,
+    });
+    await newCourseAudience.waitFor();
+    await newCourseAudience
+      .getByRole("button", { name: "Обучение детей", exact: true })
+      .waitFor();
+    await newCourseAudience
+      .getByRole("button", { name: "Обучение педагогов", exact: true })
+      .waitFor();
+    assertMobileEditableContract(
+      await readMobileEditableContract(runtime.page),
+      320,
+      "Educator New Course at 320px",
+    );
+    const newCourseAudienceContract = await newCourseAudience.evaluate(
+      (group) => {
+        const parent = group.parentElement;
+        if (!parent) {
+          throw new Error("New Course audience parent is missing");
+        }
+        const viewportWidth = document.documentElement.clientWidth;
+        const parentRect = parent.getBoundingClientRect();
+        const groupRect = group.getBoundingClientRect();
+        const groupStyle = getComputedStyle(group);
+        const buttons = Array.from(
+          group.querySelectorAll<HTMLButtonElement>("button"),
+        );
+        const buttonRects = buttons.map((button) =>
+          button.getBoundingClientRect(),
+        );
+        return {
+          viewportWidth,
+          documentScrollWidth: document.documentElement.scrollWidth,
+          bodyScrollWidth: document.body.scrollWidth,
+          parentInsideViewport:
+            parentRect.left >= 0 && parentRect.right <= viewportWidth,
+          groupInsideParent:
+            groupRect.left >= parentRect.left - 0.5 &&
+            groupRect.right <= parentRect.right + 0.5,
+          groupInsideViewport:
+            groupRect.left >= 0 && groupRect.right <= viewportWidth,
+          groupWidth: groupRect.width,
+          availableParentWidth: parentRect.width,
+          parentRightInset: viewportWidth - parentRect.right,
+          groupRightInset: parentRect.right - groupRect.right,
+          height: groupRect.height,
+          padding: groupStyle.padding,
+          gap: groupStyle.gap,
+          borderTopWidth: groupStyle.borderTopWidth,
+          borderTopStyle: groupStyle.borderTopStyle,
+          borderTopColor: groupStyle.borderTopColor,
+          backgroundClip: groupStyle.backgroundClip,
+          optionHeights: buttonRects.map((rect) => rect.height),
+          seamGaps: buttonRects
+            .slice(1)
+            .map((rect, index) =>
+              Number((rect.left - buttonRects[index]!.right).toFixed(3)),
+            ),
+          options: buttons.map((button) => {
+            const label = button.querySelector<HTMLElement>(":scope > span");
+            if (!label) {
+              throw new Error("New Course audience label is missing");
+            }
+            const labelStyle = getComputedStyle(label);
+            const fullText = label.textContent?.trim() ?? "";
+            return {
+              fullText,
+              ariaLabel: button.getAttribute("aria-label"),
+              height: button.getBoundingClientRect().height,
+              fontSize: getComputedStyle(button).fontSize,
+              overflow: labelStyle.overflow,
+              textOverflow: labelStyle.textOverflow,
+              whiteSpace: labelStyle.whiteSpace,
+              clientWidth: label.clientWidth,
+              scrollWidth: label.scrollWidth,
+              isEllipsized: label.scrollWidth > label.clientWidth,
+            };
+          }),
+        };
+      },
+    );
+    assert.equal(newCourseAudienceContract.viewportWidth, 320);
+    assert.equal(newCourseAudienceContract.documentScrollWidth, 320);
+    assert.ok(newCourseAudienceContract.bodyScrollWidth <= 320);
+    assert.equal(newCourseAudienceContract.parentInsideViewport, true);
+    assert.equal(newCourseAudienceContract.groupInsideParent, true);
+    assert.equal(newCourseAudienceContract.groupInsideViewport, true);
+    assert.ok(
+      newCourseAudienceContract.groupWidth <=
+        newCourseAudienceContract.availableParentWidth + 0.5,
+    );
+    assert.ok(newCourseAudienceContract.parentRightInset >= 11.5);
+    assert.ok(newCourseAudienceContract.groupRightInset >= -0.5);
+    assert.equal(newCourseAudienceContract.height, 40);
+    assert.equal(newCourseAudienceContract.padding, "0px");
+    assert.equal(newCourseAudienceContract.gap, "2px");
+    assert.equal(
+      newCourseAudienceContract.borderTopWidth,
+      E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+    );
+    assert.equal(newCourseAudienceContract.borderTopStyle, "solid");
+    assert.equal(
+      newCourseAudienceContract.borderTopColor,
+      E2E_PRODUCT_SURFACE_BORDER_COLOR,
+    );
+    assert.equal(
+      newCourseAudienceContract.backgroundClip,
+      E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+    );
+    assert.deepEqual(newCourseAudienceContract.optionHeights, [38, 38]);
+    assert.deepEqual(newCourseAudienceContract.seamGaps, [2]);
+    assert.deepEqual(
+      newCourseAudienceContract.options.map(({ fullText, ariaLabel }) => ({
+        fullText,
+        ariaLabel,
+      })),
+      [
+        { fullText: "Дети", ariaLabel: "Обучение детей" },
+        { fullText: "Педагоги", ariaLabel: "Обучение педагогов" },
+      ],
+    );
+    assert.ok(
+      newCourseAudienceContract.options.every(
+        ({ height, fontSize, overflow, textOverflow, whiteSpace }) =>
+          height === 38 &&
+          fontSize === "19.2px" &&
+          overflow === "hidden" &&
+          textOverflow === "ellipsis" &&
+          whiteSpace === "nowrap",
+      ),
+    );
+    assert.ok(
+      newCourseAudienceContract.options.every(
+        ({ clientWidth, scrollWidth, isEllipsized }) =>
+          !isEllipsized && scrollWidth <= clientWidth,
+      ),
+      `320px New Course must keep both short visible direction labels untruncated while preserving their full accessible names: ${JSON.stringify(newCourseAudienceContract.options)}`,
+    );
+
+    await runtime.page.setViewportSize({ width: 375, height: 812 });
     await runtime.page.goto("/courses", { waitUntil: "networkidle" });
     await runtime.page.locator(".course-index-mobile-list").waitFor();
     const mobileCourseLink = runtime.page.getByRole("link", {
@@ -15691,6 +16243,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       }
       const viewportWidth = document.documentElement.clientWidth;
       const pageHeaderStyle = getComputedStyle(pageHeader);
+      const titleRowStyle = getComputedStyle(titleRow);
       const pageHeaderRect = pageHeader.getBoundingClientRect();
       const pageHeadingRect = pageHeading.getBoundingClientRect();
       const titleRowRect = titleRow.getBoundingClientRect();
@@ -15741,6 +16294,13 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
             headerActions.parentElement === titleRow &&
             headerActionsRect.top < titleRect.bottom &&
             headerActionsRect.bottom > titleRect.top,
+          actionsWrappedBelowTitle:
+            headerActionsRect.top >= titleRect.bottom - 0.5,
+          actionStackGapDelta: Math.abs(
+            headerActionsRect.top -
+              titleRect.bottom -
+              Number.parseFloat(titleRowStyle.rowGap),
+          ),
           titleActionBottomDelta: Math.abs(
             headerActionsRect.bottom - titleRect.bottom,
           ),
@@ -15753,11 +16313,14 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
               headerActionsRect.right,
           ),
           titleActionGap: headerActionsRect.left - titleRect.right,
-          actionsDoNotOverlapTitle: headerActionsRect.left >= titleRect.right,
+          actionsDoNotOverlapTitle:
+            headerActionsRect.top >= titleRect.bottom - 0.5 ||
+            headerActionsRect.left >= titleRect.right,
           actionsInsideViewport:
             headerActionsRect.left >= 0 &&
             headerActionsRect.right <= viewportWidth,
           actionHeight: headerActionRect.height,
+          actionFontSize: getComputedStyle(headerAction).fontSize,
         },
         toolbarInsideViewport:
           toolbarRect.left >= 0 && toolbarRect.right <= viewportWidth,
@@ -15766,12 +16329,21 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         searchStartInset: toolbarSearchRect.left - toolbarRect.left,
         railEndInset: toolbarRect.right - toolbarRailRect.right,
         shellHeight: getComputedStyle(viewSwitch).height,
+        shellWidth: viewSwitch.getBoundingClientRect().width,
         shellPadding: getComputedStyle(viewSwitch).padding,
+        shellGap: getComputedStyle(viewSwitch).gap,
+        shellBorderTopWidth: getComputedStyle(viewSwitch).borderTopWidth,
+        shellBorderTopStyle: getComputedStyle(viewSwitch).borderTopStyle,
+        shellBorderTopColor: getComputedStyle(viewSwitch).borderTopColor,
+        shellBackgroundClip: getComputedStyle(viewSwitch).backgroundClip,
         activeButtonHeight: getComputedStyle(activeViewButton).height,
         searchHeight: searchInput.getBoundingClientRect().height,
         searchFontSize: getComputedStyle(searchInput).fontSize,
         workspaceTabHeights: workspaceTabs.map(
           (tab) => tab.getBoundingClientRect().height,
+        ),
+        workspaceTabFontSizes: workspaceTabs.map(
+          (tab) => getComputedStyle(tab).fontSize,
         ),
         viewButtonHeights: Array.from(
           viewSwitch.querySelectorAll<HTMLElement>("button"),
@@ -15855,23 +16427,44 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       top: "0px",
     });
     assert.equal(mobileCoursesToolbar.shellHeight, "40px");
+    assert.equal(mobileCoursesToolbar.shellWidth, 80);
     assert.equal(mobileCoursesToolbar.shellPadding, "0px");
-    assert.equal(mobileCoursesToolbar.activeButtonHeight, "40px");
+    assert.equal(mobileCoursesToolbar.shellGap, "2px");
+    assert.equal(
+      mobileCoursesToolbar.shellBorderTopWidth,
+      E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+    );
+    assert.equal(mobileCoursesToolbar.shellBorderTopStyle, "solid");
+    assert.equal(
+      mobileCoursesToolbar.shellBorderTopColor,
+      E2E_PRODUCT_SURFACE_BORDER_COLOR,
+    );
+    assert.equal(
+      mobileCoursesToolbar.shellBackgroundClip,
+      E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+    );
+    assert.equal(mobileCoursesToolbar.activeButtonHeight, "38px");
     assert.equal(mobileCoursesToolbar.searchHeight, 40);
-    assert.ok(Number.parseFloat(mobileCoursesToolbar.searchFontSize) >= 16);
+    assert.equal(mobileCoursesToolbar.searchFontSize, "19.2px");
     assert.ok(
       mobileCoursesToolbar.workspaceTabHeights.every((height) => height === 40),
     );
-    assert.deepEqual(mobileCoursesToolbar.viewButtonHeights, [40, 40]);
+    assert.ok(
+      mobileCoursesToolbar.workspaceTabFontSizes.every(
+        (fontSize) => fontSize === "19.2px",
+      ),
+    );
+    assert.deepEqual(mobileCoursesToolbar.viewButtonHeights, [38, 38]);
     assert.deepEqual(mobileCoursesToolbar.viewButtonFontSizes, [
-      "16px",
-      "16px",
+      "19.2px",
+      "19.2px",
     ]);
     assert.deepEqual(mobileCoursesToolbar.viewIconSizes, [
       { width: 20, height: 20 },
       { width: 20, height: 20 },
     ]);
     assert.equal(mobileCoursesToolbar.pageHeader.actionHeight, 40);
+    assert.equal(mobileCoursesToolbar.pageHeader.actionFontSize, "19.2px");
     assert.notEqual(mobileCoursesToolbar.mobileProjection.listDisplay, "none");
     assert.equal(mobileCoursesToolbar.mobileProjection.listVisible, true);
     assert.equal(
@@ -15913,13 +16506,13 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         mobileCoursesToolbar.pageHeader.actionsWidth,
     );
     assert.ok(mobileCoursesToolbar.pageHeader.actionsFitContentDelta < 0.5);
-    assert.equal(mobileCoursesToolbar.pageHeader.actionsShareTitleRow, true);
-    assert.ok(mobileCoursesToolbar.pageHeader.titleActionBottomDelta < 0.5);
-    assert.ok(mobileCoursesToolbar.pageHeader.actionControlBottomDelta < 0.5);
-    assert.ok(mobileCoursesToolbar.pageHeader.actionRightInsetDelta < 0.5);
-    assert.ok(
-      Math.abs(mobileCoursesToolbar.pageHeader.titleActionGap - 24) < 0.5,
+    assert.equal(mobileCoursesToolbar.pageHeader.actionsShareTitleRow, false);
+    assert.equal(
+      mobileCoursesToolbar.pageHeader.actionsWrappedBelowTitle,
+      true,
     );
+    assert.ok(mobileCoursesToolbar.pageHeader.actionStackGapDelta < 0.5);
+    assert.ok(mobileCoursesToolbar.pageHeader.actionRightInsetDelta < 0.5);
     assert.equal(
       mobileCoursesToolbar.pageHeader.actionsDoNotOverlapTitle,
       true,
@@ -16053,9 +16646,11 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
           getComputedStyle(searchInput).fontSize,
         ),
         primaryActionHeight: primaryAction.getBoundingClientRect().height,
+        primaryActionFontSize: getComputedStyle(primaryAction).fontSize,
         tabHeights: visibleTabs.map(
           (tab) => tab.getBoundingClientRect().height,
         ),
+        tabFontSizes: visibleTabs.map((tab) => getComputedStyle(tab).fontSize),
         launcher: {
           width: launcherRect.width,
           height: launcherRect.height,
@@ -16074,8 +16669,12 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
             height: viewSwitchRect.height,
             padding: viewSwitchStyle.padding,
             gap: viewSwitchStyle.gap,
+            borderTopWidth: viewSwitchStyle.borderTopWidth,
+            borderTopStyle: viewSwitchStyle.borderTopStyle,
+            borderTopColor: viewSwitchStyle.borderTopColor,
             borderRadius: viewSwitchStyle.borderRadius,
             backgroundColor: viewSwitchStyle.backgroundColor,
+            backgroundClip: viewSwitchStyle.backgroundClip,
             boxShadow: viewSwitchStyle.boxShadow,
           },
           groupBeforeContent: getComputedStyle(viewSwitch, "::before").content,
@@ -16134,19 +16733,25 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         noHover: true,
         segmentedHeight: 40,
         segmentedPadding: "0px",
-        segmentedButtonHeights: [40, 40],
-        segmentedButtonFontSizes: ["16px", "16px"],
+        segmentedButtonHeights: [38, 38],
+        segmentedButtonFontSizes: ["19.2px", "19.2px"],
         segmentedIconSizes: [
           { width: 20, height: 20 },
           { width: 20, height: 20 },
         ],
         searchHeight: 40,
-        searchFontSize: 16,
+        searchFontSize: 19.2,
       },
     );
     assert.equal(mobileLandscapeContract.primaryActionHeight, 40);
+    assert.equal(mobileLandscapeContract.primaryActionFontSize, "19.2px");
     assert.ok(
       mobileLandscapeContract.tabHeights.every((height) => height === 40),
+    );
+    assert.ok(
+      mobileLandscapeContract.tabFontSizes.every(
+        (fontSize) => fontSize === "19.2px",
+      ),
     );
     assert.ok(mobileLandscapeContract.launcher.width >= 56);
     assert.ok(mobileLandscapeContract.launcher.height >= 56);
@@ -16699,8 +17304,12 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
               height: groupRect.height,
               padding: groupStyle.padding,
               gap: groupStyle.gap,
+              borderTopWidth: groupStyle.borderTopWidth,
+              borderTopStyle: groupStyle.borderTopStyle,
+              borderTopColor: groupStyle.borderTopColor,
               borderRadius: groupStyle.borderRadius,
               backgroundColor: groupStyle.backgroundColor,
+              backgroundClip: groupStyle.backgroundClip,
               boxShadow: groupStyle.boxShadow,
             },
             groupBeforeContent: getComputedStyle(viewToggle, "::before")
@@ -16787,11 +17396,14 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         document.body.append(systemProbe, highlightProbe);
 
         const groupStyle = getComputedStyle(group);
+        const groupRect = group.getBoundingClientRect();
         const groupBeforeStyle = getComputedStyle(group, "::before");
         const selectedStyle = getComputedStyle(selected);
         const selectedGlyph = selected.querySelector<HTMLElement>("svg, span");
         const selectedBeforeStyle = getComputedStyle(selected, "::before");
         const inactiveStyle = getComputedStyle(inactive);
+        const selectedRect = selected.getBoundingClientRect();
+        const inactiveRect = inactive.getBoundingClientRect();
         const systemStyle = getComputedStyle(systemProbe);
         const highlightStyle = getComputedStyle(highlightProbe);
         const contract = {
@@ -16804,26 +17416,41 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
             highlightText: highlightStyle.color,
           },
           group: {
+            width: groupRect.width,
+            height: groupRect.height,
+            padding: groupStyle.padding,
+            gap: groupStyle.gap,
+            borderTopWidth: groupStyle.borderTopWidth,
+            borderTopStyle: groupStyle.borderTopStyle,
+            borderTopColor: groupStyle.borderTopColor,
             outlineStyle: groupStyle.outlineStyle,
             outlineWidth: groupStyle.outlineWidth,
             outlineColor: groupStyle.outlineColor,
             outlineOffset: groupStyle.outlineOffset,
             backgroundColor: groupStyle.backgroundColor,
+            backgroundClip: groupStyle.backgroundClip,
             beforeContent: groupBeforeStyle.content,
           },
           inactive: {
+            width: inactiveRect.width,
+            height: inactiveRect.height,
             color: inactiveStyle.color,
             backgroundColor: inactiveStyle.backgroundColor,
             transform: inactiveStyle.transform,
           },
           selected: {
+            width: selectedRect.width,
+            height: selectedRect.height,
             color: selectedStyle.color,
             glyphColor: selectedGlyph
               ? getComputedStyle(selectedGlyph).color
               : null,
             transform: selectedStyle.transform,
             backgroundColor: selectedStyle.backgroundColor,
+            borderTopWidth: selectedStyle.borderTopWidth,
+            borderTopStyle: selectedStyle.borderTopStyle,
             borderTopColor: selectedStyle.borderTopColor,
+            borderRadius: selectedStyle.borderRadius,
             beforeContent: selectedBeforeStyle.content,
           },
         };
@@ -16834,14 +17461,24 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
 
       assert.equal(forcedColorsToggle.mediaMatches, true);
       assert.deepEqual(forcedColorsToggle.group, {
-        outlineStyle: "solid",
-        outlineWidth: "1px",
-        outlineColor: forcedColorsToggle.system.canvasText,
-        outlineOffset: "-1px",
+        width: 80,
+        height: 40,
+        padding: "0px",
+        gap: "2px",
+        borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+        borderTopStyle: "solid",
+        borderTopColor: forcedColorsToggle.system.canvasText,
+        outlineStyle: "none",
+        outlineWidth: "0px",
+        outlineColor: "rgb(20, 20, 20)",
+        outlineOffset: "0px",
         backgroundColor: forcedColorsToggle.system.buttonFace,
+        backgroundClip: "border-box",
         beforeContent: "none",
       });
       assert.deepEqual(forcedColorsToggle.inactive, {
+        width: 38,
+        height: 38,
         color: forcedColorsToggle.system.buttonText,
         backgroundColor: "rgba(0, 0, 0, 0)",
         transform: "none",
@@ -16852,11 +17489,16 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         "Forced-colors inactive glyph must contrast with the toggle track",
       );
       assert.deepEqual(forcedColorsToggle.selected, {
+        width: 38,
+        height: 38,
         color: forcedColorsToggle.system.highlightText,
         glyphColor: forcedColorsToggle.system.highlightText,
         transform: "none",
         backgroundColor: forcedColorsToggle.system.highlight,
+        borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+        borderTopStyle: "solid",
         borderTopColor: forcedColorsToggle.system.highlight,
+        borderRadius: "11px",
         beforeContent: "none",
       });
 
@@ -16990,6 +17632,10 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         shellHeight: getComputedStyle(viewSwitch).height,
         shellPadding: getComputedStyle(viewSwitch).padding,
         shellGap: getComputedStyle(viewSwitch).gap,
+        shellBorderTopWidth: getComputedStyle(viewSwitch).borderTopWidth,
+        shellBorderTopStyle: getComputedStyle(viewSwitch).borderTopStyle,
+        shellBorderTopColor: getComputedStyle(viewSwitch).borderTopColor,
+        shellBackgroundClip: getComputedStyle(viewSwitch).backgroundClip,
         shellWidth: viewSwitch.getBoundingClientRect().width,
         shellBeforeContent: getComputedStyle(viewSwitch, "::before").content,
         viewButtonHeights: Array.from(
@@ -17008,8 +17654,17 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
           return { width: rect.width, height: rect.height };
         }),
         audienceShellHeight: getComputedStyle(audienceSwitch).height,
+        audienceShellWidth: audienceSwitch.getBoundingClientRect().width,
         audienceShellPadding: getComputedStyle(audienceSwitch).padding,
         audienceShellGap: getComputedStyle(audienceSwitch).gap,
+        audienceShellBorderTopWidth:
+          getComputedStyle(audienceSwitch).borderTopWidth,
+        audienceShellBorderTopStyle:
+          getComputedStyle(audienceSwitch).borderTopStyle,
+        audienceShellBorderTopColor:
+          getComputedStyle(audienceSwitch).borderTopColor,
+        audienceShellBackgroundClip:
+          getComputedStyle(audienceSwitch).backgroundClip,
         audienceShellBeforeContent: getComputedStyle(audienceSwitch, "::before")
           .content,
         audienceButtonHeights: Array.from(
@@ -17072,30 +17727,57 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     );
     assert.equal(mobileCatalogToolbar.shellHeight, "40px");
     assert.equal(mobileCatalogToolbar.shellPadding, "0px");
-    assert.equal(mobileCatalogToolbar.shellGap, "0px");
+    assert.equal(mobileCatalogToolbar.shellGap, "2px");
+    assert.equal(
+      mobileCatalogToolbar.shellBorderTopWidth,
+      E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+    );
+    assert.equal(mobileCatalogToolbar.shellBorderTopStyle, "solid");
+    assert.equal(
+      mobileCatalogToolbar.shellBorderTopColor,
+      E2E_PRODUCT_SURFACE_BORDER_COLOR,
+    );
+    assert.equal(
+      mobileCatalogToolbar.shellBackgroundClip,
+      E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+    );
     assert.equal(mobileCatalogToolbar.shellWidth, 80);
     assert.equal(mobileCatalogToolbar.shellBeforeContent, "none");
-    assert.deepEqual(mobileCatalogToolbar.viewButtonHeights, [40, 40]);
-    assert.deepEqual(mobileCatalogToolbar.viewButtonWidths, [40, 40]);
+    assert.deepEqual(mobileCatalogToolbar.viewButtonHeights, [38, 38]);
+    assert.deepEqual(mobileCatalogToolbar.viewButtonWidths, [38, 38]);
     assert.deepEqual(mobileCatalogToolbar.viewButtonFontSizes, [
-      "16px",
-      "16px",
+      "19.2px",
+      "19.2px",
     ]);
     assert.deepEqual(mobileCatalogToolbar.viewIconSizes, [
       { width: 20, height: 20 },
       { width: 20, height: 20 },
     ]);
     assert.equal(mobileCatalogToolbar.audienceShellHeight, "40px");
+    assert.ok(mobileCatalogToolbar.audienceShellWidth > 80);
     assert.equal(mobileCatalogToolbar.audienceShellPadding, "0px");
-    assert.equal(mobileCatalogToolbar.audienceShellGap, "0px");
+    assert.equal(mobileCatalogToolbar.audienceShellGap, "2px");
+    assert.equal(
+      mobileCatalogToolbar.audienceShellBorderTopWidth,
+      E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+    );
+    assert.equal(mobileCatalogToolbar.audienceShellBorderTopStyle, "solid");
+    assert.equal(
+      mobileCatalogToolbar.audienceShellBorderTopColor,
+      E2E_PRODUCT_SURFACE_BORDER_COLOR,
+    );
+    assert.equal(
+      mobileCatalogToolbar.audienceShellBackgroundClip,
+      E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+    );
     assert.equal(mobileCatalogToolbar.audienceShellBeforeContent, "none");
-    assert.deepEqual(mobileCatalogToolbar.audienceButtonHeights, [40, 40]);
+    assert.deepEqual(mobileCatalogToolbar.audienceButtonHeights, [38, 38]);
     assert.deepEqual(mobileCatalogToolbar.audienceButtonFontSizes, [
-      "16px",
-      "16px",
+      "19.2px",
+      "19.2px",
     ]);
     assert.equal(mobileCatalogToolbar.searchHeight, 40);
-    assert.ok(Number.parseFloat(mobileCatalogToolbar.searchFontSize) >= 16);
+    assert.equal(mobileCatalogToolbar.searchFontSize, "19.2px");
     assert.notEqual(mobileCatalogToolbar.mobileProjection.listDisplay, "none");
     assert.equal(mobileCatalogToolbar.mobileProjection.listVisible, true);
     assert.equal(
@@ -17164,7 +17846,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         toolbarPaddingLeft: toolbarStyle.paddingLeft,
         toolbarPaddingRight: toolbarStyle.paddingRight,
         addButtonHeight: getComputedStyle(addButton).height,
+        addButtonFontSize: getComputedStyle(addButton).fontSize,
         searchHeight: searchInput.getBoundingClientRect().height,
+        searchFontSize: getComputedStyle(searchInput).fontSize,
         wrapperOverflowX: getComputedStyle(wrapper).overflowX,
         wrapperClientWidth: wrapper.clientWidth,
         wrapperScrollWidth: wrapper.scrollWidth,
@@ -17179,7 +17863,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         toolbarPaddingLeft: mobileCourseLessons.toolbarPaddingLeft,
         toolbarPaddingRight: mobileCourseLessons.toolbarPaddingRight,
         addButtonHeight: mobileCourseLessons.addButtonHeight,
+        addButtonFontSize: mobileCourseLessons.addButtonFontSize,
         searchHeight: mobileCourseLessons.searchHeight,
+        searchFontSize: mobileCourseLessons.searchFontSize,
         wrapperOverflowX: mobileCourseLessons.wrapperOverflowX,
       },
       {
@@ -17190,7 +17876,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         toolbarPaddingLeft: "0px",
         toolbarPaddingRight: "0px",
         addButtonHeight: "40px",
+        addButtonFontSize: "19.2px",
         searchHeight: 40,
+        searchFontSize: "19.2px",
         wrapperOverflowX: "auto",
       },
     );
@@ -17208,6 +17896,66 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         level: 1,
       })
       .waitFor();
+    const authoredExercise = runtime.page.locator(
+      '[data-course-component-type="fill_blanks"]',
+    );
+    await authoredExercise.waitFor();
+    const authoredExerciseInputs = authoredExercise.getByRole("textbox");
+    assert.equal(await authoredExerciseInputs.count(), 2);
+    await runtime.page.setViewportSize({ width: 320, height: 812 });
+    const lessonEditableContract = await readMobileEditableContract(
+      runtime.page,
+    );
+    assertMobileEditableContract(
+      lessonEditableContract,
+      320,
+      "Lesson authored exercise at 320px",
+    );
+    assert.ok(
+      lessonEditableContract.controls.some(
+        (control) =>
+          control.ordinaryProductEditable &&
+          Math.abs(control.fontSize - 19.2) < 0.02,
+      ),
+      "Lesson shell must retain 19.2px typography on ordinary product editables",
+    );
+    assert.equal(
+      lessonEditableContract.controls.filter(
+        (control) => control.rawAuthoredExercise,
+      ).length,
+      2,
+    );
+    const authoredExerciseInputContract = await authoredExercise.evaluate(
+      (component) =>
+        Array.from(
+          component.querySelectorAll<HTMLInputElement>('input[type="text"]'),
+        ).map((input) => ({
+          fontSize: getComputedStyle(input).fontSize,
+          insideCourseDemoShell: Boolean(input.closest(".course-demo-shell")),
+          hasProductEditableClass: input.matches(
+            ".product-control, .field-input",
+          ),
+        })),
+    );
+    assert.deepEqual(authoredExerciseInputContract, [
+      {
+        fontSize: "16px",
+        insideCourseDemoShell: true,
+        hasProductEditableClass: false,
+      },
+      {
+        fontSize: "16px",
+        insideCourseDemoShell: true,
+        hasProductEditableClass: false,
+      },
+    ]);
+    await authoredExercise
+      .getByRole("textbox", { name: "Пропуск 1", exact: true })
+      .waitFor();
+    await authoredExercise
+      .getByRole("textbox", { name: "Пропуск 2", exact: true })
+      .waitFor();
+    await runtime.page.setViewportSize({ width: 375, height: 812 });
     const mobileFileComponentEdit = runtime.page.getByRole("button", {
       name: "Редактировать «Файл»",
       exact: true,
@@ -17234,9 +17982,10 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
             height: select.getBoundingClientRect().height,
             fontSize: getComputedStyle(select).fontSize,
           })),
-          textareaHeights: textareas.map(
-            (textarea) => textarea.getBoundingClientRect().height,
-          ),
+          textareas: textareas.map((textarea) => ({
+            height: textarea.getBoundingClientRect().height,
+            fontSize: getComputedStyle(textarea).fontSize,
+          })),
           documentClientWidth: document.documentElement.clientWidth,
           documentScrollWidth: document.documentElement.scrollWidth,
         };
@@ -17248,14 +17997,16 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     );
     assert.ok(
       mobileRawFieldContract.selects.every(
-        ({ height, fontSize }) => height === 40 && fontSize === "16px",
+        ({ height, fontSize }) => height === 40 && fontSize === "19.2px",
       ),
-      "Every mobile raw select.field-input must be exactly 40px tall and remain anti-zoom safe",
+      "Every mobile raw select.field-input must be exactly 40px tall with shared 1.2rem typography",
     );
     assert.ok(
-      mobileRawFieldContract.textareaHeights.length > 0 &&
-        mobileRawFieldContract.textareaHeights.every((height) => height > 40),
-      "Mobile textarea.field-input must retain its flexible multi-line height",
+      mobileRawFieldContract.textareas.length > 0 &&
+        mobileRawFieldContract.textareas.every(
+          ({ height, fontSize }) => height > 40 && fontSize === "19.2px",
+        ),
+      "Mobile textarea.field-input must retain its flexible multi-line height and shared typography",
     );
     assert.equal(
       mobileRawFieldContract.documentScrollWidth,
@@ -17348,6 +18099,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const actionControlRects = Array.from(
         actions.querySelectorAll<HTMLElement>(".product-btn"),
       ).map((control) => control.getBoundingClientRect());
+      const actionControlFontSizes = Array.from(
+        actions.querySelectorAll<HTMLElement>(".product-btn"),
+      ).map((control) => getComputedStyle(control).fontSize);
       const actionsContentWidth = actionControlRects.length
         ? Math.max(...actionControlRects.map((rect) => rect.right)) -
           Math.min(...actionControlRects.map((rect) => rect.left))
@@ -17373,6 +18127,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
           actionsFitContentDelta: Math.abs(
             actionsRect.width - actionsContentWidth,
           ),
+          actionControlFontSizes,
           actionsWrappedBelowTitle: actionsRect.top >= titleRect.bottom - 0.5,
           actionStackGapDelta: Math.abs(
             actionsRect.top -
@@ -17419,6 +18174,11 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         )
           .filter((tab) => tab.getClientRects().length > 0)
           .map((tab) => tab.getBoundingClientRect().height),
+        visibleTabFontSizes: Array.from(
+          tabStrip.querySelectorAll<HTMLElement>(".workspace-tab"),
+        )
+          .filter((tab) => tab.getClientRects().length > 0)
+          .map((tab) => getComputedStyle(tab).fontSize),
         selectedTabLeft: selectedTabRect.left,
         selectedTabRight: selectedTabRect.right,
         tabStripLeft: tabStripRect.left,
@@ -17470,6 +18230,11 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     );
     assert.ok(mobileVisual.pageHeader.actionStackGapDelta < 0.5);
     assert.ok(mobileVisual.pageHeader.actionsFitContentDelta < 0.5);
+    assert.ok(
+      mobileVisual.pageHeader.actionControlFontSizes.every(
+        (fontSize) => fontSize === "19.2px",
+      ),
+    );
     assert.ok(mobileVisual.pageHeader.metricGapDelta < 0.5);
     assert.ok(mobileVisual.pageHeader.backLabelSingleLineDelta < 0.5);
     assert.ok(Math.abs(mobileVisual.pageHeader.headerToBackGap - 20) < 0.5);
@@ -17492,9 +18257,15 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     assert.equal(mobileVisual.selectedTabAriaSelected, "true");
     assert.ok(mobileVisual.visibleTabHeights.length >= 5);
     assert.ok(mobileVisual.visibleTabHeights.every((height) => height === 40));
+    assert.ok(
+      mobileVisual.visibleTabFontSizes.every(
+        (fontSize) => fontSize === "19.2px",
+      ),
+    );
     assert.ok(mobileVisual.selectedTabLeft >= mobileVisual.tabStripLeft - 1);
     assert.ok(mobileVisual.selectedTabRight <= mobileVisual.tabStripRight + 1);
   } finally {
+    e2eAuthoredExerciseVisible = false;
     await runtime.close();
   }
 });

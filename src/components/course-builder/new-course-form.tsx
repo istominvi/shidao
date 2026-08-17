@@ -410,8 +410,16 @@ export function NewCourseForm({
                   }}
                   disabled={isSubmitting || createdCourseId !== null}
                   items={[
-                    { value: "children", label: "Обучение детей" },
-                    { value: "educators", label: "Обучение педагогов" },
+                    {
+                      value: "children",
+                      label: "Дети",
+                      ariaLabel: "Обучение детей",
+                    },
+                    {
+                      value: "educators",
+                      label: "Педагоги",
+                      ariaLabel: "Обучение педагогов",
+                    },
                   ]}
                 />
               </FormField>

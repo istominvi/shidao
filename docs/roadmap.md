@@ -76,8 +76,10 @@
   удалён, а avatar на protected desktop и authenticated landing ведёт напрямую
   в `/profile`. Panel занимает viewport с inset `12 px`, gap `12 px`, радиусом
   `16 px`; Account header показывает `48 px` avatar, имеет равные block-insets
-  и full-bleed светлый divider. Menu rows равны `68 px`, текст — `20 px`,
-  action-glyphs — `20 px / 2 px`.
+  и full-bleed светлый divider. Menu rows равны `68 px`; их текст и имя
+  профиля используют общий `--product-touch-control-font-size: 1.2rem`
+  (`19.2 px` только при стандартном root `16 px`). Action-glyphs остаются
+  `20 px / 2 px`.
 - App viewport использует `viewport-fit=cover`; app `theme-color`, manifest,
   `html`, `body` и shell согласованы на `#f5f1e8`, а shell покрывает минимум
   `100dvh`. iOS browser chrome и elastic overscroll получают тот же цвет без
@@ -86,17 +88,27 @@
 - На ширине до `767 px` и при любом coarse/touch pointer обычные Course
   search/input/select, actions, Schedule date navigator, WorkspaceTabs и
   segmented controls имеют одну внешнюю высоту `40 px`. Action-glyphs равны
-  `20 px` с физическим stroke `2 px`. Segmented shell имеет `padding: 0` и
-  `gap: 0`; каждая option равна `40 px`, поэтому две icon-only options дают
-  ровно `80 × 40 px`. Выбранная actual option переиспользует белый surface,
-  radius `12 px` и base shadow обычной кнопки; её прозрачный `1 px`
-  border показывает ровно один слой track того же цвета, что product
-  border. Неактивная option прозрачна над тем же track.
-  Прежние pseudo-слои `48 / 44 / 40 / 38 px` удалены; Schedule использует
-  общий `SegmentedControl`, desktop-геометрия `40 / 32 px` не меняется. Все
-  редактируемые app
-  inputs/selects/textareas имеют computed font не меньше `16 px`, предотвращая
-  iOS focus zoom в portrait и landscape без запрета pinch zoom. Launcher
+  `20 px` с физическим stroke `2 px`. На всех плотностях segmented shell имеет
+  реальную внешнюю product-рамку `1 px`, `padding: 0` и gap `2 px`; две actual
+  icon-only options `38 × 38 px` внутри него дают ровно `80 × 40 px`.
+  Shell использует radius `12 px`, options — концентрический radius `11 px`.
+  Selected option имеет `border: 0`, чисто-белый surface и base shadow обычной
+  кнопки. Неактивная option прозрачна и не получает фон или тень при hover —
+  меняется только цвет glyph. Прежние pseudo-слои удалены; Schedule использует
+  общий `SegmentedControl`, а desktop сохраняет `16 px` glyph.
+  Exact `80 × 40 px` относится только к двум icon-only cells. В current source /
+  next production semantic text groups на narrow/coarse могут сжиматься в
+  parent (`max-width: 100%`, `min-width: 0`, `flex-shrink: 1`), их options
+  используют `min-width: 0` и `flex: 1 1 0`, а видимый однострочный label
+  получает ellipsis без сокращения полного accessible name кнопки.
+  `--product-touch-control-font-size: 1.2rem` объединяет подписи ordinary
+  product buttons/editables, inputs/search/select, date navigator, segmented
+  options, WorkspaceTabs, mobile-menu rows и имя профиля; при root `16 px` это
+  `19.2 px`. Поля authored Lesson/Component и упражнений, включая поля ответа,
+  намеренно не наследуют этот token: их content typography сохраняется, а
+  независимый минимум `16 px` предотвращает iOS focus zoom в portrait и
+  landscape без запрета pinch zoom. Это current source / next production.
+  Launcher
   «Сообщения» в том же narrow/coarse contract равен `56 × 56 px`, glyph —
   минимум `24 px`, safe-area сохранён; non-fullscreen panel сохраняет `12 px`
   зазор над launcher. Fullscreen mobile panel использует слой `110` поверх
@@ -506,8 +518,9 @@ rows, а его нижний divider и разделители между стр
 `--product-table-divider-color`. Обычные header/data cells получают
 канонические 12 px слева и справа; последняя body action-cell использует 4 px,
 а её единственный `MoreVertical` trigger имеет 32 × 32 px и радиус 8 px. Так
-в 40 px строке остаются одинаковые 4 px сверху, справа и снизу, как у active
-option в переключателе вида.
+в 40 px строке остаются одинаковые 4 px сверху, справа и снизу. Это отдельная
+плотная action-категория, намеренно меньшая, чем actual option `38 × 38 px`
+переключателя вида.
 Последняя колонка не имеет видимого заголовка:
 вертикальное троеточие ожидающего Run открывает точные действия «Начать урок /
 Изменить / Отменить», active/completed Run получают соответствующие завершение
@@ -540,8 +553,9 @@ destructive «Убрать из списка». «Написать сообще�
 Archived/pending rows получают только допустимые restore/permanent-delete или
 cancel actions. Authenticated top header/profile menu стали
 сплошными белыми поверхностями без blur. Active V2 buttons/header controls
-унифицированы как raised `40 px / 12 px / .88rem / 400`: общий белый surface,
-product border, base shadow, hover lift, pressed/focus и reduced-motion states,
+унифицированы как raised `40 px / 12 px`: общий белый surface, product border,
+base shadow, hover lift, pressed/focus и reduced-motion states. Base/desktop
+типографика остаётся `.88rem/400`, narrow/coarse использует общий `1.2rem`,
 с полностью непрозрачными контрастными иконками; contextual menu items остаются
 плоскими. Отдельный Settings shell и side navigation удалены: `/settings/*`
 перенаправляет в соответствующие вкладки `/profile`, использующие тот же
@@ -678,7 +692,8 @@ actions, не добавляет сам выбор фона Course и не ме�
 rollout входит в exact functional source
 `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`.
 
-**Current production:** единый raised-control contract распространяется на все
+**Current production baseline / current source next production:** единый
+raised-control contract распространяется на все
 канонические `.product-btn`: белый surface, общий
 `--product-surface-border: 1px solid oklch(0 0 0 / .1)`,
 `background-clip: padding-box` и однослойная базовая тень
@@ -695,17 +710,20 @@ Keyboard outline и forced-colors fallback остаются отдельными
 индикаторами, reduced-motion отключает transition и translate, danger actions сохраняют
 красный текст. Строчные ellipsis и Component-card icon-actions остаются
 transparent/borderless/no-shadow; contextual menu panels/items тоже исключены.
-У compound toggles удаляется внешняя обводка, а выбранная белая
-option получает только base shadow без динамических button states; shell имеет
-фон `oklch(0.19 0 0 / 0.1)`. Подзаголовки страниц и inactive tab text/icon
+В current source / next production compound toggles получают настоящую внешнюю product-рамку `1 px`; shell
+`40 px` содержит actual options `38 px` с gap `2 px`. Выбранная чисто-белая
+option имеет `border: 0` и base shadow, а inactive option не получает фон или
+тень на hover — меняется только цвет. Shell использует фон
+`--product-surface-border-color`. Подзаголовки страниц и inactive tab text/icon
 получают `oklch(0.19 0 0 / 0.6)`, а отдельный 1.2 px tab baseline —
 `oklch(0.19 0 0 / 0.4)`. В deployed baseline белый sticky product TopNav
 сохранял `68 px / 20 px`, но получил одну тень
-`0px 6px 12px oklch(0 0 0 / 0.05)` без inset-слоёв. Этот UI-only production
-contract развёрнут в release `10888d5` и зафиксирован exact source
+`0px 6px 12px oklch(0 0 0 / 0.05)` без inset-слоёв. Базовый UI-only
+production contract развёрнут в release `10888d5` и зафиксирован exact source
 `1d4e5deff83cbdc1b479b16e4220cf799327009f`; его `68 px`/sticky геометрия
 историческая и superseded current-source desktop normal-flow/mobile fixed
-`64 px` + `12 px` fade contract выше.
+`64 px` + `12 px` fade contract выше. Новая segmented-геометрия относится к
+current source / next production и не приписывается этому historical hash.
 
 **Current production acceptance:** обычные CTA Auth recovery,
 check-email, onboarding, identity invitation/completion и retry-state
@@ -1297,8 +1315,9 @@ divider 1 px входит в высоту header и через `--product-table-
 светлее. Обычные header/data cells используют inline-padding 12 px;
 только последняя body action-cell получает inset 4 px вокруг единственного
 `MoreVertical` trigger размером 32 × 32 px и радиусом 8 px. В точной 40 px
-строке это даёт по 4 px сверху, справа и снизу и повторяет active option
-переключателя вида. Контентные по ширине `Дата / Время` прижаты слева,
+строке это даёт по 4 px сверху, справа и снизу; этот dense action намеренно
+меньше actual option `38 × 38 px` переключателя вида. Контентные по ширине
+`Дата / Время` прижаты слева,
 `Ученики / Статус` и действия — справа, а `Урок / Курс` делят свободную ширину.
 Все данные чёрные и выводятся в одну строку с ellipsis; дата имеет вид
 `Среда · 12 авг`, время — `12:00 · 60 мин`, scheduled state остаётся plain
@@ -1329,7 +1348,8 @@ headers сортируют только локальную projection с default
 portal-actions: открыть Lesson и выполнить контекстное действие проведения.
 Authenticated top header и profile dropdown тоже стали сплошными белыми
 поверхностями без blur. Buttons/header controls используют единый raised
-`40 px / 12 px / .88rem / 400` contract с fully opaque contrast-aware icons,
+`40 px / 12 px` contract с base/desktop `.88rem/400`, narrow/coarse `1.2rem`
+и fully opaque contrast-aware icons,
 общим product border и base/hover/pressed states; menu items остаются
 borderless. Physical schema не
 меняется; Course API добавляет recoverable soft archive с published/open-Run

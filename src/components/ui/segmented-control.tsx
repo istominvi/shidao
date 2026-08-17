@@ -34,7 +34,13 @@ export function SegmentedControl<T extends string>({
     <div
       role="group"
       aria-label={ariaLabel}
-      className={classNames("product-segmented-control", className)}
+      className={classNames(
+        "product-segmented-control",
+        iconOnly
+          ? "product-segmented-control-icon-only"
+          : "product-segmented-control-text",
+        className,
+      )}
     >
       {items.map((item) => {
         const Icon = item.icon;
