@@ -27,8 +27,13 @@
 
 - На desktop Product TopNav возвращён в normal document flow: он не
   sticky/fixed и при scroll уходит вверх вместе с content. До `767 px` TopNav
-  становится sticky, учитывает safe-area и остаётся у верхнего края без
-  fixed-overlay над content.
+  становится viewport-fixed, учитывает safe-area и остаётся у верхнего края;
+  его точная высота заранее зарезервирована в app shell. Прозрачный внешний
+  слой не блокирует content, а pointer-transparent gradient начинается на
+  `12 px` ниже белого shell и плавно набирает opacity к верхней границе
+  viewport. Root `scroll-padding` использует ту же динамическую высоту, поэтому
+  anchors, focus и `scrollIntoView()` остаются ниже fixed stack при любом
+  safe-area.
 - Белый product shell имеет точную высоту `64 px`. Общий inner container-row с
   brand, navigation и actions/avatar на desktop имеет exact высоту `40 px`,
   вертикально центрирован с `12 px` сверху и снизу и задаёт всем трём зонам одну
@@ -74,7 +79,7 @@
 - App viewport использует `viewport-fit=cover`; app `theme-color`, manifest,
   `html`, `body` и shell согласованы на `#f5f1e8`, а shell покрывает минимум
   `100dvh`. iOS browser chrome и elastic overscroll получают тот же цвет без
-  отключения нативного bounce; safe-area применяется к sticky header и нижнему
+  отключения нативного bounce; safe-area применяется к fixed header и нижнему
   краю content.
 - На ширине до `767 px` и при любом coarse/touch pointer Course search, primary
   actions и tabs имеют минимум `48 px`, а segmented/toggle shells используют
@@ -84,7 +89,8 @@
   iOS focus zoom в portrait и landscape без запрета pinch zoom. Launcher
   «Сообщения» в том же narrow/coarse contract равен `56 × 56 px`, glyph —
   минимум `24 px`, safe-area сохранён; non-fullscreen panel сохраняет `12 px`
-  зазор над launcher.
+  зазор над launcher. Fullscreen mobile panel использует слой `110` поверх
+  fixed TopNav `100` и ниже confirmation dialogs `120`.
   Широкая Course table остаётся
   desktop projection, а до `767 px` заменяется семантическим списком компактных
   карточек без page-level horizontal scroll. Query, presentation state и
@@ -679,8 +685,8 @@ option получает только base shadow без динамических
 `0px 6px 12px oklch(0 0 0 / 0.05)` без inset-слоёв. Этот UI-only production
 contract развёрнут в release `10888d5` и зафиксирован exact source
 `1d4e5deff83cbdc1b479b16e4220cf799327009f`; его `68 px`/sticky геометрия
-историческая и superseded current-source desktop normal-flow/mobile sticky
-`64 px` contract выше.
+историческая и superseded current-source desktop normal-flow/mobile fixed
+`64 px` + `12 px` fade contract выше.
 
 **Current production acceptance:** обычные CTA Auth recovery,
 check-email, onboarding, identity invitation/completion и retry-state

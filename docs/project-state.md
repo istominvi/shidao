@@ -171,12 +171,19 @@ backlink. H1 и правая action-секция `AppPageHeader` образую�
 backlink-row остаётся выше только в content-column, а metric/meta находятся
 ниже title-row; эти строки не участвуют в вертикальном выравнивании actions.
 При реальной нехватке ширины intrinsic action rail переносится в отдельный ряд.
-На mobile до `767 px` тот же TopNav становится `position: sticky; top: 0`:
-бежевый внешний слой учитывает safe-area и сохраняет по `12 px` от краёв
-viewport, а белый shell остаётся `64 px` и содержит увеличенный `48 px` ряд.
-Этот UI-only source contract supersede-ит deployed `68 px`/sticky геометрию
-только для desktop, условную backlink-row и центрирование actions по всей
-высоте header; API, schema, migrations и Lesson hierarchy не меняются.
+На mobile до `767 px` тот же TopNav становится viewport-fixed: точная высота
+его safe-area + `64 px` shell + `12 px` fade заранее резервируется в
+`.course-demo-shell`, поэтому исходный content rhythm не прыгает. Внешний слой
+прозрачен и не перехватывает касания; отдельный pointer-transparent gradient
+начинается полностью прозрачным на `12 px` ниже белого shell и скрывает
+прокручиваемый content к его верхней границе. Белый shell сохраняет боковые
+safe-area/inset минимум `12 px` и содержит увеличенный `48 px` ряд. Root
+`scroll-padding` равен той же динамической высоте stack, поэтому focus,
+anchors и `scrollIntoView()` не прячут цель под fixed header даже при ненулевом
+safe-area. Этот UI-only source contract supersede-ит deployed
+`68 px`/sticky геометрию,
+условную backlink-row и центрирование actions по всей высоте header; API,
+schema, migrations и Lesson hierarchy не меняются.
 
 **Current source / next production — instant primary-section chrome:**
 protected Account shell заранее выполняет full RSC prefetch пяти главных
@@ -253,10 +260,12 @@ touch-first application layout. App `theme-color`, manifest, `html`, `body` и
 включает `viewport-fit=cover`, shell покрывает минимум `100dvh`, а safe-area
 insets защищают верхнюю навигацию и нижний край. Поэтому iOS Safari окрашивает
 browser chrome и elastic overscroll в цвет приложения без отключения нативного
-bounce. Текущий source refinement делает скруглённый mobile TopNav полностью
-непрозрачным белым surface без background image/blur, увеличивает wordmark до
-`26 px` и оставляет закрытый burger на чистом белом фоне без залипающего
-touch-hover/focus halo. Mobile burger имеет target `48 × 48 px` и icon `24 px`;
+bounce. Текущий source refinement закрепляет скруглённый mobile TopNav у
+viewport вместо WebKit-sensitive sticky positioning: прозрачный внешний слой
+с `12 px` бежевым fade пропускает content под полностью непрозрачный белый
+surface без blur, а reserved flow-height предотвращает начальный layout jump.
+Wordmark увеличен до `26 px`, закрытый burger остаётся на чистом белом фоне без
+залипающего touch-hover/focus halo. Mobile burger имеет target `48 × 48 px` и icon `24 px`;
 открытый panel занимает ширину viewport с inset `12 px`, gap `12 px`, радиусом
 `16 px`, показывает `48 px` Account avatar, отделяет одинаково отцентрованный
 profile header full-bleed светлым divider и использует строки `68 px`, текст
@@ -274,8 +283,10 @@ segmented controls имеют общую внешнюю высоту `48 px` и 
 pinch zoom при этом не запрещается через viewport. Global launcher
 «Сообщения» в том же narrow/coarse contract увеличен до `56 × 56 px` с glyph
 не меньше `24 px` и сохраняет safe-area inset; non-fullscreen panel остаётся
-ровно на `12 px` выше увеличенного launcher. Desktop Course table/card
-переключатель и
+ровно на `12 px` выше увеличенного launcher. Fullscreen mobile panel находится
+на слое `110` поверх fixed TopNav `100`, но ниже confirmation dialogs `120`,
+поэтому белый header не рисуется и не принимает касания поверх modal. Desktop
+Course table/card переключатель и
 исходный table mode сохраняются, но до `767 px` широкая таблица не масштабируется
 и не создаёт page-level horizontal scroll: текущая projection отображается
 семантическим списком компактных белых карточек с полными Course actions и
@@ -735,7 +746,7 @@ exact-тень `0px 6px 12px oklch(0 0 0 / 0.05)`. Этот production contract
 зафиксирован в exact functional source
 `1d4e5deff83cbdc1b479b16e4220cf799327009f`; его `68 px`/sticky геометрия
 является историческим evidence и superseded current-source desktop
-normal-flow/mobile sticky `64 px` contract, описанным выше.
+normal-flow/mobile fixed `64 px` + `12 px` fade contract, описанным выше.
 
 **Current production ordinary-control, static-surface and entry-field
 refinement:** поверх общего raised-control
@@ -1419,8 +1430,10 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   gradients на этих маршрутах отсутствуют.
 - В current source / next production Course header следует обновлённому
   demo-контракту: на desktop normal-flow shell без sticky/fixed positioning, а
-  до `767 px` sticky shell у safe-area края имеет высоту `64 px`, сплошную белую
-  поверхность без blur и радиус `20 px`. Общий container-row с brand,
+  до `767 px` viewport-fixed прозрачный внешний слой резервирует safe-area,
+  `64 px` белый shell и `12 px` нижний fade. Shell имеет сплошную белую
+  поверхность без blur и радиус `20 px`; content проходит под ним и плавно
+  растворяется в бежевом app background. Общий container-row с brand,
   navigation и actions/avatar имеет exact высоту `40 px` на desktop и `48 px`
   на mobile; desktop row сохраняет по `12 px` сверху и снизу, все три зоны лежат
   на одной вертикальной centerline, а nav/action wrappers не раздувают ряд.

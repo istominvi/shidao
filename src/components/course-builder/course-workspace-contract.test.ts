@@ -434,7 +434,23 @@ test("course routes use the flat demo background and unified visual controls", (
   );
   assert.match(
     navigationStyles,
-    /@media \(max-width: 767px\)[\s\S]*?\.course-top-nav\s*\{[^}]*position: sticky;[^}]*top: 0;/,
+    /@media \(max-width: 767px\)[\s\S]*?html:has\(\.course-demo-shell\)\s*\{[^}]*--mobile-header-safe-top:[^;]*env\(safe-area-inset-top, 0px\)[^;]*;[^}]*--mobile-header-shell-height: 4rem;[^}]*--mobile-header-fade-depth: 0\.75rem;[^}]*--mobile-header-stack-height:[^;]*var\(--mobile-header-safe-top\)[^;]*var\(--mobile-header-shell-height\)[^;]*var\(--mobile-header-fade-depth\)[^;]*;[^}]*scroll-padding-block-start: var\(--mobile-header-stack-height\);/,
+  );
+  assert.match(
+    navigationStyles,
+    /\.course-demo-shell\s*\{[^}]*padding-block-start: var\(--mobile-header-stack-height\);[^}]*\}[\s\S]*?\.course-demo-shell \.app-page-header\s*\{[^}]*scroll-margin-top: 0;/,
+  );
+  assert.match(
+    navigationStyles,
+    /@media \(max-width: 767px\)[\s\S]*?\.course-top-nav\s*\{[^}]*position: fixed;[^}]*inset-block-start: 0;[^}]*inset-inline: 0;[^}]*height: var\(--mobile-header-stack-height\);[^}]*isolation: isolate;[^}]*background-color: transparent;[^}]*background-image: none;[^}]*pointer-events: none;/,
+  );
+  assert.match(
+    navigationStyles,
+    /\.course-top-nav::before\s*\{[^}]*content: "";[^}]*position: absolute;[^}]*z-index: 0;[^}]*inset: 0;[^}]*background-image: linear-gradient\([\s\S]*?rgba\(245, 241, 232, 0\.92\) var\(--mobile-header-safe-top\)[\s\S]*?rgba\(245, 241, 232, 0\.22\)[\s\S]*?calc\(100% - var\(--mobile-header-fade-depth\)\)[\s\S]*?rgba\(245, 241, 232, 0\) 100%[^}]*pointer-events: none;/,
+  );
+  assert.match(
+    navigationStyles,
+    /\.course-top-nav > \.site-header\s*\{[^}]*position: relative;[^}]*z-index: 1;[^}]*pointer-events: auto;/,
   );
   assert.match(
     navigationStyles,

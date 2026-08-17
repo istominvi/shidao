@@ -15141,7 +15141,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       /user-scalable\s*=\s*no|maximum-scale\s*=\s*(?:0|1(?:\.\d+)?)(?:\s|,|$)/,
     );
     assert.deepEqual(mobileCoursesToolbar.topNav, {
-      position: "sticky",
+      position: "fixed",
       top: "0px",
     });
     assert.equal(mobileCoursesToolbar.shellHeight, "48px");
@@ -15368,38 +15368,412 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     await landscapeMessagesPanel.waitFor({ state: "detached" });
     await runtime.page.setViewportSize({ width: 375, height: 812 });
 
-    const mobileStickyTopNav = await runtime.page.evaluate(async () => {
-      const shell = document.querySelector<HTMLElement>(".course-demo-shell");
-      const topNav = document.querySelector<HTMLElement>(".course-top-nav");
-      if (!shell || !topNav) {
-        throw new Error("Mobile sticky TopNav contract is missing");
-      }
-
-      const spacer = document.createElement("div");
-      spacer.style.height = "200vh";
-      spacer.setAttribute("data-e2e-mobile-scroll-spacer", "");
-      shell.append(spacer);
-
-      const initialTop = topNav.getBoundingClientRect().top;
-      window.scrollTo(0, Math.min(window.innerHeight, 640));
-      await new Promise<void>((resolve) =>
-        window.requestAnimationFrame(() =>
-          window.requestAnimationFrame(() => resolve()),
-        ),
-      );
-      const scrolledTop = topNav.getBoundingClientRect().top;
-      const scrollY = window.scrollY;
-
-      window.scrollTo(0, 0);
-      spacer.remove();
-      return { initialTop, scrolledTop, scrollY };
+    const portraitMessagesLauncher = runtime.page.getByRole("button", {
+      name: "Открыть сообщения",
+      exact: true,
     });
-    assert.ok(Math.abs(mobileStickyTopNav.initialTop) < 0.5);
-    assert.ok(mobileStickyTopNav.scrollY > 0);
-    assert.ok(
-      Math.abs(mobileStickyTopNav.scrolledTop) < 0.5,
-      "Mobile product TopNav must stay pinned to the safe viewport edge",
-    );
+    await portraitMessagesLauncher.click();
+    const portraitMessagesPanel = runtime.page.getByRole("dialog", {
+      name: "Сообщения",
+      exact: true,
+    });
+    await portraitMessagesPanel.waitFor();
+    await runtime.page.waitForTimeout(220);
+    const portraitMessagesLayering = await runtime.page.evaluate(() => {
+      const layer = document.querySelector<HTMLElement>(
+        ".communication-center-layer",
+      );
+      const panel = document.querySelector<HTMLElement>(
+        ".communication-center-panel",
+      );
+      const topNav = document.querySelector<HTMLElement>(".course-top-nav");
+      const headerShell = topNav?.querySelector<HTMLElement>(
+        ".site-header-shell-demo",
+      );
+      if (!layer || !panel || !topNav || !headerShell) {
+        throw new Error("Portrait modal layering contract is missing");
+      }
+      const panelRect = panel.getBoundingClientRect();
+      const headerRect = headerShell.getBoundingClientRect();
+      const hit = document.elementFromPoint(
+        headerRect.left + headerRect.width / 2,
+        headerRect.top + headerRect.height / 2,
+      );
+      return {
+        layerZIndex: Number.parseInt(getComputedStyle(layer).zIndex, 10),
+        headerZIndex: Number.parseInt(getComputedStyle(topNav).zIndex, 10),
+        panelPosition: getComputedStyle(panel).position,
+        ariaModal: panel.getAttribute("aria-modal"),
+        panelCoversViewport:
+          Math.abs(panelRect.left) < 0.5 &&
+          Math.abs(panelRect.top) < 0.5 &&
+          Math.abs(panelRect.right - window.innerWidth) < 0.5 &&
+          Math.abs(panelRect.bottom - window.innerHeight) < 0.5,
+        hitInsidePanel: hit?.closest(".communication-center-panel") === panel,
+        hitInsideHeader: Boolean(hit?.closest(".course-top-nav")),
+      };
+    });
+    assert.deepEqual(portraitMessagesLayering, {
+      layerZIndex: 110,
+      headerZIndex: 100,
+      panelPosition: "fixed",
+      ariaModal: "true",
+      panelCoversViewport: true,
+      hitInsidePanel: true,
+      hitInsideHeader: false,
+    });
+    await portraitMessagesPanel
+      .locator('[aria-label="Закрыть сообщения"]')
+      .click();
+    await portraitMessagesPanel.waitFor({ state: "detached" });
+
+    for (const viewport of [
+      { width: 320, height: 812 },
+      { width: 375, height: 812 },
+      { width: 390, height: 844 },
+    ]) {
+      await runtime.page.setViewportSize(viewport);
+      const mobileFixedTopNav = await runtime.page.evaluate(async () => {
+        const pageShell =
+          document.querySelector<HTMLElement>(".course-demo-shell");
+        const topNav = document.querySelector<HTMLElement>(".course-top-nav");
+        const siteHeader = topNav?.querySelector<HTMLElement>(
+          ":scope > .site-header",
+        );
+        const headerShell = siteHeader?.querySelector<HTMLElement>(
+          ".site-header-shell-demo",
+        );
+        const brand =
+          headerShell?.querySelector<HTMLElement>(".site-header-brand");
+        const pageContent = document.querySelector<HTMLElement>(
+          ".app-page-container",
+        );
+        if (
+          !pageShell ||
+          !topNav ||
+          !siteHeader ||
+          !headerShell ||
+          !brand ||
+          !pageContent
+        ) {
+          throw new Error("Mobile fixed TopNav contract is missing");
+        }
+
+        const settleScroll = () =>
+          new Promise<void>((resolve) =>
+            window.requestAnimationFrame(() =>
+              window.requestAnimationFrame(() => resolve()),
+            ),
+          );
+        const readHorizontalOverflow = () => ({
+          clientWidth: document.documentElement.clientWidth,
+          documentScrollWidth: document.documentElement.scrollWidth,
+          bodyScrollWidth: document.body.scrollWidth,
+        });
+
+        window.scrollTo(0, 0);
+        await settleScroll();
+
+        const spacer = document.createElement("div");
+        spacer.style.height = "300vh";
+        spacer.style.width = "1px";
+        spacer.style.pointerEvents = "none";
+        spacer.setAttribute("data-e2e-mobile-scroll-spacer", "");
+        const scrollTarget = document.createElement("div");
+        scrollTarget.style.position = "absolute";
+        scrollTarget.style.top = "120vh";
+        scrollTarget.style.width = "1px";
+        scrollTarget.style.height = "1px";
+        spacer.style.position = "relative";
+        spacer.append(scrollTarget);
+        pageShell.append(spacer);
+
+        const topNavStyle = getComputedStyle(topNav);
+        const fadeStyle = getComputedStyle(topNav, "::before");
+        const siteHeaderStyle = getComputedStyle(siteHeader);
+        const headerShellStyle = getComputedStyle(headerShell);
+        const pageShellStyle = getComputedStyle(pageShell);
+        const rootStyle = getComputedStyle(document.documentElement);
+        const initialTopNavRect = topNav.getBoundingClientRect();
+        const initialHeaderShellRect = headerShell.getBoundingClientRect();
+        const initialPageShellRect = pageShell.getBoundingClientRect();
+        const initialPageContentRect = pageContent.getBoundingClientRect();
+        const brandRect = brand.getBoundingClientRect();
+        const shellHitTarget = document.elementFromPoint(
+          brandRect.left + brandRect.width / 2,
+          brandRect.top + brandRect.height / 2,
+        );
+
+        scrollTarget.scrollIntoView({ block: "start" });
+        await settleScroll();
+        const programmaticTargetTop = scrollTarget.getBoundingClientRect().top;
+        window.scrollTo(0, 0);
+        await settleScroll();
+
+        const moderateTarget = Math.min(
+          320,
+          Math.max(
+            1,
+            document.documentElement.scrollHeight - window.innerHeight,
+          ),
+        );
+        window.scrollTo(0, moderateTarget);
+        await settleScroll();
+        const moderateTopNavRect = topNav.getBoundingClientRect();
+        const moderateHeaderShellRect = headerShell.getBoundingClientRect();
+        const moderatePageContentRect = pageContent.getBoundingClientRect();
+        const gapHitTarget = document.elementFromPoint(
+          window.innerWidth / 2,
+          moderateHeaderShellRect.bottom + 6,
+        );
+        const moderateScrollY = window.scrollY;
+        const moderateOverflow = readHorizontalOverflow();
+
+        const scrollingElement = document.scrollingElement;
+        if (!scrollingElement) {
+          throw new Error("Document scrolling element is missing");
+        }
+        const maximumScrollY = Math.max(
+          0,
+          scrollingElement.scrollHeight - window.innerHeight,
+        );
+        window.scrollTo(0, maximumScrollY + window.innerHeight * 8);
+        await settleScroll();
+        const maximumTopNavRect = topNav.getBoundingClientRect();
+        const clampedScrollY = window.scrollY;
+        const maximumOverflow = readHorizontalOverflow();
+
+        window.scrollTo(0, 0);
+        await settleScroll();
+        spacer.remove();
+
+        return {
+          viewportWidth: window.innerWidth,
+          inputMode: {
+            coarsePointer: matchMedia("(pointer: coarse)").matches,
+            noHover: matchMedia("(hover: none)").matches,
+          },
+          host: {
+            position: topNavStyle.position,
+            top: topNavStyle.top,
+            backgroundColor: topNavStyle.backgroundColor,
+            backgroundImage: topNavStyle.backgroundImage,
+            pointerEvents: topNavStyle.pointerEvents,
+            initialTop: initialTopNavRect.top,
+            moderateTop: moderateTopNavRect.top,
+            maximumTop: maximumTopNavRect.top,
+            height: initialTopNavRect.height,
+            insideViewport:
+              initialTopNavRect.left >= 0 &&
+              initialTopNavRect.right <= window.innerWidth,
+          },
+          fade: {
+            content: fadeStyle.content,
+            position: fadeStyle.position,
+            top: fadeStyle.top,
+            right: fadeStyle.right,
+            bottom: fadeStyle.bottom,
+            left: fadeStyle.left,
+            backgroundImage: fadeStyle.backgroundImage,
+            pointerEvents: fadeStyle.pointerEvents,
+          },
+          whiteShell: {
+            backgroundColor: headerShellStyle.backgroundColor,
+            backgroundImage: headerShellStyle.backgroundImage,
+            opacity: headerShellStyle.opacity,
+            siteHeaderPointerEvents: siteHeaderStyle.pointerEvents,
+            shellPointerEvents: headerShellStyle.pointerEvents,
+            safeTopGap: initialHeaderShellRect.top - initialTopNavRect.top,
+            fadeGap: initialTopNavRect.bottom - initialHeaderShellRect.bottom,
+            hitTested:
+              shellHitTarget === headerShell ||
+              Boolean(shellHitTarget && headerShell.contains(shellHitTarget)),
+          },
+          flowReserve: {
+            pagePaddingTop: Number.parseFloat(pageShellStyle.paddingTop),
+            rootScrollPaddingTop: Number.parseFloat(rootStyle.scrollPaddingTop),
+            contentTop: initialPageContentRect.top - initialPageShellRect.top,
+            programmaticTargetTop,
+          },
+          contentUnderHeader: {
+            overlapsHost:
+              moderatePageContentRect.top < moderateTopNavRect.bottom &&
+              moderatePageContentRect.bottom > moderateTopNavRect.top,
+            gapHitInsideContent:
+              gapHitTarget === pageContent ||
+              Boolean(gapHitTarget && pageContent.contains(gapHitTarget)),
+            gapHitInterceptedByHeader: Boolean(
+              gapHitTarget && topNav.contains(gapHitTarget),
+            ),
+          },
+          scroll: {
+            moderateScrollY,
+            maximumScrollY,
+            clampedScrollY,
+          },
+          moderateOverflow,
+          maximumOverflow,
+        };
+      });
+
+      const viewportLabel = `${viewport.width}px mobile header`;
+      assert.equal(mobileFixedTopNav.viewportWidth, viewport.width);
+      assert.deepEqual(mobileFixedTopNav.inputMode, {
+        coarsePointer: true,
+        noHover: true,
+      });
+      assert.deepEqual(
+        {
+          position: mobileFixedTopNav.host.position,
+          top: mobileFixedTopNav.host.top,
+          backgroundColor: mobileFixedTopNav.host.backgroundColor,
+          backgroundImage: mobileFixedTopNav.host.backgroundImage,
+          pointerEvents: mobileFixedTopNav.host.pointerEvents,
+          insideViewport: mobileFixedTopNav.host.insideViewport,
+        },
+        {
+          position: "fixed",
+          top: "0px",
+          backgroundColor: "rgba(0, 0, 0, 0)",
+          backgroundImage: "none",
+          pointerEvents: "none",
+          insideViewport: true,
+        },
+        `${viewportLabel}: transparent fixed host`,
+      );
+      for (const [state, top] of [
+        ["initial", mobileFixedTopNav.host.initialTop],
+        ["moderate scroll", mobileFixedTopNav.host.moderateTop],
+        ["maximum scroll", mobileFixedTopNav.host.maximumTop],
+      ] as const) {
+        assert.ok(
+          Math.abs(top) < 0.5,
+          `${viewportLabel}: no vertical drift at ${state}; got ${top}`,
+        );
+      }
+      assert.equal(mobileFixedTopNav.fade.content, '""');
+      assert.deepEqual(
+        {
+          position: mobileFixedTopNav.fade.position,
+          top: mobileFixedTopNav.fade.top,
+          right: mobileFixedTopNav.fade.right,
+          bottom: mobileFixedTopNav.fade.bottom,
+          left: mobileFixedTopNav.fade.left,
+          pointerEvents: mobileFixedTopNav.fade.pointerEvents,
+        },
+        {
+          position: "absolute",
+          top: "0px",
+          right: "0px",
+          bottom: "0px",
+          left: "0px",
+          pointerEvents: "none",
+        },
+        `${viewportLabel}: non-interactive fade layer`,
+      );
+      assert.match(
+        mobileFixedTopNav.fade.backgroundImage,
+        /^linear-gradient\(/,
+        `${viewportLabel}: fade gradient`,
+      );
+      assert.deepEqual(
+        {
+          backgroundColor: mobileFixedTopNav.whiteShell.backgroundColor,
+          backgroundImage: mobileFixedTopNav.whiteShell.backgroundImage,
+          opacity: mobileFixedTopNav.whiteShell.opacity,
+          siteHeaderPointerEvents:
+            mobileFixedTopNav.whiteShell.siteHeaderPointerEvents,
+          shellPointerEvents: mobileFixedTopNav.whiteShell.shellPointerEvents,
+          hitTested: mobileFixedTopNav.whiteShell.hitTested,
+        },
+        {
+          backgroundColor: "rgb(255, 255, 255)",
+          backgroundImage: "none",
+          opacity: "1",
+          siteHeaderPointerEvents: "auto",
+          shellPointerEvents: "auto",
+          hitTested: true,
+        },
+        `${viewportLabel}: opaque interactive white shell`,
+      );
+      assert.ok(
+        Math.abs(mobileFixedTopNav.whiteShell.safeTopGap - 12) < 0.5,
+        `${viewportLabel}: 12px safe-top fallback`,
+      );
+      assert.ok(
+        Math.abs(mobileFixedTopNav.whiteShell.fadeGap - 12) < 0.5,
+        `${viewportLabel}: fade starts in the exact 12px gap below the shell`,
+      );
+      assert.ok(
+        Math.abs(
+          mobileFixedTopNav.flowReserve.pagePaddingTop -
+            mobileFixedTopNav.host.height,
+        ) < 0.5,
+        `${viewportLabel}: page reserves the complete fixed header stack`,
+      );
+      assert.ok(
+        Math.abs(
+          mobileFixedTopNav.flowReserve.rootScrollPaddingTop -
+            mobileFixedTopNav.host.height,
+        ) < 0.5,
+        `${viewportLabel}: document scroll padding matches the fixed header stack`,
+      );
+      assert.ok(
+        Math.abs(
+          mobileFixedTopNav.flowReserve.programmaticTargetTop -
+            mobileFixedTopNav.host.height,
+        ) < 0.5,
+        `${viewportLabel}: programmatic scroll target stays below the fixed header`,
+      );
+      assert.ok(
+        Math.abs(
+          mobileFixedTopNav.flowReserve.contentTop -
+            mobileFixedTopNav.host.height,
+        ) < 0.5,
+        `${viewportLabel}: content starts after the reserved header stack`,
+      );
+      assert.deepEqual(
+        mobileFixedTopNav.contentUnderHeader,
+        {
+          overlapsHost: true,
+          gapHitInsideContent: true,
+          gapHitInterceptedByHeader: false,
+        },
+        `${viewportLabel}: content passes through the non-interactive fade gap`,
+      );
+      assert.ok(
+        mobileFixedTopNav.scroll.moderateScrollY > 0,
+        `${viewportLabel}: moderate scroll occurred`,
+      );
+      assert.ok(
+        mobileFixedTopNav.scroll.maximumScrollY >
+          mobileFixedTopNav.scroll.moderateScrollY,
+        `${viewportLabel}: maximum scroll exceeds moderate scroll`,
+      );
+      assert.ok(
+        Math.abs(
+          mobileFixedTopNav.scroll.clampedScrollY -
+            mobileFixedTopNav.scroll.maximumScrollY,
+        ) < 1,
+        `${viewportLabel}: extreme scroll clamps at the document end`,
+      );
+      for (const [state, overflow] of [
+        ["moderate scroll", mobileFixedTopNav.moderateOverflow],
+        ["maximum scroll", mobileFixedTopNav.maximumOverflow],
+      ] as const) {
+        assert.equal(
+          overflow.documentScrollWidth,
+          overflow.clientWidth,
+          `${viewportLabel}: no document overflow at ${state}`,
+        );
+        assert.ok(
+          overflow.bodyScrollWidth <= overflow.clientWidth,
+          `${viewportLabel}: no body overflow at ${state}`,
+        );
+      }
+    }
+
+    await runtime.page.setViewportSize({ width: 375, height: 812 });
 
     await runtime.page
       .getByRole("tab", { name: "Каталог", exact: true })

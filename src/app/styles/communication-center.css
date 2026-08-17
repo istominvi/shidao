@@ -1,8 +1,8 @@
 .communication-center-layer {
   position: relative;
-  /* Global messaging must stay above the product header (z-index: 60),
-     while confirmation dialogs remain the topmost modal layer (120). */
-  z-index: 70;
+  /* Global messaging must stay above desktop and mobile product chrome
+     (z-index: 60/100), while confirmation dialogs remain topmost (120). */
+  z-index: 110;
 }
 
 .communication-center-launcher-wrap {

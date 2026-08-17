@@ -605,9 +605,13 @@ Visual contract Course routes не меняет эту навигационну�
 
 - page background — сплошной `#f5f1e8` без цветных marketing gradients;
 - current source / next production product header — на desktop normal-flow
-  demo shell без sticky/fixed positioning, а до `767 px` sticky shell у верхнего
-  safe-area края. Он имеет высоту `64 px`, радиус `20 px`, непрозрачный белый
-  фон без blur и одну тень
+  demo shell без sticky/fixed positioning, а до `767 px` viewport-fixed shell у
+  верхнего safe-area края. Прозрачный внешний слой резервирует в document flow
+  safe-area, `64 px` белый shell и `12 px` нижний fade, не перехватывает касания
+  и позволяет content проходить под header, растворяясь в бежевом фоне. Root
+  `scroll-padding` равен динамической высоте этого stack, поэтому anchors,
+  focus и `scrollIntoView()` не помещают цель под fixed header. Белый
+  shell имеет радиус `20 px`, непрозрачный фон без blur и одну тень
   `0px 6px 12px oklch(0 0 0 / 0.05)`. Общий inner container-row с brand,
   navigation и actions/avatar имеет exact высоту `40 px` на desktop и `48 px`
   на mobile; desktop row вертикально центрирован с `12 px` сверху и снизу и
@@ -1017,7 +1021,9 @@ actions`; пять data headers сортируют полную client-loaded pr
   выполнял focus zoom в portrait или landscape, при этом viewport не запрещает
   pinch zoom. Launcher «Сообщения» в том же narrow/coarse contract равен
   `56 × 56 px` с glyph минимум `24 px` и safe-area inset; non-fullscreen panel
-  находится на `12 px` выше launcher.
+  находится на `12 px` выше launcher. Его fullscreen mobile projection живёт
+  на слое `110` поверх fixed TopNav `100`, оставаясь ниже confirmation dialogs
+  `120`, поэтому modal полностью владеет hit-testing.
   Owned-row заканчивается одним `MoreVertical` portal-menu 32 × 32 px:
   unpublished Course получает «Дублировать / Опубликовать / Удалить», а
   publication states сохраняют update/open/unpublish actions. «Удалить»

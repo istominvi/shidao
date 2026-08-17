@@ -82,9 +82,10 @@ test("global assistant routes keep active Account, explicit apply and user-JWT b
 });
 
 test("unified messages uses the compact black launcher and iOS-style badge contract", async () => {
-  const [center, css] = await Promise.all([
+  const [center, css, globals] = await Promise.all([
     source("src/components/communication/communication-center.tsx"),
     source("src/app/styles/communication-center.css"),
+    source("src/app/globals.css"),
   ]);
   const launcherWrapRule = css.match(
     /\.communication-center-launcher-wrap\s*\{([\s\S]*?)\n\}/,
@@ -220,5 +221,6 @@ test("unified messages uses the compact black launcher and iOS-style badge contr
   );
   assert.match(css, /@media \(forced-colors: active\)/);
   assert.match(css, /background: ButtonFace;/);
-  assert.match(css, /\.communication-center-layer\s*\{[\s\S]*?z-index:\s*70/);
+  assert.match(css, /\.communication-center-layer\s*\{[\s\S]*?z-index:\s*110/);
+  assert.match(globals, /\.dialog-shell-overlay\s*\{[^}]*z-index:\s*120/);
 });

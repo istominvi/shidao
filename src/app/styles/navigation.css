@@ -550,18 +550,64 @@
 }
 
 @media (max-width: 767px) {
+  html:has(.course-demo-shell) {
+    --mobile-header-safe-top: max(0.75rem, env(safe-area-inset-top, 0px));
+    --mobile-header-shell-height: 4rem;
+    --mobile-header-fade-depth: 0.75rem;
+    --mobile-header-stack-height: calc(
+      var(--mobile-header-safe-top) + var(--mobile-header-shell-height) +
+        var(--mobile-header-fade-depth)
+    );
+
+    scroll-padding-block-start: var(--mobile-header-stack-height);
+  }
+
+  .course-demo-shell {
+    padding-block-start: var(--mobile-header-stack-height);
+  }
+
+  .course-demo-shell .app-page-header {
+    scroll-margin-top: 0;
+  }
+
   .course-top-nav {
-    position: sticky;
-    top: 0;
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline: 0;
     z-index: 100;
     width: 100%;
+    height: var(--mobile-header-stack-height);
     max-width: none;
     margin-inline: 0;
-    padding-block-start: max(0.75rem, env(safe-area-inset-top, 0px));
-    padding-block-end: 0.75rem;
+    isolation: isolate;
+    padding-block-start: var(--mobile-header-safe-top);
+    padding-block-end: var(--mobile-header-fade-depth);
     padding-inline: max(0.75rem, env(safe-area-inset-left, 0px))
       max(0.75rem, env(safe-area-inset-right, 0px));
-    background: var(--product-app-background, #f5f1e8);
+    background-color: transparent;
+    background-image: none;
+    pointer-events: none;
+  }
+
+  .course-top-nav::before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    background-image: linear-gradient(
+      to bottom,
+      rgba(245, 241, 232, 1) 0,
+      rgba(245, 241, 232, 0.92) var(--mobile-header-safe-top),
+      rgba(245, 241, 232, 0.22) calc(100% - var(--mobile-header-fade-depth)),
+      rgba(245, 241, 232, 0) 100%
+    );
+    pointer-events: none;
+  }
+
+  .course-top-nav > .site-header {
+    position: relative;
+    z-index: 1;
+    pointer-events: auto;
   }
 
   .site-header-shell-demo {
