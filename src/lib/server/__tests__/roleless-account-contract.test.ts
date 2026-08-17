@@ -112,7 +112,7 @@ test("Account navigation has no role switch client or teacher-only guard", () =>
   );
   assert.match(
     sessionMenu,
-    /window\.matchMedia\("\(min-width: 768px\)"\)[\s\S]*?setOpen\(false\)/,
+    /window\.matchMedia\("\(min-width: 768px\)"\)[\s\S]*?closeMenu\(\)/,
   );
   assert.match(
     sessionMenu,

@@ -896,6 +896,9 @@ type PlaywrightChromium = {
       viewport?: { width: number; height: number };
       extraHTTPHeaders?: Record<string, string>;
       ignoreHTTPSErrors?: boolean;
+      isMobile?: boolean;
+      hasTouch?: boolean;
+      deviceScaleFactor?: number;
     }) => Promise<{
       addCookies: (
         cookies: Array<{
@@ -2866,6 +2869,7 @@ async function buildProductionApp(env: NodeJS.ProcessEnv) {
 async function openPage(options?: {
   cookie?: string;
   viewport?: { width: number; height: number };
+  mobile?: boolean;
 }) {
   if (!chromium || !appPort) {
     throw new Error("browser smoke is not ready");
@@ -2882,6 +2886,9 @@ async function openPage(options?: {
     baseURL,
     viewport: options?.viewport,
     ignoreHTTPSErrors: true,
+    isMobile: options?.mobile,
+    hasTouch: options?.mobile,
+    deviceScaleFactor: options?.mobile ? 3 : undefined,
   });
   if (options?.cookie) {
     await context.addCookies([
@@ -2901,6 +2908,80 @@ async function openPage(options?: {
       await browser.close();
     },
   };
+}
+
+type BrowserSmokePage = Awaited<ReturnType<typeof openPage>>["page"];
+
+async function readMobileEditableContract(page: BrowserSmokePage) {
+  return page.evaluate(() => {
+    const nonTextInputTypes = new Set([
+      "button",
+      "checkbox",
+      "color",
+      "file",
+      "hidden",
+      "image",
+      "radio",
+      "range",
+      "reset",
+      "submit",
+    ]);
+    const controls = Array.from(
+      document.querySelectorAll<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >("input, select, textarea"),
+    ).filter((control) => {
+      if (
+        control instanceof HTMLInputElement &&
+        nonTextInputTypes.has(control.type.toLowerCase())
+      ) {
+        return false;
+      }
+      const style = getComputedStyle(control);
+      return (
+        control.getClientRects().length > 0 &&
+        style.display !== "none" &&
+        style.visibility !== "hidden"
+      );
+    });
+
+    return {
+      clientWidth: document.documentElement.clientWidth,
+      documentScrollWidth: document.documentElement.scrollWidth,
+      bodyScrollWidth: document.body.scrollWidth,
+      controls: controls.map((control) => ({
+        tag: control.tagName.toLowerCase(),
+        type:
+          control instanceof HTMLInputElement ? control.type.toLowerCase() : "",
+        name:
+          control.getAttribute("aria-label") ??
+          control.getAttribute("name") ??
+          control.id,
+        fontSize: Number.parseFloat(getComputedStyle(control).fontSize),
+      })),
+    };
+  });
+}
+
+function assertMobileEditableContract(
+  contract: Awaited<ReturnType<typeof readMobileEditableContract>>,
+  expectedWidth: number,
+  label: string,
+) {
+  assert.equal(contract.clientWidth, expectedWidth, `${label}: viewport width`);
+  assert.equal(
+    contract.documentScrollWidth,
+    contract.clientWidth,
+    `${label}: document must not overflow horizontally`,
+  );
+  assert.ok(
+    contract.bodyScrollWidth <= contract.clientWidth,
+    `${label}: body must not overflow horizontally`,
+  );
+  assert.ok(
+    contract.controls.every((control) => control.fontSize >= 16),
+    `${label}: visible editable controls must be at least 16px: ${JSON.stringify(contract.controls)}`,
+  );
 }
 
 before(async () => {
@@ -3845,9 +3926,14 @@ test("browser smoke: protected pages expose the unified messages center with key
     const launcherPresentation = await launcher.evaluate((element) => {
       const rect = element.getBoundingClientRect();
       const style = window.getComputedStyle(element);
+      const icon = element.querySelector<SVGElement>("svg");
+      if (!icon) throw new Error("Communication launcher icon is missing");
+      const iconRect = icon.getBoundingClientRect();
       return {
         width: Math.round(rect.width),
         height: Math.round(rect.height),
+        iconWidth: Math.round(iconRect.width),
+        iconHeight: Math.round(iconRect.height),
         rightInset: Math.round(window.innerWidth - rect.right),
         bottomInset: Math.round(window.innerHeight - rect.bottom),
         borderRadius: style.borderRadius,
@@ -3859,22 +3945,20 @@ test("browser smoke: protected pages expose the unified messages center with key
     });
     assert.deepEqual(
       {
-        width: launcherPresentation.width,
-        height: launcherPresentation.height,
         rightInset: launcherPresentation.rightInset,
         bottomInset: launcherPresentation.bottomInset,
-        borderRadius: launcherPresentation.borderRadius,
         borderTopWidth: launcherPresentation.borderTopWidth,
       },
       {
-        width: 40,
-        height: 40,
         rightInset: 12,
         bottomInset: 12,
-        borderRadius: "12px",
         borderTopWidth: "0px",
       },
     );
+    assert.ok(launcherPresentation.width >= 56);
+    assert.ok(launcherPresentation.height >= 56);
+    assert.ok(launcherPresentation.iconWidth >= 24);
+    assert.ok(launcherPresentation.iconHeight >= 24);
     assert.equal(launcherPresentation.backgroundColor, "rgb(20, 20, 20)");
     assert.equal(launcherPresentation.backgroundImage, "none");
     assert.equal(launcherPresentation.color, "rgb(255, 255, 255)");
@@ -4028,11 +4112,36 @@ test("browser smoke: protected pages expose the unified messages center with key
       Math.round(element.getBoundingClientRect().width),
     );
     assert.ok(desktopPanelWidth >= 400 && desktopPanelWidth <= 416);
-    assert.equal(
+    assert.deepEqual(
       await runtime.page
         .locator(".communication-center-launcher")
-        .evaluate((element) => getComputedStyle(element).color),
-      "rgb(255, 255, 255)",
+        .evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          const icon = element.querySelector<SVGElement>("svg");
+          if (!icon) throw new Error("Desktop launcher icon is missing");
+          const iconRect = icon.getBoundingClientRect();
+          return {
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+            iconWidth: Math.round(iconRect.width),
+            iconHeight: Math.round(iconRect.height),
+            rightInset: Math.round(window.innerWidth - rect.right),
+            bottomInset: Math.round(window.innerHeight - rect.bottom),
+            borderRadius: style.borderRadius,
+            color: style.color,
+          };
+        }),
+      {
+        width: 40,
+        height: 40,
+        iconWidth: 19,
+        iconHeight: 19,
+        rightInset: 12,
+        bottomInset: 12,
+        borderRadius: "12px",
+        color: "rgb(255, 255, 255)",
+      },
     );
 
     const systemRow = panel.locator(
@@ -10439,6 +10548,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
   const runtime = await openPage({
     cookie: authenticatedCookieValue(),
     viewport: { width: 375, height: 812 },
+    mobile: true,
   });
 
   try {
@@ -10447,6 +10557,86 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     await runtime.page
       .getByRole("heading", { name: "Занятий нет", exact: true, level: 2 })
       .waitFor();
+    assertMobileEditableContract(
+      await readMobileEditableContract(runtime.page),
+      375,
+      "Schedule at 375px",
+    );
+
+    const mobileMenuTrigger = runtime.page.getByRole("button", {
+      name: "Открыть меню аккаунта",
+      exact: true,
+    });
+    await mobileMenuTrigger.waitFor();
+    assert.deepEqual(
+      await runtime.page.evaluate(() => {
+        const header = document.querySelector<HTMLElement>(
+          ".site-header-shell-demo",
+        );
+        const trigger = document.querySelector<HTMLElement>(
+          ".nav-account-menu-trigger",
+        );
+        if (!header || !trigger) {
+          throw new Error("Mobile header surface contract is missing");
+        }
+        const headerStyle = getComputedStyle(header);
+        const triggerStyle = getComputedStyle(trigger);
+        return {
+          inputMode: {
+            coarsePointer: matchMedia("(pointer: coarse)").matches,
+            noHover: matchMedia("(hover: none)").matches,
+          },
+          header: {
+            backgroundColor: headerStyle.backgroundColor,
+            backgroundImage: headerStyle.backgroundImage,
+            backdropFilter: headerStyle.backdropFilter,
+            opacity: headerStyle.opacity,
+          },
+          closedTrigger: {
+            expanded: trigger.getAttribute("aria-expanded"),
+            backgroundColor: triggerStyle.backgroundColor,
+            backgroundImage: triggerStyle.backgroundImage,
+            boxShadow: triggerStyle.boxShadow,
+          },
+        };
+      }),
+      {
+        inputMode: {
+          coarsePointer: true,
+          noHover: true,
+        },
+        header: {
+          backgroundColor: "rgb(255, 255, 255)",
+          backgroundImage: "none",
+          backdropFilter: "none",
+          opacity: "1",
+        },
+        closedTrigger: {
+          expanded: "false",
+          backgroundColor: "rgb(255, 255, 255)",
+          backgroundImage: "none",
+          boxShadow: "none",
+        },
+      },
+    );
+    await mobileMenuTrigger.hover();
+    await runtime.page.waitForTimeout(220);
+    assert.deepEqual(
+      await mobileMenuTrigger.evaluate((trigger) => {
+        const style = getComputedStyle(trigger);
+        return {
+          expanded: trigger.getAttribute("aria-expanded"),
+          backgroundColor: style.backgroundColor,
+          boxShadow: style.boxShadow,
+        };
+      }),
+      {
+        expanded: "false",
+        backgroundColor: "rgb(255, 255, 255)",
+        boxShadow: "none",
+      },
+    );
+    await runtime.page.mouse.move(1, 300);
 
     const mobileScheduleContract = await runtime.page.evaluate(() => {
       const toolbar = document.querySelector<HTMLElement>(
@@ -10488,6 +10678,17 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         externalPeriodSwitchCount: document.querySelectorAll(
           ".teaching-schedule-period-switch",
         ).length,
+        viewToggleHeight: viewToggle.getBoundingClientRect().height,
+        viewTogglePadding: getComputedStyle(viewToggle).padding,
+        viewToggleButtonHeights: Array.from(
+          viewToggle.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => button.getBoundingClientRect().height),
+        viewToggleIconSizes: Array.from(
+          viewToggle.querySelectorAll<SVGElement>("button svg"),
+        ).map((icon) => {
+          const rect = icon.getBoundingClientRect();
+          return { width: rect.width, height: rect.height };
+        }),
       };
     });
     assert.deepEqual(mobileScheduleContract, {
@@ -10499,6 +10700,13 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       controlsStartInset: 0,
       controlsEndInset: 0,
       externalPeriodSwitchCount: 0,
+      viewToggleHeight: 48,
+      viewTogglePadding: "2px",
+      viewToggleButtonHeights: [44, 44],
+      viewToggleIconSizes: [
+        { width: 20, height: 20 },
+        { width: 20, height: 20 },
+      ],
     });
 
     const mobileDateTrigger = runtime.page.locator(".teaching-date-trigger");
@@ -10524,6 +10732,11 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         periodLabels: Array.from(periodSwitch.querySelectorAll("button")).map(
           (button) => button.textContent?.trim() ?? "",
         ),
+        periodSwitchHeight: periodSwitch.getBoundingClientRect().height,
+        periodSwitchPadding: getComputedStyle(periodSwitch).padding,
+        periodButtonHeights: Array.from(
+          periodSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => button.getBoundingClientRect().height),
       };
     });
     assert.deepEqual(mobilePopoverContract, {
@@ -10531,9 +10744,17 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       scrollWidth: 375,
       popoverInsideViewport: true,
       periodLabels: ["День", "Неделя", "Месяц"],
+      periodSwitchHeight: 48,
+      periodSwitchPadding: "2px",
+      periodButtonHeights: [44, 44, 44],
     });
 
     await runtime.page.setViewportSize({ width: 320, height: 812 });
+    assertMobileEditableContract(
+      await readMobileEditableContract(runtime.page),
+      320,
+      "Schedule at 320px",
+    );
     const narrowCalendarContract = await runtime.page.evaluate(() => {
       const toolbarActions = document.querySelector<HTMLElement>(
         ".teaching-schedule-toolbar-actions",
@@ -10762,16 +10983,29 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       const profileHeader = menu?.querySelector<HTMLElement>(
         ".nav-dropdown-profile",
       );
+      const profileAvatar = profileHeader?.querySelector<HTMLElement>(
+        ".nav-dropdown-profile-avatar",
+      );
       const items = menu?.querySelector<HTMLElement>(".nav-dropdown-items");
-      if (!trigger || !burger || !menu || !profileHeader || !items) {
+      if (
+        !trigger ||
+        !burger ||
+        !menu ||
+        !profileHeader ||
+        !profileAvatar ||
+        !items
+      ) {
         throw new Error("Mobile account menu contract is missing");
       }
       const viewportWidth = document.documentElement.clientWidth;
       const triggerRect = trigger.getBoundingClientRect();
       const burgerRect = burger.getBoundingClientRect();
       const menuRect = menu.getBoundingClientRect();
+      const profileHeaderRect = profileHeader.getBoundingClientRect();
+      const profileAvatarRect = profileAvatar.getBoundingClientRect();
       const itemsRect = items.getBoundingClientRect();
       const menuStyle = getComputedStyle(menu);
+      const profileHeaderStyle = getComputedStyle(profileHeader);
       const visibleMenuItems = Array.from(
         menu.querySelectorAll<HTMLElement>('[role="menuitem"]'),
       ).filter((item) => item.getClientRects().length > 0);
@@ -10794,6 +11028,17 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
           ".nav-user-trigger-avatar",
         ).length,
         profileImageCount: profileHeader.querySelectorAll("img").length,
+        profileAvatar: {
+          width: profileAvatarRect.width,
+          height: profileAvatarRect.height,
+          fontSize: getComputedStyle(profileAvatar).fontSize,
+        },
+        profileDivider: {
+          borderBottomWidth: profileHeaderStyle.borderBottomWidth,
+          borderBottomStyle: profileHeaderStyle.borderBottomStyle,
+          leftGap: profileHeaderRect.left - menuRect.left,
+          rightGap: menuRect.right - profileHeaderRect.right,
+        },
         itemRail: {
           borderTopWidth: getComputedStyle(items).borderTopWidth,
           contained:
@@ -10817,6 +11062,12 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         itemFontSizes: visibleMenuItems.map(
           (item) => getComputedStyle(item).fontSize,
         ),
+        itemIconSizes: visibleMenuItems.map((item) => {
+          const icon = item.querySelector<SVGElement>("svg");
+          if (!icon) throw new Error("Mobile account menu icon is missing");
+          const rect = icon.getBoundingClientRect();
+          return { width: rect.width, height: rect.height };
+        }),
         visibleMenuItems: visibleMenuItems.map(
           (item) => item.textContent?.trim() ?? "",
         ),
@@ -10834,8 +11085,25 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       mobileAccountMenuContract.profileEmail,
       "adult-e2e@example.test",
     );
-    assert.equal(mobileAccountMenuContract.profileAvatarCount, 0);
-    assert.equal(mobileAccountMenuContract.profileImageCount, 0);
+    assert.equal(mobileAccountMenuContract.profileAvatarCount, 1);
+    assert.equal(mobileAccountMenuContract.profileImageCount, 1);
+    assert.deepEqual(mobileAccountMenuContract.profileAvatar, {
+      width: 48,
+      height: 48,
+      fontSize: "16px",
+    });
+    assert.equal(
+      mobileAccountMenuContract.profileDivider.borderBottomWidth,
+      "1px",
+    );
+    assert.equal(
+      mobileAccountMenuContract.profileDivider.borderBottomStyle,
+      "solid",
+    );
+    assert.ok(Math.abs(mobileAccountMenuContract.profileDivider.leftGap) < 0.5);
+    assert.ok(
+      Math.abs(mobileAccountMenuContract.profileDivider.rightGap) < 0.5,
+    );
     assert.deepEqual(mobileAccountMenuContract.itemRail, {
       borderTopWidth: "0px",
       contained: true,
@@ -10845,14 +11113,24 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     assert.ok(Math.abs(mobileAccountMenuContract.menu.topGap - 12) < 0.5);
     assert.equal(mobileAccountMenuContract.menu.borderRadius, "16px");
     assert.equal(mobileAccountMenuContract.menu.insideViewport, true);
-    assert.ok(
-      mobileAccountMenuContract.itemHeights.every((height) => height >= 48),
+    assert.deepEqual(
+      mobileAccountMenuContract.itemHeights,
+      [68, 68, 68, 68, 68],
     );
-    assert.ok(
-      mobileAccountMenuContract.itemFontSizes.every(
-        (fontSize) => fontSize === "16px",
-      ),
-    );
+    assert.deepEqual(mobileAccountMenuContract.itemFontSizes, [
+      "20px",
+      "20px",
+      "20px",
+      "20px",
+      "20px",
+    ]);
+    assert.deepEqual(mobileAccountMenuContract.itemIconSizes, [
+      { width: 24, height: 24 },
+      { width: 24, height: 24 },
+      { width: 24, height: 24 },
+      { width: 24, height: 24 },
+      { width: 24, height: 24 },
+    ]);
     assert.deepEqual(mobileAccountMenuContract.visibleMenuItems, [
       "Расписание",
       "Ученики",
@@ -10881,6 +11159,118 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       name: "Меню аккаунта",
       exact: true,
     });
+
+    assert.deepEqual(
+      await runtime.page.evaluate(() => {
+        const trigger = document.querySelector<HTMLElement>(
+          ".nav-account-menu-trigger",
+        );
+        const items = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            ".nav-account-menu-mobile .nav-dropdown-item",
+          ),
+        ).filter((item) => item.getClientRects().length > 0);
+        if (!trigger || items.length === 0) {
+          throw new Error("Pointer-open account menu state is missing");
+        }
+        return {
+          activeElementIsTrigger: document.activeElement === trigger,
+          activeLabel: document.activeElement?.getAttribute("aria-label"),
+          focusedMenuItemCount: items.filter(
+            (item) => document.activeElement === item,
+          ).length,
+          itemHalos: items.map((item) => {
+            const style = getComputedStyle(item);
+            return {
+              outlineStyle: style.outlineStyle,
+              boxShadow: style.boxShadow,
+            };
+          }),
+        };
+      }),
+      {
+        activeElementIsTrigger: true,
+        activeLabel: "Закрыть меню аккаунта",
+        focusedMenuItemCount: 0,
+        itemHalos: [
+          { outlineStyle: "none", boxShadow: "none" },
+          { outlineStyle: "none", boxShadow: "none" },
+          { outlineStyle: "none", boxShadow: "none" },
+          { outlineStyle: "none", boxShadow: "none" },
+          { outlineStyle: "none", boxShadow: "none" },
+        ],
+      },
+    );
+    assert.equal(
+      await runtime.page.locator(".nav-dropdown-item:focus").count(),
+      0,
+    );
+
+    await runtime.page
+      .getByRole("button", {
+        name: "Закрыть меню аккаунта",
+        exact: true,
+      })
+      .click();
+    await accountMenu.waitFor({ state: "detached" });
+    const triggerAfterClickClose = runtime.page.getByRole("button", {
+      name: "Открыть меню аккаунта",
+      exact: true,
+    });
+    await triggerAfterClickClose.hover();
+    await runtime.page.waitForTimeout(220);
+    assert.deepEqual(
+      await triggerAfterClickClose.evaluate((trigger) => {
+        const style = getComputedStyle(trigger);
+        return {
+          focused: document.activeElement === trigger,
+          expanded: trigger.getAttribute("aria-expanded"),
+          backgroundColor: style.backgroundColor,
+          boxShadow: style.boxShadow,
+        };
+      }),
+      {
+        focused: false,
+        expanded: "false",
+        backgroundColor: "rgb(255, 255, 255)",
+        boxShadow: "none",
+      },
+    );
+
+    await triggerAfterClickClose.click();
+    await accountMenu.waitFor();
+    await runtime.page.mouse.move(4, 780);
+    await runtime.page.mouse.down();
+    await runtime.page.mouse.up();
+    await accountMenu.waitFor({ state: "detached" });
+    const triggerAfterOutsideClose = runtime.page.getByRole("button", {
+      name: "Открыть меню аккаунта",
+      exact: true,
+    });
+    await runtime.page.waitForTimeout(220);
+    assert.deepEqual(
+      await triggerAfterOutsideClose.evaluate((trigger) => {
+        const style = getComputedStyle(trigger);
+        return {
+          focused: document.activeElement === trigger,
+          expanded: trigger.getAttribute("aria-expanded"),
+          backgroundColor: style.backgroundColor,
+          boxShadow: style.boxShadow,
+        };
+      }),
+      {
+        focused: false,
+        expanded: "false",
+        backgroundColor: "rgb(255, 255, 255)",
+        boxShadow: "none",
+      },
+    );
+
+    await triggerAfterOutsideClose.evaluate((trigger) =>
+      (trigger as HTMLElement).focus(),
+    );
+    await triggerAfterOutsideClose.press("Enter");
+    await accountMenu.waitFor();
     await runtime.page.locator(".nav-dropdown-item:focus").waitFor();
     assert.equal(
       await runtime.page.evaluate(() =>
@@ -10910,9 +11300,69 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       ),
       "Открыть меню аккаунта",
     );
+    const triggerAfterEscape = runtime.page.getByRole("button", {
+      name: "Открыть меню аккаунта",
+      exact: true,
+    });
+    await triggerAfterEscape.hover();
+    await runtime.page.waitForTimeout(220);
+    assert.deepEqual(
+      await triggerAfterEscape.evaluate((trigger) => {
+        const style = getComputedStyle(trigger);
+        return {
+          focused: document.activeElement === trigger,
+          expanded: trigger.getAttribute("aria-expanded"),
+          backgroundColor: style.backgroundColor,
+          boxShadow: style.boxShadow,
+        };
+      }),
+      {
+        focused: true,
+        expanded: "false",
+        backgroundColor: "rgb(255, 255, 255)",
+        boxShadow: "none",
+      },
+    );
+
+    await triggerAfterEscape.press("Enter");
+    await accountMenu.waitFor();
+    const stableMenuTrigger = runtime.page.locator(".nav-account-menu-trigger");
+    const firstKeyboardMenuItem = runtime.page.locator(
+      ".nav-account-menu-mobile .nav-dropdown-item:focus",
+    );
+    await firstKeyboardMenuItem.waitFor();
+    await firstKeyboardMenuItem.press("Shift+Tab");
+    assert.equal(
+      await stableMenuTrigger.evaluate(
+        (trigger) => document.activeElement === trigger,
+      ),
+      true,
+    );
+    await stableMenuTrigger.press("Enter");
+    await accountMenu.waitFor({ state: "detached" });
+    await runtime.page.waitForTimeout(220);
+    assert.deepEqual(
+      await stableMenuTrigger.evaluate((trigger) => {
+        const style = getComputedStyle(trigger);
+        return {
+          focused: document.activeElement === trigger,
+          expanded: trigger.getAttribute("aria-expanded"),
+          backgroundColor: style.backgroundColor,
+          boxShadow: style.boxShadow,
+        };
+      }),
+      {
+        focused: true,
+        expanded: "false",
+        backgroundColor: "rgb(255, 255, 255)",
+        boxShadow: "none",
+      },
+    );
+
+    await triggerAfterEscape.click();
     await runtime.page
-      .getByRole("button", { name: "Открыть меню аккаунта", exact: true })
-      .click();
+      .getByRole("menu", { name: "Меню аккаунта", exact: true })
+      .waitFor();
 
     await Promise.all([
       runtime.page.waitForURL(/\/profile$/),
@@ -10949,6 +11399,11 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     await runtime.page
       .locator("html[data-page-transition-direction]")
       .waitFor({ state: "detached" });
+    assertMobileEditableContract(
+      await readMobileEditableContract(runtime.page),
+      375,
+      "Students at 375px",
+    );
 
     const mobileContract = await runtime.page.evaluate(() => {
       const toolbar = document.querySelector<HTMLElement>(
@@ -11017,6 +11472,13 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         railFlexWrap: getComputedStyle(rail).flexWrap,
         railScrollIsContained: rail.scrollWidth > rail.clientWidth,
         membershipSwitchHeight: getComputedStyle(membershipSwitch).height,
+        membershipSwitchPadding: getComputedStyle(membershipSwitch).padding,
+        membershipButtonHeights: Array.from(
+          membershipSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => button.getBoundingClientRect().height),
+        membershipButtonFontSizes: Array.from(
+          membershipSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => getComputedStyle(button).fontSize),
         membershipSwitchInsideViewport: (() => {
           const rect = membershipSwitch.getBoundingClientRect();
           return rect.left >= 0 && rect.right <= viewportWidth;
@@ -11028,6 +11490,16 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
           pressed: button.getAttribute("aria-pressed"),
         })),
         viewSwitchHeight: getComputedStyle(viewSwitch).height,
+        viewSwitchPadding: getComputedStyle(viewSwitch).padding,
+        viewButtonHeights: Array.from(
+          viewSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => button.getBoundingClientRect().height),
+        viewIconSizes: Array.from(
+          viewSwitch.querySelectorAll<SVGElement>("button svg"),
+        ).map((icon) => {
+          const rect = icon.getBoundingClientRect();
+          return { width: rect.width, height: rect.height };
+        }),
         activeViewButtonHeight: getComputedStyle(activeViewButton).height,
         viewSwitchInsideViewport: (() => {
           const rect = viewSwitch.getBoundingClientRect();
@@ -11074,15 +11546,28 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     assert.equal(mobileContract.railOverflowX, "visible");
     assert.equal(mobileContract.railFlexWrap, "wrap");
     assert.equal(mobileContract.railScrollIsContained, false);
-    assert.equal(mobileContract.membershipSwitchHeight, "56px");
+    assert.equal(mobileContract.membershipSwitchHeight, "48px");
+    assert.equal(mobileContract.membershipSwitchPadding, "2px");
+    assert.deepEqual(mobileContract.membershipButtonHeights, [44, 44, 44]);
+    assert.deepEqual(mobileContract.membershipButtonFontSizes, [
+      "16px",
+      "16px",
+      "16px",
+    ]);
     assert.equal(mobileContract.membershipSwitchInsideViewport, true);
     assert.deepEqual(mobileContract.membershipButtons, [
       { label: "Все", pressed: "true" },
       { label: "В группе", pressed: "false" },
       { label: "Без группы", pressed: "false" },
     ]);
-    assert.equal(mobileContract.viewSwitchHeight, "56px");
-    assert.equal(mobileContract.activeViewButtonHeight, "48px");
+    assert.equal(mobileContract.viewSwitchHeight, "48px");
+    assert.equal(mobileContract.viewSwitchPadding, "2px");
+    assert.deepEqual(mobileContract.viewButtonHeights, [44, 44]);
+    assert.deepEqual(mobileContract.viewIconSizes, [
+      { width: 20, height: 20 },
+      { width: 20, height: 20 },
+    ]);
+    assert.equal(mobileContract.activeViewButtonHeight, "44px");
     assert.equal(mobileContract.viewSwitchInsideViewport, true);
     assert.deepEqual(mobileContract.viewButtons, [
       { label: "Показать таблицей", pressed: "true" },
@@ -11101,6 +11586,14 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     assert.equal(mobileContract.rowCellCount, 6);
     assert.equal(mobileContract.columnsDoNotOverlap, true);
     assert.equal(mobileContract.actionsInsideTable, true);
+
+    await runtime.page.setViewportSize({ width: 320, height: 812 });
+    assertMobileEditableContract(
+      await readMobileEditableContract(runtime.page),
+      320,
+      "Students at 320px",
+    );
+    await runtime.page.setViewportSize({ width: 375, height: 812 });
   } finally {
     e2eCompletionPhase = null;
     e2eScheduleFixtureVisible = false;
@@ -14394,6 +14887,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
   const runtime = await openPage({
     cookie: authenticatedCookieValue(),
     viewport: { width: 375, height: 812 },
+    mobile: true,
   });
 
   try {
@@ -14404,10 +14898,25 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       exact: true,
     });
     await mobileCourseLink.waitFor();
+    assertMobileEditableContract(
+      await readMobileEditableContract(runtime.page),
+      375,
+      "Courses at 375px",
+    );
+    await runtime.page.setViewportSize({ width: 320, height: 812 });
+    assertMobileEditableContract(
+      await readMobileEditableContract(runtime.page),
+      320,
+      "Courses at 320px",
+    );
+    await runtime.page.setViewportSize({ width: 375, height: 812 });
 
     const mobileCoursesToolbar = await runtime.page.evaluate(() => {
       const themeColorMeta = document.querySelector<HTMLMetaElement>(
         'meta[name="theme-color"]',
+      );
+      const viewportMeta = document.querySelector<HTMLMetaElement>(
+        'meta[name="viewport"]',
       );
       const shell = document.querySelector<HTMLElement>(".course-demo-shell");
       const topNav = document.querySelector<HTMLElement>(".course-top-nav");
@@ -14456,6 +14965,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       );
       if (
         !themeColorMeta ||
+        !viewportMeta ||
         !shell ||
         !topNav ||
         !pageHeader ||
@@ -14503,6 +15013,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         scrollWidth: document.documentElement.scrollWidth,
         theme: {
           meta: themeColorMeta.content.toLowerCase(),
+          viewport: viewportMeta.content.toLowerCase(),
           html: getComputedStyle(document.documentElement).backgroundColor,
           body: getComputedStyle(document.body).backgroundColor,
           shell: getComputedStyle(shell).backgroundColor,
@@ -14553,6 +15064,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         searchStartInset: toolbarSearchRect.left - toolbarRect.left,
         railEndInset: toolbarRect.right - toolbarRailRect.right,
         shellHeight: getComputedStyle(viewSwitch).height,
+        shellPadding: getComputedStyle(viewSwitch).padding,
         activeButtonHeight: getComputedStyle(activeViewButton).height,
         searchHeight: searchInput.getBoundingClientRect().height,
         searchFontSize: getComputedStyle(searchInput).fontSize,
@@ -14562,6 +15074,15 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         viewButtonHeights: Array.from(
           viewSwitch.querySelectorAll<HTMLElement>("button"),
         ).map((button) => button.getBoundingClientRect().height),
+        viewButtonFontSizes: Array.from(
+          viewSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => getComputedStyle(button).fontSize),
+        viewIconSizes: Array.from(
+          viewSwitch.querySelectorAll<SVGElement>("button svg"),
+        ).map((icon) => {
+          const rect = icon.getBoundingClientRect();
+          return { width: rect.width, height: rect.height };
+        }),
         mobileProjection: {
           listDisplay: getComputedStyle(mobileList).display,
           listVisible: mobileList.getClientRects().length > 0,
@@ -14608,26 +15129,38 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     );
     assert.deepEqual(mobileCoursesToolbar.theme, {
       meta: "#f5f1e8",
+      viewport: "width=device-width, initial-scale=1, viewport-fit=cover",
       html: "rgb(245, 241, 232)",
       body: "rgb(245, 241, 232)",
       shell: "rgb(245, 241, 232)",
       htmlImage: "none",
       bodyImage: "none",
     });
+    assert.doesNotMatch(
+      mobileCoursesToolbar.theme.viewport,
+      /user-scalable\s*=\s*no|maximum-scale\s*=\s*(?:0|1(?:\.\d+)?)(?:\s|,|$)/,
+    );
     assert.deepEqual(mobileCoursesToolbar.topNav, {
       position: "sticky",
       top: "0px",
     });
-    assert.ok(Number.parseFloat(mobileCoursesToolbar.shellHeight) >= 48);
-    assert.ok(Number.parseFloat(mobileCoursesToolbar.activeButtonHeight) >= 48);
+    assert.equal(mobileCoursesToolbar.shellHeight, "48px");
+    assert.equal(mobileCoursesToolbar.shellPadding, "2px");
+    assert.equal(mobileCoursesToolbar.activeButtonHeight, "44px");
     assert.ok(mobileCoursesToolbar.searchHeight >= 48);
-    assert.equal(mobileCoursesToolbar.searchFontSize, "16px");
+    assert.ok(Number.parseFloat(mobileCoursesToolbar.searchFontSize) >= 16);
     assert.ok(
       mobileCoursesToolbar.workspaceTabHeights.every((height) => height >= 48),
     );
-    assert.ok(
-      mobileCoursesToolbar.viewButtonHeights.every((height) => height >= 48),
-    );
+    assert.deepEqual(mobileCoursesToolbar.viewButtonHeights, [44, 44]);
+    assert.deepEqual(mobileCoursesToolbar.viewButtonFontSizes, [
+      "16px",
+      "16px",
+    ]);
+    assert.deepEqual(mobileCoursesToolbar.viewIconSizes, [
+      { width: 20, height: 20 },
+      { width: 20, height: 20 },
+    ]);
     assert.ok(mobileCoursesToolbar.pageHeader.actionHeight >= 48);
     assert.notEqual(mobileCoursesToolbar.mobileProjection.listDisplay, "none");
     assert.equal(mobileCoursesToolbar.mobileProjection.listVisible, true);
@@ -14674,6 +15207,166 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       true,
     );
     assert.equal(mobileCoursesToolbar.pageHeader.actionsInsideViewport, true);
+
+    await runtime.page.setViewportSize({ width: 844, height: 390 });
+    const landscapeLauncher = runtime.page.getByRole("button", {
+      name: "Открыть сообщения",
+      exact: true,
+    });
+    await landscapeLauncher.waitFor();
+    assertMobileEditableContract(
+      await readMobileEditableContract(runtime.page),
+      844,
+      "Courses in coarse-pointer landscape",
+    );
+    const mobileLandscapeContract = await runtime.page.evaluate(() => {
+      const viewSwitch = document.querySelector<HTMLElement>(
+        '[role="group"][aria-label="Вид списка курсов"]',
+      );
+      const searchInput = document.querySelector<HTMLInputElement>(
+        ".course-index-toolbar input.product-control-search",
+      );
+      const primaryAction = document.querySelector<HTMLElement>(
+        ".app-page-header .app-page-actions > *",
+      );
+      const visibleTabs = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          '.courses-index-shell [role="tab"]',
+        ),
+      ).filter((tab) => tab.getClientRects().length > 0);
+      const launcher = document.querySelector<HTMLElement>(
+        ".communication-center-launcher",
+      );
+      const launcherIcon = launcher?.querySelector<SVGElement>("svg");
+      if (
+        !viewSwitch ||
+        !searchInput ||
+        !primaryAction ||
+        visibleTabs.length === 0 ||
+        !launcher ||
+        !launcherIcon
+      ) {
+        throw new Error("Coarse-pointer landscape controls are missing");
+      }
+      const launcherRect = launcher.getBoundingClientRect();
+      const launcherIconRect = launcherIcon.getBoundingClientRect();
+      return {
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        coarsePointer: matchMedia("(pointer: coarse)").matches,
+        noHover: matchMedia("(hover: none)").matches,
+        segmentedHeight: viewSwitch.getBoundingClientRect().height,
+        segmentedPadding: getComputedStyle(viewSwitch).padding,
+        segmentedButtonHeights: Array.from(
+          viewSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => button.getBoundingClientRect().height),
+        segmentedButtonFontSizes: Array.from(
+          viewSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => getComputedStyle(button).fontSize),
+        segmentedIconSizes: Array.from(
+          viewSwitch.querySelectorAll<SVGElement>("button svg"),
+        ).map((icon) => {
+          const rect = icon.getBoundingClientRect();
+          return { width: rect.width, height: rect.height };
+        }),
+        searchHeight: searchInput.getBoundingClientRect().height,
+        searchFontSize: Number.parseFloat(
+          getComputedStyle(searchInput).fontSize,
+        ),
+        primaryActionHeight: primaryAction.getBoundingClientRect().height,
+        tabHeights: visibleTabs.map(
+          (tab) => tab.getBoundingClientRect().height,
+        ),
+        launcher: {
+          width: launcherRect.width,
+          height: launcherRect.height,
+          iconWidth: launcherIconRect.width,
+          iconHeight: launcherIconRect.height,
+        },
+      };
+    });
+    assert.deepEqual(
+      {
+        clientWidth: mobileLandscapeContract.clientWidth,
+        scrollWidth: mobileLandscapeContract.scrollWidth,
+        coarsePointer: mobileLandscapeContract.coarsePointer,
+        noHover: mobileLandscapeContract.noHover,
+        segmentedHeight: mobileLandscapeContract.segmentedHeight,
+        segmentedPadding: mobileLandscapeContract.segmentedPadding,
+        segmentedButtonHeights: mobileLandscapeContract.segmentedButtonHeights,
+        segmentedButtonFontSizes:
+          mobileLandscapeContract.segmentedButtonFontSizes,
+        segmentedIconSizes: mobileLandscapeContract.segmentedIconSizes,
+        searchHeight: mobileLandscapeContract.searchHeight,
+        searchFontSize: mobileLandscapeContract.searchFontSize,
+      },
+      {
+        clientWidth: 844,
+        scrollWidth: 844,
+        coarsePointer: true,
+        noHover: true,
+        segmentedHeight: 48,
+        segmentedPadding: "2px",
+        segmentedButtonHeights: [44, 44],
+        segmentedButtonFontSizes: ["16px", "16px"],
+        segmentedIconSizes: [
+          { width: 20, height: 20 },
+          { width: 20, height: 20 },
+        ],
+        searchHeight: 48,
+        searchFontSize: 16,
+      },
+    );
+    assert.ok(mobileLandscapeContract.primaryActionHeight >= 48);
+    assert.ok(
+      mobileLandscapeContract.tabHeights.every((height) => height >= 48),
+    );
+    assert.ok(mobileLandscapeContract.launcher.width >= 56);
+    assert.ok(mobileLandscapeContract.launcher.height >= 56);
+    assert.ok(mobileLandscapeContract.launcher.iconWidth >= 24);
+    assert.ok(mobileLandscapeContract.launcher.iconHeight >= 24);
+
+    await landscapeLauncher.click();
+    const landscapeMessagesPanel = runtime.page.getByRole("dialog", {
+      name: "Сообщения",
+      exact: true,
+    });
+    await landscapeMessagesPanel.waitFor();
+    await runtime.page.waitForTimeout(220);
+    const landscapeMessagesGeometry = await runtime.page.evaluate(() => {
+      const panel = document.querySelector<HTMLElement>(
+        ".communication-center-panel",
+      );
+      const launcher = document.querySelector<HTMLElement>(
+        ".communication-center-launcher",
+      );
+      if (!panel || !launcher) {
+        throw new Error("Landscape messages geometry is missing");
+      }
+      const panelRect = panel.getBoundingClientRect();
+      const launcherRect = launcher.getBoundingClientRect();
+      const insideViewport = (rect: DOMRect) =>
+        rect.left >= 0 &&
+        rect.right <= window.innerWidth &&
+        rect.top >= 0 &&
+        rect.bottom <= window.innerHeight;
+      return {
+        gap: launcherRect.top - panelRect.bottom,
+        panelInsideViewport: insideViewport(panelRect),
+        launcherInsideViewport: insideViewport(launcherRect),
+        noOverlap: panelRect.bottom <= launcherRect.top,
+      };
+    });
+    assert.ok(
+      Math.abs(landscapeMessagesGeometry.gap - 12) < 0.5,
+      `Landscape messages panel must keep a 12px launcher gap; got ${landscapeMessagesGeometry.gap}`,
+    );
+    assert.equal(landscapeMessagesGeometry.panelInsideViewport, true);
+    assert.equal(landscapeMessagesGeometry.launcherInsideViewport, true);
+    assert.equal(landscapeMessagesGeometry.noOverlap, true);
+    await runtime.page.locator(".communication-center-launcher").click();
+    await landscapeMessagesPanel.waitFor({ state: "detached" });
+    await runtime.page.setViewportSize({ width: 375, height: 812 });
 
     const mobileStickyTopNav = await runtime.page.evaluate(async () => {
       const shell = document.querySelector<HTMLElement>(".course-demo-shell");
@@ -14742,6 +15435,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const audience = rail?.querySelector<HTMLElement>(
         ".course-catalog-audience-control",
       );
+      const audienceSwitch = audience?.querySelector<HTMLElement>(
+        ".product-segmented-control",
+      );
       const catalogSection = toolbar?.closest<HTMLElement>("section");
       const mobileList = catalogSection?.querySelector<HTMLElement>(
         ".course-index-mobile-list",
@@ -14756,6 +15452,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         !rail ||
         !viewSwitch ||
         !audience ||
+        !audienceSwitch ||
         !mobileList ||
         !wideTableWrap
       ) {
@@ -14768,9 +15465,6 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const railRect = rail.getBoundingClientRect();
       const audienceRect = audience.getBoundingClientRect();
       const mobileListRect = mobileList.getBoundingClientRect();
-      const controlButtons = Array.from(
-        rail.querySelectorAll<HTMLElement>("button"),
-      ).filter((button) => button.getClientRects().length > 0);
       return {
         scrollWidth: document.documentElement.scrollWidth,
         insideViewport: rect.left >= 0 && rect.right <= viewportWidth,
@@ -14792,11 +15486,29 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
           Node.DOCUMENT_POSITION_FOLLOWING,
         ),
         shellHeight: getComputedStyle(viewSwitch).height,
+        shellPadding: getComputedStyle(viewSwitch).padding,
+        viewButtonHeights: Array.from(
+          viewSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => button.getBoundingClientRect().height),
+        viewButtonFontSizes: Array.from(
+          viewSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => getComputedStyle(button).fontSize),
+        viewIconSizes: Array.from(
+          viewSwitch.querySelectorAll<SVGElement>("button svg"),
+        ).map((icon) => {
+          const rect = icon.getBoundingClientRect();
+          return { width: rect.width, height: rect.height };
+        }),
+        audienceShellHeight: getComputedStyle(audienceSwitch).height,
+        audienceShellPadding: getComputedStyle(audienceSwitch).padding,
+        audienceButtonHeights: Array.from(
+          audienceSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => button.getBoundingClientRect().height),
+        audienceButtonFontSizes: Array.from(
+          audienceSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => getComputedStyle(button).fontSize),
         searchHeight: searchInput.getBoundingClientRect().height,
         searchFontSize: getComputedStyle(searchInput).fontSize,
-        controlButtonHeights: controlButtons.map(
-          (button) => button.getBoundingClientRect().height,
-        ),
         mobileProjection: {
           listDisplay: getComputedStyle(mobileList).display,
           listVisible: mobileList.getClientRects().length > 0,
@@ -14847,12 +15559,26 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         visibleResultCount: 0,
       },
     );
-    assert.ok(Number.parseFloat(mobileCatalogToolbar.shellHeight) >= 48);
+    assert.equal(mobileCatalogToolbar.shellHeight, "48px");
+    assert.equal(mobileCatalogToolbar.shellPadding, "2px");
+    assert.deepEqual(mobileCatalogToolbar.viewButtonHeights, [44, 44]);
+    assert.deepEqual(mobileCatalogToolbar.viewButtonFontSizes, [
+      "16px",
+      "16px",
+    ]);
+    assert.deepEqual(mobileCatalogToolbar.viewIconSizes, [
+      { width: 20, height: 20 },
+      { width: 20, height: 20 },
+    ]);
+    assert.equal(mobileCatalogToolbar.audienceShellHeight, "48px");
+    assert.equal(mobileCatalogToolbar.audienceShellPadding, "2px");
+    assert.deepEqual(mobileCatalogToolbar.audienceButtonHeights, [44, 44]);
+    assert.deepEqual(mobileCatalogToolbar.audienceButtonFontSizes, [
+      "16px",
+      "16px",
+    ]);
     assert.ok(mobileCatalogToolbar.searchHeight >= 48);
-    assert.equal(mobileCatalogToolbar.searchFontSize, "16px");
-    assert.ok(
-      mobileCatalogToolbar.controlButtonHeights.every((height) => height >= 48),
-    );
+    assert.ok(Number.parseFloat(mobileCatalogToolbar.searchFontSize) >= 16);
     assert.notEqual(mobileCatalogToolbar.mobileProjection.listDisplay, "none");
     assert.equal(mobileCatalogToolbar.mobileProjection.listVisible, true);
     assert.equal(

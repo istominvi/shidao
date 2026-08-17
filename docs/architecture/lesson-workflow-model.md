@@ -808,8 +808,9 @@ Visual contract Course routes не меняет эту навигационну�
   `border: 0`,
   одну тень `0 18px 46px rgba(20, 20, 20, 0.18)` и не используют backdrop blur.
   `separatorBefore`, divider/separator DOM и визуальные линии отсутствуют в
-  `ActionMenu`, в mobile navigation menu и над calendar footer. В forced-colors
-  тень отключается, а системные `Canvas`/
+  `ActionMenu` и над calendar footer. Единственное намеренное исключение внутри
+  mobile navigation panel — full-bleed светлый divider между Account profile
+  header и navigation items. В forced-colors тень отключается, а системные `Canvas`/
   `1px solid CanvasText` возвращают различимую границу. Contextual `ActionMenu`
   сохраняет состав/порядок действий, destructive/disabled states и portal
   positioning; selection/date panels — свои native semantics. Protected mobile
@@ -1008,8 +1009,15 @@ actions`; пять data headers сортируют полную client-loaded pr
   / Карточки** и изначально выбирает таблицу; смена вида не меняет Course query,
   filters или persisted данные. До `767 px` широкая table projection скрыта и
   тот же набор данных выводится semantic list/card projection без page-level
-  horizontal scroll; search, tabs, segmented controls и основные actions имеют
-  touch target минимум `48 px`, search text — `16 px`.
+  horizontal scroll. На ширине до `767 px` и при любом coarse/touch pointer
+  search, tabs и основные actions имеют touch target минимум `48 px`, а
+  segmented shells/options — exact `48 / 44 px` с `16 px` labels и `20 px`
+  glyphs. Все редактируемые app
+  inputs/selects/textareas имеют computed font не меньше `16 px`, чтобы iOS не
+  выполнял focus zoom в portrait или landscape, при этом viewport не запрещает
+  pinch zoom. Launcher «Сообщения» в том же narrow/coarse contract равен
+  `56 × 56 px` с glyph минимум `24 px` и safe-area inset; non-fullscreen panel
+  находится на `12 px` выше launcher.
   Owned-row заканчивается одним `MoreVertical` portal-menu 32 × 32 px:
   unpublished Course получает «Дублировать / Опубликовать / Удалить», а
   publication states сохраняют update/open/unpublish actions. «Удалить»
@@ -1044,12 +1052,18 @@ Current production primary navigation для roleless Account содержит
 «Расписание / Ученики / Курсы / Магазин». «Профиль» находится в Account menu, а
 «Наблюдение» — третья вкладка `/students`; `/observing` служит compatibility redirect.
 В current source / next production protected mobile header скрывает desktop
-primary rail и заменяет avatar на burger. Это единственный navigation dropdown:
-его header показывает Account name и только допустимый публичный email, а
+primary rail и заменяет avatar на burger. Скруглённый header является полностью
+непрозрачным белым surface, mobile wordmark равен `26 px`, а закрытый burger не
+сохраняет touch-hover/focus halo. Это единственный navigation dropdown: его
+header показывает `48 px` Account avatar, Account name и только допустимый
+публичный email, использует равные block-insets и отделён от navigation
+full-bleed светлым divider, а
 visible items ограничены «Расписание / Ученики / Курсы / Магазин / Профиль».
 Burger target равен `48 × 48 px`, icon — `24 px`; panel остаётся внутри
-viewport с inset/gap `12 px`, радиусом `16 px`, строками минимум `48 px` и
-сохраняет keyboard/Escape/outside-click/focus-return semantics.
+viewport с inset/gap `12 px`, радиусом `16 px`, строками `68 px`, текстом
+`20 px` и иконками `24 px`. Pointer-open не переводит focus на первый пункт;
+keyboard-open сохраняет inset focus indicator, стрелки, Home/End, Escape и
+focus-return semantics.
 На protected desktop и authenticated landing avatar является прямой ссылкой
 `/profile`; прежний Account/avatar dropdown удалён. Пустой
 `/courses` позволяет начать authoring; он не является Course enrollment

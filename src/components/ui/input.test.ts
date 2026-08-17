@@ -9,6 +9,8 @@ function source(path: string) {
 const inputSource = source("src/components/ui/input.tsx");
 const globalStyles = source("src/app/globals.css");
 const teachingStyles = source("src/app/styles/teaching-hub.css");
+const rootLayoutSource = source("src/app/layout.tsx");
+const appLayoutSource = source("src/app/(app)/layout.tsx");
 
 test("single-line product inputs use one static raised typography contract", () => {
   assert.match(
@@ -145,5 +147,43 @@ test("input focus and forced colors preserve an accessible indicator", () => {
   assert.match(
     forcedColors,
     /input\.product-control-input:focus,\s*input\.product-control-search:focus,\s*input\.field-input:focus,\s*\.teaching-hub-search:focus-within,\s*\.student-directory-picker-search input:focus\s*\{[^}]*outline-offset: 0;/,
+  );
+});
+
+test("narrow and coarse-touch editable controls prevent iOS focus zoom without disabling page zoom", () => {
+  const touchMediaQuery =
+    "@media (max-width: 767px), (hover: none) and (pointer: coarse)";
+  const touchMediaStart = globalStyles.indexOf(touchMediaQuery);
+
+  assert.ok(touchMediaStart >= 0);
+
+  const touchStyles = globalStyles.slice(touchMediaStart);
+  const editableRuleStart = touchStyles.indexOf(":where(");
+  const editableRuleEnd = touchStyles.indexOf("\n  }", editableRuleStart);
+  const editableRule = touchStyles.slice(
+    editableRuleStart,
+    editableRuleEnd + 4,
+  );
+
+  assert.ok(editableRuleStart >= 0);
+  assert.match(editableRule, /input:not\(\[type="button"\]\)/);
+  assert.match(editableRule, /select,/);
+  assert.match(editableRule, /textarea/);
+  assert.match(editableRule, /font-size: max\(1rem, 16px\) !important;/);
+  for (const nonEditableType of [
+    "checkbox",
+    "radio",
+    "range",
+    "color",
+    "file",
+    "hidden",
+  ]) {
+    assert.match(editableRule, new RegExp(`\\[type="${nonEditableType}"\\]`));
+  }
+
+  assert.match(appLayoutSource, /viewportFit: "cover"/);
+  assert.doesNotMatch(
+    `${rootLayoutSource}\n${appLayoutSource}`,
+    /maximumScale|minimumScale|userScalable/,
   );
 });

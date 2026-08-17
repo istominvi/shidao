@@ -887,6 +887,31 @@
   }
 }
 
+@media (max-width: 767px), (hover: none) and (pointer: coarse) {
+  .communication-center-launcher {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 1rem;
+    touch-action: manipulation;
+  }
+
+  .communication-center-launcher svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .communication-center-panel {
+    bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+    height: min(
+      44rem,
+      calc(
+        100dvh - 5.75rem - env(safe-area-inset-top, 0px) -
+          env(safe-area-inset-bottom, 0px)
+      )
+    );
+  }
+}
+
 @media (max-width: 640px) {
   .communication-center-launcher-wrap.is-open {
     visibility: hidden;
@@ -909,6 +934,18 @@
 
   .communication-message {
     max-width: 92%;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .communication-center-launcher:hover {
+    box-shadow: var(--product-raised-control-shadow);
+    transform: none;
+  }
+
+  .communication-center-launcher:active {
+    box-shadow: var(--product-raised-control-shadow-pressed);
+    transform: scale(0.94);
   }
 }
 

@@ -253,14 +253,29 @@ touch-first application layout. App `theme-color`, manifest, `html`, `body` и
 включает `viewport-fit=cover`, shell покрывает минимум `100dvh`, а safe-area
 insets защищают верхнюю навигацию и нижний край. Поэтому iOS Safari окрашивает
 browser chrome и elastic overscroll в цвет приложения без отключения нативного
-bounce. Mobile burger имеет target `48 × 48 px` и icon `24 px`; открытый panel
-занимает ширину viewport с inset `12 px`, gap `12 px`, радиусом `16 px`,
-строками минимум `48 px` и текстом `16 px`, сохраняя keyboard, Escape,
-outside-click и focus-return semantics.
+bounce. Текущий source refinement делает скруглённый mobile TopNav полностью
+непрозрачным белым surface без background image/blur, увеличивает wordmark до
+`26 px` и оставляет закрытый burger на чистом белом фоне без залипающего
+touch-hover/focus halo. Mobile burger имеет target `48 × 48 px` и icon `24 px`;
+открытый panel занимает ширину viewport с inset `12 px`, gap `12 px`, радиусом
+`16 px`, показывает `48 px` Account avatar, отделяет одинаково отцентрованный
+profile header full-bleed светлым divider и использует строки `68 px`, текст
+`20 px` и иконки `24 px`. Pointer-open не переводит фокус на первый пункт;
+keyboard-open, стрелки, Home/End, Escape, outside-click и focus-return остаются
+полностью доступны с компактным inset focus indicator вместо внешнего halo.
 
-На mobile Course toolbars, search, основные actions, tabs и segmented controls
-получают touch target не меньше `48 px`; search text равен `16 px`, чтобы iOS
-не увеличивал страницу при focus. Desktop Course table/card переключатель и
+На ширине до `767 px` и при любом coarse/touch pointer Course toolbars, search,
+основные actions и tabs получают touch target не меньше `48 px`; compound
+segmented controls имеют общую внешнюю высоту `48 px` и внутренние options
+`44 px`, подписи `16 px` и glyphs `20 px`, поэтому они совпадают по масштабу с
+соседними controls, в том числе в landscape на iPhone. Все редактируемые app
+`input` / `select` / `textarea`
+вычисляются не меньше `16 px`, чтобы iOS не увеличивал страницу при focus;
+pinch zoom при этом не запрещается через viewport. Global launcher
+«Сообщения» в том же narrow/coarse contract увеличен до `56 × 56 px` с glyph
+не меньше `24 px` и сохраняет safe-area inset; non-fullscreen panel остаётся
+ровно на `12 px` выше увеличенного launcher. Desktop Course table/card
+переключатель и
 исходный table mode сохраняются, но до `767 px` широкая таблица не масштабируется
 и не создаёт page-level horizontal scroll: текущая projection отображается
 семантическим списком компактных белых карточек с полными Course actions и
@@ -797,9 +812,11 @@ dropdowns, включая Store sort, и Schedule calendar/date popover.
 Course/Students/Store filter popovers удалены. Каждая оставшаяся панель имеет ровно
 `6 px` внутреннего inset (`--product-dropdown-inset: 0.375rem`), белый фон, общий
 element-radius `12 px`, обычный `border: 0`, `backdrop-filter: none` и одну
-тень `0 18px 46px rgba(20, 20, 20, 0.18)`. Внутренние separator/divider линии
-удалены также из mobile navigation menu и calendar footer; consumers не
-добавляют собственную рамку, blur, вторую тень или отличающийся panel padding.
+тень `0 18px 46px rgba(20, 20, 20, 0.18)`. Служебные separator/divider линии
+удалены из contextual menus и calendar footer; единственное намеренное
+исключение внутри mobile navigation panel — full-bleed светлый divider между
+Account profile header и navigation items. Consumers не добавляют собственную
+рамку, blur, вторую тень или отличающийся panel padding.
 В forced-colors декоративная тень отключается, а границу панели восстанавливает
 системный `1px solid CanvasText` на `Canvas`. Contextual `ActionMenu` сохраняет
 destructive/disabled states и portal positioning; selection/date panels — свои

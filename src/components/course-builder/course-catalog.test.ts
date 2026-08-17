@@ -327,6 +327,19 @@ test("course tables adopt canonical raised surfaces", () => {
 });
 
 test("course index provides an ergonomic mobile card projection", () => {
+  const touchMediaQuery =
+    "@media (max-width: 767px), (hover: none) and (pointer: coarse)";
+  const touchMediaStart = globalStyles.indexOf(touchMediaQuery);
+  const narrowMediaStart = globalStyles.indexOf(
+    "@media (max-width: 767px)",
+    touchMediaStart + touchMediaQuery.length,
+  );
+
+  assert.ok(touchMediaStart >= 0);
+  assert.ok(narrowMediaStart > touchMediaStart);
+
+  const touchStyles = globalStyles.slice(touchMediaStart, narrowMediaStart);
+
   for (const panelSource of [
     ownedCoursesPanelSource,
     courseCatalogPanelSource,
@@ -346,11 +359,43 @@ test("course index provides an ergonomic mobile card projection", () => {
     /@media \(max-width: 767px\)[\s\S]*?\.courses-index-shell \.course-index-table-wrap\s*\{[^}]*display: none;[^}]*\}[\s\S]*?\.course-index-mobile-list\s*\{[^}]*display: grid;/,
   );
   assert.match(
-    globalStyles,
-    /@media \(max-width: 767px\)[\s\S]*?\.course-demo-shell \.product-control-search\s*\{[^}]*--product-control-height: (?:3rem|48px);[^}]*font-size: (?:1rem|16px);/,
+    touchStyles,
+    /\.course-demo-shell\s*\{[^}]*--course-demo-control-height: 3rem;[^}]*--course-demo-control-font-size: 1rem;[^}]*--course-demo-control-icon-size: 1\.125rem;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-control,\s*\.course-demo-shell input\.field-input\s*\{[^}]*--product-control-height: 3rem;[^}]*font-size: 1rem;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-control-search\s*\{[^}]*--product-control-height: (?:3rem|48px);[^}]*font-size: (?:1rem|16px);/,
+  );
+  assert.match(
+    touchStyles,
+    /\.workspace-tab\s*\{[^}]*height: (?:3rem|48px);[^}]*min-height: (?:3rem|48px);/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-segmented-control,[\s\S]*?\{[^}]*height: 3rem;[^}]*min-height: 3rem;[^}]*padding: 0\.125rem;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-segmented-control-option,[\s\S]*?\{[^}]*min-width: 2\.75rem;[^}]*height: 2\.75rem;[^}]*min-height: 2\.75rem;[^}]*font-size: 1rem;[^}]*touch-action: manipulation;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-segmented-control-option svg,[\s\S]*?\{[^}]*width: 1\.25rem;[^}]*height: 1\.25rem;/,
   );
   assert.match(
     globalStyles,
-    /@media \(max-width: 767px\)[\s\S]*?\.workspace-tab\s*\{[^}]*height: (?:3rem|48px);[^}]*min-height: (?:3rem|48px);/,
+    /@media \(max-width: 767px\)[\s\S]*?\.course-catalog-audience-control[\s\S]*?\.product-segmented-control-option\s*\{[^}]*font-size: 1rem;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-segmented-control-option:not\(:disabled\):active,[\s\S]*?\{[^}]*transform: scale\(0\.96\);/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-segmented-control-option:focus-visible,[\s\S]*?\{[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: -2px;/,
   );
 });

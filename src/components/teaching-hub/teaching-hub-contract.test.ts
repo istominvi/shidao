@@ -458,7 +458,7 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     navigationStyleSource,
-    /\.site-header-shell-demo\s*\{[^}]*background:\s*#fff;/,
+    /\.site-header-shell-demo\s*\{[^}]*background-color:\s*#fff;[^}]*background-image:\s*none;[^}]*opacity:\s*1;/,
   );
   assert.match(
     globalStyleSource,
@@ -883,5 +883,48 @@ test("teaching hub inputs, membership control, and data surfaces use canonical t
   assert.match(
     globalStyleSource,
     /\.lesson-run-history-card,[\s\S]*?\.course-demo-shell \.student-directory-card,[\s\S]*?\.course-demo-shell \.store-product-card-surface\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background-clip: padding-box;/,
+  );
+});
+
+test("narrow and coarse-touch teaching view toggles share the 48px shell and 44px option contract", () => {
+  const touchMediaQuery =
+    "@media (max-width: 767px), (hover: none) and (pointer: coarse)";
+  const touchMediaStart = globalStyleSource.indexOf(touchMediaQuery);
+  const narrowMediaStart = globalStyleSource.indexOf(
+    "@media (max-width: 767px)",
+    touchMediaStart + touchMediaQuery.length,
+  );
+
+  assert.ok(touchMediaStart >= 0);
+  assert.ok(narrowMediaStart > touchMediaStart);
+
+  const touchStyles = globalStyleSource.slice(
+    touchMediaStart,
+    narrowMediaStart,
+  );
+
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-segmented-control,\s*\.course-demo-shell \.teaching-schedule-view-toggle\s*\{[^}]*height: 3rem;[^}]*min-height: 3rem;[^}]*padding: 0\.125rem;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-segmented-control-option,\s*\.course-demo-shell \.teaching-schedule-view-toggle button\s*\{[^}]*min-width: 2\.75rem;[^}]*height: 2\.75rem;[^}]*min-height: 2\.75rem;[^}]*font-size: 1rem;[^}]*touch-action: manipulation;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-segmented-control-option svg,\s*\.course-demo-shell \.teaching-schedule-view-toggle button svg\s*\{[^}]*width: 1\.25rem;[^}]*height: 1\.25rem;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.teaching-schedule-view-toggle button\s*\{[^}]*width: 2\.75rem;[^}]*padding-inline: 0;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.teaching-schedule-view-toggle\s+button:not\(:disabled\):active\s*\{[^}]*transform: scale\(0\.96\);/,
+  );
+  assert.match(
+    touchStyles,
+    /\.teaching-schedule-view-toggle button:focus-visible\s*\{[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: -2px;/,
   );
 });

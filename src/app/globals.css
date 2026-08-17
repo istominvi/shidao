@@ -3621,31 +3621,24 @@ input.product-control-search::placeholder {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (hover: none) and (pointer: coarse) {
+  :where(
+    input:not([type="button"]):not([type="submit"]):not([type="reset"]):not(
+        [type="checkbox"]
+      ):not([type="radio"]):not([type="range"]):not([type="color"]):not(
+        [type="file"]
+      ):not([type="image"]):not([type="hidden"]),
+    select,
+    textarea
+  ) {
+    font-size: max(1rem, 16px) !important;
+  }
+
   .course-demo-shell {
     --course-demo-control-height: 3rem;
     --course-demo-control-padding-inline: 0.875rem;
     --course-demo-control-font-size: 1rem;
     --course-demo-control-icon-size: 1.125rem;
-
-    padding-bottom: max(3rem, calc(1.5rem + env(safe-area-inset-bottom, 0px)));
-  }
-
-  .course-demo-shell .container:not(.course-top-nav) {
-    width: auto;
-    margin-left: max(0.75rem, env(safe-area-inset-left, 0px));
-    margin-right: max(0.75rem, env(safe-area-inset-right, 0px));
-  }
-
-  .course-demo-shell .course-top-nav {
-    width: 100%;
-    margin-inline: 0;
-  }
-
-  .course-demo-shell .app-page-header {
-    --app-page-header-padding-block: 1.25rem;
-    --app-page-header-padding-inline: 0px;
-    --app-page-header-title-size: 2rem;
   }
 
   .course-demo-shell .product-control,
@@ -3675,18 +3668,69 @@ input.product-control-search::placeholder {
     touch-action: manipulation;
   }
 
-  .course-demo-shell .product-segmented-control {
-    height: 3.5rem;
-    min-height: 3.5rem;
-  }
-
-  .course-demo-shell .product-segmented-control-option {
-    width: auto;
-    min-width: 3rem;
+  .course-demo-shell .product-segmented-control,
+  .course-demo-shell .teaching-schedule-view-toggle {
     height: 3rem;
     min-height: 3rem;
+    padding: 0.125rem;
+  }
+
+  .course-demo-shell .product-segmented-control-option,
+  .course-demo-shell .teaching-schedule-view-toggle button {
+    width: auto;
+    min-width: 2.75rem;
+    height: 2.75rem;
+    min-height: 2.75rem;
     padding-inline: 0.875rem;
+    font-size: 1rem;
     touch-action: manipulation;
+  }
+
+  .course-demo-shell .product-segmented-control-option svg,
+  .course-demo-shell .teaching-schedule-view-toggle button svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .course-demo-shell .teaching-schedule-view-toggle button {
+    width: 2.75rem;
+    padding-inline: 0;
+  }
+
+  .course-demo-shell .product-segmented-control-option:not(:disabled):active,
+  .course-demo-shell
+    .teaching-schedule-view-toggle
+    button:not(:disabled):active {
+    transform: scale(0.96);
+  }
+
+  .course-demo-shell .product-segmented-control-option:focus-visible,
+  .course-demo-shell .teaching-schedule-view-toggle button:focus-visible {
+    outline: 2px solid var(--product-control-focus-halo);
+    outline-offset: -2px;
+  }
+}
+
+@media (max-width: 767px) {
+  .course-demo-shell {
+    padding-bottom: max(3rem, calc(1.5rem + env(safe-area-inset-bottom, 0px)));
+  }
+
+  .course-demo-shell .container:not(.course-top-nav) {
+    width: auto;
+    margin-left: max(0.75rem, env(safe-area-inset-left, 0px));
+    margin-right: max(0.75rem, env(safe-area-inset-right, 0px));
+  }
+
+  .course-demo-shell .course-top-nav {
+    width: 100%;
+    margin-inline: 0;
+  }
+
+  .course-demo-shell .app-page-header {
+    --app-page-header-padding-block: 1.25rem;
+    --app-page-header-padding-inline: 0px;
+    --app-page-header-title-size: 2rem;
   }
 
   .course-demo-shell .compact-page-toolbar,
@@ -3711,7 +3755,7 @@ input.product-control-search::placeholder {
     min-width: 0;
     flex: 1 1 0;
     padding-inline: 0.5rem;
-    font-size: 0.875rem;
+    font-size: 1rem;
   }
 
   .course-demo-shell .surface-card {

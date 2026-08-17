@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
 } from "react";
 import { AvatarImage } from "@/components/account/avatar-image";
 import { isInternalAuthEmail, ROUTES } from "@/lib/auth";
@@ -45,6 +46,7 @@ export function SessionNavActions({
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const focusMenuOnOpenRef = useRef(false);
   const [open, setOpen] = useState(false);
   const isProtectedTopNav = variant === "top-nav";
   const profileActive = pathname === ROUTES.profile;
@@ -85,17 +87,26 @@ export function SessionNavActions({
     [menuItems],
   );
 
+  const closeMenu = useCallback((returnFocus = false) => {
+    focusMenuOnOpenRef.current = false;
+    setOpen(false);
+    if (returnFocus) {
+      triggerRef.current?.focus();
+    } else {
+      triggerRef.current?.blur();
+    }
+  }, []);
+
   useEffect(() => {
     if (!open) return;
 
     const onPointerDown = (event: PointerEvent) => {
-      if (!isEventWithinMenu(event)) setOpen(false);
+      if (!isEventWithinMenu(event)) closeMenu();
     };
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        setOpen(false);
-        triggerRef.current?.focus();
+        closeMenu(true);
       }
     };
 
@@ -105,11 +116,15 @@ export function SessionNavActions({
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("keydown", onEscape);
     };
-  }, [isEventWithinMenu, open]);
+  }, [closeMenu, isEventWithinMenu, open]);
 
   useEffect(() => {
-    if (!open) return;
-    const frame = window.requestAnimationFrame(() => focusMenuItem("first"));
+    if (!open || !focusMenuOnOpenRef.current) return;
+    const frame = window.requestAnimationFrame(() => {
+      if (!focusMenuOnOpenRef.current) return;
+      focusMenuOnOpenRef.current = false;
+      focusMenuItem("first");
+    });
     return () => window.cancelAnimationFrame(frame);
   }, [focusMenuItem, open]);
 
@@ -119,13 +134,22 @@ export function SessionNavActions({
     const desktop = window.matchMedia("(min-width: 768px)");
     const closeAtDesktop = (event: MediaQueryListEvent) => {
       if (!event.matches) return;
-      setOpen(false);
-      triggerRef.current?.blur();
+      closeMenu();
     };
 
     desktop.addEventListener("change", closeAtDesktop);
     return () => desktop.removeEventListener("change", closeAtDesktop);
-  }, [isProtectedTopNav]);
+  }, [closeMenu, isProtectedTopNav]);
+
+  function handleMenuTriggerClick(event: ReactMouseEvent<HTMLButtonElement>) {
+    const nextOpen = !open;
+    if (!nextOpen) {
+      closeMenu(event.detail === 0);
+      return;
+    }
+    focusMenuOnOpenRef.current = nextOpen && event.detail === 0;
+    setOpen(nextOpen);
+  }
 
   function handleMenuKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
     const items = menuItems();
@@ -163,6 +187,13 @@ export function SessionNavActions({
       className="nav-account-menu-mobile md:hidden"
     >
       <div className="nav-dropdown-profile">
+        <AvatarImage
+          avatar={state.avatar}
+          initials={state.initials}
+          alt=""
+          size={48}
+          className="nav-user-trigger-avatar nav-dropdown-profile-avatar"
+        />
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-neutral-900">
             {nameLabel}
@@ -183,15 +214,15 @@ export function SessionNavActions({
                 ? "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
                 : undefined,
             )}
-            onClick={() => setOpen(false)}
+            onClick={() => closeMenu()}
             role="menuitem"
             scroll={item.scroll}
             aria-current={item.active ? "page" : undefined}
           >
-            <span className="inline-flex items-center gap-2.5">
+            <span className="nav-dropdown-item-content inline-flex items-center">
               {item.icon ? (
                 <item.icon
-                  size={16}
+                  size={24}
                   className="text-neutral-500"
                   aria-hidden="true"
                 />
@@ -208,14 +239,14 @@ export function SessionNavActions({
               ? "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
               : undefined,
           )}
-          onClick={() => setOpen(false)}
+          onClick={() => closeMenu()}
           role="menuitem"
           scroll={false}
           aria-current={profileActive ? "page" : undefined}
         >
-          <span className="inline-flex items-center gap-2.5">
+          <span className="nav-dropdown-item-content inline-flex items-center">
             <UserRound
-              size={16}
+              size={24}
               className="text-neutral-500"
               aria-hidden="true"
             />
@@ -232,7 +263,7 @@ export function SessionNavActions({
         <button
           ref={triggerRef}
           type="button"
-          onClick={() => setOpen((prev) => !prev)}
+          onClick={handleMenuTriggerClick}
           aria-haspopup="menu"
           aria-expanded={open}
           aria-controls={menuId}

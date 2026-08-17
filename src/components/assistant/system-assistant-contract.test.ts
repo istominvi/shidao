@@ -101,11 +101,44 @@ test("unified messages uses the compact black launcher and iOS-style badge contr
   const reducedMotion = css.slice(
     css.indexOf("@media (prefers-reduced-motion: reduce)"),
   );
+  const touchLauncherMediaQuery =
+    "@media (max-width: 767px), (hover: none) and (pointer: coarse)";
+  const touchLauncherStart = css.indexOf(touchLauncherMediaQuery);
+  const fullscreenMobileStart = css.indexOf(
+    "@media (max-width: 640px)",
+    touchLauncherStart + touchLauncherMediaQuery.length,
+  );
+  const coarsePointerStart = css.indexOf(
+    "@media (hover: none) and (pointer: coarse)",
+    fullscreenMobileStart,
+  );
+  const mobileKeyframesStart = css.indexOf(
+    "@keyframes communication-center-panel-mobile-in",
+    coarsePointerStart,
+  );
 
   assert.ok(launcherWrapRule);
   assert.ok(launcherRule);
   assert.ok(panelRule);
   assert.ok(badgeRule);
+  assert.ok(touchLauncherStart >= 0);
+  assert.ok(fullscreenMobileStart > touchLauncherStart);
+  assert.ok(coarsePointerStart > fullscreenMobileStart);
+  assert.ok(mobileKeyframesStart > coarsePointerStart);
+
+  const touchLauncherStyles = css.slice(
+    touchLauncherStart,
+    fullscreenMobileStart,
+  );
+  const fullscreenMobileStyles = css.slice(
+    fullscreenMobileStart,
+    coarsePointerStart,
+  );
+  const coarsePointerStyles = css.slice(
+    coarsePointerStart,
+    mobileKeyframesStart,
+  );
+
   assert.match(center, /<MessageCircle aria-hidden="true" \/>/);
   assert.match(center, /communication-center-badge/);
   assert.doesNotMatch(center, /<feTurbulence|<animate|repeatCount=/);
@@ -148,6 +181,30 @@ test("unified messages uses the compact black launcher and iOS-style badge contr
   assert.match(css, /100dvh/);
   assert.match(css, /env\(safe-area-inset-bottom/);
   assert.match(css, /@media \(max-width: 640px\)/);
+  assert.match(
+    touchLauncherStyles,
+    /\.communication-center-launcher\s*\{[^}]*width: 3\.5rem;[^}]*height: 3\.5rem;[^}]*touch-action: manipulation;/,
+  );
+  assert.match(
+    touchLauncherStyles,
+    /\.communication-center-launcher svg\s*\{[^}]*width: 1\.5rem;[^}]*height: 1\.5rem;/,
+  );
+  assert.match(
+    touchLauncherStyles,
+    /\.communication-center-panel\s*\{[^}]*bottom: calc\(5rem \+ env\(safe-area-inset-bottom, 0px\)\);[^}]*height: min\(\s*44rem,\s*calc\(\s*100dvh - 5\.75rem - env\(safe-area-inset-top, 0px\) -\s*env\(safe-area-inset-bottom, 0px\)\s*\)\s*\);/,
+  );
+  assert.match(
+    fullscreenMobileStyles,
+    /\.communication-center-panel\s*\{[^}]*inset: 0;[^}]*width: 100vw;[^}]*height: 100dvh;[^}]*max-height: none;/,
+  );
+  assert.match(
+    coarsePointerStyles,
+    /\.communication-center-launcher:hover\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*transform: none;[^}]*\}[\s\S]*?\.communication-center-launcher:active\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);[^}]*transform: scale\(0\.94\);/,
+  );
+  assert.match(
+    css,
+    /\.communication-center-launcher:focus-visible,[\s\S]*?\{[^}]*outline: 3px solid #141414;[^}]*outline-offset: 2px;/,
+  );
   assert.match(reducedMotion, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(
     reducedMotion,

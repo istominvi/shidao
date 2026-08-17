@@ -59,20 +59,33 @@
 - `WorkspaceTabs` сохраняет горизонтальный swipe, скрывает системный scrollbar
   и показывает только доступные fade-chevron направления; кнопки прокручивают
   ленту, не выбирая вкладку, а keyboard/ARIA/indicator остаются прежними.
-- Protected mobile header использует burger `48 × 48 px` с icon `24 px` и
-  короткое главное меню
+- Protected mobile header использует непрозрачный белый shell, wordmark
+  `26 px` и burger `48 × 48 px` с icon `24 px`. Закрытый burger остаётся
+  белым без sticky touch-hover/focus halo; pointer-open не фокусирует первый
+  пункт, а keyboard-open сохраняет видимый inset focus, стрелки, Home/End,
+  Escape и focus return. Короткое главное меню
   «Расписание / Ученики / Курсы / Магазин / Профиль» с именем и допустимым
   email. Это единственный navigation dropdown: прежний Account/avatar dropdown
   удалён, а avatar на protected desktop и authenticated landing ведёт напрямую
   в `/profile`. Panel занимает viewport с inset `12 px`, gap `12 px`, радиусом
-  `16 px` и touch rows не меньше `48 px`.
+  `16 px`; Account header показывает `48 px` avatar, имеет равные block-insets
+  и full-bleed светлый divider. Menu rows равны `68 px`, текст — `20 px`,
+  icons — `24 px`.
 - App viewport использует `viewport-fit=cover`; app `theme-color`, manifest,
   `html`, `body` и shell согласованы на `#f5f1e8`, а shell покрывает минимум
   `100dvh`. iOS browser chrome и elastic overscroll получают тот же цвет без
   отключения нативного bounce; safe-area применяется к sticky header и нижнему
   краю content.
-- Mobile Course search, primary actions, tabs и segmented controls имеют
-  минимум `48 px`; search text равен `16 px`. Широкая Course table остаётся
+- На ширине до `767 px` и при любом coarse/touch pointer Course search, primary
+  actions и tabs имеют минимум `48 px`, а segmented/toggle shells используют
+  exact `48 px` с `44 px` inner options, `16 px` labels и `20 px` glyphs. Все
+  редактируемые app
+  inputs/selects/textareas имеют computed font не меньше `16 px`, предотвращая
+  iOS focus zoom в portrait и landscape без запрета pinch zoom. Launcher
+  «Сообщения» в том же narrow/coarse contract равен `56 × 56 px`, glyph —
+  минимум `24 px`, safe-area сохранён; non-fullscreen panel сохраняет `12 px`
+  зазор над launcher.
+  Широкая Course table остаётся
   desktop projection, а до `767 px` заменяется семантическим списком компактных
   карточек без page-level horizontal scroll. Query, presentation state и
   Course actions остаются общими с desktop.
@@ -726,9 +739,10 @@ Course/Students/Store filter popovers удалены. Панель исполь�
 внутренний inset `6 px`, белый фон, element-radius `12 px`, обычный `border: 0`,
 ровно одну
 тень `0 18px 46px rgba(20, 20, 20, 0.18)` и `backdrop-filter: none`.
-Separator/divider линии отсутствуют во всех этих panels, включая mobile
-navigation menu и calendar footer; локальные padding, border, blur
-и дополнительные shadow forks удалены. Forced-colors отключает тень и
+Служебные separator/divider линии отсутствуют в contextual panels и calendar
+footer; единственное намеренное исключение — full-bleed светлый divider между
+Account profile header и navigation items в mobile navigation panel. Локальные
+padding, border, blur и дополнительные shadow forks удалены. Forced-colors отключает тень и
 возвращает системную границу `1px solid CanvasText` на `Canvas`. Native
 `select`, самостоятельные modal dialogs и reference/demo-only surfaces
 исключены; calendar panel остаётся dropdown surface независимо от своей dialog

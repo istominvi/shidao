@@ -447,7 +447,11 @@ test("course routes use the flat demo background and unified visual controls", (
     productHeaderStyles,
     /border-radius: var\(--product-card-radius, 1\.25rem\);/,
   );
-  assert.match(productHeaderStyles, /background: #fff;/);
+  assert.match(productHeaderStyles, /background-color: #fff;/);
+  assert.match(productHeaderStyles, /background-image: none;/);
+  assert.match(productHeaderStyles, /opacity: 1;/);
+  assert.match(productHeaderStyles, /backdrop-filter: none;/);
+  assert.match(productHeaderStyles, /-webkit-backdrop-filter: none;/);
   assert.match(
     productHeaderStyles,
     /box-shadow: var\(--product-header-shell-shadow\);/,

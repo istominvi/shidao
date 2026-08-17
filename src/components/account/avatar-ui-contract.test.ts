@@ -67,7 +67,7 @@ test("account settings keep avatar choices compact and require confirmation", ()
   assert.ok((form.match(/await refetchSession\(\)/g) ?? []).length >= 2);
 });
 
-test("only protected mobile navigation uses a menu; every avatar links to Profile", () => {
+test("protected mobile navigation shows the Account avatar; desktop avatar links to Profile", () => {
   const navigation = source("src/components/session-nav-actions.tsx");
   const navigationPrimitives = source(
     "src/components/navigation/primitives.tsx",
@@ -104,13 +104,12 @@ test("only protected mobile navigation uses a menu; every avatar links to Profil
     navigation,
     /PROFILE_NAV_ITEMS|PROFILE_MENU_ICONS|handleSignOut|signOutViaServer|LogOut|portalMenu|createPortal/,
   );
-  assert.match(navigation, /<div className="nav-dropdown-profile">/);
-  assert.doesNotMatch(
-    navigation.match(
-      /<div className="nav-dropdown-profile">[\s\S]*?<\/div>\s*<\/div>/,
-    )?.[0] ?? "",
-    /AvatarImage|nav-user-trigger-avatar/,
+  assert.match(
+    navigation,
+    /<div className="nav-dropdown-profile">[\s\S]*?<AvatarImage[\s\S]*?avatar=\{state\.avatar\}[\s\S]*?initials=\{state\.initials\}[\s\S]*?size=\{48\}[\s\S]*?className="nav-user-trigger-avatar nav-dropdown-profile-avatar"/,
   );
+  assert.match(navigation, /<item\.icon[\s\S]*?size=\{24\}/);
+  assert.match(navigation, /<UserRound[\s\S]*?size=\{24\}/);
   assert.match(avatarImage, /rounded-xl/);
   assert.match(avatarImage, /style=\{\{ width: size, height: size \}\}/);
   assert.match(avatarImage, /width=\{size\}/);
@@ -148,12 +147,47 @@ test("only protected mobile navigation uses a menu; every avatar links to Profil
     /\.nav-account-menu-mobile\s+\.nav-dropdown-item\s*\{[^}]*\}/.exec(
       navigationCss,
     )?.[0] ?? "";
+  const mobileProfileStyles =
+    /\.nav-account-menu-mobile\s+\.nav-dropdown-profile\s*\{[^}]*\}/.exec(
+      navigationCss,
+    )?.[0] ?? "";
+  const mobileProfileAvatarStyles =
+    /\.nav-account-menu-mobile\s+\.nav-dropdown-profile-avatar\s*\{[^}]*\}/.exec(
+      navigationCss,
+    )?.[0] ?? "";
+  const mobileMenuItemFocusStyles =
+    Array.from(
+      navigationCss.matchAll(
+        /\.nav-account-menu-mobile\s+\.nav-dropdown-item:focus-visible\s*\{[^}]*\}/g,
+      ),
+    )
+      .map((match) => match[0])
+      .find((rule) => /box-shadow: none;/.test(rule)) ?? "";
+  const mobileBrandStyles =
+    /@media \(max-width: 767px\)[\s\S]*?\.site-header-shell-demo\s+\.site-header-brand\s*\{[^}]*\}/.exec(
+      navigationCss,
+    )?.[0] ?? "";
+  const demoHeaderStyles =
+    /\.site-header-shell-demo\s*\{[^}]*\}/.exec(navigationCss)?.[0] ?? "";
 
   assert.match(mobileTriggerStyles, /width: (?:3rem|48px);/);
   assert.match(mobileTriggerStyles, /height: (?:3rem|48px);/);
   assert.match(mobileTriggerStyles, /min-height: (?:3rem|48px);/);
+  assert.match(mobileTriggerStyles, /background: #fff;/);
+  assert.match(mobileTriggerStyles, /box-shadow: none;/);
+  assert.match(
+    mobileTriggerStyles,
+    /-webkit-tap-highlight-color: transparent;/,
+  );
   assert.match(mobileTriggerIconStyles, /width: (?:1\.5rem|24px);/);
   assert.match(mobileTriggerIconStyles, /height: (?:1\.5rem|24px);/);
+  assert.match(mobileBrandStyles, /font-size: (?:1\.625rem|26px);/);
+  assert.match(demoHeaderStyles, /border-radius:/);
+  assert.match(demoHeaderStyles, /background-color: #fff;/);
+  assert.match(demoHeaderStyles, /background-image: none;/);
+  assert.match(demoHeaderStyles, /opacity: 1;/);
+  assert.match(demoHeaderStyles, /backdrop-filter: none;/);
+  assert.match(demoHeaderStyles, /-webkit-backdrop-filter: none;/);
   assert.match(
     mobileMenuStyles,
     /top: calc\(100% \+ (?:0\.75rem|12px)\);/,
@@ -171,7 +205,23 @@ test("only protected mobile navigation uses a menu; every avatar links to Profil
     { left: true, right: true, safeViewportInset: true },
     "The menu must cancel the 8px shell inset and retain the 12px safe viewport inset",
   );
-  assert.match(mobileMenuItemStyles, /min-height: (?:3rem|48px);/);
+  assert.match(mobileMenuItemStyles, /min-height: (?:4\.25rem|68px);/);
+  assert.match(mobileMenuItemStyles, /font-size: (?:1\.25rem|20px);/);
+  assert.match(
+    mobileMenuItemStyles,
+    /-webkit-tap-highlight-color: transparent;/,
+  );
+  assert.match(mobileProfileStyles, /display: flex;/);
+  assert.match(mobileProfileStyles, /border-bottom: 1px solid rgba\(/);
+  assert.match(mobileProfileStyles, /padding: (?:1rem|16px);/);
+  assert.match(
+    mobileProfileStyles,
+    /margin: calc\(-1 \* var\(--product-dropdown-inset, 0\.375rem\)\)/,
+  );
+  assert.match(mobileProfileAvatarStyles, /width: (?:3rem|48px);/);
+  assert.match(mobileProfileAvatarStyles, /height: (?:3rem|48px);/);
+  assert.match(mobileProfileAvatarStyles, /font-size: (?:1rem|16px);/);
+  assert.match(mobileMenuItemFocusStyles, /box-shadow: none;/);
   assert.match(
     navigationPrimitives,
     /className=\{classNames\(\s*"product-dropdown-surface",\s*"nav-dropdown-panel"/,
@@ -197,9 +247,28 @@ test("only protected mobile navigation uses a menu; every avatar links to Profil
     /querySelectorAll<HTMLElement>\([\s\S]*?role="menuitem"[\s\S]*?\.filter\(\(item\) => item\.getClientRects\(\)\.length > 0\)/,
   );
   assert.match(
+    navigation,
+    /focusMenuOnOpenRef\.current = nextOpen && event\.detail === 0/,
+  );
+  assert.match(
+    navigation,
+    /if \(!nextOpen\)\s*\{[\s\S]*?closeMenu\(event\.detail === 0\);[\s\S]*?return;/,
+  );
+  assert.match(
+    navigation,
+    /if \(!open \|\| !focusMenuOnOpenRef\.current\) return;[\s\S]*?focusMenuItem\("first"\)/,
+  );
+  assert.match(
+    navigation,
+    /const closeMenu = useCallback\([\s\S]*?setOpen\(false\)[\s\S]*?triggerRef\.current\?\.blur\(\)/,
+  );
+  assert.match(
     navigationCss,
     /\.nav-dropdown-item:focus-visible\s*\{[^}]*outline: none;[^}]*box-shadow: 0 0 0 2px rgba\(20, 20, 20, 0\.18\);/,
   );
+  assert.match(mobileMenuItemFocusStyles, /outline: 2px solid #141414;/);
+  assert.match(mobileMenuItemFocusStyles, /outline-offset: -2px;/);
+  assert.match(mobileMenuItemFocusStyles, /box-shadow: none;/);
   assert.match(
     globalStyles,
     /@media \(forced-colors: active\)\s*\{[\s\S]*?\.product-dropdown-surface\s*\{[^}]*border: 1px solid CanvasText;[^}]*background: Canvas;[^}]*box-shadow: none;[^}]*\}[\s\S]*?\.nav-dropdown-item:focus-visible,[\s\S]*?outline: 2px solid Highlight;[^}]*outline-offset: -2px;[^}]*box-shadow: none;/,
