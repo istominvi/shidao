@@ -604,13 +604,17 @@ delete остаётся later policy, а не неявным поведение�
 Visual contract Course routes не меняет эту навигационную или доменную модель:
 
 - page background — сплошной `#f5f1e8` без цветных marketing gradients;
-- current source / next production product header — normal-flow demo shell без
-  sticky/fixed positioning высотой `64 px` с радиусом `20 px`, непрозрачным
-  белым фоном без blur и одной тенью
+- current source / next production product header — на desktop normal-flow
+  demo shell без sticky/fixed positioning, а до `767 px` sticky shell у верхнего
+  safe-area края. Он имеет высоту `64 px`, радиус `20 px`, непрозрачный белый
+  фон без blur и одну тень
   `0px 6px 12px oklch(0 0 0 / 0.05)`. Общий inner container-row с brand,
-  navigation и actions/avatar имеет exact высоту `40 px`, вертикально
-  центрирован с `12 px` сверху и снизу и задаёт всем трём зонам одну centerline;
-  nav/action wrappers не увеличивают его высоту.
+  navigation и actions/avatar имеет exact высоту `40 px` на desktop и `48 px`
+  на mobile; desktop row вертикально центрирован с `12 px` сверху и снизу и
+  задаёт всем трём зонам одну centerline; nav/action wrappers не увеличивают
+  его высоту. App theme/manifest/root canvas используют единый `#f5f1e8`,
+  `viewport-fit=cover` и `100dvh`, поэтому iOS browser chrome и elastic
+  overscroll не открывают белый root background.
   Неактивный main-navigation item на hover получает exact 5%-black background
   `rgba(0, 0, 0, 0.05)` даже при готовом measured active-pill; active item
   сохраняет чёрный surface. Deployed sticky `68 px` shell остаётся только
@@ -1002,7 +1006,10 @@ actions`; пять data headers сортируют полную client-loaded pr
   однострочный ellipsis, поэтому action column остаётся внутри surface.
   Icon-only presentation control обеих вкладок расположен в порядке **Таблица
   / Карточки** и изначально выбирает таблицу; смена вида не меняет Course query,
-  filters или persisted данные.
+  filters или persisted данные. До `767 px` широкая table projection скрыта и
+  тот же набор данных выводится semantic list/card projection без page-level
+  horizontal scroll; search, tabs, segmented controls и основные actions имеют
+  touch target минимум `48 px`, search text — `16 px`.
   Owned-row заканчивается одним `MoreVertical` portal-menu 32 × 32 px:
   unpublished Course получает «Дублировать / Опубликовать / Удалить», а
   publication states сохраняют update/open/unpublish actions. «Удалить»
@@ -1040,6 +1047,9 @@ Current production primary navigation для roleless Account содержит
 primary rail и заменяет avatar на burger. Это единственный navigation dropdown:
 его header показывает Account name и только допустимый публичный email, а
 visible items ограничены «Расписание / Ученики / Курсы / Магазин / Профиль».
+Burger target равен `48 × 48 px`, icon — `24 px`; panel остаётся внутри
+viewport с inset/gap `12 px`, радиусом `16 px`, строками минимум `48 px` и
+сохраняет keyboard/Escape/outside-click/focus-return semantics.
 На protected desktop и authenticated landing avatar является прямой ссылкой
 `/profile`; прежний Account/avatar dropdown удалён. Пустой
 `/courses` позволяет начать authoring; он не является Course enrollment

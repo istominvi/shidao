@@ -86,11 +86,15 @@ test("only protected mobile navigation uses a menu; every avatar links to Profil
   assert.match(navigation, /const isProtectedTopNav = variant === "top-nav"/);
   assert.match(
     navigation,
-    /aria-label="Открыть меню аккаунта"[\s\S]*?className="nav-user-trigger nav-account-menu-trigger inline-flex cursor-pointer items-center justify-center md:hidden"[\s\S]*?<Menu className="nav-main-menu-icon" aria-hidden="true" \/>/,
+    /aria-label=\{open \? "Закрыть меню аккаунта" : "Открыть меню аккаунта"\}[\s\S]*?className="nav-user-trigger nav-account-menu-trigger inline-flex cursor-pointer items-center justify-center md:hidden"/,
   );
   assert.match(
     navigation,
-    /<NavigationDropdownPanel[\s\S]*?aria-label="Меню аккаунта"[\s\S]*?className="[^"]*absolute top-full[^"]*md:hidden"/,
+    /<X className="nav-main-menu-icon" aria-hidden="true" \/>[\s\S]*?<Menu className="nav-main-menu-icon" aria-hidden="true" \/>/,
+  );
+  assert.match(
+    navigation,
+    /<NavigationDropdownPanel[\s\S]*?aria-label="Меню аккаунта"[\s\S]*?className="[^"]*nav-account-menu-mobile[^"]*md:hidden"/,
   );
   assert.match(
     navigation,
@@ -128,10 +132,46 @@ test("only protected mobile navigation uses a menu; every avatar links to Profil
     navigationCss,
     /--header-pill-height: 2\.5rem[\s\S]*?\.nav-user-trigger-avatar\s*\{[\s\S]*?border-radius: var\(--product-element-radius/,
   );
+  const mobileTriggerStyles =
+    /\.nav-account-menu-trigger\s*\{[^}]*\}/.exec(navigationCss)?.[0] ?? "";
+  const mobileTriggerIconStyles =
+    Array.from(
+      navigationCss.matchAll(
+        /\.nav-user-trigger\s*>\s*\.nav-main-menu-icon,[\s\S]*?\.site-header-shell-demo \.nav-user-trigger\s*>\s*\.nav-main-menu-icon\s*\{[^}]*\}/g,
+      ),
+    )
+      .map((match) => match[0])
+      .find((rule) => /(?:1\.5rem|24px)/.test(rule)) ?? "";
+  const mobileMenuStyles =
+    /\.nav-account-menu-mobile\s*\{[^}]*\}/.exec(navigationCss)?.[0] ?? "";
+  const mobileMenuItemStyles =
+    /\.nav-account-menu-mobile\s+\.nav-dropdown-item\s*\{[^}]*\}/.exec(
+      navigationCss,
+    )?.[0] ?? "";
+
+  assert.match(mobileTriggerStyles, /width: (?:3rem|48px);/);
+  assert.match(mobileTriggerStyles, /height: (?:3rem|48px);/);
+  assert.match(mobileTriggerStyles, /min-height: (?:3rem|48px);/);
+  assert.match(mobileTriggerIconStyles, /width: (?:1\.5rem|24px);/);
+  assert.match(mobileTriggerIconStyles, /height: (?:1\.5rem|24px);/);
   assert.match(
-    navigationCss,
-    /\.nav-user-trigger > \.nav-main-menu-icon,[\s\S]*?width: 1\.25rem;[\s\S]*?height: 1\.25rem;/,
+    mobileMenuStyles,
+    /top: calc\(100% \+ (?:0\.75rem|12px)\);/,
+    "The mobile menu must keep a 12px gap below the header",
   );
+  assert.deepEqual(
+    {
+      left: /left: -0\.5rem;/.test(mobileMenuStyles),
+      right: /right: -0\.5rem;/.test(mobileMenuStyles),
+      safeViewportInset:
+        /padding-inline: max\((?:0\.75rem|12px), env\(safe-area-inset-left, 0px\)\)[\s\S]*?max\((?:0\.75rem|12px), env\(safe-area-inset-right, 0px\)\)/.test(
+          navigationCss,
+        ),
+    },
+    { left: true, right: true, safeViewportInset: true },
+    "The menu must cancel the 8px shell inset and retain the 12px safe viewport inset",
+  );
+  assert.match(mobileMenuItemStyles, /min-height: (?:3rem|48px);/);
   assert.match(
     navigationPrimitives,
     /className=\{classNames\(\s*"product-dropdown-surface",\s*"nav-dropdown-panel"/,

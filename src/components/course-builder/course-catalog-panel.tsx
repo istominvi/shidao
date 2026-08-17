@@ -152,84 +152,140 @@ function CatalogCourseTable({
   onOpen: (courseId: string) => void;
 }) {
   return (
-    <div
-      className="product-table-wrap course-index-table-wrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
-      role="region"
-      aria-label="Таблица курсов каталога"
-      tabIndex={0}
-    >
-      <ProductTable className="course-index-table course-index-catalog-table">
-        <caption className="sr-only">
-          Курсы каталога: предмет, автор и наполнение
-        </caption>
-        <colgroup>
-          <col className="course-index-table-col-title" />
-          <col className="course-index-table-col-subject" />
-          <col className="course-index-table-col-author" />
-          <col className="course-index-table-col-lessons" />
-          <col className="course-index-table-col-materials" />
-          <col className="course-index-table-col-actions" />
-        </colgroup>
-        <ProductTableHead>
-          <ProductTableHeaderRow>
-            <ProductTableHeaderCell>Курс</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Предмет</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Автор</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Уроки</ProductTableHeaderCell>
-            <ProductTableHeaderCell>Материалы</ProductTableHeaderCell>
-            <ProductTableHeaderCell aria-label="Действия" />
-          </ProductTableHeaderRow>
-        </ProductTableHead>
-        <ProductTableBody>
-          {courses.map((course) => (
-            <ProductTableRow key={course.id}>
-              <ProductTablePrimaryCell className="overflow-hidden">
-                <button
-                  type="button"
-                  className="course-index-table-link"
-                  title={`${course.title} — ${course.goal}`}
-                  onClick={() => onOpen(course.id)}
-                >
-                  <ProductTableTruncate>{course.title}</ProductTableTruncate>
-                </button>
-              </ProductTablePrimaryCell>
-              <ProductTableCell className="overflow-hidden">
-                <ProductTableTruncate title={course.subject}>
-                  {course.subject}
-                </ProductTableTruncate>
-              </ProductTableCell>
-              <ProductTableCell className="overflow-hidden">
-                <ProductTableTruncate title={catalogAuthorLabel(course)}>
-                  {catalogAuthorLabel(course)}
-                </ProductTableTruncate>
-              </ProductTableCell>
-              <ProductTableCell className="overflow-hidden">
-                <ProductTableTruncate title={`Уроков: ${course.lessonCount}`}>
-                  {course.lessonCount}
-                </ProductTableTruncate>
-              </ProductTableCell>
-              <ProductTableCell className="overflow-hidden">
-                <ProductTableTruncate
-                  title={`Материалов: ${course.materialCount}`}
-                >
-                  {course.materialCount}
-                </ProductTableTruncate>
-              </ProductTableCell>
-              <ProductTableActionCell className="course-index-table-action-cell text-right">
-                <button
-                  type="button"
-                  className="course-index-table-open-action"
-                  aria-label={`Открыть курс «${course.title}»`}
-                  onClick={() => onOpen(course.id)}
-                >
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </button>
-              </ProductTableActionCell>
-            </ProductTableRow>
-          ))}
-        </ProductTableBody>
-      </ProductTable>
-    </div>
+    <>
+      <div
+        className="product-table-wrap course-index-table-wrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
+        role="region"
+        aria-label="Таблица курсов каталога"
+        tabIndex={0}
+      >
+        <ProductTable className="course-index-table course-index-catalog-table">
+          <caption className="sr-only">
+            Курсы каталога: предмет, автор и наполнение
+          </caption>
+          <colgroup>
+            <col className="course-index-table-col-title" />
+            <col className="course-index-table-col-subject" />
+            <col className="course-index-table-col-author" />
+            <col className="course-index-table-col-lessons" />
+            <col className="course-index-table-col-materials" />
+            <col className="course-index-table-col-actions" />
+          </colgroup>
+          <ProductTableHead>
+            <ProductTableHeaderRow>
+              <ProductTableHeaderCell>Курс</ProductTableHeaderCell>
+              <ProductTableHeaderCell>Предмет</ProductTableHeaderCell>
+              <ProductTableHeaderCell>Автор</ProductTableHeaderCell>
+              <ProductTableHeaderCell>Уроки</ProductTableHeaderCell>
+              <ProductTableHeaderCell>Материалы</ProductTableHeaderCell>
+              <ProductTableHeaderCell aria-label="Действия" />
+            </ProductTableHeaderRow>
+          </ProductTableHead>
+          <ProductTableBody>
+            {courses.map((course) => (
+              <ProductTableRow key={course.id}>
+                <ProductTablePrimaryCell className="overflow-hidden">
+                  <button
+                    type="button"
+                    className="course-index-table-link"
+                    title={`${course.title} — ${course.goal}`}
+                    onClick={() => onOpen(course.id)}
+                  >
+                    <ProductTableTruncate>{course.title}</ProductTableTruncate>
+                  </button>
+                </ProductTablePrimaryCell>
+                <ProductTableCell className="overflow-hidden">
+                  <ProductTableTruncate title={course.subject}>
+                    {course.subject}
+                  </ProductTableTruncate>
+                </ProductTableCell>
+                <ProductTableCell className="overflow-hidden">
+                  <ProductTableTruncate title={catalogAuthorLabel(course)}>
+                    {catalogAuthorLabel(course)}
+                  </ProductTableTruncate>
+                </ProductTableCell>
+                <ProductTableCell className="overflow-hidden">
+                  <ProductTableTruncate title={`Уроков: ${course.lessonCount}`}>
+                    {course.lessonCount}
+                  </ProductTableTruncate>
+                </ProductTableCell>
+                <ProductTableCell className="overflow-hidden">
+                  <ProductTableTruncate
+                    title={`Материалов: ${course.materialCount}`}
+                  >
+                    {course.materialCount}
+                  </ProductTableTruncate>
+                </ProductTableCell>
+                <ProductTableActionCell className="course-index-table-action-cell text-right">
+                  <button
+                    type="button"
+                    className="course-index-table-open-action"
+                    aria-label={`Открыть курс «${course.title}»`}
+                    onClick={() => onOpen(course.id)}
+                  >
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </ProductTableActionCell>
+              </ProductTableRow>
+            ))}
+          </ProductTableBody>
+        </ProductTable>
+      </div>
+
+      <div
+        className="course-index-mobile-list"
+        role="list"
+        aria-label="Курсы каталога"
+      >
+        {courses.map((course) => (
+          <article
+            key={course.id}
+            className="course-index-mobile-card"
+            role="listitem"
+          >
+            <div className="course-index-mobile-card-header">
+              <button
+                type="button"
+                className="course-index-mobile-card-title"
+                onClick={() => onOpen(course.id)}
+              >
+                {course.title}
+              </button>
+              {course.author.isShiDao ? (
+                <span className="course-index-mobile-card-badge">ShiDao</span>
+              ) : null}
+            </div>
+            <p className="course-index-mobile-card-subtitle">
+              {course.subject} · {course.level}
+            </p>
+            <p className="course-index-mobile-card-summary">{course.goal}</p>
+            <dl className="course-index-mobile-card-meta">
+              <div>
+                <dt>Автор</dt>
+                <dd>{catalogAuthorLabel(course)}</dd>
+              </div>
+              <div>
+                <dt>Уроки</dt>
+                <dd>{course.lessonCount}</dd>
+              </div>
+              <div>
+                <dt>Материалы</dt>
+                <dd>{course.materialCount}</dd>
+              </div>
+            </dl>
+            <Button
+              variant="secondary"
+              className="course-index-mobile-card-open"
+              aria-label={`Открыть курс «${course.title}»`}
+              onClick={() => onOpen(course.id)}
+            >
+              Подробнее
+              <ArrowRight aria-hidden="true" />
+            </Button>
+          </article>
+        ))}
+      </div>
+    </>
   );
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Menu, UserRound, type LucideIcon } from "lucide-react";
+import { Menu, UserRound, X, type LucideIcon } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -160,7 +160,7 @@ export function SessionNavActions({
       role="menu"
       aria-label="Меню аккаунта"
       onKeyDown={handleMenuKeyDown}
-      className="absolute top-full right-0 z-[120] mt-2 w-[18rem] max-w-[calc(100vw-16px)] md:hidden"
+      className="nav-account-menu-mobile md:hidden"
     >
       <div className="nav-dropdown-profile">
         <div className="min-w-0">
@@ -227,7 +227,7 @@ export function SessionNavActions({
   );
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="nav-session-actions relative">
       {isProtectedTopNav ? (
         <button
           ref={triggerRef}
@@ -236,10 +236,14 @@ export function SessionNavActions({
           aria-haspopup="menu"
           aria-expanded={open}
           aria-controls={menuId}
-          aria-label="Открыть меню аккаунта"
+          aria-label={open ? "Закрыть меню аккаунта" : "Открыть меню аккаунта"}
           className="nav-user-trigger nav-account-menu-trigger inline-flex cursor-pointer items-center justify-center md:hidden"
         >
-          <Menu className="nav-main-menu-icon" aria-hidden="true" />
+          {open ? (
+            <X className="nav-main-menu-icon" aria-hidden="true" />
+          ) : (
+            <Menu className="nav-main-menu-icon" aria-hidden="true" />
+          )}
         </button>
       ) : null}
 

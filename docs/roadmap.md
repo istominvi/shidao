@@ -25,13 +25,15 @@
 
 ## Current source / next production — TopNav, backlink rhythm и title-row
 
-- Product TopNav возвращён в normal document flow: он не sticky/fixed и при
-  scroll уходит вверх вместе с content.
+- На desktop Product TopNav возвращён в normal document flow: он не
+  sticky/fixed и при scroll уходит вверх вместе с content. До `767 px` TopNav
+  становится sticky, учитывает safe-area и остаётся у верхнего края без
+  fixed-overlay над content.
 - Белый product shell имеет точную высоту `64 px`. Общий inner container-row с
-  brand, navigation и actions/avatar имеет exact высоту `40 px`, вертикально
-  центрирован с `12 px` сверху и снизу и задаёт всем трём зонам одну centerline;
-  nav/action wrappers не увеличивают высоту ряда. Радиус и однослойная тень не
-  меняются.
+  brand, navigation и actions/avatar на desktop имеет exact высоту `40 px`,
+  вертикально центрирован с `12 px` сверху и снизу и задаёт всем трём зонам одну
+  centerline; nav/action wrappers не увеличивают высоту ряда. Mobile inner row
+  и burger target равны `48 px`. Радиус и однослойная тень не меняются.
 - Hover неактивного пункта main navigation использует exact 5%-black background
   `rgba(0, 0, 0, 0.05)` и остаётся видимым при готовом measured active-pill.
 - `AppPageHeader` всегда сохраняет backlink-row и одинаковую высоту начала
@@ -57,13 +59,26 @@
 - `WorkspaceTabs` сохраняет горизонтальный swipe, скрывает системный scrollbar
   и показывает только доступные fade-chevron направления; кнопки прокручивают
   ленту, не выбирая вкладку, а keyboard/ARIA/indicator остаются прежними.
-- Protected mobile header использует burger и короткое главное меню
+- Protected mobile header использует burger `48 × 48 px` с icon `24 px` и
+  короткое главное меню
   «Расписание / Ученики / Курсы / Магазин / Профиль» с именем и допустимым
   email. Это единственный navigation dropdown: прежний Account/avatar dropdown
   удалён, а avatar на protected desktop и authenticated landing ведёт напрямую
-  в `/profile`.
-- Следующий release step — обычный Coolify rollout и authenticated postflight
-  на мобильной ширине; API, schema и migration work для этого среза не нужны.
+  в `/profile`. Panel занимает viewport с inset `12 px`, gap `12 px`, радиусом
+  `16 px` и touch rows не меньше `48 px`.
+- App viewport использует `viewport-fit=cover`; app `theme-color`, manifest,
+  `html`, `body` и shell согласованы на `#f5f1e8`, а shell покрывает минимум
+  `100dvh`. iOS browser chrome и elastic overscroll получают тот же цвет без
+  отключения нативного bounce; safe-area применяется к sticky header и нижнему
+  краю content.
+- Mobile Course search, primary actions, tabs и segmented controls имеют
+  минимум `48 px`; search text равен `16 px`. Широкая Course table остаётся
+  desktop projection, а до `767 px` заменяется семантическим списком компактных
+  карточек без page-level horizontal scroll. Query, presentation state и
+  Course actions остаются общими с desktop.
+- Следующий release step — UI gates, strict browser acceptance, обычный Coolify
+  rollout и authenticated real-iPhone postflight для Safari chrome/elastic
+  overscroll; API, schema и migration work для этого среза не нужны.
 
 ## Current source / next production — compact toolbar controls
 
@@ -651,7 +666,8 @@ option получает только base shadow без динамических
 `0px 6px 12px oklch(0 0 0 / 0.05)` без inset-слоёв. Этот UI-only production
 contract развёрнут в release `10888d5` и зафиксирован exact source
 `1d4e5deff83cbdc1b479b16e4220cf799327009f`; его `68 px`/sticky геометрия
-историческая и superseded current-source normal-flow `64 px` contract выше.
+историческая и superseded current-source desktop normal-flow/mobile sticky
+`64 px` contract выше.
 
 **Current production acceptance:** обычные CTA Auth recovery,
 check-email, onboarding, identity invitation/completion и retry-state

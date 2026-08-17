@@ -8,6 +8,7 @@
 
 :root {
   --background: #f4f4f6;
+  --product-app-background: #f5f1e8;
   --foreground: #141414;
   --card: #ffffff;
   --muted: #a0a2ad;
@@ -57,9 +58,15 @@
   box-sizing: border-box;
 }
 
+html {
+  min-height: 100%;
+  background-color: var(--product-app-background);
+}
+
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   background: radial-gradient(circle at top left, #fefefe 0%, #efeff2 100%);
   color: var(--foreground);
   font-family:
@@ -71,6 +78,11 @@ body {
     Helvetica,
     Arial,
     sans-serif;
+}
+
+html:has(.course-demo-shell),
+body:has(.course-demo-shell) {
+  background: var(--product-app-background);
 }
 
 .font-serif-noto {
@@ -107,8 +119,9 @@ a {
   --product-entry-control-font-weight: var(--course-demo-control-font-weight);
   --product-entry-control-line-height: var(--course-demo-control-line-height);
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: clip;
-  background: #f5f1e8;
+  background: var(--product-app-background);
   font-family:
     ui-sans-serif,
     system-ui,
@@ -1087,6 +1100,10 @@ a {
 
 .course-index-table-wrap {
   box-shadow: var(--product-raised-surface-shadow);
+}
+
+.course-index-mobile-list {
+  display: none;
 }
 
 .course-index-table {
@@ -3601,6 +3618,263 @@ input.product-control-search::placeholder {
 
   .course-catalog-detail-actions > .product-btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  .course-demo-shell {
+    --course-demo-control-height: 3rem;
+    --course-demo-control-padding-inline: 0.875rem;
+    --course-demo-control-font-size: 1rem;
+    --course-demo-control-icon-size: 1.125rem;
+
+    padding-bottom: max(3rem, calc(1.5rem + env(safe-area-inset-bottom, 0px)));
+  }
+
+  .course-demo-shell .container:not(.course-top-nav) {
+    width: auto;
+    margin-left: max(0.75rem, env(safe-area-inset-left, 0px));
+    margin-right: max(0.75rem, env(safe-area-inset-right, 0px));
+  }
+
+  .course-demo-shell .course-top-nav {
+    width: 100%;
+    margin-inline: 0;
+  }
+
+  .course-demo-shell .app-page-header {
+    --app-page-header-padding-block: 1.25rem;
+    --app-page-header-padding-inline: 0px;
+    --app-page-header-title-size: 2rem;
+  }
+
+  .course-demo-shell .product-control,
+  .course-demo-shell input.field-input {
+    --product-control-height: 3rem;
+
+    font-size: 1rem;
+  }
+
+  .course-demo-shell .product-control-search {
+    --product-control-height: 3rem;
+
+    height: var(--product-control-height);
+    font-size: 1rem;
+  }
+
+  .course-demo-shell .product-search-icon {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+
+  .workspace-tab {
+    height: 3rem;
+    min-height: 3rem;
+    padding-inline: 0.875rem;
+    font-size: 1rem;
+    touch-action: manipulation;
+  }
+
+  .course-demo-shell .product-segmented-control {
+    height: 3.5rem;
+    min-height: 3.5rem;
+  }
+
+  .course-demo-shell .product-segmented-control-option {
+    width: auto;
+    min-width: 3rem;
+    height: 3rem;
+    min-height: 3rem;
+    padding-inline: 0.875rem;
+    touch-action: manipulation;
+  }
+
+  .course-demo-shell .compact-page-toolbar,
+  .course-demo-shell .compact-toolbar-rail {
+    gap: 0.75rem;
+  }
+
+  .course-demo-shell .compact-toolbar-rail {
+    justify-content: space-between;
+  }
+
+  .course-demo-shell .course-catalog-audience-control,
+  .course-demo-shell
+    .course-catalog-audience-control
+    .product-segmented-control {
+    width: 100%;
+  }
+
+  .course-demo-shell
+    .course-catalog-audience-control
+    .product-segmented-control-option {
+    min-width: 0;
+    flex: 1 1 0;
+    padding-inline: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .course-demo-shell .surface-card {
+    border-radius: 1rem;
+    background-color: #fff;
+    padding: 1rem;
+  }
+
+  .course-demo-shell .action-menu-item {
+    min-height: 3rem;
+    border-radius: 0.75rem;
+    padding-block: 0.7rem;
+    font-size: 1rem;
+    touch-action: manipulation;
+  }
+
+  .course-demo-shell .product-table-wrap {
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .courses-index-shell .course-index-table-wrap {
+    display: none;
+  }
+
+  .course-index-mobile-list {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .course-index-mobile-card {
+    min-width: 0;
+    border: var(--product-surface-border);
+    border-radius: 1rem;
+    background: #fff;
+    background-clip: padding-box;
+    padding: 1rem;
+    box-shadow: var(--product-raised-surface-shadow);
+  }
+
+  .course-index-mobile-card-header {
+    display: flex;
+    min-width: 0;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .course-index-mobile-card-title {
+    display: flex;
+    min-width: 0;
+    min-height: 3rem;
+    flex: 1 1 auto;
+    align-items: center;
+    overflow-wrap: anywhere;
+    border: 0;
+    border-radius: 0.625rem;
+    background: transparent;
+    padding: 0;
+    color: #141414;
+    font: inherit;
+    font-size: 1.0625rem;
+    font-weight: 650;
+    line-height: 1.3;
+    text-align: left;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .course-index-mobile-card-title:focus-visible {
+    outline: 2px solid var(--product-control-focus-halo);
+    outline-offset: 2px;
+  }
+
+  .course-index-mobile-card
+    .course-index-table-action-menu
+    .product-btn.action-menu-trigger {
+    width: 3rem;
+    min-width: 3rem;
+    height: 3rem;
+    min-height: 3rem;
+    border-radius: 0.75rem;
+  }
+
+  .course-index-mobile-card-badge {
+    display: inline-flex;
+    min-height: 2rem;
+    align-items: center;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: #141414;
+    padding-inline: 0.75rem;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 650;
+  }
+
+  .course-index-mobile-card-subtitle,
+  .course-index-mobile-card-summary {
+    margin: 0;
+  }
+
+  .course-index-mobile-card-subtitle {
+    margin-top: 0.25rem;
+    color: var(--product-secondary-foreground);
+    font-size: 0.9375rem;
+    line-height: 1.4;
+  }
+
+  .course-index-mobile-card-summary {
+    display: -webkit-box;
+    margin-top: 0.75rem;
+    overflow: hidden;
+    color: #3f3f46;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .course-index-mobile-card-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin: 1rem 0 0;
+  }
+
+  .course-index-mobile-card-meta > div {
+    min-width: 0;
+    border-radius: 0.75rem;
+    background: var(--product-app-background);
+    padding: 0.625rem 0.75rem;
+  }
+
+  .course-index-mobile-card-meta > div:first-child:last-child,
+  .course-index-mobile-card-meta > div:first-child:nth-last-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .course-index-mobile-card-meta dt,
+  .course-index-mobile-card-meta dd {
+    margin: 0;
+  }
+
+  .course-index-mobile-card-meta dt {
+    color: var(--product-secondary-foreground);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .course-index-mobile-card-meta dd {
+    margin-top: 0.2rem;
+    overflow-wrap: anywhere;
+    color: #141414;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+
+  .course-index-mobile-card-open {
+    width: 100%;
+    margin-top: 1rem;
   }
 }
 

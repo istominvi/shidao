@@ -1,7 +1,7 @@
 # Текущее состояние ShiDao V2
 
 **Статус:** главный входной документ для разработки
-**Актуально на:** 16 августа 2026 года
+**Актуально на:** 17 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
 **Initial Communication Center functional application source:**
@@ -154,7 +154,7 @@ Profile/avatar release `4462da2`, зафиксированное ниже.
 
 **Current source / next production — TopNav, стабильный backlink rhythm и
 title-row alignment:**
-product TopNav теперь остаётся в normal document flow, не использует
+на desktop product TopNav остаётся в normal document flow, не использует
 `position: sticky` или `fixed` и уходит за верхнюю границу вместе с остальным
 контентом при scroll. Белый shell имеет внешнюю высоту ровно `64 px`. Его общий
 внутренний container-row с brand, navigation и actions/avatar имеет exact
@@ -171,9 +171,12 @@ backlink. H1 и правая action-секция `AppPageHeader` образую�
 backlink-row остаётся выше только в content-column, а metric/meta находятся
 ниже title-row; эти строки не участвуют в вертикальном выравнивании actions.
 При реальной нехватке ширины intrinsic action rail переносится в отдельный ряд.
-Этот UI-only source contract supersede-ит только deployed `68 px`/sticky
-геометрию, условную backlink-row и центрирование actions по всей высоте header;
-API, schema, migrations и Lesson hierarchy не меняются.
+На mobile до `767 px` тот же TopNav становится `position: sticky; top: 0`:
+бежевый внешний слой учитывает safe-area и сохраняет по `12 px` от краёв
+viewport, а белый shell остаётся `64 px` и содержит увеличенный `48 px` ряд.
+Этот UI-only source contract supersede-ит deployed `68 px`/sticky геометрию
+только для desktop, условную backlink-row и центрирование actions по всей
+высоте header; API, schema, migrations и Lesson hierarchy не меняются.
 
 **Current source / next production — instant primary-section chrome:**
 protected Account shell заранее выполняет full RSC prefetch пяти главных
@@ -231,9 +234,10 @@ title/metric и intrinsic action остаются в одной строке, ac
 краю, а при реальной нехватке места безопасно переносится вниз. Общий
 `WorkspaceTabs` сохраняет touch/swipe и `overflow-x: auto`, но скрывает native
 scrollbar во всех браузерах; доступное продолжение обозначают fade и отдельные
-40 px chevron-кнопки с прокруткой, direction-aware состоянием и возвратом
-фокуса. Product shell клипует только transient document-level horizontal
-overflow route entrance, не внутренние scroll containers. В protected mobile
+chevron-кнопки с прокруткой (`40 px` desktop, `48 px` mobile), direction-aware
+состоянием и возвратом фокуса. Product shell клипует только transient
+document-level horizontal overflow route entrance, не внутренние scroll
+containers. В protected mobile
 header вместо аватара показан burger; он открывает единственный navigation
 dropdown в Account chrome с именем, допустимым email и ровно «Расписание /
 Ученики / Курсы / Магазин / Профиль». На protected desktop и authenticated
@@ -242,6 +246,26 @@ landing выбранный avatar остаётся видимым, но явля
 `src/components/app/page-header.tsx`, `src/components/ui/workspace-tabs.tsx`,
 `src/components/session-nav-actions.tsx` и соответствующих styles/tests; API,
 session projection, schema, migrations и Lesson hierarchy не меняются.
+
+Follow-up превращает этот responsive слой из уменьшенной desktop-проекции в
+touch-first application layout. App `theme-color`, manifest, `html`, `body` и
+`.course-demo-shell` используют один непрозрачный `#f5f1e8`; app viewport
+включает `viewport-fit=cover`, shell покрывает минимум `100dvh`, а safe-area
+insets защищают верхнюю навигацию и нижний край. Поэтому iOS Safari окрашивает
+browser chrome и elastic overscroll в цвет приложения без отключения нативного
+bounce. Mobile burger имеет target `48 × 48 px` и icon `24 px`; открытый panel
+занимает ширину viewport с inset `12 px`, gap `12 px`, радиусом `16 px`,
+строками минимум `48 px` и текстом `16 px`, сохраняя keyboard, Escape,
+outside-click и focus-return semantics.
+
+На mobile Course toolbars, search, основные actions, tabs и segmented controls
+получают touch target не меньше `48 px`; search text равен `16 px`, чтобы iOS
+не увеличивал страницу при focus. Desktop Course table/card переключатель и
+исходный table mode сохраняются, но до `767 px` широкая таблица не масштабируется
+и не создаёт page-level horizontal scroll: текущая projection отображается
+семантическим списком компактных белых карточек с полными Course actions и
+метаданными. Выбранный presentation mode, query, API и persisted data не
+меняются; это только responsive projection без schema или migration work.
 
 **Current production Course catalog slice:** реализует reusable Course catalog,
 immutable publication revisions, независимое копирование детских Course и
@@ -695,8 +719,8 @@ option использует только базовую тень без button h
 exact-тень `0px 6px 12px oklch(0 0 0 / 0.05)`. Этот production contract
 зафиксирован в exact functional source
 `1d4e5deff83cbdc1b479b16e4220cf799327009f`; его `68 px`/sticky геометрия
-является историческим evidence и superseded current-source normal-flow
-`64 px` contract, описанным выше.
+является историческим evidence и superseded current-source desktop
+normal-flow/mobile sticky `64 px` contract, описанным выше.
 
 **Current production ordinary-control, static-surface and entry-field
 refinement:** поверх общего raised-control
@@ -1377,13 +1401,15 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   Lesson используют один сплошной фон `#f5f1e8`; marketing noise и цветные page
   gradients на этих маршрутах отсутствуют.
 - В current source / next production Course header следует обновлённому
-  demo-контракту: normal-flow shell без sticky/fixed positioning имеет высоту
-  `64 px`, сплошную белую поверхность без blur и радиус `20 px`. Общий
-  container-row с brand, navigation и actions/avatar имеет exact высоту `40 px`
-  и по `12 px` сверху и снизу; все три зоны лежат на одной вертикальной
-  centerline, а nav/action wrappers не раздувают ряд. Controls сохраняют радиус
-  `12 px`. Неактивный пункт main navigation на hover сохраняет exact 5%-black
-  background `rgba(0, 0, 0, 0.05)` и при готовом measured active-pill.
+  demo-контракту: на desktop normal-flow shell без sticky/fixed positioning, а
+  до `767 px` sticky shell у safe-area края имеет высоту `64 px`, сплошную белую
+  поверхность без blur и радиус `20 px`. Общий container-row с brand,
+  navigation и actions/avatar имеет exact высоту `40 px` на desktop и `48 px`
+  на mobile; desktop row сохраняет по `12 px` сверху и снизу, все три зоны лежат
+  на одной вертикальной centerline, а nav/action wrappers не раздувают ряд.
+  Controls сохраняют радиус `12 px`. Неактивный пункт main navigation на hover
+  сохраняет exact 5%-black background `rgba(0, 0, 0, 0.05)` и при готовом
+  measured active-pill.
   В current production персональное dropdown-меню также использует
   непрозрачный белый фон. В current source / next production этот dropdown
   остаётся только главным меню protected mobile burger; avatar на protected

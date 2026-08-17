@@ -1,3 +1,4 @@
+import type { Viewport } from "next";
 import { redirect } from "next/navigation";
 import { SystemAssistantProvider } from "@/components/assistant/system-assistant-provider";
 import { CommunicationCenter } from "@/components/communication/communication-center";
@@ -7,6 +8,11 @@ import { PrimaryHeaderSummaryProvider } from "@/components/navigation/primary-he
 import { primaryHeaderSummaryOwnerKey } from "@/lib/navigation/primary-header-summary-owner";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import { resolveAppLayoutRedirect } from "@/lib/server/access-guards";
+
+export const viewport: Viewport = {
+  themeColor: "#f5f1e8",
+  viewportFit: "cover",
+};
 
 export default async function AppLayout({
   children,

@@ -104,7 +104,7 @@ test("Account navigation has no role switch client or teacher-only guard", () =>
   );
   assert.match(
     sessionMenu,
-    /aria-label="Открыть меню аккаунта"[\s\S]*?nav-account-menu-trigger[\s\S]*?md:hidden[\s\S]*?<Menu className="nav-main-menu-icon"/,
+    /aria-label=\{open \? "Закрыть меню аккаунта" : "Открыть меню аккаунта"\}[\s\S]*?nav-account-menu-trigger[\s\S]*?md:hidden[\s\S]*?<X className="nav-main-menu-icon"[\s\S]*?<Menu className="nav-main-menu-icon"/,
   );
   assert.match(
     sessionMenu,

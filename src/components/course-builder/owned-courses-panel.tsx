@@ -201,112 +201,178 @@ function CourseTable({
   onChanged: () => void;
 }) {
   return (
-    <div
-      className="product-table-wrap course-index-table-wrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
-      role="region"
-      aria-label="Таблица курсов"
-      tabIndex={0}
-    >
-      <ProductTable className="course-index-table course-index-owned-table">
-        <caption className="sr-only">
-          Личные курсы: предмет, наполнение, публикация и дата обновления
-        </caption>
-        <colgroup>
-          <col className="course-index-table-col-title" />
-          <col className="course-index-table-col-subject" />
-          <col className="course-index-table-col-lessons" />
-          <col className="course-index-table-col-publication" />
-          <col className="course-index-table-col-updated" />
-          <col className="course-index-table-col-actions" />
-        </colgroup>
-        <ProductTableHead>
-          <ProductTableHeaderRow>
-            <ProductTableSortableHeaderCell
-              direction={sort.key === "title" ? sort.direction : null}
-              onSort={() => onSort("title")}
-            >
-              Курс
-            </ProductTableSortableHeaderCell>
-            <ProductTableSortableHeaderCell
-              direction={sort.key === "subject" ? sort.direction : null}
-              onSort={() => onSort("subject")}
-            >
-              Предмет
-            </ProductTableSortableHeaderCell>
-            <ProductTableSortableHeaderCell
-              direction={sort.key === "lessons" ? sort.direction : null}
-              onSort={() => onSort("lessons")}
-            >
-              Уроки
-            </ProductTableSortableHeaderCell>
-            <ProductTableSortableHeaderCell
-              direction={sort.key === "publication" ? sort.direction : null}
-              onSort={() => onSort("publication")}
-            >
-              Публикация
-            </ProductTableSortableHeaderCell>
-            <ProductTableSortableHeaderCell
-              direction={sort.key === "updated" ? sort.direction : null}
-              onSort={() => onSort("updated")}
-            >
-              Обновлён
-            </ProductTableSortableHeaderCell>
-            <ProductTableHeaderCell aria-label="Действия" />
-          </ProductTableHeaderRow>
-        </ProductTableHead>
-        <ProductTableBody>
-          {courses.map((course) => (
-            <ProductTableRow key={course.id}>
-              <ProductTablePrimaryCell className="overflow-hidden">
-                <PageTransitionLink
-                  href={toCourseRoute(course.id)}
-                  className="course-index-table-link"
-                  title={`${course.title} — ${course.goal}`}
-                >
-                  <ProductTableTruncate>{course.title}</ProductTableTruncate>
-                </PageTransitionLink>
-              </ProductTablePrimaryCell>
-              <ProductTableCell className="overflow-hidden">
-                <ProductTableTruncate title={course.subject}>
-                  {course.subject}
-                </ProductTableTruncate>
-              </ProductTableCell>
-              <ProductTableCell className="overflow-hidden">
-                <ProductTableTruncate
-                  title={`${course.lessonCount} из ${course.targetLessonCount} · ${courseProgressLabel(course)}`}
-                >
+    <>
+      <div
+        className="product-table-wrap course-index-table-wrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50"
+        role="region"
+        aria-label="Таблица курсов"
+        tabIndex={0}
+      >
+        <ProductTable className="course-index-table course-index-owned-table">
+          <caption className="sr-only">
+            Личные курсы: предмет, наполнение, публикация и дата обновления
+          </caption>
+          <colgroup>
+            <col className="course-index-table-col-title" />
+            <col className="course-index-table-col-subject" />
+            <col className="course-index-table-col-lessons" />
+            <col className="course-index-table-col-publication" />
+            <col className="course-index-table-col-updated" />
+            <col className="course-index-table-col-actions" />
+          </colgroup>
+          <ProductTableHead>
+            <ProductTableHeaderRow>
+              <ProductTableSortableHeaderCell
+                direction={sort.key === "title" ? sort.direction : null}
+                onSort={() => onSort("title")}
+              >
+                Курс
+              </ProductTableSortableHeaderCell>
+              <ProductTableSortableHeaderCell
+                direction={sort.key === "subject" ? sort.direction : null}
+                onSort={() => onSort("subject")}
+              >
+                Предмет
+              </ProductTableSortableHeaderCell>
+              <ProductTableSortableHeaderCell
+                direction={sort.key === "lessons" ? sort.direction : null}
+                onSort={() => onSort("lessons")}
+              >
+                Уроки
+              </ProductTableSortableHeaderCell>
+              <ProductTableSortableHeaderCell
+                direction={sort.key === "publication" ? sort.direction : null}
+                onSort={() => onSort("publication")}
+              >
+                Публикация
+              </ProductTableSortableHeaderCell>
+              <ProductTableSortableHeaderCell
+                direction={sort.key === "updated" ? sort.direction : null}
+                onSort={() => onSort("updated")}
+              >
+                Обновлён
+              </ProductTableSortableHeaderCell>
+              <ProductTableHeaderCell aria-label="Действия" />
+            </ProductTableHeaderRow>
+          </ProductTableHead>
+          <ProductTableBody>
+            {courses.map((course) => (
+              <ProductTableRow key={course.id}>
+                <ProductTablePrimaryCell className="overflow-hidden">
+                  <PageTransitionLink
+                    href={toCourseRoute(course.id)}
+                    className="course-index-table-link"
+                    title={`${course.title} — ${course.goal}`}
+                  >
+                    <ProductTableTruncate>{course.title}</ProductTableTruncate>
+                  </PageTransitionLink>
+                </ProductTablePrimaryCell>
+                <ProductTableCell className="overflow-hidden">
+                  <ProductTableTruncate title={course.subject}>
+                    {course.subject}
+                  </ProductTableTruncate>
+                </ProductTableCell>
+                <ProductTableCell className="overflow-hidden">
+                  <ProductTableTruncate
+                    title={`${course.lessonCount} из ${course.targetLessonCount} · ${courseProgressLabel(course)}`}
+                  >
+                    {course.lessonCount} из {course.targetLessonCount} ·{" "}
+                    {courseProgressLabel(course)}
+                  </ProductTableTruncate>
+                </ProductTableCell>
+                <ProductTableCell className="overflow-hidden">
+                  <ProductTableTruncate title={coursePublicationLabel(course)}>
+                    {coursePublicationLabel(course)}
+                  </ProductTableTruncate>
+                </ProductTableCell>
+                <ProductTableCell className="overflow-hidden">
+                  <time
+                    className="course-index-table-truncate"
+                    dateTime={course.updatedAt}
+                    title={formatUpdatedAt(course.updatedAt)}
+                  >
+                    {formatCompactUpdatedAt(course.updatedAt)}
+                  </time>
+                </ProductTableCell>
+                <ProductTableActionCell className="course-index-table-action-cell text-right">
+                  <span className="course-index-table-actions">
+                    <CourseActions
+                      course={course}
+                      onChanged={onChanged}
+                      variant="table"
+                    />
+                  </span>
+                </ProductTableActionCell>
+              </ProductTableRow>
+            ))}
+          </ProductTableBody>
+        </ProductTable>
+      </div>
+
+      <div
+        className="course-index-mobile-list"
+        role="list"
+        aria-label="Мои курсы"
+      >
+        {courses.map((course) => (
+          <article
+            key={course.id}
+            className="course-index-mobile-card"
+            role="listitem"
+          >
+            <div className="course-index-mobile-card-header">
+              <PageTransitionLink
+                href={toCourseRoute(course.id)}
+                className="course-index-mobile-card-title"
+              >
+                {course.title}
+              </PageTransitionLink>
+              <CourseActions
+                course={course}
+                onChanged={onChanged}
+                variant="table"
+              />
+            </div>
+            <p className="course-index-mobile-card-subtitle">
+              {course.subject} · {course.level}
+            </p>
+            <p className="course-index-mobile-card-summary">{course.goal}</p>
+            <dl className="course-index-mobile-card-meta">
+              <div>
+                <dt>Уроки</dt>
+                <dd>
                   {course.lessonCount} из {course.targetLessonCount} ·{" "}
                   {courseProgressLabel(course)}
-                </ProductTableTruncate>
-              </ProductTableCell>
-              <ProductTableCell className="overflow-hidden">
-                <ProductTableTruncate title={coursePublicationLabel(course)}>
-                  {coursePublicationLabel(course)}
-                </ProductTableTruncate>
-              </ProductTableCell>
-              <ProductTableCell className="overflow-hidden">
-                <time
-                  className="course-index-table-truncate"
-                  dateTime={course.updatedAt}
-                  title={formatUpdatedAt(course.updatedAt)}
-                >
-                  {formatCompactUpdatedAt(course.updatedAt)}
-                </time>
-              </ProductTableCell>
-              <ProductTableActionCell className="course-index-table-action-cell text-right">
-                <span className="course-index-table-actions">
-                  <CourseActions
-                    course={course}
-                    onChanged={onChanged}
-                    variant="table"
-                  />
-                </span>
-              </ProductTableActionCell>
-            </ProductTableRow>
-          ))}
-        </ProductTableBody>
-      </ProductTable>
-    </div>
+                </dd>
+              </div>
+              <div>
+                <dt>Публикация</dt>
+                <dd>{coursePublicationLabel(course)}</dd>
+              </div>
+              <div>
+                <dt>Обновлён</dt>
+                <dd>
+                  <time dateTime={course.updatedAt}>
+                    {formatCompactUpdatedAt(course.updatedAt)}
+                  </time>
+                </dd>
+              </div>
+            </dl>
+            <PageTransitionLink
+              href={toCourseRoute(course.id)}
+              className={productButtonClassName(
+                "secondary",
+                "course-index-mobile-card-open",
+              )}
+              aria-label={`Открыть курс «${course.title}»`}
+            >
+              Открыть курс
+              <ArrowRight aria-hidden="true" />
+            </PageTransitionLink>
+          </article>
+        ))}
+      </div>
+    </>
   );
 }
 

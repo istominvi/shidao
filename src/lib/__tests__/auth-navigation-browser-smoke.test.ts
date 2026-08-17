@@ -4804,6 +4804,7 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
       .waitFor();
 
     const headerGeometry = await runtime.page.evaluate(() => {
+      const topNav = document.querySelector<HTMLElement>(".course-top-nav");
       const shell = document.querySelector<HTMLElement>(
         ".site-header-shell-demo",
       );
@@ -4838,6 +4839,7 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
       );
 
       if (
+        !topNav ||
         !shell ||
         !row ||
         !brand ||
@@ -4877,6 +4879,7 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
       ];
 
       return {
+        topNavPosition: getComputedStyle(topNav).position,
         ownsPrimarySections:
           row.parentElement === shell &&
           brand.parentElement === row &&
@@ -4900,6 +4903,7 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
       };
     });
 
+    assert.equal(headerGeometry.topNavPosition, "relative");
     assert.equal(headerGeometry.ownsPrimarySections, true);
     assert.ok(Math.abs(headerGeometry.shellHeight - 64) < 0.5);
     assert.ok(Math.abs(headerGeometry.rowHeight - 40) < 0.5);
@@ -10744,91 +10748,118 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       .getByRole("button", { name: "Открыть меню аккаунта", exact: true })
       .click();
 
-    assert.deepEqual(
-      await runtime.page.evaluate(() => {
-        const trigger = document.querySelector<HTMLElement>(
-          ".nav-account-menu-trigger",
-        );
-        const burger = trigger?.querySelector<SVGElement>(
-          ".nav-main-menu-icon",
-        );
-        const avatar = trigger?.querySelector<HTMLElement>(
-          ".nav-user-trigger-avatar",
-        );
-        const menu = document.querySelector<HTMLElement>(
-          '[role="menu"][aria-label="Меню аккаунта"]',
-        );
-        const profileHeader = menu?.querySelector<HTMLElement>(
-          ".nav-dropdown-profile",
-        );
-        const items = menu?.querySelector<HTMLElement>(".nav-dropdown-items");
-        if (!trigger || !burger || !menu || !profileHeader || !items) {
-          throw new Error("Mobile account menu contract is missing");
-        }
-        const triggerRect = trigger.getBoundingClientRect();
-        const burgerRect = burger.getBoundingClientRect();
-        const menuRect = menu.getBoundingClientRect();
-        const itemsRect = items.getBoundingClientRect();
-        const visibleMenuItems = Array.from(
-          menu.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-        ).filter((item) => item.getClientRects().length > 0);
-        return {
-          trigger: {
-            width: triggerRect.width,
-            height: triggerRect.height,
-            burgerWidth: burgerRect.width,
-            burgerHeight: burgerRect.height,
-            visibleAvatarCount:
-              avatar && avatar.getClientRects().length > 0 ? 1 : 0,
-          },
-          profileName: profileHeader
-            .querySelector("p:first-child")
-            ?.textContent?.trim(),
-          profileEmail: profileHeader
-            .querySelector("p:last-child")
-            ?.textContent?.trim(),
-          profileAvatarCount: profileHeader.querySelectorAll(
-            ".nav-user-trigger-avatar",
-          ).length,
-          profileImageCount: profileHeader.querySelectorAll("img").length,
-          itemRail: {
-            borderTopWidth: getComputedStyle(items).borderTopWidth,
-            leftDelta: Math.abs(itemsRect.left - menuRect.left),
-            rightDelta: Math.abs(itemsRect.right - menuRect.right),
-          },
-          menuTopGap: menuRect.top - triggerRect.bottom,
-          visibleMenuItems: visibleMenuItems.map(
-            (item) => item.textContent?.trim() ?? "",
-          ),
-        };
-      }),
-      {
+    const mobileAccountMenuContract = await runtime.page.evaluate(() => {
+      const trigger = document.querySelector<HTMLElement>(
+        ".nav-account-menu-trigger",
+      );
+      const burger = trigger?.querySelector<SVGElement>(".nav-main-menu-icon");
+      const avatar = trigger?.querySelector<HTMLElement>(
+        ".nav-user-trigger-avatar",
+      );
+      const menu = document.querySelector<HTMLElement>(
+        '.nav-account-menu-mobile[role="menu"][aria-label="Меню аккаунта"]',
+      );
+      const profileHeader = menu?.querySelector<HTMLElement>(
+        ".nav-dropdown-profile",
+      );
+      const items = menu?.querySelector<HTMLElement>(".nav-dropdown-items");
+      if (!trigger || !burger || !menu || !profileHeader || !items) {
+        throw new Error("Mobile account menu contract is missing");
+      }
+      const viewportWidth = document.documentElement.clientWidth;
+      const triggerRect = trigger.getBoundingClientRect();
+      const burgerRect = burger.getBoundingClientRect();
+      const menuRect = menu.getBoundingClientRect();
+      const itemsRect = items.getBoundingClientRect();
+      const menuStyle = getComputedStyle(menu);
+      const visibleMenuItems = Array.from(
+        menu.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+      ).filter((item) => item.getClientRects().length > 0);
+      return {
         trigger: {
-          width: 40,
-          height: 40,
-          burgerWidth: 20,
-          burgerHeight: 20,
-          visibleAvatarCount: 0,
+          width: triggerRect.width,
+          height: triggerRect.height,
+          burgerWidth: burgerRect.width,
+          burgerHeight: burgerRect.height,
+          visibleAvatarCount:
+            avatar && avatar.getClientRects().length > 0 ? 1 : 0,
         },
-        profileName: "E2E Adult",
-        profileEmail: "adult-e2e@example.test",
-        profileAvatarCount: 0,
-        profileImageCount: 0,
+        profileName: profileHeader
+          .querySelector("p:first-child")
+          ?.textContent?.trim(),
+        profileEmail: profileHeader
+          .querySelector("p:last-child")
+          ?.textContent?.trim(),
+        profileAvatarCount: profileHeader.querySelectorAll(
+          ".nav-user-trigger-avatar",
+        ).length,
+        profileImageCount: profileHeader.querySelectorAll("img").length,
         itemRail: {
-          borderTopWidth: "0px",
-          leftDelta: 6,
-          rightDelta: 6,
+          borderTopWidth: getComputedStyle(items).borderTopWidth,
+          contained:
+            itemsRect.left >= menuRect.left &&
+            itemsRect.right <= menuRect.right,
         },
-        menuTopGap: 8,
-        visibleMenuItems: [
-          "Расписание",
-          "Ученики",
-          "Курсы",
-          "Магазин",
-          "Профиль",
-        ],
-      },
+        menu: {
+          leftInset: menuRect.left,
+          rightInset: viewportWidth - menuRect.right,
+          topGap: menuRect.top - triggerRect.bottom,
+          borderRadius: menuStyle.borderRadius,
+          insideViewport:
+            menuRect.left >= 0 &&
+            menuRect.right <= viewportWidth &&
+            menuRect.top >= 0 &&
+            menuRect.bottom <= window.innerHeight,
+        },
+        itemHeights: visibleMenuItems.map(
+          (item) => item.getBoundingClientRect().height,
+        ),
+        itemFontSizes: visibleMenuItems.map(
+          (item) => getComputedStyle(item).fontSize,
+        ),
+        visibleMenuItems: visibleMenuItems.map(
+          (item) => item.textContent?.trim() ?? "",
+        ),
+      };
+    });
+    assert.deepEqual(mobileAccountMenuContract.trigger, {
+      width: 48,
+      height: 48,
+      burgerWidth: 24,
+      burgerHeight: 24,
+      visibleAvatarCount: 0,
+    });
+    assert.equal(mobileAccountMenuContract.profileName, "E2E Adult");
+    assert.equal(
+      mobileAccountMenuContract.profileEmail,
+      "adult-e2e@example.test",
     );
+    assert.equal(mobileAccountMenuContract.profileAvatarCount, 0);
+    assert.equal(mobileAccountMenuContract.profileImageCount, 0);
+    assert.deepEqual(mobileAccountMenuContract.itemRail, {
+      borderTopWidth: "0px",
+      contained: true,
+    });
+    assert.ok(Math.abs(mobileAccountMenuContract.menu.leftInset - 12) < 0.5);
+    assert.ok(Math.abs(mobileAccountMenuContract.menu.rightInset - 12) < 0.5);
+    assert.ok(Math.abs(mobileAccountMenuContract.menu.topGap - 12) < 0.5);
+    assert.equal(mobileAccountMenuContract.menu.borderRadius, "16px");
+    assert.equal(mobileAccountMenuContract.menu.insideViewport, true);
+    assert.ok(
+      mobileAccountMenuContract.itemHeights.every((height) => height >= 48),
+    );
+    assert.ok(
+      mobileAccountMenuContract.itemFontSizes.every(
+        (fontSize) => fontSize === "16px",
+      ),
+    );
+    assert.deepEqual(mobileAccountMenuContract.visibleMenuItems, [
+      "Расписание",
+      "Ученики",
+      "Курсы",
+      "Магазин",
+      "Профиль",
+    ]);
 
     const scheduleMenuItem = runtime.page.getByRole("menuitem", {
       name: "Расписание",
@@ -11043,15 +11074,15 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     assert.equal(mobileContract.railOverflowX, "visible");
     assert.equal(mobileContract.railFlexWrap, "wrap");
     assert.equal(mobileContract.railScrollIsContained, false);
-    assert.equal(mobileContract.membershipSwitchHeight, "40px");
+    assert.equal(mobileContract.membershipSwitchHeight, "56px");
     assert.equal(mobileContract.membershipSwitchInsideViewport, true);
     assert.deepEqual(mobileContract.membershipButtons, [
       { label: "Все", pressed: "true" },
       { label: "В группе", pressed: "false" },
       { label: "Без группы", pressed: "false" },
     ]);
-    assert.equal(mobileContract.viewSwitchHeight, "40px");
-    assert.equal(mobileContract.activeViewButtonHeight, "32px");
+    assert.equal(mobileContract.viewSwitchHeight, "56px");
+    assert.equal(mobileContract.activeViewButtonHeight, "48px");
     assert.equal(mobileContract.viewSwitchInsideViewport, true);
     assert.deepEqual(mobileContract.viewButtons, [
       { label: "Показать таблицей", pressed: "true" },
@@ -11638,7 +11669,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       .click();
     await runtime.page.waitForURL(/\/courses\?tab=catalog&audience=educators$/);
     await catalogPanel
-      .getByText(E2E_EDUCATOR_COURSE_TITLE, { exact: true })
+      .getByRole("button", {
+        name: E2E_EDUCATOR_COURSE_TITLE,
+        exact: true,
+      })
       .waitFor();
     await assertCanonicalFirstBodyRowTypography(
       catalogPanel.locator(".course-index-catalog-table"),
@@ -11659,7 +11693,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     });
     await runtime.page
       .getByRole("tabpanel", { name: "Каталог", exact: true })
-      .getByText(E2E_EDUCATOR_COURSE_TITLE, { exact: true })
+      .getByRole("button", {
+        name: E2E_EDUCATOR_COURSE_TITLE,
+        exact: true,
+      })
       .waitFor();
     assert.equal(
       await runtime.page
@@ -14361,6 +14398,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
 
   try {
     await runtime.page.goto("/courses", { waitUntil: "networkidle" });
+    await runtime.page.locator(".course-index-mobile-list").waitFor();
     const mobileCourseLink = runtime.page.getByRole("link", {
       name: E2E_COURSE_TITLE,
       exact: true,
@@ -14368,6 +14406,11 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     await mobileCourseLink.waitFor();
 
     const mobileCoursesToolbar = await runtime.page.evaluate(() => {
+      const themeColorMeta = document.querySelector<HTMLMetaElement>(
+        'meta[name="theme-color"]',
+      );
+      const shell = document.querySelector<HTMLElement>(".course-demo-shell");
+      const topNav = document.querySelector<HTMLElement>(".course-top-nav");
       const pageHeader =
         document.querySelector<HTMLElement>(".app-page-header");
       const pageHeading =
@@ -14388,6 +14431,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const toolbarSearch = toolbar?.querySelector<HTMLElement>(
         ".compact-toolbar-search",
       );
+      const searchInput = toolbarSearch?.querySelector<HTMLInputElement>(
+        "input.product-control-search",
+      );
       const toolbarRail = toolbar?.querySelector<HTMLElement>(
         ".compact-toolbar-rail",
       );
@@ -14397,7 +14443,21 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const activeViewButton = viewSwitch?.querySelector<HTMLElement>(
         'button[aria-pressed="true"]',
       );
+      const workspaceTabs = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          '.courses-index-shell [role="tab"]',
+        ),
+      ).filter((tab) => tab.getClientRects().length > 0);
+      const mobileList = document.querySelector<HTMLElement>(
+        ".course-index-mobile-list",
+      );
+      const wideTableWrap = document.querySelector<HTMLElement>(
+        ".courses-index-shell .course-index-table-wrap",
+      );
       if (
+        !themeColorMeta ||
+        !shell ||
+        !topNav ||
         !pageHeader ||
         !pageHeading ||
         !titleRow ||
@@ -14407,9 +14467,13 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         !headerAction ||
         !toolbar ||
         !toolbarSearch ||
+        !searchInput ||
         !toolbarRail ||
         !viewSwitch ||
-        !activeViewButton
+        !activeViewButton ||
+        workspaceTabs.length === 0 ||
+        !mobileList ||
+        !wideTableWrap
       ) {
         throw new Error("Mobile Courses toolbar controls are missing");
       }
@@ -14429,9 +14493,26 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const toolbarStyle = getComputedStyle(toolbar);
       const toolbarSearchRect = toolbarSearch.getBoundingClientRect();
       const toolbarRailRect = toolbarRail.getBoundingClientRect();
+      const mobileListRect = mobileList.getBoundingClientRect();
+      const visibleMobileCards = Array.from(mobileList.children).filter(
+        (child) =>
+          child instanceof HTMLElement && child.getClientRects().length > 0,
+      );
       return {
         clientWidth: viewportWidth,
         scrollWidth: document.documentElement.scrollWidth,
+        theme: {
+          meta: themeColorMeta.content.toLowerCase(),
+          html: getComputedStyle(document.documentElement).backgroundColor,
+          body: getComputedStyle(document.body).backgroundColor,
+          shell: getComputedStyle(shell).backgroundColor,
+          htmlImage: getComputedStyle(document.documentElement).backgroundImage,
+          bodyImage: getComputedStyle(document.body).backgroundImage,
+        },
+        topNav: {
+          position: getComputedStyle(topNav).position,
+          top: getComputedStyle(topNav).top,
+        },
         pageHeader: {
           contentWidth: pageHeaderContentWidth,
           headingWidth: pageHeadingRect.width,
@@ -14463,6 +14544,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
           actionsInsideViewport:
             headerActionsRect.left >= 0 &&
             headerActionsRect.right <= viewportWidth,
+          actionHeight: headerActionRect.height,
         },
         toolbarInsideViewport:
           toolbarRect.left >= 0 && toolbarRect.right <= viewportWidth,
@@ -14472,6 +14554,23 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         railEndInset: toolbarRect.right - toolbarRailRect.right,
         shellHeight: getComputedStyle(viewSwitch).height,
         activeButtonHeight: getComputedStyle(activeViewButton).height,
+        searchHeight: searchInput.getBoundingClientRect().height,
+        searchFontSize: getComputedStyle(searchInput).fontSize,
+        workspaceTabHeights: workspaceTabs.map(
+          (tab) => tab.getBoundingClientRect().height,
+        ),
+        viewButtonHeights: Array.from(
+          viewSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => button.getBoundingClientRect().height),
+        mobileProjection: {
+          listDisplay: getComputedStyle(mobileList).display,
+          listVisible: mobileList.getClientRects().length > 0,
+          listInsideViewport:
+            mobileListRect.left >= 0 && mobileListRect.right <= viewportWidth,
+          visibleCardCount: visibleMobileCards.length,
+          wideTableDisplay: getComputedStyle(wideTableWrap).display,
+          wideTableVisible: wideTableWrap.getClientRects().length > 0,
+        },
         activeLabel: activeViewButton.getAttribute("aria-label"),
         activePressed: activeViewButton.getAttribute("aria-pressed"),
         viewButtons: Array.from(viewSwitch.querySelectorAll("button")).map(
@@ -14488,8 +14587,6 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         toolbarInsideViewport: mobileCoursesToolbar.toolbarInsideViewport,
         toolbarPaddingLeft: mobileCoursesToolbar.toolbarPaddingLeft,
         toolbarPaddingRight: mobileCoursesToolbar.toolbarPaddingRight,
-        shellHeight: mobileCoursesToolbar.shellHeight,
-        activeButtonHeight: mobileCoursesToolbar.activeButtonHeight,
         activeLabel: mobileCoursesToolbar.activeLabel,
         activePressed: mobileCoursesToolbar.activePressed,
         viewButtons: mobileCoursesToolbar.viewButtons,
@@ -14502,8 +14599,6 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         toolbarInsideViewport: true,
         toolbarPaddingLeft: "0px",
         toolbarPaddingRight: "0px",
-        shellHeight: "40px",
-        activeButtonHeight: "32px",
         activeLabel: "Показать таблицей",
         activePressed: "true",
         viewButtons: ["Показать таблицей", "Показать карточками"],
@@ -14511,6 +14606,41 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         nativeSelectCount: 0,
       },
     );
+    assert.deepEqual(mobileCoursesToolbar.theme, {
+      meta: "#f5f1e8",
+      html: "rgb(245, 241, 232)",
+      body: "rgb(245, 241, 232)",
+      shell: "rgb(245, 241, 232)",
+      htmlImage: "none",
+      bodyImage: "none",
+    });
+    assert.deepEqual(mobileCoursesToolbar.topNav, {
+      position: "sticky",
+      top: "0px",
+    });
+    assert.ok(Number.parseFloat(mobileCoursesToolbar.shellHeight) >= 48);
+    assert.ok(Number.parseFloat(mobileCoursesToolbar.activeButtonHeight) >= 48);
+    assert.ok(mobileCoursesToolbar.searchHeight >= 48);
+    assert.equal(mobileCoursesToolbar.searchFontSize, "16px");
+    assert.ok(
+      mobileCoursesToolbar.workspaceTabHeights.every((height) => height >= 48),
+    );
+    assert.ok(
+      mobileCoursesToolbar.viewButtonHeights.every((height) => height >= 48),
+    );
+    assert.ok(mobileCoursesToolbar.pageHeader.actionHeight >= 48);
+    assert.notEqual(mobileCoursesToolbar.mobileProjection.listDisplay, "none");
+    assert.equal(mobileCoursesToolbar.mobileProjection.listVisible, true);
+    assert.equal(
+      mobileCoursesToolbar.mobileProjection.listInsideViewport,
+      true,
+    );
+    assert.ok(mobileCoursesToolbar.mobileProjection.visibleCardCount > 0);
+    assert.equal(
+      mobileCoursesToolbar.mobileProjection.wideTableDisplay,
+      "none",
+    );
+    assert.equal(mobileCoursesToolbar.mobileProjection.wideTableVisible, false);
     assert.ok(mobileCoursesToolbar.pageHeader.contentWidth > 0);
     assert.ok(
       Math.abs(
@@ -14545,6 +14675,39 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     );
     assert.equal(mobileCoursesToolbar.pageHeader.actionsInsideViewport, true);
 
+    const mobileStickyTopNav = await runtime.page.evaluate(async () => {
+      const shell = document.querySelector<HTMLElement>(".course-demo-shell");
+      const topNav = document.querySelector<HTMLElement>(".course-top-nav");
+      if (!shell || !topNav) {
+        throw new Error("Mobile sticky TopNav contract is missing");
+      }
+
+      const spacer = document.createElement("div");
+      spacer.style.height = "200vh";
+      spacer.setAttribute("data-e2e-mobile-scroll-spacer", "");
+      shell.append(spacer);
+
+      const initialTop = topNav.getBoundingClientRect().top;
+      window.scrollTo(0, Math.min(window.innerHeight, 640));
+      await new Promise<void>((resolve) =>
+        window.requestAnimationFrame(() =>
+          window.requestAnimationFrame(() => resolve()),
+        ),
+      );
+      const scrolledTop = topNav.getBoundingClientRect().top;
+      const scrollY = window.scrollY;
+
+      window.scrollTo(0, 0);
+      spacer.remove();
+      return { initialTop, scrolledTop, scrollY };
+    });
+    assert.ok(Math.abs(mobileStickyTopNav.initialTop) < 0.5);
+    assert.ok(mobileStickyTopNav.scrollY > 0);
+    assert.ok(
+      Math.abs(mobileStickyTopNav.scrolledTop) < 0.5,
+      "Mobile product TopNav must stay pinned to the safe viewport edge",
+    );
+
     await runtime.page
       .getByRole("tab", { name: "Каталог", exact: true })
       .click();
@@ -14554,12 +14717,23 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       exact: true,
     });
     await mobileCatalogView.waitFor();
+    await runtime.page
+      .getByRole("group", { name: "Направление обучения", exact: true })
+      .getByRole("button", { name: "Обучение педагогов", exact: true })
+      .click();
+    await runtime.page.waitForURL(/\/courses\?tab=catalog&audience=educators$/);
+    await runtime.page
+      .locator('[role="tabpanel"]:not([hidden]) .course-index-mobile-list')
+      .waitFor();
     const mobileCatalogToolbar = await runtime.page.evaluate(() => {
       const toolbar = document.querySelector<HTMLElement>(
         ".course-catalog-toolbar",
       );
       const search = toolbar?.querySelector<HTMLElement>(
         ".compact-toolbar-search",
+      );
+      const searchInput = search?.querySelector<HTMLInputElement>(
+        "input.product-control-search",
       );
       const rail = toolbar?.querySelector<HTMLElement>(".compact-toolbar-rail");
       const viewSwitch = toolbar?.querySelector<HTMLElement>(
@@ -14568,7 +14742,23 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const audience = rail?.querySelector<HTMLElement>(
         ".course-catalog-audience-control",
       );
-      if (!toolbar || !search || !rail || !viewSwitch || !audience) {
+      const catalogSection = toolbar?.closest<HTMLElement>("section");
+      const mobileList = catalogSection?.querySelector<HTMLElement>(
+        ".course-index-mobile-list",
+      );
+      const wideTableWrap = catalogSection?.querySelector<HTMLElement>(
+        ".course-index-table-wrap",
+      );
+      if (
+        !toolbar ||
+        !search ||
+        !searchInput ||
+        !rail ||
+        !viewSwitch ||
+        !audience ||
+        !mobileList ||
+        !wideTableWrap
+      ) {
         throw new Error("Mobile Catalog toolbar controls are missing");
       }
       const viewportWidth = document.documentElement.clientWidth;
@@ -14577,6 +14767,10 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const searchRect = search.getBoundingClientRect();
       const railRect = rail.getBoundingClientRect();
       const audienceRect = audience.getBoundingClientRect();
+      const mobileListRect = mobileList.getBoundingClientRect();
+      const controlButtons = Array.from(
+        rail.querySelectorAll<HTMLElement>("button"),
+      ).filter((button) => button.getClientRects().length > 0);
       return {
         scrollWidth: document.documentElement.scrollWidth,
         insideViewport: rect.left >= 0 && rect.right <= viewportWidth,
@@ -14598,28 +14792,79 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
           Node.DOCUMENT_POSITION_FOLLOWING,
         ),
         shellHeight: getComputedStyle(viewSwitch).height,
+        searchHeight: searchInput.getBoundingClientRect().height,
+        searchFontSize: getComputedStyle(searchInput).fontSize,
+        controlButtonHeights: controlButtons.map(
+          (button) => button.getBoundingClientRect().height,
+        ),
+        mobileProjection: {
+          listDisplay: getComputedStyle(mobileList).display,
+          listVisible: mobileList.getClientRects().length > 0,
+          listInsideViewport:
+            mobileListRect.left >= 0 && mobileListRect.right <= viewportWidth,
+          visibleCardCount: Array.from(mobileList.children).filter(
+            (child) =>
+              child instanceof HTMLElement && child.getClientRects().length > 0,
+          ).length,
+          wideTableDisplay: getComputedStyle(wideTableWrap).display,
+          wideTableVisible: wideTableWrap.getClientRects().length > 0,
+        },
         filterCount: toolbar.querySelectorAll(".course-filter-menu").length,
         nativeSelectCount: toolbar.querySelectorAll("select").length,
         visibleResultCount: toolbar.querySelectorAll(".compact-toolbar-result")
           .length,
       };
     });
-    assert.deepEqual(mobileCatalogToolbar, {
-      scrollWidth: 375,
-      insideViewport: true,
-      paddingLeft: "0px",
-      paddingRight: "0px",
-      searchStartInset: 0,
-      railEndInset: 0,
-      audienceInsideViewport: true,
-      audienceInsideRail: true,
-      searchBeforeRail: true,
-      audienceBeforeView: true,
-      shellHeight: "40px",
-      filterCount: 0,
-      nativeSelectCount: 0,
-      visibleResultCount: 0,
-    });
+    assert.deepEqual(
+      {
+        scrollWidth: mobileCatalogToolbar.scrollWidth,
+        insideViewport: mobileCatalogToolbar.insideViewport,
+        paddingLeft: mobileCatalogToolbar.paddingLeft,
+        paddingRight: mobileCatalogToolbar.paddingRight,
+        searchStartInset: mobileCatalogToolbar.searchStartInset,
+        railEndInset: mobileCatalogToolbar.railEndInset,
+        audienceInsideViewport: mobileCatalogToolbar.audienceInsideViewport,
+        audienceInsideRail: mobileCatalogToolbar.audienceInsideRail,
+        searchBeforeRail: mobileCatalogToolbar.searchBeforeRail,
+        audienceBeforeView: mobileCatalogToolbar.audienceBeforeView,
+        filterCount: mobileCatalogToolbar.filterCount,
+        nativeSelectCount: mobileCatalogToolbar.nativeSelectCount,
+        visibleResultCount: mobileCatalogToolbar.visibleResultCount,
+      },
+      {
+        scrollWidth: 375,
+        insideViewport: true,
+        paddingLeft: "0px",
+        paddingRight: "0px",
+        searchStartInset: 0,
+        railEndInset: 0,
+        audienceInsideViewport: true,
+        audienceInsideRail: true,
+        searchBeforeRail: true,
+        audienceBeforeView: true,
+        filterCount: 0,
+        nativeSelectCount: 0,
+        visibleResultCount: 0,
+      },
+    );
+    assert.ok(Number.parseFloat(mobileCatalogToolbar.shellHeight) >= 48);
+    assert.ok(mobileCatalogToolbar.searchHeight >= 48);
+    assert.equal(mobileCatalogToolbar.searchFontSize, "16px");
+    assert.ok(
+      mobileCatalogToolbar.controlButtonHeights.every((height) => height >= 48),
+    );
+    assert.notEqual(mobileCatalogToolbar.mobileProjection.listDisplay, "none");
+    assert.equal(mobileCatalogToolbar.mobileProjection.listVisible, true);
+    assert.equal(
+      mobileCatalogToolbar.mobileProjection.listInsideViewport,
+      true,
+    );
+    assert.ok(mobileCatalogToolbar.mobileProjection.visibleCardCount > 0);
+    assert.equal(
+      mobileCatalogToolbar.mobileProjection.wideTableDisplay,
+      "none",
+    );
+    assert.equal(mobileCatalogToolbar.mobileProjection.wideTableVisible, false);
     await mobileCatalogView
       .getByRole("button", { name: "Показать таблицей", exact: true })
       .click();
@@ -14696,7 +14941,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         wrapperInsideViewport: true,
         toolbarPaddingLeft: "0px",
         toolbarPaddingRight: "0px",
-        addButtonHeight: "40px",
+        addButtonHeight: "48px",
         wrapperOverflowX: "auto",
       },
     );
@@ -14916,8 +15161,8 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     assert.ok(mobileVisual.pageHeader.actionsFitContentDelta < 0.5);
     assert.ok(mobileVisual.pageHeader.metricGapDelta < 0.5);
     assert.ok(mobileVisual.pageHeader.backLabelSingleLineDelta < 0.5);
-    assert.ok(Math.abs(mobileVisual.pageHeader.headerToBackGap - 16) < 0.5);
-    assert.ok(Math.abs(mobileVisual.pageHeader.backToHeadingGap - 16) < 0.5);
+    assert.ok(Math.abs(mobileVisual.pageHeader.headerToBackGap - 20) < 0.5);
+    assert.ok(Math.abs(mobileVisual.pageHeader.backToHeadingGap - 20) < 0.5);
     assert.ok(
       Math.abs(
         mobileVisual.pageHeader.headerToBackGap -

@@ -325,3 +325,32 @@ test("course tables adopt canonical raised surfaces", () => {
   assert.doesNotMatch(ownedCoursesPanelSource, /border-white\/80/);
   assert.doesNotMatch(courseCatalogPanelSource, /border-white\/80/);
 });
+
+test("course index provides an ergonomic mobile card projection", () => {
+  for (const panelSource of [
+    ownedCoursesPanelSource,
+    courseCatalogPanelSource,
+  ]) {
+    assert.match(panelSource, /className="[^"]*course-index-mobile-list[^"]*"/);
+    assert.match(panelSource, /role="list"/);
+    assert.match(panelSource, /className="[^"]*course-index-mobile-card[^"]*"/);
+    assert.match(panelSource, /role="listitem"/);
+  }
+
+  assert.match(
+    globalStyles,
+    /\.course-index-mobile-list\s*\{[^}]*display: none;/,
+  );
+  assert.match(
+    globalStyles,
+    /@media \(max-width: 767px\)[\s\S]*?\.courses-index-shell \.course-index-table-wrap\s*\{[^}]*display: none;[^}]*\}[\s\S]*?\.course-index-mobile-list\s*\{[^}]*display: grid;/,
+  );
+  assert.match(
+    globalStyles,
+    /@media \(max-width: 767px\)[\s\S]*?\.course-demo-shell \.product-control-search\s*\{[^}]*--product-control-height: (?:3rem|48px);[^}]*font-size: (?:1rem|16px);/,
+  );
+  assert.match(
+    globalStyles,
+    /@media \(max-width: 767px\)[\s\S]*?\.workspace-tab\s*\{[^}]*height: (?:3rem|48px);[^}]*min-height: (?:3rem|48px);/,
+  );
+});

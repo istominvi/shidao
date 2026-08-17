@@ -545,3 +545,110 @@
   align-items: center;
   justify-content: space-between;
 }
+
+@media (max-width: 767px) {
+  .course-top-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    padding-block-start: max(0.75rem, env(safe-area-inset-top, 0px));
+    padding-block-end: 0.75rem;
+    padding-inline: max(0.75rem, env(safe-area-inset-left, 0px))
+      max(0.75rem, env(safe-area-inset-right, 0px));
+    background: var(--product-app-background, #f5f1e8);
+  }
+
+  .site-header-shell-demo {
+    --header-pill-height: 3rem;
+
+    height: 4rem;
+    min-height: 4rem;
+    padding: 0.5rem;
+  }
+
+  .site-header-shell-demo .site-header-content-row {
+    position: relative;
+    height: var(--header-pill-height);
+    min-height: var(--header-pill-height);
+    max-height: var(--header-pill-height);
+  }
+
+  .site-header-shell-demo .site-header-brand {
+    min-height: 3rem;
+    padding-inline: 0.75rem;
+  }
+
+  .site-header-shell-demo .nav-session-actions {
+    position: static;
+  }
+
+  .site-header-shell-demo .nav-account-menu-trigger {
+    width: 3rem;
+    min-width: 3rem;
+    height: 3rem;
+    min-height: 3rem;
+    border-radius: 0.875rem;
+  }
+
+  .nav-user-trigger > .nav-main-menu-icon,
+  .site-header-shell-demo .nav-user-trigger > .nav-main-menu-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-basis: 1.5rem;
+  }
+
+  .nav-account-menu-mobile {
+    position: absolute;
+    z-index: 120;
+    top: calc(100% + 0.75rem);
+    right: -0.5rem;
+    left: -0.5rem;
+    width: auto;
+    max-width: none;
+    max-height: calc(100dvh - 6rem - env(safe-area-inset-bottom, 0px));
+    margin: 0;
+    overflow-y: auto;
+    border-radius: 1rem;
+    overscroll-behavior: contain;
+  }
+
+  .product-dropdown-surface.nav-account-menu-mobile {
+    border-radius: 1rem;
+  }
+
+  .nav-account-menu-mobile .nav-dropdown-profile {
+    padding: 0.75rem 0.75rem 0.5rem;
+  }
+
+  .nav-account-menu-mobile .nav-dropdown-profile p:first-child {
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+
+  .nav-account-menu-mobile
+    .nav-dropdown-profile
+    p:last-child:not(:first-child) {
+    margin-top: 0.125rem;
+    font-size: 0.875rem;
+    line-height: 1.35;
+  }
+
+  .nav-account-menu-mobile .nav-dropdown-item {
+    min-height: 3rem;
+    border-radius: 0.75rem;
+    padding: 0.7rem 0.75rem;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.35;
+    touch-action: manipulation;
+  }
+
+  .nav-account-menu-mobile .nav-dropdown-item svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex: 0 0 1.25rem;
+  }
+}

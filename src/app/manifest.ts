@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
       "MVP-платформа обучения китайскому для преподавателя, родителя и ученика.",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#111111",
+    background_color: "#f5f1e8",
+    theme_color: "#f5f1e8",
     lang: "ru",
     icons: [
       {

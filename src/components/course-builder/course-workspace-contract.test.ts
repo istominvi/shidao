@@ -336,6 +336,8 @@ test("lesson metadata moves into a transparent page header and remains editable"
 test("course routes use the flat demo background and unified visual controls", () => {
   const styles = source("src/app/globals.css");
   const navigationStyles = source("src/app/styles/navigation.css");
+  const appLayout = source("src/app/(app)/layout.tsx");
+  const appManifest = source("src/app/manifest.ts");
   const siteHeader = source("src/components/site-header.tsx");
   const topNav = source("src/components/top-nav.tsx");
   const routeSources = [
@@ -369,7 +371,25 @@ test("course routes use the flat demo background and unified visual controls", (
     productHeaderRowStyles,
     "Product header content-row styles must remain discoverable",
   );
-  assert.match(courseShellStyles, /background: #f5f1e8;/);
+  const viewportExport =
+    /export const viewport[^=]*=\s*\{[\s\S]*?\n\};/.exec(appLayout)?.[0] ?? "";
+  assert.match(viewportExport, /themeColor: "#f5f1e8"/);
+  assert.match(viewportExport, /viewportFit: "cover"/);
+  assert.match(appManifest, /background_color: "#f5f1e8"/);
+  assert.match(appManifest, /theme_color: "#f5f1e8"/);
+  assert.match(styles, /:root\s*\{[^}]*--product-app-background: #f5f1e8;/);
+  assert.match(
+    styles,
+    /html\s*\{[^}]*background-color: var\(--product-app-background\);/,
+  );
+  assert.match(
+    styles,
+    /html:has\(\.course-demo-shell\),\s*body:has\(\.course-demo-shell\)\s*\{[^}]*background: var\(--product-app-background\);/,
+  );
+  assert.match(
+    courseShellStyles,
+    /background: var\(--product-app-background\);/,
+  );
   assert.doesNotMatch(courseShellStyles, /gradient/i);
   assert.doesNotMatch(routeSources, /landing-noise/);
 
@@ -412,9 +432,9 @@ test("course routes use the flat demo background and unified visual controls", (
     navigationStyles,
     /\.course-top-nav\s*\{[^}]*position: relative;[^}]*z-index: 60;[^}]*padding-top: 1rem;/,
   );
-  assert.doesNotMatch(
+  assert.match(
     navigationStyles,
-    /\.course-top-nav\s*\{[^}]*(?:position: sticky;|(?:^|\n)\s*top:)/,
+    /@media \(max-width: 767px\)[\s\S]*?\.course-top-nav\s*\{[^}]*position: sticky;[^}]*top: 0;/,
   );
   assert.match(
     navigationStyles,
