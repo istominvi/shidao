@@ -1327,12 +1327,14 @@ flow как permanent delete.
   Account/profile menu, Store sort и Schedule calendar/date popover. Course,
   Students и Store не должны содержать прежние filter popovers. Во всех
   случаях computed panel
-  padding должен быть ровно `6 px`, фон — `rgb(255, 255, 255)`, radius —
-  `12 px`, normal-mode border — `0`, `backdrop-filter` — `none`, а
+  padding должен быть ровно `6 px`, фон — `rgb(255, 255, 255)`, base radius —
+  `12 px`; mobile navigation panel использует свой проверяемый radius `16 px`.
+  Normal-mode border — `0`, `backdrop-filter` — `none`, а
   box-shadow — единственной
-  `rgba(20, 20, 20, 0.18) 0px 18px 46px 0px`. Ни одно из четырёх семейств не
-  содержит separator line/DOM: дополнительно проверить отсутствие линии после
-  profile header и над calendar footer. Consumer не должен
+  `rgba(20, 20, 20, 0.24) 0px 24px 32px -24px`. `ActionMenu`, selection
+  panels и calendar footer не содержат separator line/DOM; единственное
+  исключение — один full-bleed светлый divider между profile header и items
+  mobile navigation menu. Consumer не должен
   возвращать локальные panel padding, border, blur или вторую тень. В
   forced-colors тень отключается, а panel получает `Canvas` и системную рамку
   `1px solid CanvasText`. Native `select`, самостоятельный modal dialog и
@@ -1344,7 +1346,8 @@ flow как permanent delete.
   canonical active V2 controls: exact `40 px / 12 px / .88rem / 400`, active
   navigation без inset/shadow/translate, icon opacity `1` и contrast-aware
   `currentColor`. Все канонические `.product-btn` должны быть белыми, иметь
-  `--product-surface-border: 1px solid oklch(0 0 0 / .1)`, computed border
+  `--product-surface-border-color: oklch(0 0 0 / .1)` и
+  `--product-surface-border: 1px solid var(--product-surface-border-color)`, computed border
   `1px solid oklch(0 0 0 / 0.1)`, `background-clip: padding-box` и ту же
   computed base shadow
   `oklch(0 0 0 / 0.05) 0px 1px 6px 0px`, что selected button переключателя
@@ -1368,15 +1371,22 @@ flow как permanent delete.
   что row ellipsis и Component-card icon-actions остаются
   transparent/borderless/no-shadow, а contextual menu panels/items сохраняют
   border `0`.
-  У compound toggles не должно быть постоянной внешней обводки, selected white
-  option использует только base shadow и не получает hover/pressed button states,
-  а shell имеет computed background `oklch(0.19 0 0 / 0.1)`; keyboard focus
-  сохраняет видимый outline. Menu items сохраняют border `0`.
+  На narrow/coarse viewport compound toggle сохраняет `48 px` group и `44 px`
+  hit targets. Его `::before` рисует `40 px` track с radius `12 px` и цветом
+  `--product-surface-border-color`; selected option остаётся прозрачной, а её
+  `::before` рисует непрозрачную белую `38 px` пластину с radius `11 px`
+  и base shadow. Для icon-only её размер точно `38 × 38 px`; между ней и
+  track остаётся `1 px` контур того же цвета, что рамка обычной кнопки.
+  Actual buttons не масштабируются при pressed; keyboard focus сохраняет
+  видимый inset outline. В `forced-colors` проверить контрастные
+  `ButtonFace / ButtonText` для track/inactive option и
+  `Highlight / HighlightText` для selected plate. Menu items сохраняют border `0`.
   Повторить этот visual check на authenticated `/profile` и вкладках
   `?tab=observers|settings`: единый раздел использует beige product shell и
-  solid-white demo TopNav; Account trigger/avatar имеют ровно `40 × 40 px` и
-  radius `12 px`, видимого имени рядом нет. Dropdown header содержит ФИО/email
-  без avatar; divider под ним и между группами пунктов отсутствует. Tabs и
+  solid-white demo TopNav; desktop Account avatar-link имеет ровно
+  `40 × 40 px` и radius `12 px`, видимого имени рядом нет. На mobile burger имеет
+  `48 × 48 px`, а navigation-panel profile header содержит `48 px` avatar,
+  ФИО/email и один full-bleed светлый divider перед items. Tabs и
   primary/secondary/destructive actions используют shared product controls без
   raw Tailwind visual fork. Старые `/settings/*` должны перенаправлять в нужную
   вкладку и не рендерить отдельный side-nav. Auth-кнопки, построенные

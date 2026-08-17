@@ -56,7 +56,9 @@ export function SegmentedControl<T extends string>({
             aria-busy={item.busy || undefined}
             className={classNames(
               "product-segmented-control-option inline-flex h-8 min-h-8 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg text-[0.88rem] font-medium leading-none transition",
-              iconOnly ? "w-8 px-0" : "px-3",
+              iconOnly
+                ? "product-segmented-control-option-icon-only w-8 px-0"
+                : "px-3",
               isSelected
                 ? "product-segmented-control-option-selected bg-white text-neutral-950"
                 : "text-neutral-600 hover:bg-neutral-950/[0.06] hover:text-neutral-950",

@@ -1,7 +1,7 @@
 # Каталог компонентов Course Builder
 
 **Статус:** current production registry + product decision
-**Актуально на:** 14 августа 2026 года
+**Актуально на:** 17 августа 2026 года
 
 Этот документ фиксирует проверенные публичные возможности ProgressMe,
 нашу продуктовую интерпретацию и фактическую границу ShiDao. Текущий
@@ -145,9 +145,10 @@ shadow-transition и сохраняет одну base-тень
 transparent/borderless/shadowless, а `forced-colors` заменяет surface shadow
 системным контуром.
 
-Base `.field-input`, включая select и textarea, использует общий surface border
-и clipped background. Однострочные `input.field-input` в Component editor
-дополнительно используют белый surface, внешние `40 px`, внутренние `38 px` и
+Base `.field-input`, включая select и textarea, использует общий surface border,
+clipped background и непрозрачную белую заливку. Однострочные
+`input.field-input` в Component editor дополнительно используют внешние `40 px`,
+внутренние `38 px` и
 статический `--product-entry-control-shadow`, равный
 `0 1px 6px 0px oklch(0% 0 0 / 0.05)`, canonical foreground/типографику,
 непрозрачный placeholder и отдельный 2 px focus halo. Hover не меняет shadow

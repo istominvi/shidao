@@ -3,7 +3,7 @@
 **Статус:** current production UI-only demo; responsive-фото, карточная
 галерея, product detail dialog и два карточных режима — current source / next
 production
-**Актуально на:** 16 августа 2026 года
+**Актуально на:** 17 августа 2026 года
 
 ## Назначение
 
@@ -184,7 +184,7 @@ auth boundary (`307 → /login`). Полный authenticated checkout остаё
 каноническую 40 px product-control геометрию, но не entry-field focus halo; его
 список входит в universal `.product-dropdown-surface`: внутренний inset ровно
 `6 px`, белый фон, element-radius `12 px`, обычный `border: 0`, одна тень
-`0 18px 46px rgba(20, 20, 20, 0.18)` и `backdrop-filter: none`. Выбранное
+`0 24px 32px -24px rgba(20, 20, 20, 0.24)` и `backdrop-filter: none`. Выбранное
 значение, keyboard navigation, Escape и focus return сохраняются, а системное
 macOS menu больше не используется. В forced-colors тень заменяется системной
 границей `1px solid CanvasText` на `Canvas`. Category tabs, density segmented
@@ -196,7 +196,8 @@ Store product cards используют статический
 `--product-raised-surface-shadow`, равный базовой тени кнопки
 `0 1px 6px 0px oklch(0% 0 0 / 0.05)`, без card hover/pressed lift, transform или
 shadow-transition. Plain cards также используют
-`--product-surface-border: 1px solid oklch(0 0 0 / 0.1)` и
+`--product-surface-border-color: oklch(0 0 0 / 0.1)` и
+`--product-surface-border: 1px solid var(--product-surface-border-color)` вместе с
 `background-clip: padding-box`, поэтому рамка смешивается с фоном каталога, а
 не с белой заливкой. Semantic/dashed `SurfaceCard` borders при этом не
 перезаписываются. Deep-link и programmatic focus товара сохраняют отдельный
@@ -221,9 +222,10 @@ unsupported browser идут по немедленному fallback. Deep link
 фокусирует карточку: он не открывает detail автоматически и не меняет cart.
 
 Base `.product-control` / `.field-input`, включая многострочный адрес,
-получают общий border и clipped background. Поиск каталога и
-однострочные поля checkout «Получатель / Телефон / Email» дополнительно
-получают белый surface, внешние `40 px`, внутренние `38 px` и статическую тень
+получают общий border, clipped background и непрозрачную белую
+заливку. Поиск каталога и однострочные поля checkout «Получатель /
+Телефон / Email» дополнительно получают внешние `40 px`, внутренние
+`38 px` и статическую тень
 `0 1px 6px 0px oklch(0% 0 0 / 0.05)`, canonical foreground/типографику,
 непрозрачные placeholder/icon и отдельный 2 px focus halo с
 `outline-offset: 0`: halo начинается сразу за рамкой, не создавая визуального
@@ -231,8 +233,10 @@ Base `.product-control` / `.field-input`, включая многострочн�
 доставки сохраняет base boundary, но не получает single-line height/entry
 shadow. Native `select`, standalone `DialogShell` и demo-only surfaces исключены
 из universal dropdown contract; Store sort намеренно использует product
-dropdown вместо native `select`. Compound toggles
-остаются borderless. Это UI-only acceptance без Product/Order/Inventory, API,
+dropdown вместо native `select`. Compound toggles сохраняют
+`48 / 44 px` touch boxes, но рисуют `40 px` track и `38 px` белый selected
+surface с `1 px` контуром из того же цвета, что product border. Это UI-only
+acceptance без Product/Order/Inventory, API,
 persistence, schema, migration,
 оплаты или delivery integration. Этот follow-up является current source / next
 production и ещё не подменяет historical rollout evidence выше.

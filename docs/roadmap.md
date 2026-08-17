@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
 **Статус:** current / next / later priorities после production identity release
-**Актуально на:** 16 августа 2026 года
+**Актуально на:** 17 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -83,7 +83,11 @@
   краю content.
 - На ширине до `767 px` и при любом coarse/touch pointer Course search, primary
   actions и tabs имеют минимум `48 px`, а segmented/toggle shells используют
-  exact `48 px` с `44 px` inner options, `16 px` labels и `20 px` glyphs. Все
+  `48 px` с `44 px` options для touch hit-testing, но рисуют точный
+  `40 px` track и `38 px` selected surface (`38 × 38 px` для icon-only).
+  Track/ring и product-button border используют один цвет, радиусы
+  `12 / 11 px` концентричны, labels равны `16 px`, glyphs — `20 px`; Schedule
+  использует общий `SegmentedControl`. Все
   редактируемые app
   inputs/selects/textareas имеют computed font не меньше `16 px`, предотвращая
   iOS focus zoom в portrait и landscape без запрета pinch zoom. Launcher
@@ -95,9 +99,17 @@
   desktop projection, а до `767 px` заменяется семантическим списком компактных
   карточек без page-level horizontal scroll. Query, presentation state и
   Course actions остаются общими с desktop.
-- Следующий release step — UI gates, strict browser acceptance, обычный Coolify
-  rollout и authenticated real-iPhone postflight для Safari chrome/elastic
-  overscroll; API, schema и migration work для этого среза не нужны.
+- Канонические белые product surfaces используют один непрозрачный
+  `--product-surface-background: #fff`: TopNav, dropdown, plain cards/workspaces,
+  inputs/selects/textareas, Run history и published-Course surfaces. Semantic status,
+  marketing glass, hover/overlay и header-fade fills остаются явными
+  исключениями. Dropdown shadow направлена вниз и не затемняет
+  белый header над панелью.
+- Local UI gates завершены: `723/723` unit/contract и `28/28` strict
+  production-mode browser scenarios, typecheck, lint, format check и production
+  build прошли. Следующий release step — обычный Coolify rollout и
+  authenticated real-iPhone postflight для Safari chrome/elastic overscroll;
+  API, schema и migration work для этого среза не нужны.
 
 ## Current source / next production — compact toolbar controls
 
@@ -742,9 +754,11 @@ functional source `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da`.
 rows, Schedule и Students; protected mobile navigation menu; product selection
 dropdowns, включая Store sort; Schedule calendar/date popover.
 Course/Students/Store filter popovers удалены. Панель использует общий
-внутренний inset `6 px`, белый фон, element-radius `12 px`, обычный `border: 0`,
+внутренний inset `6 px`, белый фон, base element-radius `12 px` (мобильная
+navigation panel локально сохраняет `16 px`), обычный `border: 0`,
 ровно одну
-тень `0 18px 46px rgba(20, 20, 20, 0.18)` и `backdrop-filter: none`.
+направленную вниз тень `0 24px 32px -24px rgba(20, 20, 20, 0.24)` и
+`backdrop-filter: none`. Тень не затемняет белый header над панелью.
 Служебные separator/divider линии отсутствуют в contextual panels и calendar
 footer; единственное намеренное исключение — full-bleed светлый divider между
 Account profile header и navigation items в mobile navigation panel. Локальные

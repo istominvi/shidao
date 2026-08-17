@@ -275,9 +275,20 @@ keyboard-open, стрелки, Home/End, Escape, outside-click и focus-return �
 
 На ширине до `767 px` и при любом coarse/touch pointer Course toolbars, search,
 основные actions и tabs получают touch target не меньше `48 px`; compound
-segmented controls имеют общую внешнюю высоту `48 px` и внутренние options
-`44 px`, подписи `16 px` и glyphs `20 px`, поэтому они совпадают по масштабу с
-соседними controls, в том числе в landscape на iPhone. Все редактируемые app
+segmented controls сохраняют общую внешнюю высоту `48 px` и реальные
+options `44 px`, но видимый серый track равен `40 px`, а выбранная белая
+пластина — `38 px` (`38 × 38 px` для icon-only). Track использует тот же
+`--product-surface-border-color`, что и рамка обычных кнопок, и образует
+вокруг белой пластины точный `1 px` контур; радиусы `12 / 11 px`
+концентричны. Подписи остаются `16 px`, glyphs — `20 px`, а Schedule
+переиспользует тот же shared `SegmentedControl` без отдельной CSS-копии.
+В `forced-colors` track использует `ButtonFace` с контуром `CanvasText`,
+неактивные пункты — `ButtonText`, а выбранная пластина —
+`Highlight / HighlightText`, поэтому трек и glyph не сливаются в обеих
+системных high-contrast темах.
+Так touch target не уменьшается ради видимой геометрии и совпадает по
+масштабу с соседними controls, в том числе в landscape на iPhone. Все
+редактируемые app
 `input` / `select` / `textarea`
 вычисляются не меньше `16 px`, чтобы iOS не увеличивал страницу при focus;
 pinch zoom при этом не запрещается через viewport. Global launcher
@@ -292,6 +303,21 @@ Course table/card переключатель и
 семантическим списком компактных белых карточек с полными Course actions и
 метаданными. Выбранный presentation mode, query, API и persisted data не
 меняются; это только responsive projection без schema или migration work.
+
+Тот же current-source refinement вводит единый
+`--product-surface-background: #fff`: белые TopNav/dropdown, plain cards и
+workspace surfaces, product/field controls вместе с `select`/`textarea`, Run
+history и published-Course surfaces теперь рисуют полностью непрозрачный
+белый фон. Семантические status/warning fills, marketing glass, hover layers,
+Component action overlay и mobile header fade остаются намеренными
+исключениями. Universal dropdown сохраняет `border: 0` и
+`backdrop-filter: none`, но получает направленную вниз тень
+`0 24px 32px -24px rgba(20, 20, 20, 0.24)`, которая не затемняет
+лежащий выше белый header. API, schema, migrations и Lesson hierarchy не
+меняются. Local acceptance прошёл `723/723` unit/contract tests,
+`28/28` strict production-mode browser scenarios, typecheck, lint, repository-wide
+format check и production build внутри browser gate. Это ещё не подменяет
+matching-container rollout и authenticated real-iPhone Safari postflight.
 
 **Current production Course catalog slice:** реализует reusable Course catalog,
 immutable publication revisions, независимое копирование детских Course и
@@ -822,8 +848,11 @@ contextual `ActionMenu`, protected mobile navigation menu, product selection
 dropdowns, включая Store sort, и Schedule calendar/date popover.
 Course/Students/Store filter popovers удалены. Каждая оставшаяся панель имеет ровно
 `6 px` внутреннего inset (`--product-dropdown-inset: 0.375rem`), белый фон, общий
-element-radius `12 px`, обычный `border: 0`, `backdrop-filter: none` и одну
-тень `0 18px 46px rgba(20, 20, 20, 0.18)`. Служебные separator/divider линии
+base element-radius `12 px` (мобильная navigation panel локально сохраняет
+`16 px`), обычный `border: 0`, `backdrop-filter: none` и одну
+направленную вниз тень `0 24px 32px -24px rgba(20, 20, 20, 0.24)`.
+Она сохраняет глубину панели, но не затемняет белый header над ней.
+Служебные separator/divider линии
 удалены из contextual menus и calendar footer; единственное намеренное
 исключение внутри mobile navigation panel — full-bleed светлый divider между
 Account profile header и navigation items. Consumers не добавляют собственную

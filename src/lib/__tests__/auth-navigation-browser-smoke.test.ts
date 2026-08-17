@@ -92,8 +92,146 @@ const E2E_RAISED_CONTROL_HOVER_TRANSFORM = "matrix(1, 0, 0, 1, 0, -1)";
 const E2E_FOCUS_HALO_COLOR = "rgba(20, 20, 20, 0.58)";
 const E2E_MUTED_FOREGROUND = "oklch(0.19 0 0 / 0.6)";
 const E2E_WORKSPACE_TABS_DIVIDER = "oklch(0.19 0 0 / 0.4)";
-const E2E_SEGMENTED_CONTROL_BACKGROUND = "oklch(0.19 0 0 / 0.1)";
-const E2E_DROPDOWN_SHADOW = "rgba(20, 20, 20, 0.18) 0px 18px 46px 0px";
+const E2E_SEGMENTED_CONTROL_BACKGROUND = E2E_PRODUCT_SURFACE_BORDER_COLOR;
+const E2E_DROPDOWN_SHADOW = "rgba(20, 20, 20, 0.24) 0px 24px 32px -24px";
+
+type OpaqueWhiteSurfaceContract = {
+  backgroundColor: string;
+  backgroundImage: string;
+  opacity: string;
+  backdropFilter: string;
+};
+
+type TouchSegmentedControlContract = {
+  group: {
+    height: number;
+    padding: string;
+    borderRadius: string;
+    backgroundColor: string;
+    boxShadow: string;
+  };
+  track: {
+    content: string;
+    height: number;
+    borderRadius: string;
+    backgroundColor: string;
+    pointerEvents: string;
+  };
+  optionHeights: number[];
+  optionRadii: string[];
+  iconSizes: Array<{ width: number; height: number }>;
+  selected: {
+    backgroundColor: string;
+    backgroundImage: string;
+    boxShadow: string;
+    transform: string;
+    plate: {
+      content: string;
+      width: number;
+      height: number;
+      borderRadius: string;
+      backgroundColor: string;
+      backgroundImage: string;
+      opacity: string;
+      boxShadow: string;
+      pointerEvents: string;
+    };
+  };
+  inactive: {
+    backgroundColor: string;
+    backgroundImage: string;
+    boxShadow: string;
+    transform: string;
+  };
+};
+
+const E2E_OPAQUE_WHITE_SURFACE: OpaqueWhiteSurfaceContract = {
+  backgroundColor: "rgb(255, 255, 255)",
+  backgroundImage: "none",
+  opacity: "1",
+  backdropFilter: "none",
+};
+
+function assertOpaqueWhiteSurface(
+  actual: OpaqueWhiteSurfaceContract,
+  label: string,
+) {
+  assert.deepEqual(actual, E2E_OPAQUE_WHITE_SURFACE, `${label}: opaque white`);
+}
+
+function assertTouchSegmentedControl(
+  actual: TouchSegmentedControlContract,
+  label: string,
+) {
+  assert.deepEqual(
+    actual.group,
+    {
+      height: 48,
+      padding: "2px",
+      borderRadius: "12px",
+      backgroundColor: "rgba(0, 0, 0, 0)",
+      boxShadow: "none",
+    },
+    `${label}: 48px transparent touch group`,
+  );
+  assert.deepEqual(
+    actual.track,
+    {
+      content: '\"\"',
+      height: 40,
+      borderRadius: "12px",
+      backgroundColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
+      pointerEvents: "none",
+    },
+    `${label}: 40px border-color track`,
+  );
+  assert.deepEqual(actual.optionHeights, [44, 44], `${label}: 44px targets`);
+  assert.deepEqual(actual.optionRadii, ["12px", "12px"]);
+  assert.deepEqual(actual.iconSizes, [
+    { width: 20, height: 20 },
+    { width: 20, height: 20 },
+  ]);
+  assert.deepEqual(
+    {
+      backgroundColor: actual.selected.backgroundColor,
+      backgroundImage: actual.selected.backgroundImage,
+      boxShadow: actual.selected.boxShadow,
+      transform: actual.selected.transform,
+    },
+    {
+      backgroundColor: "rgba(0, 0, 0, 0)",
+      backgroundImage: "none",
+      boxShadow: "none",
+      transform: "none",
+    },
+    `${label}: selected target stays visually transparent`,
+  );
+  assert.deepEqual(
+    actual.selected.plate,
+    {
+      content: '\"\"',
+      width: 38,
+      height: 38,
+      borderRadius: "11px",
+      backgroundColor: "rgb(255, 255, 255)",
+      backgroundImage: "none",
+      opacity: "1",
+      boxShadow: E2E_RAISED_CONTROL_SHADOW,
+      pointerEvents: "none",
+    },
+    `${label}: concentric 38px opaque selected plate`,
+  );
+  assert.deepEqual(
+    actual.inactive,
+    {
+      backgroundColor: "rgba(0, 0, 0, 0)",
+      backgroundImage: "none",
+      boxShadow: "none",
+      transform: "none",
+    },
+    `${label}: inactive target stays transparent and stable`,
+  );
+}
 
 const E2E_COURSE_ROW = {
   id: E2E_COURSE_ID,
@@ -924,7 +1062,8 @@ type PlaywrightChromium = {
           height: number;
         }) => Promise<void>;
         emulateMedia: (options: {
-          reducedMotion: "reduce" | "no-preference";
+          reducedMotion?: "reduce" | "no-preference";
+          forcedColors?: "active" | "none";
         }) => Promise<void>;
         waitForTimeout: (timeout: number) => Promise<void>;
         waitForFunction: (pageFunction: () => boolean) => Promise<void>;
@@ -6075,8 +6214,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const viewToggle = document.querySelector<HTMLElement>(
         ".teaching-schedule-view-toggle",
       );
-      const activeViewButton =
-        viewToggle?.querySelector<HTMLElement>("button.is-active");
+      const activeViewButton = viewToggle?.querySelector<HTMLElement>(
+        'button[aria-pressed="true"]',
+      );
       const siteHeader = document.querySelector<HTMLElement>(
         ".site-header-shell-demo",
       );
@@ -7199,7 +7339,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           menu.querySelectorAll<SVGElement>(".action-menu-item-icon"),
         );
         const activeViewOption = document.querySelector<HTMLElement>(
-          ".teaching-schedule-view-toggle button.is-active",
+          '.teaching-schedule-view-toggle button[aria-pressed="true"]',
         );
         if (!activeViewOption) {
           throw new Error("Active Schedule view option is missing");
@@ -10654,9 +10794,120 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       const viewToggle = document.querySelector<HTMLElement>(
         ".teaching-schedule-view-toggle",
       );
-      if (!toolbar || !toolbarActions || !navigator || !picker || !viewToggle) {
+      const selectedViewOption = viewToggle?.querySelector<HTMLElement>(
+        'button[aria-pressed="true"]',
+      );
+      const inactiveViewOption = viewToggle?.querySelector<HTMLElement>(
+        'button[aria-pressed="false"]',
+      );
+      const siteHeader = document.querySelector<HTMLElement>(
+        ".site-header-shell-demo",
+      );
+      const primaryAction = document.querySelector<HTMLElement>(
+        ".app-page-header .app-page-actions > .product-btn",
+      );
+      const emptyCard = document.querySelector<HTMLElement>(
+        ".teaching-schedule-empty.surface-card",
+      );
+      if (
+        !toolbar ||
+        !toolbarActions ||
+        !navigator ||
+        !picker ||
+        !viewToggle ||
+        !selectedViewOption ||
+        !inactiveViewOption ||
+        !siteHeader ||
+        !primaryAction ||
+        !emptyCard
+      ) {
         throw new Error("Mobile schedule controls are missing");
       }
+      const readOpaqueWhiteSurface = (element: HTMLElement) => {
+        const style = getComputedStyle(element);
+        return {
+          backgroundColor: style.backgroundColor,
+          backgroundImage: style.backgroundImage,
+          opacity: style.opacity,
+          backdropFilter: style.backdropFilter,
+        };
+      };
+      const readTouchSegmentedControl = (
+        group: HTMLElement,
+        selected: HTMLElement,
+        inactive: HTMLElement,
+      ) => {
+        const groupRect = group.getBoundingClientRect();
+        const groupStyle = getComputedStyle(group);
+        const trackStyle = getComputedStyle(group, "::before");
+        const selectedRect = selected.getBoundingClientRect();
+        const selectedStyle = getComputedStyle(selected);
+        const selectedPlateStyle = getComputedStyle(selected, "::before");
+        const inactiveStyle = getComputedStyle(inactive);
+        const trackHeight =
+          groupRect.height -
+          Number.parseFloat(trackStyle.top) -
+          Number.parseFloat(trackStyle.bottom);
+        const plateWidth =
+          selectedRect.width -
+          Number.parseFloat(selectedPlateStyle.left) -
+          Number.parseFloat(selectedPlateStyle.right);
+        const plateHeight =
+          selectedRect.height -
+          Number.parseFloat(selectedPlateStyle.top) -
+          Number.parseFloat(selectedPlateStyle.bottom);
+        return {
+          group: {
+            height: groupRect.height,
+            padding: groupStyle.padding,
+            borderRadius: groupStyle.borderRadius,
+            backgroundColor: groupStyle.backgroundColor,
+            boxShadow: groupStyle.boxShadow,
+          },
+          track: {
+            content: trackStyle.content,
+            height: trackHeight,
+            borderRadius: trackStyle.borderRadius,
+            backgroundColor: trackStyle.backgroundColor,
+            pointerEvents: trackStyle.pointerEvents,
+          },
+          optionHeights: Array.from(
+            group.querySelectorAll<HTMLElement>("button"),
+          ).map((button) => button.getBoundingClientRect().height),
+          optionRadii: Array.from(
+            group.querySelectorAll<HTMLElement>("button"),
+          ).map((button) => getComputedStyle(button).borderRadius),
+          iconSizes: Array.from(
+            group.querySelectorAll<SVGElement>("button svg"),
+          ).map((icon) => {
+            const rect = icon.getBoundingClientRect();
+            return { width: rect.width, height: rect.height };
+          }),
+          selected: {
+            backgroundColor: selectedStyle.backgroundColor,
+            backgroundImage: selectedStyle.backgroundImage,
+            boxShadow: selectedStyle.boxShadow,
+            transform: selectedStyle.transform,
+            plate: {
+              content: selectedPlateStyle.content,
+              width: plateWidth,
+              height: plateHeight,
+              borderRadius: selectedPlateStyle.borderRadius,
+              backgroundColor: selectedPlateStyle.backgroundColor,
+              backgroundImage: selectedPlateStyle.backgroundImage,
+              opacity: selectedPlateStyle.opacity,
+              boxShadow: selectedPlateStyle.boxShadow,
+              pointerEvents: selectedPlateStyle.pointerEvents,
+            },
+          },
+          inactive: {
+            backgroundColor: inactiveStyle.backgroundColor,
+            backgroundImage: inactiveStyle.backgroundImage,
+            boxShadow: inactiveStyle.boxShadow,
+            transform: inactiveStyle.transform,
+          },
+        };
+      };
       const viewportWidth = document.documentElement.clientWidth;
       const toolbarStyle = getComputedStyle(toolbar);
       const toolbarRect = toolbar.getBoundingClientRect();
@@ -10689,25 +10940,62 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
           const rect = icon.getBoundingClientRect();
           return { width: rect.width, height: rect.height };
         }),
+        whiteSurfaces: {
+          header: readOpaqueWhiteSurface(siteHeader),
+          primaryAction: readOpaqueWhiteSurface(primaryAction),
+          emptyCard: readOpaqueWhiteSurface(emptyCard),
+          dateNavigator: readOpaqueWhiteSurface(navigator),
+        },
+        viewToggle: readTouchSegmentedControl(
+          viewToggle,
+          selectedViewOption,
+          inactiveViewOption,
+        ),
       };
     });
-    assert.deepEqual(mobileScheduleContract, {
-      clientWidth: 375,
-      scrollWidth: 375,
-      controlsInsideViewport: true,
-      toolbarPaddingLeft: "0px",
-      toolbarPaddingRight: "0px",
-      controlsStartInset: 0,
-      controlsEndInset: 0,
-      externalPeriodSwitchCount: 0,
-      viewToggleHeight: 48,
-      viewTogglePadding: "2px",
-      viewToggleButtonHeights: [44, 44],
-      viewToggleIconSizes: [
-        { width: 20, height: 20 },
-        { width: 20, height: 20 },
-      ],
-    });
+    assert.deepEqual(
+      {
+        clientWidth: mobileScheduleContract.clientWidth,
+        scrollWidth: mobileScheduleContract.scrollWidth,
+        controlsInsideViewport: mobileScheduleContract.controlsInsideViewport,
+        toolbarPaddingLeft: mobileScheduleContract.toolbarPaddingLeft,
+        toolbarPaddingRight: mobileScheduleContract.toolbarPaddingRight,
+        controlsStartInset: mobileScheduleContract.controlsStartInset,
+        controlsEndInset: mobileScheduleContract.controlsEndInset,
+        externalPeriodSwitchCount:
+          mobileScheduleContract.externalPeriodSwitchCount,
+        viewToggleHeight: mobileScheduleContract.viewToggleHeight,
+        viewTogglePadding: mobileScheduleContract.viewTogglePadding,
+        viewToggleButtonHeights: mobileScheduleContract.viewToggleButtonHeights,
+        viewToggleIconSizes: mobileScheduleContract.viewToggleIconSizes,
+      },
+      {
+        clientWidth: 375,
+        scrollWidth: 375,
+        controlsInsideViewport: true,
+        toolbarPaddingLeft: "0px",
+        toolbarPaddingRight: "0px",
+        controlsStartInset: 0,
+        controlsEndInset: 0,
+        externalPeriodSwitchCount: 0,
+        viewToggleHeight: 48,
+        viewTogglePadding: "2px",
+        viewToggleButtonHeights: [44, 44],
+        viewToggleIconSizes: [
+          { width: 20, height: 20 },
+          { width: 20, height: 20 },
+        ],
+      },
+    );
+    for (const [surfaceName, surface] of Object.entries(
+      mobileScheduleContract.whiteSurfaces,
+    )) {
+      assertOpaqueWhiteSurface(surface, `Schedule mobile ${surfaceName}`);
+    }
+    assertTouchSegmentedControl(
+      mobileScheduleContract.viewToggle,
+      "Schedule mobile view toggle",
+    );
 
     const mobileDateTrigger = runtime.page.locator(".teaching-date-trigger");
     await mobileDateTrigger.click();
@@ -10973,6 +11261,9 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       const trigger = document.querySelector<HTMLElement>(
         ".nav-account-menu-trigger",
       );
+      const header = document.querySelector<HTMLElement>(
+        ".site-header-shell-demo",
+      );
       const burger = trigger?.querySelector<SVGElement>(".nav-main-menu-icon");
       const avatar = trigger?.querySelector<HTMLElement>(
         ".nav-user-trigger-avatar",
@@ -10989,6 +11280,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       const items = menu?.querySelector<HTMLElement>(".nav-dropdown-items");
       if (
         !trigger ||
+        !header ||
         !burger ||
         !menu ||
         !profileHeader ||
@@ -11006,6 +11298,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       const itemsRect = items.getBoundingClientRect();
       const menuStyle = getComputedStyle(menu);
       const profileHeaderStyle = getComputedStyle(profileHeader);
+      const headerStyle = getComputedStyle(header);
       const visibleMenuItems = Array.from(
         menu.querySelectorAll<HTMLElement>('[role="menuitem"]'),
       ).filter((item) => item.getClientRects().length > 0);
@@ -11055,6 +11348,27 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
             menuRect.right <= viewportWidth &&
             menuRect.top >= 0 &&
             menuRect.bottom <= window.innerHeight,
+          boxShadow: menuStyle.boxShadow,
+        },
+        whiteSurfaces: {
+          header: {
+            backgroundColor: headerStyle.backgroundColor,
+            backgroundImage: headerStyle.backgroundImage,
+            opacity: headerStyle.opacity,
+            backdropFilter: headerStyle.backdropFilter,
+          },
+          menu: {
+            backgroundColor: menuStyle.backgroundColor,
+            backgroundImage: menuStyle.backgroundImage,
+            opacity: menuStyle.opacity,
+            backdropFilter: menuStyle.backdropFilter,
+          },
+          profile: {
+            backgroundColor: profileHeaderStyle.backgroundColor,
+            backgroundImage: profileHeaderStyle.backgroundImage,
+            opacity: profileHeaderStyle.opacity,
+            backdropFilter: profileHeaderStyle.backdropFilter,
+          },
         },
         itemHeights: visibleMenuItems.map(
           (item) => item.getBoundingClientRect().height,
@@ -11113,6 +11427,22 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     assert.ok(Math.abs(mobileAccountMenuContract.menu.topGap - 12) < 0.5);
     assert.equal(mobileAccountMenuContract.menu.borderRadius, "16px");
     assert.equal(mobileAccountMenuContract.menu.insideViewport, true);
+    for (const [surfaceName, surface] of Object.entries(
+      mobileAccountMenuContract.whiteSurfaces,
+    )) {
+      assertOpaqueWhiteSurface(surface, `Mobile Account ${surfaceName}`);
+    }
+    assert.equal(
+      mobileAccountMenuContract.whiteSurfaces.menu.backgroundColor,
+      mobileAccountMenuContract.whiteSurfaces.header.backgroundColor,
+      "Mobile menu and header must resolve to the exact same white",
+    );
+    assert.match(
+      mobileAccountMenuContract.menu.boxShadow,
+      /0px 24px 32px -24px/,
+      "Mobile menu shadow must fall downward instead of tinting the header",
+    );
+    assert.match(mobileAccountMenuContract.menu.boxShadow, /0\.24/);
     assert.deepEqual(
       mobileAccountMenuContract.itemHeights,
       [68, 68, 68, 68, 68],
@@ -15229,6 +15559,18 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const primaryAction = document.querySelector<HTMLElement>(
         ".app-page-header .app-page-actions > *",
       );
+      const header = document.querySelector<HTMLElement>(
+        ".site-header-shell-demo",
+      );
+      const tableSurface = document.querySelector<HTMLElement>(
+        ".courses-index-shell .course-index-table-wrap",
+      );
+      const selectedViewOption = viewSwitch?.querySelector<HTMLElement>(
+        'button[aria-pressed="true"]',
+      );
+      const inactiveViewOption = viewSwitch?.querySelector<HTMLElement>(
+        'button[aria-pressed="false"]',
+      );
       const visibleTabs = Array.from(
         document.querySelectorAll<HTMLElement>(
           '.courses-index-shell [role="tab"]',
@@ -15242,6 +15584,10 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         !viewSwitch ||
         !searchInput ||
         !primaryAction ||
+        !header ||
+        !tableSurface ||
+        !selectedViewOption ||
+        !inactiveViewOption ||
         visibleTabs.length === 0 ||
         !launcher ||
         !launcherIcon
@@ -15250,6 +15596,25 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       }
       const launcherRect = launcher.getBoundingClientRect();
       const launcherIconRect = launcherIcon.getBoundingClientRect();
+      const readOpaqueWhiteSurface = (element: HTMLElement) => {
+        const style = getComputedStyle(element);
+        return {
+          backgroundColor: style.backgroundColor,
+          backgroundImage: style.backgroundImage,
+          opacity: style.opacity,
+          backdropFilter: style.backdropFilter,
+        };
+      };
+      const viewSwitchRect = viewSwitch.getBoundingClientRect();
+      const viewSwitchStyle = getComputedStyle(viewSwitch);
+      const trackStyle = getComputedStyle(viewSwitch, "::before");
+      const selectedRect = selectedViewOption.getBoundingClientRect();
+      const selectedStyle = getComputedStyle(selectedViewOption);
+      const selectedPlateStyle = getComputedStyle(
+        selectedViewOption,
+        "::before",
+      );
+      const inactiveStyle = getComputedStyle(inactiveViewOption);
       return {
         clientWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
@@ -15282,6 +15647,72 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
           height: launcherRect.height,
           iconWidth: launcherIconRect.width,
           iconHeight: launcherIconRect.height,
+        },
+        whiteSurfaces: {
+          header: readOpaqueWhiteSurface(header),
+          primaryAction: readOpaqueWhiteSurface(primaryAction),
+          searchInput: readOpaqueWhiteSurface(searchInput),
+          table: readOpaqueWhiteSurface(tableSurface),
+        },
+        viewToggle: {
+          group: {
+            height: viewSwitchRect.height,
+            padding: viewSwitchStyle.padding,
+            borderRadius: viewSwitchStyle.borderRadius,
+            backgroundColor: viewSwitchStyle.backgroundColor,
+            boxShadow: viewSwitchStyle.boxShadow,
+          },
+          track: {
+            content: trackStyle.content,
+            height:
+              viewSwitchRect.height -
+              Number.parseFloat(trackStyle.top) -
+              Number.parseFloat(trackStyle.bottom),
+            borderRadius: trackStyle.borderRadius,
+            backgroundColor: trackStyle.backgroundColor,
+            pointerEvents: trackStyle.pointerEvents,
+          },
+          optionHeights: Array.from(
+            viewSwitch.querySelectorAll<HTMLElement>("button"),
+          ).map((button) => button.getBoundingClientRect().height),
+          optionRadii: Array.from(
+            viewSwitch.querySelectorAll<HTMLElement>("button"),
+          ).map((button) => getComputedStyle(button).borderRadius),
+          iconSizes: Array.from(
+            viewSwitch.querySelectorAll<SVGElement>("button svg"),
+          ).map((icon) => {
+            const rect = icon.getBoundingClientRect();
+            return { width: rect.width, height: rect.height };
+          }),
+          selected: {
+            backgroundColor: selectedStyle.backgroundColor,
+            backgroundImage: selectedStyle.backgroundImage,
+            boxShadow: selectedStyle.boxShadow,
+            transform: selectedStyle.transform,
+            plate: {
+              content: selectedPlateStyle.content,
+              width:
+                selectedRect.width -
+                Number.parseFloat(selectedPlateStyle.left) -
+                Number.parseFloat(selectedPlateStyle.right),
+              height:
+                selectedRect.height -
+                Number.parseFloat(selectedPlateStyle.top) -
+                Number.parseFloat(selectedPlateStyle.bottom),
+              borderRadius: selectedPlateStyle.borderRadius,
+              backgroundColor: selectedPlateStyle.backgroundColor,
+              backgroundImage: selectedPlateStyle.backgroundImage,
+              opacity: selectedPlateStyle.opacity,
+              boxShadow: selectedPlateStyle.boxShadow,
+              pointerEvents: selectedPlateStyle.pointerEvents,
+            },
+          },
+          inactive: {
+            backgroundColor: inactiveStyle.backgroundColor,
+            backgroundImage: inactiveStyle.backgroundImage,
+            boxShadow: inactiveStyle.boxShadow,
+            transform: inactiveStyle.transform,
+          },
         },
       };
     });
@@ -15325,6 +15756,15 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     assert.ok(mobileLandscapeContract.launcher.height >= 56);
     assert.ok(mobileLandscapeContract.launcher.iconWidth >= 24);
     assert.ok(mobileLandscapeContract.launcher.iconHeight >= 24);
+    for (const [surfaceName, surface] of Object.entries(
+      mobileLandscapeContract.whiteSurfaces,
+    )) {
+      assertOpaqueWhiteSurface(surface, `844px Course ${surfaceName}`);
+    }
+    assertTouchSegmentedControl(
+      mobileLandscapeContract.viewToggle,
+      "844px coarse Course view toggle",
+    );
 
     await landscapeLauncher.click();
     const landscapeMessagesPanel = runtime.page.getByRole("dialog", {
@@ -15771,9 +16211,292 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
           `${viewportLabel}: no body overflow at ${state}`,
         );
       }
+
+      const mobileCourseVisualContract = await runtime.page.evaluate(() => {
+        const header = document.querySelector<HTMLElement>(
+          ".site-header-shell-demo",
+        );
+        const primaryAction = document.querySelector<HTMLElement>(
+          ".app-page-header .app-page-actions > .product-btn",
+        );
+        const searchInput = document.querySelector<HTMLInputElement>(
+          ".course-index-toolbar input.product-control-search",
+        );
+        const card = Array.from(
+          document.querySelectorAll<HTMLElement>(".course-index-mobile-card"),
+        ).find((candidate) => candidate.getClientRects().length > 0);
+        const viewToggle = document.querySelector<HTMLElement>(
+          '[role="group"][aria-label="Вид списка курсов"]',
+        );
+        const selectedViewOption = viewToggle?.querySelector<HTMLElement>(
+          'button[aria-pressed="true"]',
+        );
+        const inactiveViewOption = viewToggle?.querySelector<HTMLElement>(
+          'button[aria-pressed="false"]',
+        );
+        if (
+          !header ||
+          !primaryAction ||
+          !searchInput ||
+          !card ||
+          !viewToggle ||
+          !selectedViewOption ||
+          !inactiveViewOption
+        ) {
+          throw new Error("Mobile Course white surfaces or toggle are missing");
+        }
+        const readOpaqueWhiteSurface = (element: HTMLElement) => {
+          const style = getComputedStyle(element);
+          return {
+            backgroundColor: style.backgroundColor,
+            backgroundImage: style.backgroundImage,
+            opacity: style.opacity,
+            backdropFilter: style.backdropFilter,
+          };
+        };
+        const groupRect = viewToggle.getBoundingClientRect();
+        const groupStyle = getComputedStyle(viewToggle);
+        const trackStyle = getComputedStyle(viewToggle, "::before");
+        const selectedRect = selectedViewOption.getBoundingClientRect();
+        const selectedStyle = getComputedStyle(selectedViewOption);
+        const selectedPlateStyle = getComputedStyle(
+          selectedViewOption,
+          "::before",
+        );
+        const inactiveStyle = getComputedStyle(inactiveViewOption);
+        return {
+          whiteSurfaces: {
+            header: readOpaqueWhiteSurface(header),
+            primaryAction: readOpaqueWhiteSurface(primaryAction),
+            searchInput: readOpaqueWhiteSurface(searchInput),
+            card: readOpaqueWhiteSurface(card),
+          },
+          viewToggle: {
+            group: {
+              height: groupRect.height,
+              padding: groupStyle.padding,
+              borderRadius: groupStyle.borderRadius,
+              backgroundColor: groupStyle.backgroundColor,
+              boxShadow: groupStyle.boxShadow,
+            },
+            track: {
+              content: trackStyle.content,
+              height:
+                groupRect.height -
+                Number.parseFloat(trackStyle.top) -
+                Number.parseFloat(trackStyle.bottom),
+              borderRadius: trackStyle.borderRadius,
+              backgroundColor: trackStyle.backgroundColor,
+              pointerEvents: trackStyle.pointerEvents,
+            },
+            optionHeights: Array.from(
+              viewToggle.querySelectorAll<HTMLElement>("button"),
+            ).map((button) => button.getBoundingClientRect().height),
+            optionRadii: Array.from(
+              viewToggle.querySelectorAll<HTMLElement>("button"),
+            ).map((button) => getComputedStyle(button).borderRadius),
+            iconSizes: Array.from(
+              viewToggle.querySelectorAll<SVGElement>("button svg"),
+            ).map((icon) => {
+              const rect = icon.getBoundingClientRect();
+              return { width: rect.width, height: rect.height };
+            }),
+            selected: {
+              backgroundColor: selectedStyle.backgroundColor,
+              backgroundImage: selectedStyle.backgroundImage,
+              boxShadow: selectedStyle.boxShadow,
+              transform: selectedStyle.transform,
+              plate: {
+                content: selectedPlateStyle.content,
+                width:
+                  selectedRect.width -
+                  Number.parseFloat(selectedPlateStyle.left) -
+                  Number.parseFloat(selectedPlateStyle.right),
+                height:
+                  selectedRect.height -
+                  Number.parseFloat(selectedPlateStyle.top) -
+                  Number.parseFloat(selectedPlateStyle.bottom),
+                borderRadius: selectedPlateStyle.borderRadius,
+                backgroundColor: selectedPlateStyle.backgroundColor,
+                backgroundImage: selectedPlateStyle.backgroundImage,
+                opacity: selectedPlateStyle.opacity,
+                boxShadow: selectedPlateStyle.boxShadow,
+                pointerEvents: selectedPlateStyle.pointerEvents,
+              },
+            },
+            inactive: {
+              backgroundColor: inactiveStyle.backgroundColor,
+              backgroundImage: inactiveStyle.backgroundImage,
+              boxShadow: inactiveStyle.boxShadow,
+              transform: inactiveStyle.transform,
+            },
+          },
+        };
+      });
+      for (const [surfaceName, surface] of Object.entries(
+        mobileCourseVisualContract.whiteSurfaces,
+      )) {
+        assertOpaqueWhiteSurface(
+          surface,
+          `${viewport.width}px Course ${surfaceName}`,
+        );
+      }
+      assertTouchSegmentedControl(
+        mobileCourseVisualContract.viewToggle,
+        `${viewport.width}px Course view toggle`,
+      );
     }
 
     await runtime.page.setViewportSize({ width: 375, height: 812 });
+    await runtime.page.emulateMedia({ forcedColors: "active" });
+    try {
+      // The shared option uses the Tailwind transition utility, so let the
+      // forced-color system pair settle before reading the final rendered
+      // contrast contract.
+      await runtime.page.waitForTimeout(250);
+      const forcedColorsToggle = await runtime.page.evaluate(() => {
+        const group = document.querySelector<HTMLElement>(
+          '[role="group"][aria-label="Вид списка курсов"]',
+        );
+        const selected = group?.querySelector<HTMLElement>(
+          'button[aria-pressed="true"]',
+        );
+        const inactive = group?.querySelector<HTMLElement>(
+          'button[aria-pressed="false"]',
+        );
+        if (!group || !selected || !inactive) {
+          throw new Error("Forced-colors Course toggle is missing");
+        }
+
+        const systemProbe = document.createElement("div");
+        systemProbe.style.position = "fixed";
+        systemProbe.style.left = "-9999px";
+        systemProbe.style.background = "ButtonFace";
+        systemProbe.style.color = "ButtonText";
+        systemProbe.style.outline = "1px solid CanvasText";
+        const highlightProbe = document.createElement("div");
+        highlightProbe.style.position = "fixed";
+        highlightProbe.style.left = "-9999px";
+        highlightProbe.style.background = "Highlight";
+        highlightProbe.style.color = "HighlightText";
+        document.body.append(systemProbe, highlightProbe);
+
+        const groupStyle = getComputedStyle(group);
+        const trackStyle = getComputedStyle(group, "::before");
+        const selectedStyle = getComputedStyle(selected);
+        const selectedGlyph = selected.querySelector<HTMLElement>("svg, span");
+        const selectedPlateStyle = getComputedStyle(selected, "::before");
+        const inactiveStyle = getComputedStyle(inactive);
+        const systemStyle = getComputedStyle(systemProbe);
+        const highlightStyle = getComputedStyle(highlightProbe);
+        const contract = {
+          mediaMatches: matchMedia("(forced-colors: active)").matches,
+          system: {
+            buttonFace: systemStyle.backgroundColor,
+            buttonText: systemStyle.color,
+            canvasText: systemStyle.outlineColor,
+            highlight: highlightStyle.backgroundColor,
+            highlightText: highlightStyle.color,
+          },
+          group: {
+            outlineStyle: groupStyle.outlineStyle,
+            outlineWidth: groupStyle.outlineWidth,
+            outlineColor: groupStyle.outlineColor,
+            outlineOffset: groupStyle.outlineOffset,
+          },
+          track: {
+            backgroundColor: trackStyle.backgroundColor,
+            pointerEvents: trackStyle.pointerEvents,
+          },
+          inactive: {
+            color: inactiveStyle.color,
+            transform: inactiveStyle.transform,
+          },
+          selected: {
+            color: selectedStyle.color,
+            glyphColor: selectedGlyph
+              ? getComputedStyle(selectedGlyph).color
+              : null,
+            transform: selectedStyle.transform,
+            plateBackgroundColor: selectedPlateStyle.backgroundColor,
+            platePointerEvents: selectedPlateStyle.pointerEvents,
+          },
+        };
+        systemProbe.remove();
+        highlightProbe.remove();
+        return contract;
+      });
+
+      assert.equal(forcedColorsToggle.mediaMatches, true);
+      assert.deepEqual(forcedColorsToggle.group, {
+        outlineStyle: "solid",
+        outlineWidth: "1px",
+        outlineColor: forcedColorsToggle.system.canvasText,
+        outlineOffset: "-1px",
+      });
+      assert.deepEqual(forcedColorsToggle.track, {
+        backgroundColor: forcedColorsToggle.system.buttonFace,
+        pointerEvents: "none",
+      });
+      assert.deepEqual(forcedColorsToggle.inactive, {
+        color: forcedColorsToggle.system.buttonText,
+        transform: "none",
+      });
+      assert.notEqual(
+        forcedColorsToggle.inactive.color,
+        forcedColorsToggle.track.backgroundColor,
+        "Forced-colors inactive glyph must contrast with the toggle track",
+      );
+      assert.deepEqual(forcedColorsToggle.selected, {
+        color: forcedColorsToggle.system.highlightText,
+        glyphColor: forcedColorsToggle.system.highlightText,
+        transform: "none",
+        plateBackgroundColor: forcedColorsToggle.system.highlight,
+        platePointerEvents: "none",
+      });
+
+      await runtime.page.keyboard.press("Tab");
+      await runtime.page.evaluate(() => {
+        const selected = document.querySelector<HTMLButtonElement>(
+          '[role="group"][aria-label="Вид списка курсов"] button[aria-pressed="true"]',
+        );
+        if (!selected) {
+          throw new Error("Selected forced-colors Course option is missing");
+        }
+        selected.focus();
+      });
+      await runtime.page.waitForTimeout(250);
+      const focusedSelectedContract = await runtime.page.evaluate(() => {
+        const selected = document.querySelector<HTMLButtonElement>(
+          '[role="group"][aria-label="Вид списка курсов"] button[aria-pressed="true"]',
+        );
+        if (!selected) {
+          throw new Error("Focused forced-colors Course option is missing");
+        }
+        const style = getComputedStyle(selected);
+        return {
+          isActiveElement: document.activeElement === selected,
+          isFocusVisible: selected.matches(":focus-visible"),
+          outlineColor: style.outlineColor,
+          outlineStyle: style.outlineStyle,
+          outlineWidth: style.outlineWidth,
+        };
+      });
+      assert.deepEqual(focusedSelectedContract, {
+        isActiveElement: true,
+        isFocusVisible: true,
+        outlineColor: forcedColorsToggle.system.highlightText,
+        outlineStyle: "solid",
+        outlineWidth: "2px",
+      });
+    } finally {
+      await runtime.page.evaluate(() => {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      });
+      await runtime.page.emulateMedia({ forcedColors: "none" });
+    }
 
     await runtime.page
       .getByRole("tab", { name: "Каталог", exact: true })

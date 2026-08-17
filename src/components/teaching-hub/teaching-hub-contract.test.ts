@@ -252,7 +252,7 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     dateNavigatorRule,
-    /border:\s*var\(--product-surface-border\);[^}]*border-radius:\s*var\(--course-demo-control-radius\);[^}]*background:\s*#fff;[^}]*background-clip:\s*padding-box;[^}]*box-shadow:\s*var\(--product-entry-control-shadow\);/,
+    /border:\s*var\(--product-surface-border\);[^}]*border-radius:\s*var\(--course-demo-control-radius\);[^}]*background:\s*var\(--product-surface-background\);[^}]*background-clip:\s*padding-box;[^}]*box-shadow:\s*var\(--product-entry-control-shadow\);/,
   );
   assert.doesNotMatch(dateNavigatorRule, /inset|box-shadow:[^;]*,/);
   assert.match(
@@ -417,16 +417,12 @@ test("schedule keeps the compact date control and dense one-line table contract"
     /\.teaching-run-table-participants,[\s\S]*?\.teaching-run-table-status\s*\{[^}]*color:\s*#141414;/,
   );
   assert.match(
-    teachingHubStyleSource,
-    /\.teaching-schedule-view-toggle button svg\s*\{[^}]*color:\s*#141414;[^}]*opacity:\s*1;/,
+    scheduleWorkspaceSource,
+    /<SegmentedControl[\s\S]*?className="teaching-schedule-view-toggle"[\s\S]*?ariaLabel="Вид занятий"[\s\S]*?value=\{viewMode\}[\s\S]*?onChange=\{setViewMode\}[\s\S]*?iconOnly/,
   );
-  assert.match(
+  assert.doesNotMatch(
     teachingHubStyleSource,
-    /\.teaching-schedule-view-toggle\s*\{[^}]*border:\s*0;[^}]*background:\s*var\(--product-segmented-control-background\);[^}]*box-shadow:\s*none;/,
-  );
-  assert.match(
-    teachingHubStyleSource,
-    /\.teaching-schedule-view-toggle button\s*\{[^}]*height:\s*var\(--product-inner-control-size, 2rem\);[^}]*border-radius:\s*var\(--product-inner-control-radius, 0\.5rem\);/,
+    /\.teaching-schedule-view-toggle button|button\.is-active/,
   );
   assert.match(
     teachingHubStyleSource,
@@ -458,7 +454,7 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     navigationStyleSource,
-    /\.site-header-shell-demo\s*\{[^}]*background-color:\s*#fff;[^}]*background-image:\s*none;[^}]*opacity:\s*1;/,
+    /\.site-header-shell-demo\s*\{[^}]*background-color:\s*var\(--product-surface-background, #fff\);[^}]*background-image:\s*none;[^}]*opacity:\s*1;/,
   );
   assert.match(
     globalStyleSource,
@@ -853,7 +849,7 @@ test("teaching hub inputs, membership control, and data surfaces use canonical t
   }
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-hub-search\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background: #fff;[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
+    /\.teaching-hub-search\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-entry-control-shadow\);/,
   );
   assert.match(
     teachingHubStyleSource,
@@ -886,7 +882,7 @@ test("teaching hub inputs, membership control, and data surfaces use canonical t
   );
 });
 
-test("narrow and coarse-touch teaching view toggles share the 48px shell and 44px option contract", () => {
+test("narrow and coarse-touch teaching toggles share 48px hits with 40/38px visual surfaces", () => {
   const touchMediaQuery =
     "@media (max-width: 767px), (hover: none) and (pointer: coarse)";
   const touchMediaStart = globalStyleSource.indexOf(touchMediaQuery);
@@ -894,7 +890,6 @@ test("narrow and coarse-touch teaching view toggles share the 48px shell and 44p
     "@media (max-width: 767px)",
     touchMediaStart + touchMediaQuery.length,
   );
-
   assert.ok(touchMediaStart >= 0);
   assert.ok(narrowMediaStart > touchMediaStart);
 
@@ -904,27 +899,61 @@ test("narrow and coarse-touch teaching view toggles share the 48px shell and 44p
   );
 
   assert.match(
+    globalStyleSource,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control\s*\{[^}]*outline: 1px solid CanvasText;[^}]*outline-offset: -1px;/,
+  );
+  assert.match(
+    globalStyleSource,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option\s*\{[^}]*color: ButtonText;/,
+  );
+  assert.match(
+    globalStyleSource,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control::before\s*\{[^}]*background: ButtonFace !important;/,
+  );
+  assert.match(
+    globalStyleSource,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option-selected\s*\{[^}]*background: Highlight !important;[^}]*color: HighlightText !important;[^}]*forced-color-adjust: none;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected::before\s*\{[^}]*background: Highlight !important;/,
+  );
+  assert.match(
+    globalStyleSource,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid Highlight;[^}]*outline-offset: -2px;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected:focus-visible\s*\{[^}]*outline-color: HighlightText !important;/,
+  );
+
+  assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control,\s*\.course-demo-shell \.teaching-schedule-view-toggle\s*\{[^}]*height: 3rem;[^}]*min-height: 3rem;[^}]*padding: 0\.125rem;/,
+    /\.course-demo-shell \.product-segmented-control\s*\{[^}]*height: 3rem;[^}]*min-height: 3rem;[^}]*padding: 0\.125rem;[^}]*background: transparent;/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option,\s*\.course-demo-shell \.teaching-schedule-view-toggle button\s*\{[^}]*min-width: 2\.75rem;[^}]*height: 2\.75rem;[^}]*min-height: 2\.75rem;[^}]*font-size: 1rem;[^}]*touch-action: manipulation;/,
+    /\.course-demo-shell \.product-segmented-control::before\s*\{[^}]*position: absolute;[^}]*inset: 0\.25rem;[^}]*border-radius: var\(--course-demo-control-radius, 0\.75rem\);[^}]*background: var\(--product-segmented-control-background\);[^}]*pointer-events: none;/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option svg,\s*\.course-demo-shell \.teaching-schedule-view-toggle button svg\s*\{[^}]*width: 1\.25rem;[^}]*height: 1\.25rem;/,
+    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*min-width: 2\.75rem;[^}]*height: 2\.75rem;[^}]*min-height: 2\.75rem;[^}]*border-radius: var\(--course-demo-control-radius, 0\.75rem\);[^}]*background: transparent;[^}]*font-size: 1rem;[^}]*box-shadow: none;[^}]*touch-action: manipulation;/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.teaching-schedule-view-toggle button\s*\{[^}]*width: 2\.75rem;[^}]*padding-inline: 0;/,
+    /\.course-demo-shell \.product-segmented-control-option-icon-only\s*\{[^}]*width: 2\.75rem;[^}]*padding-inline: 0;/,
   );
   assert.match(
     touchStyles,
-    /\.teaching-schedule-view-toggle\s+button:not\(:disabled\):active\s*\{[^}]*transform: scale\(0\.96\);/,
+    /\.course-demo-shell \.product-segmented-control-option svg\s*\{[^}]*width: 1\.25rem;[^}]*height: 1\.25rem;/,
   );
   assert.match(
     touchStyles,
-    /\.teaching-schedule-view-toggle button:focus-visible\s*\{[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: -2px;/,
+    /\.course-demo-shell \.product-segmented-control-option-selected::before\s*\{[^}]*inset: 0\.1875rem;[^}]*border-radius: calc\(\s*var\(--course-demo-control-radius, 0\.75rem\) - 0\.0625rem\s*\);[^}]*background-color: var\(--product-surface-background\);[^}]*background-image: none;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*pointer-events: none;/,
   );
+  assert.match(
+    touchStyles,
+    /\.product-segmented-control-option-selected:not\(:disabled\):active::before\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-segmented-control-option:not\(:disabled\):active\s*\{[^}]*transform: none;/,
+  );
+  assert.match(
+    touchStyles,
+    /\.course-demo-shell \.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid var\(--product-control-focus-halo\);[^}]*outline-offset: -2px;/,
+  );
+  assert.doesNotMatch(touchStyles, /transform: scale\(/);
 });

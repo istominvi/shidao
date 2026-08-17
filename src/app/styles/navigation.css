@@ -63,7 +63,7 @@
   min-height: 4rem;
   border: 0;
   border-radius: var(--product-card-radius, 1.25rem);
-  background-color: #fff;
+  background-color: var(--product-surface-background, #fff);
   background-image: none;
   opacity: 1;
   padding: 0.75rem;
@@ -642,7 +642,7 @@
     height: 3rem;
     min-height: 3rem;
     border-radius: 0.875rem;
-    background: #fff;
+    background: var(--product-surface-background, #fff);
     box-shadow: none;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
@@ -656,7 +656,7 @@
     .nav-account-menu-trigger[aria-expanded="false"]:hover,
   .site-header-shell-demo
     .nav-account-menu-trigger[aria-expanded="false"]:focus-visible {
-    background: #fff;
+    background: var(--product-surface-background, #fff);
     box-shadow: none;
   }
 
@@ -693,6 +693,11 @@
 
   .product-dropdown-surface.nav-account-menu-mobile {
     border-radius: 1rem;
+    background-color: var(--product-surface-background, #fff);
+    background-image: none;
+    opacity: 1;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .nav-account-menu-mobile .nav-dropdown-profile {
@@ -703,7 +708,7 @@
       calc(-1 * var(--product-dropdown-inset, 0.375rem))
       var(--product-dropdown-inset, 0.375rem);
     border-bottom: 1px solid rgba(20, 20, 20, 0.08);
-    background: #fff;
+    background: var(--product-surface-background, #fff);
     padding: 1rem;
   }
 

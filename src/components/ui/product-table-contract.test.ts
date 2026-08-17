@@ -43,7 +43,7 @@ test("product tables use the element radius instead of the card radius", () => {
   );
   assert.match(
     styles,
-    /:root\s*\{[^}]*--product-surface-border: 1px solid oklch\(0 0 0 \/ 0\.1\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
+    /:root\s*\{[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: 1px solid var\(--product-surface-border-color\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
   );
   assert.match(
     styles,
@@ -100,7 +100,15 @@ test("product tables use the element radius instead of the card radius", () => {
 
   assert.match(
     styles,
-    /\.surface-card\s*\{[^}]*background: #fff;[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-surface-shadow\);[\s\S]*?\.surface-card:not\(\.border\)\s*\{[^}]*border: var\(--product-surface-border\);[\s\S]*?\.course-demo-shell \.surface-card\s*\{[^}]*--course-demo-card-radius,[^}]*--product-card-radius,[^}]*background-color: rgba\(255, 255, 255, 0\.82\);/,
+    /\.surface-card\s*\{[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-surface-shadow\);[\s\S]*?\.surface-card:not\(\.border\)\s*\{[^}]*border: var\(--product-surface-border\);[\s\S]*?\.course-demo-shell \.surface-card\s*\{[^}]*--course-demo-card-radius,[^}]*--product-card-radius,[^}]*background-color: var\(--product-surface-background\);/,
+  );
+  assert.match(
+    styles,
+    /\.workspace-surface\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background: var\(--product-surface-background\);/,
+  );
+  assert.match(
+    styles,
+    /\.published-course-progress\s*\{[^}]*background: var\(--product-surface-background\);[\s\S]*?\.published-course-lesson-directory button\s*\{[^}]*background: var\(--product-surface-background\);[\s\S]*?\.published-course-slide\s*\{[^}]*background: var\(--product-surface-background\);/,
   );
   assert.match(
     styles,

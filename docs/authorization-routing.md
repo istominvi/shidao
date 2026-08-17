@@ -168,27 +168,32 @@ Resource access остаётся relation/ownership-scoped:
   указывает на `#security`;
 - Student Screen по-прежнему owner preview, не learner Course access.
 
-Primary navigation для каждого Account в current production UI:
+Primary navigation для каждого Account в current UI:
 
 ```text
 Расписание / Ученики / Курсы / Магазин
 ```
 
-Account menu:
+Mobile navigation menu:
 
 ```text
-Профиль / История / Аттестация / Наблюдатели / Настройки / Выход
+Расписание / Ученики / Курсы / Магазин / Профиль
 ```
 
-Trigger Account menu не показывает имя: только avatar `40 × 40 px` с радиусом
-`12 px`. Dropdown header показывает ФИО и публичный email без avatar;
-разделителя под ним или между группами пунктов нет. Account menu входит в общий
+На desktop Account avatar `40 × 40 px` с radius `12 px` ведёт напрямую в
+`/profile` и не открывает второе Account menu. На mobile его заменяет
+burger `48 × 48 px`; панель имеет viewport inset/gap `12 px` и radius `16 px`.
+Её profile header показывает `48 px` avatar, имя и допустимый email с
+равными верхним/нижним inset и отделён от navigation items одним
+full-bleed светлым divider. Mobile navigation menu входит в общий
 dropdown surface contract вместе с contextual `ActionMenu`,
 Store sort и Schedule calendar. Course/Students/Store filter popovers в
-current source удалены; Students использует inline membership toggle. Панель
-имеет ровно `6 px`
-внутреннего inset, белый фон, radius `12 px`, обычный `border: 0`, одну тень
-`0 18px 46px rgba(20, 20, 20, 0.18)` и не использует blur. В forced-colors тень
+current source удалены; Students использует inline membership toggle. Общий
+base contract имеет ровно `6 px` внутреннего inset, непрозрачный белый фон,
+radius `12 px` с указанным выше локальным mobile override `16 px`, обычный
+`border: 0`,
+одну направленную вниз тень `0 24px 32px -24px rgba(20, 20, 20, 0.24)` и не
+использует blur. Тень не затемняет лежащий выше mobile header. В forced-colors тень
 уступает системной границе `1px solid CanvasText` на `Canvas`. Native `select`,
 самостоятельные modal dialogs и reference/demo-only surfaces в этот contract не
 входят. Отдельной Settings navigation больше нет.

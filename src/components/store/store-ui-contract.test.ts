@@ -170,7 +170,7 @@ test("Store product details expand into a large accessible purchase dialog", () 
 test("Store sort menu and cards adopt canonical raised surfaces", () => {
   assert.match(
     globalStyles,
-    /:root\s*\{[^}]*--product-dropdown-inset: 0\.375rem;[^}]*--product-dropdown-shadow: 0 18px 46px rgba\(20, 20, 20, 0\.18\);/,
+    /:root\s*\{[^}]*--product-dropdown-background: var\(--product-surface-background\);[^}]*--product-dropdown-inset: 0\.375rem;[^}]*--product-dropdown-shadow: 0 24px 32px -24px rgba\(20, 20, 20, 0\.24\);/,
   );
   assert.match(
     globalStyles,
@@ -178,7 +178,7 @@ test("Store sort menu and cards adopt canonical raised surfaces", () => {
   );
   assert.match(
     globalStyles,
-    /:root\s*\{[^}]*--product-surface-border: 1px solid oklch\(0 0 0 \/ 0\.1\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
+    /:root\s*\{[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: 1px solid var\(--product-surface-border-color\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);/,
   );
   assert.match(
     globalStyles,

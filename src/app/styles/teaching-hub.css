@@ -44,7 +44,7 @@
   overflow: hidden;
   border: var(--product-surface-border);
   border-radius: var(--course-demo-control-radius);
-  background: #fff;
+  background: var(--product-surface-background);
   background-clip: padding-box;
   box-shadow: var(--product-entry-control-shadow);
 }
@@ -53,7 +53,7 @@
   height: var(--course-demo-control-height);
   border: var(--product-surface-border);
   border-radius: var(--course-demo-control-radius);
-  background: #fff;
+  background: var(--product-surface-background);
   background-clip: padding-box;
   box-shadow: var(--product-entry-control-shadow);
 }
@@ -325,67 +325,6 @@
 .teaching-schedule-toolbar-actions {
   justify-content: flex-end;
   gap: 0.55rem;
-}
-
-.teaching-schedule-view-toggle {
-  box-sizing: border-box;
-  height: var(--course-demo-control-height);
-  min-height: var(--course-demo-control-height);
-  flex: 0 0 auto;
-  gap: 0.25rem;
-  border: 0;
-  border-radius: var(--course-demo-control-radius);
-  background: var(--product-segmented-control-background);
-  padding: var(--product-inner-control-inset, 0.25rem);
-  box-shadow: none;
-}
-
-.teaching-schedule-view-toggle button {
-  display: inline-flex;
-  box-sizing: border-box;
-  height: var(--product-inner-control-size, 2rem);
-  min-height: var(--product-inner-control-size, 2rem);
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: var(--product-inner-control-radius, 0.5rem);
-  background: transparent;
-  color: #141414;
-  font: inherit;
-  font-size: var(--course-demo-control-font-size);
-  font-weight: var(--course-demo-control-font-weight);
-  line-height: 1;
-  cursor: pointer;
-  transition:
-    background 160ms ease,
-    color 160ms ease,
-    box-shadow 160ms ease;
-}
-
-.teaching-schedule-view-toggle button svg {
-  color: #141414;
-  opacity: 1;
-}
-
-.teaching-schedule-view-toggle button {
-  width: var(--product-inner-control-size, 2rem);
-  padding: 0;
-}
-
-.teaching-schedule-view-toggle button:hover {
-  background: rgba(20, 20, 20, 0.06);
-  color: #141414;
-}
-
-.teaching-schedule-view-toggle button.is-active {
-  background: #fff;
-  color: #141414;
-  box-shadow: var(--product-raised-control-shadow);
-}
-
-.teaching-schedule-view-toggle button:focus-visible {
-  outline: 2px solid rgba(20, 20, 20, 0.58);
-  outline-offset: 2px;
 }
 
 .teaching-hub-search {
@@ -758,9 +697,9 @@
 }
 
 .lesson-run-history-card {
-  border: 1px solid rgba(255, 255, 255, 0.78);
+  border: var(--product-surface-border);
   border-radius: 1.15rem;
-  background: rgba(255, 255, 255, 0.86);
+  background: var(--product-surface-background);
   padding: 1rem;
   box-shadow: var(--product-raised-surface-shadow);
 }

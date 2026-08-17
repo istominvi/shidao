@@ -55,7 +55,7 @@ test("contextual action menus use one borderless surface without separators", ()
 
   assert.match(
     rootStyles,
-    /--product-dropdown-background: #fff;[^}]*--product-dropdown-radius: var\(--product-element-radius\);[^}]*--product-dropdown-inset: 0\.375rem;[^}]*--product-dropdown-shadow: 0 18px 46px rgba\(20, 20, 20, 0\.18\);/,
+    /--product-surface-background: #fff;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: 1px solid var\(--product-surface-border-color\);[^}]*--product-dropdown-background: var\(--product-surface-background\);[^}]*--product-dropdown-radius: var\(--product-element-radius\);[^}]*--product-dropdown-inset: 0\.375rem;[^}]*--product-dropdown-shadow: 0 24px 32px -24px rgba\(20, 20, 20, 0\.24\);/,
   );
   assert.match(
     rootStyles,
@@ -76,7 +76,7 @@ test("contextual action menus use one borderless surface without separators", ()
   );
   assert.match(
     dropdownStyles,
-    /box-shadow: var\(\s*--product-dropdown-shadow,\s*0 18px 46px rgba\(20, 20, 20, 0\.18\)\s*\);/,
+    /box-shadow: var\(\s*--product-dropdown-shadow,\s*0 24px 32px -24px rgba\(20, 20, 20, 0\.24\)\s*\);/,
   );
   assert.equal(dropdownStyles.match(/box-shadow:/g)?.length, 1);
   assert.match(dropdownStyles, /backdrop-filter: none;/);

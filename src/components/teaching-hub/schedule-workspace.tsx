@@ -57,6 +57,7 @@ import {
   nextProductTableSort,
   type ProductTableSortState,
 } from "@/components/ui/product-table";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { ROUTES, toCourseRoute } from "@/lib/auth";
 import type { LessonRun } from "@/modules/lesson-runs/domain";
@@ -431,30 +432,27 @@ export function ScheduleWorkspace() {
               onPeriodChange={setPeriod}
             />
           ) : null}
-          <div
+          <SegmentedControl
             className="teaching-schedule-view-toggle"
-            role="group"
-            aria-label="Вид занятий"
-          >
-            <button
-              type="button"
-              className={viewMode === "table" ? "is-active" : undefined}
-              aria-label="Показать таблицей"
-              aria-pressed={viewMode === "table"}
-              onClick={() => setViewMode("table")}
-            >
-              <Table2 className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className={viewMode === "cards" ? "is-active" : undefined}
-              aria-label="Показать карточками"
-              aria-pressed={viewMode === "cards"}
-              onClick={() => setViewMode("cards")}
-            >
-              <LayoutGrid className="h-4 w-4" aria-hidden="true" />
-            </button>
-          </div>
+            ariaLabel="Вид занятий"
+            value={viewMode}
+            onChange={setViewMode}
+            iconOnly
+            items={[
+              {
+                value: "table",
+                label: "Таблица",
+                ariaLabel: "Показать таблицей",
+                icon: Table2,
+              },
+              {
+                value: "cards",
+                label: "Карточки",
+                ariaLabel: "Показать карточками",
+                icon: LayoutGrid,
+              },
+            ]}
+          />
         </div>
       </section>
 

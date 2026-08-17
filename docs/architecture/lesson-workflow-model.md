@@ -4,7 +4,7 @@
 
 **Дата решения:** 5 августа 2026 года
 
-**Актуально на:** 15 августа 2026 года
+**Актуально на:** 17 августа 2026 года
 
 **Область:** Course Builder / Lesson / Components / Student Screen / audience / scheduling / learning history / course materials / homework
 
@@ -808,9 +808,12 @@ Visual contract Course routes не меняет эту навигационну�
   канонизирует активные product panels: contextual `ActionMenu`, открываемый
   `MoreHorizontal`/`MoreVertical`; protected mobile navigation menu; product
   selection dropdowns, включая Store sort; Schedule calendar/date popover. Все панели используют
-  внутренний panel inset `6 px`, белый фон, element-radius `12 px`, обычный
+  внутренний panel inset `6 px`, белый фон, base element-radius `12 px`;
+  mobile navigation panel локально сохраняет свой `16 px`. Обычный
   `border: 0`,
-  одну тень `0 18px 46px rgba(20, 20, 20, 0.18)` и не используют backdrop blur.
+  одну направленную вниз тень
+  `0 24px 32px -24px rgba(20, 20, 20, 0.24)` и не используют backdrop blur.
+  Тень не затемняет белый mobile TopNav над открытой navigation panel.
   `separatorBefore`, divider/separator DOM и визуальные линии отсутствуют в
   `ActionMenu` и над calendar footer. Единственное намеренное исключение внутри
   mobile navigation panel — full-bleed светлый divider между Account profile
@@ -1015,8 +1018,15 @@ actions`; пять data headers сортируют полную client-loaded pr
   тот же набор данных выводится semantic list/card projection без page-level
   horizontal scroll. На ширине до `767 px` и при любом coarse/touch pointer
   search, tabs и основные actions имеют touch target минимум `48 px`, а
-  segmented shells/options — exact `48 / 44 px` с `16 px` labels и `20 px`
-  glyphs. Все редактируемые app
+  segmented group/options сохраняют `48 / 44 px` touch boxes, но
+  видимые track/selected surface равны `40 / 38 px`; icon-only selected surface —
+  `38 × 38 px`. Общий цвет product border рисует и track, и `1 px` контур
+  вокруг белой пластины; радиусы равны `12 / 11 px`, labels — `16 px`,
+  glyphs — `20 px`. Schedule использует тот же shared `SegmentedControl`.
+  `forced-colors` использует контрастные пары
+  `ButtonFace / ButtonText` для track/inactive item и
+  `Highlight / HighlightText` для selected plate. Все
+  редактируемые app
   inputs/selects/textareas имеют computed font не меньше `16 px`, чтобы iOS не
   выполнял focus zoom в portrait или landscape, при этом viewport не запрещает
   pinch zoom. Launcher «Сообщения» в том же narrow/coarse contract равен
@@ -1024,6 +1034,12 @@ actions`; пять data headers сортируют полную client-loaded pr
   находится на `12 px` выше launcher. Его fullscreen mobile projection живёт
   на слое `110` поверх fixed TopNav `100`, оставаясь ниже confirmation dialogs
   `120`, поэтому modal полностью владеет hit-testing.
+  Обычные белые product surfaces канонизированы через
+  `--product-surface-background: #fff`: TopNav/dropdown, plain cards/workspaces,
+  product/field inputs вместе с `select`/`textarea`, Run history и published-Course
+  surfaces не композят бежевый фон через alpha. Semantic status,
+  marketing glass, hover/action overlays и header fade остаются намеренными
+  исключениями;
   Owned-row заканчивается одним `MoreVertical` portal-menu 32 × 32 px:
   unpublished Course получает «Дублировать / Опубликовать / Удалить», а
   publication states сохраняют update/open/unpublish actions. «Удалить»

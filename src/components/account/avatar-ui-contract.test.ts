@@ -143,6 +143,10 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
       .find((rule) => /(?:1\.5rem|24px)/.test(rule)) ?? "";
   const mobileMenuStyles =
     /\.nav-account-menu-mobile\s*\{[^}]*\}/.exec(navigationCss)?.[0] ?? "";
+  const mobileMenuSurfaceStyles =
+    /\.product-dropdown-surface\.nav-account-menu-mobile\s*\{[^}]*\}/.exec(
+      navigationCss,
+    )?.[0] ?? "";
   const mobileMenuItemStyles =
     /\.nav-account-menu-mobile\s+\.nav-dropdown-item\s*\{[^}]*\}/.exec(
       navigationCss,
@@ -173,7 +177,10 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
   assert.match(mobileTriggerStyles, /width: (?:3rem|48px);/);
   assert.match(mobileTriggerStyles, /height: (?:3rem|48px);/);
   assert.match(mobileTriggerStyles, /min-height: (?:3rem|48px);/);
-  assert.match(mobileTriggerStyles, /background: #fff;/);
+  assert.match(
+    mobileTriggerStyles,
+    /background: var\(--product-surface-background, #fff\);/,
+  );
   assert.match(mobileTriggerStyles, /box-shadow: none;/);
   assert.match(
     mobileTriggerStyles,
@@ -183,11 +190,22 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
   assert.match(mobileTriggerIconStyles, /height: (?:1\.5rem|24px);/);
   assert.match(mobileBrandStyles, /font-size: (?:1\.625rem|26px);/);
   assert.match(demoHeaderStyles, /border-radius:/);
-  assert.match(demoHeaderStyles, /background-color: #fff;/);
+  assert.match(
+    demoHeaderStyles,
+    /background-color: var\(--product-surface-background, #fff\);/,
+  );
   assert.match(demoHeaderStyles, /background-image: none;/);
   assert.match(demoHeaderStyles, /opacity: 1;/);
   assert.match(demoHeaderStyles, /backdrop-filter: none;/);
   assert.match(demoHeaderStyles, /-webkit-backdrop-filter: none;/);
+  assert.match(
+    mobileMenuSurfaceStyles,
+    /background-color: var\(--product-surface-background, #fff\);/,
+  );
+  assert.match(mobileMenuSurfaceStyles, /background-image: none;/);
+  assert.match(mobileMenuSurfaceStyles, /opacity: 1;/);
+  assert.match(mobileMenuSurfaceStyles, /backdrop-filter: none;/);
+  assert.match(mobileMenuSurfaceStyles, /-webkit-backdrop-filter: none;/);
   assert.match(
     mobileMenuStyles,
     /top: calc\(100% \+ (?:0\.75rem|12px)\);/,
@@ -213,6 +231,10 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
   );
   assert.match(mobileProfileStyles, /display: flex;/);
   assert.match(mobileProfileStyles, /border-bottom: 1px solid rgba\(/);
+  assert.match(
+    mobileProfileStyles,
+    /background: var\(--product-surface-background, #fff\);/,
+  );
   assert.match(mobileProfileStyles, /padding: (?:1rem|16px);/);
   assert.match(
     mobileProfileStyles,
@@ -232,7 +254,7 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
   );
   assert.match(
     globalStyles,
-    /\.product-dropdown-surface\s*\{[^}]*border: 0;[^}]*--product-element-radius, 0\.75rem[^}]*padding: var\(--product-dropdown-inset, 0\.375rem\);[^}]*backdrop-filter: none;/,
+    /:root\s*\{[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: 1px solid var\(--product-surface-border-color\);[^}]*--product-dropdown-background: var\(--product-surface-background\);[^}]*--product-dropdown-shadow: 0 24px 32px -24px rgba\(20, 20, 20, 0\.24\);[^}]*\}[\s\S]*?\.product-dropdown-surface\s*\{[^}]*border: 0;[^}]*--product-element-radius, 0\.75rem[^}]*background: var\(--product-dropdown-background, #fff\);[^}]*padding: var\(--product-dropdown-inset, 0\.375rem\);[^}]*backdrop-filter: none;/,
   );
   assert.match(
     navigationCss,

@@ -463,7 +463,10 @@ test("course routes use the flat demo background and unified visual controls", (
     productHeaderStyles,
     /border-radius: var\(--product-card-radius, 1\.25rem\);/,
   );
-  assert.match(productHeaderStyles, /background-color: #fff;/);
+  assert.match(
+    productHeaderStyles,
+    /background-color: var\(--product-surface-background, #fff\);/,
+  );
   assert.match(productHeaderStyles, /background-image: none;/);
   assert.match(productHeaderStyles, /opacity: 1;/);
   assert.match(productHeaderStyles, /backdrop-filter: none;/);
@@ -534,6 +537,9 @@ test("product buttons share one animated raised-control elevation contract", () 
   const navigationStyles = source("src/app/styles/navigation.css");
   const teachingStyles = source("src/app/styles/teaching-hub.css");
   const segmentedControl = source("src/components/ui/segmented-control.tsx");
+  const scheduleWorkspace = source(
+    "src/components/teaching-hub/schedule-workspace.tsx",
+  );
   const learningProfile = source(
     "src/components/learner-identity/learning-profile-workspace.tsx",
   );
@@ -556,7 +562,7 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
-    /:root\s*\{[^}]*--product-raised-control-shadow:\s*0 1px 6px 0px oklch\(0% 0 0 \/ 0\.05\);[^}]*--product-raised-control-shadow-hover:\s*0 4px 10px -2px\s+oklch\(0% 0 0 \/ 0\.16\);[^}]*--product-raised-control-shadow-pressed:\s*0 1px 3px 0px\s+oklch\(0% 0 0 \/ 0\.14\);[^}]*--product-surface-border: 1px solid oklch\(0 0 0 \/ 0\.1\);[^}]*--product-raised-control-hover-translate-y: -1px;[^}]*--product-raised-control-transition: 160ms\s+cubic-bezier\(0\.2, 0\.8, 0\.2, 1\);/,
+    /:root\s*\{[^}]*--product-raised-control-shadow:\s*0 1px 6px 0px oklch\(0% 0 0 \/ 0\.05\);[^}]*--product-raised-control-shadow-hover:\s*0 4px 10px -2px\s+oklch\(0% 0 0 \/ 0\.16\);[^}]*--product-raised-control-shadow-pressed:\s*0 1px 3px 0px\s+oklch\(0% 0 0 \/ 0\.14\);[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: 1px solid var\(--product-surface-border-color\);[^}]*--product-raised-control-hover-translate-y: -1px;[^}]*--product-raised-control-transition: 160ms\s+cubic-bezier\(0\.2, 0\.8, 0\.2, 1\);/,
   );
   assert.match(
     styles,
@@ -650,32 +656,61 @@ test("product buttons share one animated raised-control elevation contract", () 
 
   assert.match(
     styles,
-    /\.product-segmented-control\s*\{[^}]*border: 0;[^}]*background: var\(--product-segmented-control-background\);[^}]*box-shadow: none;/,
+    /\.product-segmented-control\s*\{[^}]*position: relative;[^}]*isolation: isolate;[^}]*border: 0;[^}]*background: var\(--product-segmented-control-background\);[^}]*box-shadow: none;/,
   );
   assert.match(
     styles,
-    /\.product-segmented-control-option-selected\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
+    /\.product-segmented-control-option\s*\{[^}]*position: relative;[^}]*z-index: 1;[^}]*isolation: isolate;[^}]*box-sizing: border-box;[^}]*border: 0;/,
+  );
+  assert.match(
+    styles,
+    /\.product-segmented-control-option-selected\s*\{[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
   );
   assert.match(
     styles,
     /\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid rgba\(20, 20, 20, 0\.58\);[^}]*outline-offset: -2px;/,
-  );
-  assert.doesNotMatch(
-    styles,
-    /\.product-segmented-control-option-selected(?::hover|:active)/,
   );
   assert.match(segmentedControl, /product-segmented-control inline-flex/);
   assert.match(
     segmentedControl,
     /product-segmented-control-option inline-flex/,
   );
-  assert.match(
-    segmentedControl,
-    /isSelected[\s\S]*?product-segmented-control-option-selected bg-white text-neutral-950/,
-  );
+  assert.match(segmentedControl, /product-segmented-control-option-icon-only/);
   assert.doesNotMatch(
     segmentedControl,
     /bg-neutral-950\/\[0\.05\]|shadow-\[inset|shadow-\[0_1px_3px|focus-visible:ring|focus-visible:outline-none|product-raised-control-shadow-hover|product-raised-control-shadow-pressed/,
+  );
+  assert.match(
+    styles,
+    /@media \(max-width: 767px\), \(hover: none\) and \(pointer: coarse\)[\s\S]*?\.course-demo-shell \.product-segmented-control\s*\{[^}]*height: 3rem;[^}]*min-height: 3rem;[^}]*padding: 0\.125rem;[^}]*background: transparent;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-segmented-control::before\s*\{[^}]*inset: 0\.25rem;[^}]*border-radius: var\(--course-demo-control-radius, 0\.75rem\);[^}]*background: var\(--product-segmented-control-background\);[^}]*pointer-events: none;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*min-width: 2\.75rem;[^}]*height: 2\.75rem;[^}]*min-height: 2\.75rem;[^}]*border-radius: var\(--course-demo-control-radius, 0\.75rem\);[^}]*background: transparent;[^}]*box-shadow: none;[^}]*touch-action: manipulation;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-segmented-control-option-icon-only\s*\{[^}]*width: 2\.75rem;[^}]*padding-inline: 0;/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-segmented-control-option-selected::before\s*\{[^}]*inset: 0\.1875rem;[^}]*border-radius: calc\(\s*var\(--course-demo-control-radius, 0\.75rem\) - 0\.0625rem\s*\);[^}]*background-color: var\(--product-surface-background\);[^}]*background-image: none;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*pointer-events: none;/,
+  );
+  assert.match(
+    styles,
+    /\.product-segmented-control-option-selected:not\(:disabled\):active::before\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-segmented-control-option:not\(:disabled\):active\s*\{[^}]*transform: none;/,
+  );
+  assert.doesNotMatch(
+    styles,
+    /\.course-demo-shell \.product-segmented-control-option[^}]*transform: scale\(/,
   );
   assert.match(
     learningProfile,
@@ -683,16 +718,16 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.doesNotMatch(learningProfile, /bg-rose-700 text-white/);
   assert.match(
-    teachingStyles,
-    /\.teaching-schedule-view-toggle\s*\{[^}]*border: 0;[^}]*background: var\(--product-segmented-control-background\);[^}]*box-shadow: none;/,
-  );
-  assert.match(
-    teachingStyles,
-    /\.teaching-schedule-view-toggle button\.is-active\s*\{[^}]*background: #fff;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
+    scheduleWorkspace,
+    /<SegmentedControl[\s\S]*?className="teaching-schedule-view-toggle"[\s\S]*?ariaLabel="Вид занятий"[\s\S]*?value=\{viewMode\}[\s\S]*?onChange=\{setViewMode\}[\s\S]*?iconOnly/,
   );
   assert.doesNotMatch(
     teachingStyles,
-    /\.teaching-schedule-view-toggle button\.is-active(?::hover|:active)/,
+    /\.teaching-schedule-view-toggle button|button\.is-active/,
+  );
+  assert.doesNotMatch(
+    scheduleWorkspace,
+    /className=\{viewMode === "(?:table|cards)" \? "is-active"/,
   );
 
   assert.match(forcedColorsStyles, /\.product-btn\.product-btn,/);
@@ -708,11 +743,27 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     forcedColorsStyles,
-    /\.product-segmented-control,[\s\S]*?\.teaching-schedule-view-toggle\s*\{[^}]*outline: 1px solid CanvasText;[^}]*outline-offset: -1px;[^}]*box-shadow: none;/,
+    /\.product-segmented-control\s*\{[^}]*outline: 1px solid CanvasText;[^}]*outline-offset: -1px;[^}]*box-shadow: none;/,
   );
   assert.match(
     forcedColorsStyles,
-    /\.product-segmented-control-option-selected,[\s\S]*?button\.is-active\s*\{[^}]*border: 1px solid Highlight;[^}]*background: Highlight;[^}]*color: HighlightText;[^}]*box-shadow: none;/,
+    /\.product-segmented-control-option\s*\{[^}]*color: ButtonText;/,
+  );
+  assert.match(
+    forcedColorsStyles,
+    /\.product-segmented-control-option-selected\s*\{[^}]*border: 1px solid Highlight;[^}]*background: Highlight !important;[^}]*color: HighlightText !important;[^}]*box-shadow: none;[^}]*forced-color-adjust: none;/,
+  );
+  assert.match(
+    forcedColorsStyles,
+    /\.product-segmented-control::before\s*\{[^}]*background: ButtonFace !important;/,
+  );
+  assert.match(
+    forcedColorsStyles,
+    /\.product-segmented-control-option-selected::before\s*\{[^}]*background: Highlight !important;[^}]*box-shadow: none !important;/,
+  );
+  assert.match(
+    forcedColorsStyles,
+    /\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid Highlight;[^}]*outline-offset: -2px;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected:focus-visible\s*\{[^}]*outline-color: HighlightText !important;/,
   );
   assert.match(
     styles,
