@@ -130,7 +130,15 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
     /quality=\{avatar\.kind === "preset" \? 75 : undefined\}/,
   );
   assert.match(avatarImage, /width=\$\{deliveryWidth\}/);
-  assert.match(avatarImage, /<span aria-hidden="true">\{initials\}<\/span>/);
+  assert.match(avatarImage, /const showFallback = failed \|\| !loaded/);
+  assert.match(
+    avatarImage,
+    /\{showFallback \? \([\s\S]*?bg-neutral-950 font-bold text-white[\s\S]*?\{initials\}[\s\S]*?\) : null\}/,
+  );
+  assert.doesNotMatch(
+    avatarImage,
+    /"relative inline-flex[^"\n]*bg-neutral-950/,
+  );
   assert.match(avatarImage, /absolute inset-0 h-full w-full object-cover/);
   assert.match(avatarImage, /onLoad=\{\(\) => setLoadedSrc\(src\)\}/);
   assert.match(avatarImage, /onError=\{\(\) => setFailedSrc\(src\)\}/);

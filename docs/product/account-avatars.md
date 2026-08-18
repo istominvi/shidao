@@ -1,8 +1,9 @@
 # Account avatars
 
 Status: **current production** for the ShiDao V2 Account avatar state and
-profile surface; responsive preset/private delivery and header-trigger
-simplification are **current source / next production**.
+profile surface; responsive preset/private delivery, header-trigger
+simplification and mutually exclusive image/fallback rendering are **current
+source / next production**.
 
 Current functional application source:
 `1d4e5deff83cbdc1b479b16e4220cf799327009f`; initial unified Profile/avatar
@@ -148,10 +149,13 @@ object or a signed URL public.
 - `Загрузить фото` opens the operating-system file picker. A valid file then
   opens a separate square preview dialog with `Сохранить`, `Отмена` and
   `Выбрать другое фото`; choosing a file alone never mutates the Account.
-- Account initials are present immediately underneath the image while it loads;
-  the image fades in after `load`. If loading fails, initials remain visible
-  without changing or clearing the saved avatar. Reduced-motion disables the
-  fade transition.
+- Account initials are the temporary loading/error fallback, not a persistent
+  black avatar underneath the selected image. Before `load` the raster is
+  transparent and the fallback is visible; after successful `load` the
+  fallback is removed before the image is painted opaque, so antialiased rounded
+  corners cannot reveal black pixels underneath. If loading fails, initials
+  remain visible without changing or clearing the saved avatar. Reduced-motion
+  disables the image fade transition.
 
 ## Implementation map
 
@@ -199,7 +203,8 @@ responsive image delivery are current source / next production. Their source
 acceptance requires public presets to resolve through `/_next/image` at a
 viewport-appropriate width, while custom avatars resolve directly through the
 authenticated same-origin route with an allowlisted width. It also covers
-the `48 px` mobile avatar with `.72rem` initials fallback, the `48 px / 16 px`
+the `48 px` mobile avatar with `.72rem` initials fallback, mutually exclusive
+successful-image/fallback rendering, the `48 px / 16 px`
 burger contract, `14/12 px` profile typography, visible initials during
 loading/error, exact revision/key checks, private cache
 headers/ETag, two Accounts with the same numeric revision, logout/cross-Account

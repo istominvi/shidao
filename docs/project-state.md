@@ -573,6 +573,14 @@ Communication использует initials/Lucide и не получает mess
 Общий current/next/later boundary зафиксирован в
 [`docs/architecture/image-delivery.md`](./architecture/image-delivery.md).
 
+**Current source / next production avatar rendering fix:** общий `AvatarImage`
+теперь рендерит выбранное preset/custom изображение и чёрный initials fallback
+взаимоисключающе. Fallback остаётся видимым во время загрузки и при ошибке, но
+после успешного `load` удаляется из render tree; поэтому он не просачивается
+через сглаженные скруглённые края цветного avatar в header и других Account
+surfaces. Изменение UI-only в `src/components/account/avatar-image.tsx`; API,
+physical schema, migrations и canonical Account avatar state не меняются.
+
 Navigation/catalog follow-up `bafc984d0bc7bfb6cb795170a09ba2aabfb98441`
 упростил primary Account navigation до «Расписание / Ученики / Курсы», перенёс
 «Учебный профиль» в Account menu, а observer projection — в третью вкладку

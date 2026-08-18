@@ -32,18 +32,26 @@ export function AvatarImage({
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
   const failed = failedSrc === src;
   const loaded = loadedSrc === src;
+  const showFallback = failed || !loaded;
 
   return (
     <span
       className={classNames(
-        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-neutral-950 font-bold text-white",
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-xl",
         className,
       )}
       style={{ width: size, height: size }}
       role={failed && alt ? "img" : undefined}
       aria-label={failed && alt ? alt : undefined}
     >
-      <span aria-hidden="true">{initials}</span>
+      {showFallback ? (
+        <span
+          className="absolute inset-0 inline-flex items-center justify-center bg-neutral-950 font-bold text-white"
+          aria-hidden="true"
+        >
+          {initials}
+        </span>
+      ) : null}
       {!failed ? (
         <Image
           src={src}

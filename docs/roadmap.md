@@ -418,6 +418,13 @@ loader: exact revision, allowlisted width и opaque HMAC delivery key прове
 schema, migration, bucket или message API нет. Полный boundary:
 [`docs/architecture/image-delivery.md`](./architecture/image-delivery.md).
 
+**Current source / next production avatar rendering follow-up:** общий
+`AvatarImage` больше не держит чёрный initials fallback под успешно загруженным
+preset/custom изображением. Fallback виден только до `load` либо при ошибке;
+после успеха он удаляется, поэтому скруглённые antialiased края цветного avatar
+не показывают чёрные углы. Это UI-only исправление без schema, migration или
+изменения Account avatar state.
+
 Согласованный target:
 
 - один roleless Account может одновременно преподавать, учиться и наблюдать;

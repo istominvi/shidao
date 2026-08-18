@@ -2,7 +2,7 @@
 
 **Статус:** current production privacy/storage boundaries; responsive Store и
 Account avatar delivery — current source / next production
-**Актуально на:** 16 августа 2026 года
+**Актуально на:** 18 августа 2026 года
 
 ## Назначение
 
@@ -83,9 +83,11 @@ Cacheable exact URL отвечает с
 authenticated, но получает `private, no-store`; произвольный query не создаёт
 безграничный cache-bust/resize surface.
 
-Initials находятся под изображением сразу, остаются видимыми во время загрузки
-и при ошибке; успешный image плавно проявляется. `prefers-reduced-motion`
-отключает только fade, а не fallback.
+Initials являются взаимоисключающим loading/error fallback, а не постоянным
+чёрным слоем под raster. Во время загрузки image остаётся прозрачным и виден
+fallback; после успешного `load` fallback удаляется из render tree, поэтому не
+просачивается через antialiased rounded corners. При ошибке initials остаются
+видимыми. `prefers-reduced-motion` отключает только fade, а не fallback.
 
 ## Private Course/Lesson media
 
@@ -145,6 +147,8 @@ Acceptance сохраняет следующие отрицательные ин
   с одинаковой revision не разделяют cache address, logout/cross-Account
   отклоняются;
 - SessionView/URL не раскрывают identity, Storage path или signed token;
+- успешно загруженный Account avatar и initials fallback не рисуются друг под
+  другом;
 - Course/Lesson signed URL expiry/revoke boundary не ослабляется;
 - Communication не получает raster/message attachment behavior скрытым
   follow-up.
