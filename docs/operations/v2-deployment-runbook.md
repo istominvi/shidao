@@ -1392,15 +1392,16 @@ flow как permanent delete.
   ровно один реальный `.product-segmented-control-indicator`: absolute,
   `aria-hidden`, `pointer-events: none`, вне flex-layout, высотой `38 px` и с
   rect, совпадающим с selected actual button по start/width с допуском
-  `0.5 px`. Pure-white plate использует tokenized inset boundary `1 px` цвета
-  product border и отдельной следующей layer неизменную base outer shadow
-  обычной `.product-btn`; при pointer-down сохраняет boundary и заменяет только
-  outer layer на ordinary pressed shadow без transform или hover elevation.
-  Проверить обе computed `box-shadow` layers и отсутствие второго
-  alpha-composite. После ready actual selected
-  button прозрачна и без тени, но сохраняет `aria-pressed`, accessible name и
-  видимый inset focus outline; до ready/при disabled или отсутствующем
-  measurement она сама остаётся белым функциональным fallback. Inactive option
+  `0.5 px`. Pure-white plate имеет `border: 0` и только одну computed
+  `box-shadow`, дословно равную base shadow обычной `.product-btn`; при
+  pointer-down она заменяется на ordinary pressed shadow без transform или
+  hover elevation. Проверить `overflow: visible` у group и реальный paint этой
+  тени за пределами его `80 × 40 px` border box, а не только computed value или
+  пиксели внутри group. После ready actual selected button прозрачна и без
+  тени, но сохраняет `aria-pressed`, accessible name и видимый inset focus
+  outline; до ready/при disabled или отсутствующем measurement она сама
+  остаётся белым borderless функциональным fallback с той же единственной base
+  shadow. Inactive option
   прозрачна и не получает фон или тень при fine-pointer hover: меняется только
   цвет glyph. Per-option/pseudo plates отсутствуют, actual buttons не
   масштабируются при pressed.

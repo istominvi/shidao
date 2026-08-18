@@ -757,11 +757,13 @@ Visual contract Course routes не меняет эту навигационну�
   production compound toggles используют настоящую внешнюю product-рамку
   `1 px`; shell `40 px` содержит actual options `38 px` с gap `2 px`. Один real
   `aria-hidden` / `pointer-events: none` indicator измеряет selected actual
-  button и рисует чисто-белую surface с tokenized inset product-boundary `1 px`
-  и неизменной ordinary base/pressed outer shadow без второго alpha-composite
-  или hover elevation; actual button
-  сохраняет semantic/focus и белый fallback до ready, после чего прозрачна и
-  без тени. Inactive option на hover меняет только цвет без фона или тени.
+  button и рисует чисто-белую surface с `border: 0` и только неизменной ordinary
+  base/pressed outer shadow без hover elevation. Shell сохраняет
+  `overflow: visible`, поэтому moving shadow выходит за его product-рамку и не
+  обрезается геометрией group; actual button сохраняет semantic/focus и белый
+  borderless fallback с той же единственной base shadow до ready, после чего
+  прозрачна и без тени. Inactive option на hover меняет только цвет без фона
+  или тени.
   Readiness исключает initial fly-in, `ResizeObserver` пересчитывает responsive
   options, а общие с `WorkspaceTabs` `360ms` /
   `cubic-bezier(0.22, 1, 0.36, 1)` motion tokens обеспечивают interruptible rapid
@@ -1052,13 +1054,15 @@ actions`; пять data headers сортируют полную client-loaded pr
   тени. В current source / next production один настоящий absolute
   `.product-segmented-control-indicator` измеряет `left/width` selected actual
   button; plate имеет высоту `38 px`, radius `11 px`, чисто-белый surface,
-  tokenized inset product-boundary `1 px` и неизменную ordinary base/pressed
-  outer shadow. Этот composite не удваивает alpha-рамку и не получает hover
-  elevation. Indicator остаётся `aria-hidden`,
+  `border: 0` и только неизменную ordinary base/pressed outer shadow без hover
+  elevation. Shell имеет `overflow: visible`, поэтому shadow рисуется за его
+  product-рамкой и не ограничивается внешней геометрией group. Indicator
+  остаётся `aria-hidden`,
   `pointer-events: none`, лежит ниже actual buttons и не влияет на flex-layout.
   Selected actual button сохраняет `aria-pressed`, accessible name,
-  focus/disabled/busy semantics и белый fallback до готовности measurement;
-  после ready она становится прозрачной и без тени. Per-option/pseudo plate не
+  focus/disabled/busy semantics и белый borderless fallback с той же
+  единственной base shadow до готовности measurement; после ready она
+  становится прозрачной и без тени. Per-option/pseudo plate не
   создаётся. `ResizeObserver` наблюдает group и options с resize fallback,
   readiness после корректного measurement предотвращает initial fly-in, а
   rapid selection retargets тот же plate к финальной кнопке. Width/transform

@@ -99,11 +99,12 @@
   `.product-segmented-control-indicator` высотой `38 px` и radius `11 px`, а не
   per-option или pseudo plates. Он absolute, `aria-hidden`,
   `pointer-events: none`, не участвует в layout и получает pure-white surface с
-  tokenized inset product-boundary `1 px` и неизменной ordinary base/pressed
-  outer shadow. Composite boundary + shadow не удваивает alpha-рамку и не
-  получает hover elevation. Actual selected button сохраняет
-  `aria-pressed`, focus/disabled semantics и белый fallback до готовности
-  indicator; после ready она прозрачна и без тени. Неактивная option прозрачна
+  `border: 0` и только неизменной ordinary base/pressed outer shadow без hover
+  elevation. Shell сохраняет `overflow: visible`, поэтому moving shadow выходит
+  за его product-рамку и не обрезается геометрией group. Actual selected button
+  сохраняет `aria-pressed`, focus/disabled semantics и белый borderless fallback
+  с той же единственной base shadow до готовности indicator; после ready она
+  прозрачна и без тени. Неактивная option прозрачна
   и не получает фон или тень при hover — меняется только цвет glyph.
   `ResizeObserver` следит за group/options, readiness не допускает initial
   fly-in, а rapid changes retarget тот же plate к последнему выбору. Motion
@@ -738,10 +739,12 @@ transparent/borderless/no-shadow; contextual menu panels/items тоже искл
 В current source / next production compound toggles получают настоящую внешнюю product-рамку `1 px`; shell
 `40 px` содержит actual options `38 px` с gap `2 px`. Единственный real
 `aria-hidden` / `pointer-events: none` indicator измеряет selected actual button и
-рисует её чисто-белую surface с tokenized inset product-boundary `1 px` и
-неизменной ordinary base/pressed outer shadow без второго alpha-composite или
-hover elevation; actual button остаётся semantic и
-служит белым fallback до ready, после чего прозрачна и без тени. Inactive option
+рисует её чисто-белую surface с `border: 0` и только неизменной ordinary
+base/pressed outer shadow без hover elevation. Shell имеет `overflow: visible`,
+поэтому moving shadow выходит за его product-рамку и не ограничивается внешней
+геометрией group; actual button остаётся semantic и служит белым borderless
+fallback с той же единственной base shadow до ready, после чего прозрачна и без
+тени. Inactive option
 не получает фон или тень на hover — меняется только цвет. Readiness исключает
 initial fly-in, `ResizeObserver` поддерживает responsive width, а общие с
 `WorkspaceTabs` `360ms` / `cubic-bezier(0.22, 1, 0.36, 1)` tokens позволяют

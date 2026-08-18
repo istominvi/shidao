@@ -318,11 +318,15 @@ test("shared course controls preserve pressed-button semantics", () => {
   );
   assert.match(
     globalStyles,
-    /:root\s*\{[\s\S]*?--product-segmented-control-surface-boundary: inset 0 0 0\s+var\(--product-surface-border-width\) var\(--product-surface-border-color\);[\s\S]*?--product-segmented-control-surface-shadow:\s*var\(\s*--product-segmented-control-surface-boundary\s*\),\s*var\(--product-raised-control-shadow\);[\s\S]*?--product-segmented-control-surface-shadow-pressed:\s*var\(\s*--product-segmented-control-surface-boundary\s*\),\s*var\(--product-raised-control-shadow-pressed\);/,
+    /:root\s*\{[\s\S]*?--product-segmented-control-surface-shadow:\s*var\(\s*--product-raised-control-shadow\s*\);[\s\S]*?--product-segmented-control-surface-shadow-pressed:\s*var\(\s*--product-raised-control-shadow-pressed\s*\);/,
+  );
+  assert.doesNotMatch(
+    globalStyles,
+    /--product-segmented-control-surface-boundary/,
   );
   assert.match(
     globalStyles,
-    /\.product-segmented-control\s*\{[^}]*display: inline-flex;[^}]*height: var\(--product-segmented-control-height\);[^}]*min-height: var\(--product-segmented-control-height\);[^}]*gap: var\(--product-segmented-control-gap\);[^}]*border: var\(--product-surface-border\);[^}]*border-radius: var\(--product-segmented-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*background-clip: padding-box;[^}]*padding: 0;[^}]*box-shadow: none;/,
+    /\.product-segmented-control\s*\{[^}]*display: inline-flex;[^}]*height: var\(--product-segmented-control-height\);[^}]*min-height: var\(--product-segmented-control-height\);[^}]*gap: var\(--product-segmented-control-gap\);[^}]*overflow: visible;[^}]*border: var\(--product-surface-border\);[^}]*border-radius: var\(--product-segmented-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*background-clip: padding-box;[^}]*padding: 0;[^}]*box-shadow: none;/,
   );
   assert.match(
     globalStyles,

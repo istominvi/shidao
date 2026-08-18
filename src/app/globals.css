@@ -71,14 +71,12 @@
   --product-segmented-control-gap: calc(
     var(--product-surface-border-width) + var(--product-surface-border-width)
   );
-  --product-segmented-control-surface-boundary: inset 0 0 0
-    var(--product-surface-border-width) var(--product-surface-border-color);
-  --product-segmented-control-surface-shadow:
-    var(--product-segmented-control-surface-boundary),
-    var(--product-raised-control-shadow);
-  --product-segmented-control-surface-shadow-pressed:
-    var(--product-segmented-control-surface-boundary),
-    var(--product-raised-control-shadow-pressed);
+  --product-segmented-control-surface-shadow: var(
+    --product-raised-control-shadow
+  );
+  --product-segmented-control-surface-shadow-pressed: var(
+    --product-raised-control-shadow-pressed
+  );
   --brand-blue: #70b7ff;
   --brand-green: #c9ff4f;
   --brand-purple: #c9b4ff;
@@ -2184,6 +2182,7 @@ input.product-control-search::placeholder {
   align-items: center;
   gap: var(--product-segmented-control-gap);
   isolation: isolate;
+  overflow: visible;
   border: var(--product-surface-border);
   border-radius: var(--product-segmented-control-radius);
   background: var(--product-segmented-control-background);

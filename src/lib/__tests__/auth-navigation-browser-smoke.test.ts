@@ -96,48 +96,16 @@ const E2E_WORKSPACE_TABS_DIVIDER = "oklch(0.19 0 0 / 0.4)";
 const E2E_SEGMENTED_CONTROL_BACKGROUND = E2E_PRODUCT_SURFACE_BORDER_COLOR;
 const E2E_DROPDOWN_SHADOW = "rgba(20, 20, 20, 0.24) 0px 24px 32px -24px";
 
-function splitCssLayerList(value: string) {
-  const layers: string[] = [];
-  let depth = 0;
-  let start = 0;
-
-  for (let index = 0; index < value.length; index += 1) {
-    const character = value[index];
-    if (character === "(") depth += 1;
-    if (character === ")") depth = Math.max(0, depth - 1);
-    if (character === "," && depth === 0) {
-      layers.push(value.slice(start, index).trim());
-      start = index + 1;
-    }
-  }
-
-  layers.push(value.slice(start).trim());
-  return layers.filter(Boolean);
-}
-
 function assertSegmentedSurfaceShadow(
   actual: string,
   expectedOuterShadow: string,
   label: string,
 ) {
-  const layers = splitCssLayerList(actual);
-  const insetLayers = layers.filter((layer) => /\binset\b/.test(layer));
-  const outerLayers = layers.filter((layer) => !/\binset\b/.test(layer));
-
-  assert.equal(insetLayers.length, 1, `${label}: one inset boundary`);
-  assert.match(
-    insetLayers[0]!,
-    /\b0px 0px 0px 1px\b/,
-    `${label}: one-pixel inset boundary`,
-  );
-  assert.ok(
-    insetLayers[0]!.includes(E2E_PRODUCT_SURFACE_BORDER_COLOR),
-    `${label}: boundary reuses the product border color`,
-  );
-  assert.deepEqual(
-    outerLayers,
-    [expectedOuterShadow],
-    `${label}: outer elevation matches the ordinary control`,
+  assert.doesNotMatch(actual, /\binset\b/, `${label}: no inset boundary`);
+  assert.equal(
+    actual,
+    expectedOuterShadow,
+    `${label}: one outer elevation matches the ordinary control exactly`,
   );
 }
 
@@ -1277,6 +1245,13 @@ type PlaywrightChromium = {
         keyboard: {
           press: (key: string) => Promise<void>;
         };
+        screenshot: (options: {
+          animations?: "allow" | "disabled";
+          caret?: "hide" | "initial";
+          clip?: { x: number; y: number; width: number; height: number };
+          scale?: "css" | "device";
+          type?: "png" | "jpeg";
+        }) => Promise<Buffer>;
         setViewportSize: (viewport: {
           width: number;
           height: number;
@@ -3422,10 +3397,53 @@ async function assertSegmentedIndicatorPaintsOuterShadow(
     E2E_RAISED_CONTROL_SHADOW,
     `${label}: computed shadow`,
   );
-  const boundaryShadow = splitCssLayerList(computedShadow).find((layer) =>
-    /\binset\b/.test(layer),
+
+  const geometry = await group.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    const padding = 8;
+    const pageLeft = rect.left + window.scrollX;
+    const pageTop = rect.top + window.scrollY;
+    const pageRight = rect.right + window.scrollX;
+    const pageBottom = rect.bottom + window.scrollY;
+    const viewportLeft = window.scrollX;
+    const viewportTop = window.scrollY;
+    const viewportRight = viewportLeft + window.innerWidth;
+    const viewportBottom = viewportTop + window.innerHeight;
+    const clipLeft = Math.max(viewportLeft, pageLeft - padding);
+    const clipTop = Math.max(viewportTop, pageTop - padding);
+    const clipRight = Math.min(viewportRight, pageRight + padding);
+    const clipBottom = Math.min(viewportBottom, pageBottom + padding);
+
+    return {
+      overflowX: style.overflowX,
+      overflowY: style.overflowY,
+      group: {
+        left: pageLeft,
+        top: pageTop,
+        right: pageRight,
+        bottom: pageBottom,
+      },
+      clip: {
+        x: clipLeft,
+        y: clipTop,
+        width: clipRight - clipLeft,
+        height: clipBottom - clipTop,
+      },
+    };
+  });
+  assert.deepEqual(
+    { overflowX: geometry.overflowX, overflowY: geometry.overflowY },
+    { overflowX: "visible", overflowY: "visible" },
+    `${label}: group must not clip the indicator elevation`,
   );
-  assert.ok(boundaryShadow, `${label}: inset boundary is available`);
+  assert.ok(
+    geometry.clip.x <= geometry.group.left - 7.5 &&
+      geometry.clip.y <= geometry.group.top - 7.5 &&
+      geometry.clip.x + geometry.clip.width >= geometry.group.right + 7.5 &&
+      geometry.clip.y + geometry.clip.height >= geometry.group.bottom + 7.5,
+    `${label}: screenshot clip must include the full outer shadow`,
+  );
 
   const originalInlineShadow = await indicator.evaluate((element) => {
     const indicatorElement = element as HTMLElement;
@@ -3434,22 +3452,25 @@ async function assertSegmentedIndicatorPaintsOuterShadow(
       priority: indicatorElement.style.getPropertyPriority("box-shadow"),
     };
   });
-  const withOuterShadow = await group.screenshot();
+  const screenshotOptions = {
+    animations: "disabled" as const,
+    caret: "hide" as const,
+    clip: geometry.clip,
+    scale: "css" as const,
+    type: "png" as const,
+  };
+  const withOuterShadow = await page.screenshot(screenshotOptions);
   let withoutOuterShadow: Buffer;
 
   try {
-    await indicator.evaluate(async (element, insetShadow) => {
+    await indicator.evaluate(async (element) => {
       const indicatorElement = element as HTMLElement;
-      indicatorElement.style.setProperty(
-        "box-shadow",
-        insetShadow,
-        "important",
-      );
+      indicatorElement.style.setProperty("box-shadow", "none", "important");
       await new Promise<void>((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       );
-    }, boundaryShadow);
-    withoutOuterShadow = await group.screenshot();
+    });
+    withoutOuterShadow = await page.screenshot(screenshotOptions);
   } finally {
     await indicator.evaluate(async (element, original) => {
       const indicatorElement = element as HTMLElement;
@@ -3468,7 +3489,7 @@ async function assertSegmentedIndicatorPaintsOuterShadow(
     }, originalInlineShadow);
   }
 
-  const [painted, boundaryOnly] = await Promise.all(
+  const [painted, shadowless] = await Promise.all(
     [withOuterShadow, withoutOuterShadow].map((png) =>
       sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true }),
     ),
@@ -3480,35 +3501,62 @@ async function assertSegmentedIndicatorPaintsOuterShadow(
       channels: painted.info.channels,
     },
     {
-      width: boundaryOnly.info.width,
-      height: boundaryOnly.info.height,
-      channels: boundaryOnly.info.channels,
+      width: shadowless.info.width,
+      height: shadowless.info.height,
+      channels: shadowless.info.channels,
     },
     `${label}: screenshots use identical geometry`,
   );
 
-  let changedPixelCount = 0;
-  let totalChannelDelta = 0;
+  let exteriorChangedPixelCount = 0;
+  let exteriorTotalChannelDelta = 0;
   let maximumChannelDelta = 0;
+  let farthestChangedExteriorDistance = 0;
   const channels = painted.info.channels;
-  for (let offset = 0; offset < painted.data.length; offset += channels) {
-    let pixelDelta = 0;
-    for (let channel = 0; channel < Math.min(3, channels); channel += 1) {
-      const delta = Math.abs(
-        painted.data[offset + channel]! - boundaryOnly.data[offset + channel]!,
+  const scaleX = painted.info.width / geometry.clip.width;
+  const scaleY = painted.info.height / geometry.clip.height;
+  for (let pixelY = 0; pixelY < painted.info.height; pixelY += 1) {
+    const cssY = geometry.clip.y + (pixelY + 0.5) / scaleY;
+    for (let pixelX = 0; pixelX < painted.info.width; pixelX += 1) {
+      const cssX = geometry.clip.x + (pixelX + 0.5) / scaleX;
+      const exteriorDistance = Math.max(
+        geometry.group.left - cssX,
+        cssX - geometry.group.right,
+        geometry.group.top - cssY,
+        cssY - geometry.group.bottom,
+        0,
       );
-      pixelDelta += delta;
-      maximumChannelDelta = Math.max(maximumChannelDelta, delta);
+      if (exteriorDistance < 1) continue;
+
+      const offset = (pixelY * painted.info.width + pixelX) * channels;
+      let pixelDelta = 0;
+      for (let channel = 0; channel < Math.min(3, channels); channel += 1) {
+        const delta = Math.abs(
+          painted.data[offset + channel]! - shadowless.data[offset + channel]!,
+        );
+        pixelDelta += delta;
+        maximumChannelDelta = Math.max(maximumChannelDelta, delta);
+      }
+      exteriorTotalChannelDelta += pixelDelta;
+      if (pixelDelta >= 3) {
+        exteriorChangedPixelCount += 1;
+        farthestChangedExteriorDistance = Math.max(
+          farthestChangedExteriorDistance,
+          exteriorDistance,
+        );
+      }
     }
-    totalChannelDelta += pixelDelta;
-    if (pixelDelta >= 3) changedPixelCount += 1;
   }
 
+  const devicePixelArea = scaleX * scaleY;
+  const normalizedChangedArea = exteriorChangedPixelCount / devicePixelArea;
+  const normalizedChannelDelta = exteriorTotalChannelDelta / devicePixelArea;
   assert.ok(
-    changedPixelCount >= 12 &&
-      totalChannelDelta >= 120 &&
-      maximumChannelDelta >= 2,
-    `${label}: the outer elevation must alter rendered pixels; got ${JSON.stringify({ changedPixelCount, totalChannelDelta, maximumChannelDelta })}`,
+    normalizedChangedArea >= 8 &&
+      normalizedChannelDelta >= 48 &&
+      maximumChannelDelta >= 1 &&
+      farthestChangedExteriorDistance >= 1.5,
+    `${label}: the elevation must paint beyond the group border; got ${JSON.stringify({ normalizedChangedArea, normalizedChannelDelta, maximumChannelDelta, farthestChangedExteriorDistance })}`,
   );
 }
 
@@ -12580,6 +12628,11 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     assertTouchSegmentedControl(
       mobileScheduleContract.viewToggle,
       "Schedule mobile view toggle",
+    );
+    await assertSegmentedIndicatorPaintsOuterShadow(
+      runtime.page,
+      "Вид занятий",
+      "Schedule mobile view indicator",
     );
     await activateSegmentedOptionWithMotion(runtime.page, {
       groupName: "Вид занятий",

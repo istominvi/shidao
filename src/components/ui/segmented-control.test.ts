@@ -96,12 +96,17 @@ test("segmented indicator preserves canonical geometry and owns selected elevati
   );
   assert.match(
     styles,
-    /:root\s*\{[\s\S]*?--product-segmented-control-surface-boundary: inset 0 0 0\s+var\(--product-surface-border-width\) var\(--product-surface-border-color\);[\s\S]*?--product-segmented-control-surface-shadow:\s*var\(\s*--product-segmented-control-surface-boundary\s*\),\s*var\(--product-raised-control-shadow\);[\s\S]*?--product-segmented-control-surface-shadow-pressed:\s*var\(\s*--product-segmented-control-surface-boundary\s*\),\s*var\(--product-raised-control-shadow-pressed\);/,
-    "The selected surface must pair one inset product boundary with the unchanged ordinary base/pressed shadows",
+    /:root\s*\{[\s\S]*?--product-segmented-control-surface-shadow:\s*var\(\s*--product-raised-control-shadow\s*\);[\s\S]*?--product-segmented-control-surface-shadow-pressed:\s*var\(\s*--product-raised-control-shadow-pressed\s*\);/,
+    "The selected surface must reuse the ordinary outer base/pressed shadows directly",
+  );
+  assert.doesNotMatch(
+    styles,
+    /--product-segmented-control-surface-boundary/,
+    "The moving white surface must not paint an inset boundary",
   );
   assert.match(
     styles,
-    /\.product-segmented-control\s*\{[^}]*position: relative;[^}]*box-sizing: border-box;[^}]*height: var\(--product-segmented-control-height\);[^}]*gap: var\(--product-segmented-control-gap\);[^}]*border: var\(--product-surface-border\);[^}]*border-radius: var\(--product-segmented-control-radius\);[^}]*padding: 0;/,
+    /\.product-segmented-control\s*\{[^}]*position: relative;[^}]*box-sizing: border-box;[^}]*height: var\(--product-segmented-control-height\);[^}]*gap: var\(--product-segmented-control-gap\);[^}]*overflow: visible;[^}]*border: var\(--product-surface-border\);[^}]*border-radius: var\(--product-segmented-control-radius\);[^}]*padding: 0;/,
   );
   assert.match(
     styles,

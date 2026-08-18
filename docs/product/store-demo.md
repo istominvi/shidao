@@ -247,12 +247,13 @@ Compound toggle использует тот же контракт на desktop �
 девяти current shared `SegmentedControl` consumers и не имеет локального motion
 fork. В current source / next production selected surface рисует единственный
 real `.product-segmented-control-indicator`: measured absolute plate высотой
-`38 px`, `aria-hidden`, `pointer-events: none`, с чисто-белым фоном, tokenized
-inset product-boundary `1 px`, неизменной ordinary base/pressed outer shadow и
-тем же radius `11 px`. Composite не удваивает alpha-рамку и не получает hover
-elevation. Actual selected button сохраняет
-`aria-pressed`, focus/disabled semantics и белый fallback до ready; после ready
-она прозрачна и без тени. Inactive option не получает фон или тень при hover —
+`38 px`, `aria-hidden`, `pointer-events: none`, с чисто-белым фоном,
+`border: 0`, только неизменной ordinary base/pressed outer shadow и тем же
+radius `11 px`, без hover elevation. Shell сохраняет `overflow: visible`,
+поэтому moving shadow выходит за его product-рамку и не обрезается геометрией
+group. Actual selected button сохраняет `aria-pressed`, focus/disabled semantics
+и белый borderless fallback с той же единственной base shadow до ready; после
+ready она прозрачна и без тени. Inactive option не получает фон или тень при hover —
 меняется только цвет. `ResizeObserver` поддерживает responsive measurement,
 readiness исключает initial fly-in, а rapid selection retargets тот же plate.
 Width/transform используют общие с `WorkspaceTabs` `360ms` /

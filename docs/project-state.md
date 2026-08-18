@@ -299,15 +299,15 @@ mobile/coarse. В current source / next production compound
 `.product-segmented-control-indicator`: он `aria-hidden`, не принимает события
 через `pointer-events: none`, не участвует во flex-layout и получает measured
 `left/width` выбранной actual button. Plate имеет высоту `38 px`, чисто-белый
-фон и tokenized inset boundary `1 px` цвета product border вместе с неизменной
-внешней тенью обычной кнопки через
-`--product-segmented-control-surface-shadow`; при pointer-down он сохраняет
-boundary и переключает только внешнюю часть на ordinary pressed shadow без
-transform или hover elevation. Такой единый composite не создаёт второй
-alpha-border поверх moving surface. Actual buttons остаются выше plate и сохраняют
+фон, `border: 0` и только неизменную внешнюю base shadow обычной кнопки; при
+pointer-down она переключается на ordinary pressed shadow без transform или
+hover elevation. Shell сохраняет `overflow: visible`, поэтому эта тень не
+обрезается его product-рамкой и рисуется за пределами внешней геометрии group.
+Actual buttons остаются выше plate и сохраняют
 `aria-pressed`, focus, disabled/busy и accessible-name semantics. До готового
 измерения, при отсутствующем/disabled выборе и как функциональный fallback
-selected actual button сама остаётся белой с base shadow; после
+selected actual button сама остаётся белой, с `border: 0` и той же единственной
+base shadow; после
 `data-indicator-ready` она становится прозрачной и без тени, а visual selection
 переходит единственному plate. Inactive option всегда прозрачна и без тени; на
 fine-pointer hover меняется только цвет её glyph, без дополнительной заливки.
@@ -816,12 +816,15 @@ transparent/borderless/no-shadow; contextual menu panels/items также не
 получают product surface border. В current source / next production составные
 tумблеры используют настоящую внешнюю product-рамку `1 px`; shell `40 px`
 содержит actual options `38 px` с gap `2 px`. Один measured real indicator
-рисует чисто-белую выбранную surface с tokenized inset product-boundary `1 px`
-и неизменной ordinary base/pressed outer shadow, без второго alpha-composite и
-без hover elevation, и плавно меняет `width/transform` через общие с
+рисует чисто-белую выбранную surface с `border: 0` и только неизменной ordinary
+base/pressed outer shadow, без hover elevation, и плавно меняет
+`width/transform` через общие с
 `WorkspaceTabs` selection-motion tokens. Actual
-selected button сохраняет `aria-pressed`, inset focus outline и белый fallback
-до готовности indicator, после чего становится прозрачной и без тени;
+selected button сохраняет `aria-pressed`, inset focus outline и белый
+borderless fallback с той же единственной base shadow до готовности indicator,
+после чего становится прозрачной и без тени. Shell имеет `overflow: visible`,
+поэтому moving shadow выходит за его product-рамку и не ограничивается
+геометрией group;
 неактивная остаётся без заливки и тени даже при hover, где меняется только её
 цвет. Readiness исключает initial fly-in, а `ResizeObserver` и interruptible
 `360 ms` retarget удерживают plate на последнем выборе. Reduced motion делает
