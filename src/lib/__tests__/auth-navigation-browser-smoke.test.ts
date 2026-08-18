@@ -135,7 +135,29 @@ type TouchSegmentedControlContract = {
     backgroundClip: string;
     boxShadow: string;
   };
+  groupIndicatorReady: string | null;
   groupBeforeContent: string;
+  indicatorCount: number;
+  indicator: {
+    surface: RaisedControlSurfaceContract;
+    width: number;
+    height: number;
+    opacity: string;
+    display: string;
+    pointerEvents: string;
+    backdropFilter: string;
+    zIndex: string;
+    ariaHidden: string | null;
+    ready: string | null;
+    motionReady: string | null;
+    transitionProperty: string;
+    transitionDuration: string;
+    transitionTimingFunction: string;
+    selectedStartDelta: number;
+    selectedTopDelta: number;
+    selectedWidthDelta: number;
+    selectedHeightDelta: number;
+  };
   optionWidths: number[];
   optionHeights: number[];
   seamGaps: number[];
@@ -197,6 +219,8 @@ function assertTouchSegmentedControl(
     ["none", "normal"].includes(actual.groupBeforeContent),
     `${label}: group must not paint a ::before track`,
   );
+  assert.equal(actual.groupIndicatorReady, "true");
+  assert.equal(actual.indicatorCount, 1, `${label}: one shared indicator`);
   assert.deepEqual(actual.optionWidths, [38, 38], `${label}: 38px cells`);
   assert.deepEqual(actual.optionHeights, [38, 38], `${label}: 38px cells`);
   assert.deepEqual(actual.seamGaps, [2], `${label}: two-pixel seam`);
@@ -241,6 +265,65 @@ function assertTouchSegmentedControl(
   );
   assert.deepEqual(
     {
+      borderTopWidth: actual.indicator.surface.borderTopWidth,
+      borderTopStyle: actual.indicator.surface.borderTopStyle,
+      borderRadius: actual.indicator.surface.borderRadius,
+      backgroundColor: actual.indicator.surface.backgroundColor,
+      backgroundImage: actual.indicator.surface.backgroundImage,
+      backgroundClip: actual.indicator.surface.backgroundClip,
+      boxShadow: actual.indicator.surface.boxShadow,
+      width: actual.indicator.width,
+      height: actual.indicator.height,
+      opacity: actual.indicator.opacity,
+      display: actual.indicator.display,
+      pointerEvents: actual.indicator.pointerEvents,
+      backdropFilter: actual.indicator.backdropFilter,
+      zIndex: actual.indicator.zIndex,
+      ariaHidden: actual.indicator.ariaHidden,
+      ready: actual.indicator.ready,
+      motionReady: actual.indicator.motionReady,
+      transitionProperty: actual.indicator.transitionProperty,
+      transitionDuration: actual.indicator.transitionDuration,
+      transitionTimingFunction: actual.indicator.transitionTimingFunction,
+    },
+    {
+      borderTopWidth: "0px",
+      borderTopStyle: "none",
+      borderRadius: "11px",
+      backgroundColor: actual.referenceButton.backgroundColor,
+      backgroundImage: actual.referenceButton.backgroundImage,
+      backgroundClip: actual.referenceButton.backgroundClip,
+      boxShadow: actual.referenceButton.boxShadow,
+      width: 38,
+      height: 38,
+      opacity: "1",
+      display: "block",
+      pointerEvents: "none",
+      backdropFilter: "none",
+      zIndex: "0",
+      ariaHidden: "true",
+      ready: "true",
+      motionReady: "true",
+      transitionProperty: "width, transform, opacity",
+      transitionDuration: "0.36s, 0.36s, 0.12s",
+      transitionTimingFunction:
+        "cubic-bezier(0.22, 1, 0.36, 1), cubic-bezier(0.22, 1, 0.36, 1), ease",
+    },
+    `${label}: one opaque raised indicator reuses the ordinary button surface`,
+  );
+  for (const [axis, delta] of Object.entries({
+    start: actual.indicator.selectedStartDelta,
+    top: actual.indicator.selectedTopDelta,
+    width: actual.indicator.selectedWidthDelta,
+    height: actual.indicator.selectedHeightDelta,
+  })) {
+    assert.ok(
+      delta < 0.5,
+      `${label}: indicator ${axis} must align to the selected option; got ${delta}`,
+    );
+  }
+  assert.deepEqual(
+    {
       borderTopWidth: actual.selected.surface.borderTopWidth,
       borderTopStyle: actual.selected.surface.borderTopStyle,
     },
@@ -258,12 +341,12 @@ function assertTouchSegmentedControl(
       boxShadow: actual.selected.surface.boxShadow,
     },
     {
-      backgroundColor: actual.referenceButton.backgroundColor,
-      backgroundImage: actual.referenceButton.backgroundImage,
-      backgroundClip: actual.referenceButton.backgroundClip,
-      boxShadow: actual.referenceButton.boxShadow,
+      backgroundColor: "rgba(0, 0, 0, 0)",
+      backgroundImage: "none",
+      backgroundClip: "border-box",
+      boxShadow: "none",
     },
-    `${label}: selected option reuses the ordinary button fill, clip, and shadow`,
+    `${label}: selected option stays transparent above the shared indicator`,
   );
   assert.equal(
     actual.selected.surface.borderRadius,
@@ -867,7 +950,13 @@ type PlaywrightLocator = {
   textContent: () => Promise<string | null>;
   allTextContents: () => Promise<string[]>;
   locator: (selector: string) => PlaywrightLocator;
-  evaluate: <T>(pageFunction: (element: Element) => T) => Promise<T>;
+  evaluate: {
+    <T>(pageFunction: (element: Element) => T): Promise<T>;
+    <T, Arg>(
+      pageFunction: (element: Element, arg: Arg) => T,
+      arg: Arg,
+    ): Promise<T>;
+  };
   evaluateAll: <T>(pageFunction: (elements: Element[]) => T) => Promise<T>;
   nth: (index: number) => PlaywrightLocator;
   isEnabled: () => Promise<boolean>;
@@ -3142,6 +3231,485 @@ async function openPage(options?: {
 
 type BrowserSmokePage = Awaited<ReturnType<typeof openPage>>["page"];
 
+type SegmentedEnableFrame = {
+  groupReady: string | null;
+  indicatorReady: string | null;
+  motionReady: string | null;
+  selectedDisabled: boolean;
+  selectedBackground: string;
+  selectedShadow: string;
+  indicatorBackground: string;
+  indicatorOpacity: string;
+  transitionProperty: string;
+  transitionDuration: string;
+  maxAlignmentDelta: number;
+};
+
+type SegmentedEnableProbe = {
+  frames: SegmentedEnableFrame[];
+  observer: MutationObserver;
+};
+
+async function settleSegmentedIndicator(
+  page: BrowserSmokePage,
+  groupName: string,
+) {
+  const group = page.getByRole("group", { name: groupName, exact: true });
+  const indicator = group.locator(
+    '.product-segmented-control-indicator[data-ready="true"]',
+  );
+  await indicator.waitFor({ state: "attached" });
+  await indicator.evaluate(async (element) => {
+    await Promise.all(
+      element
+        .getAnimations()
+        .map((animation) => animation.finished.catch(() => undefined)),
+    );
+    await new Promise<void>((resolve) =>
+      window.requestAnimationFrame(() => resolve()),
+    );
+  });
+}
+
+async function readSegmentedIndicatorAlignment(
+  page: BrowserSmokePage,
+  groupName: string,
+) {
+  await settleSegmentedIndicator(page, groupName);
+  return page
+    .getByRole("group", { name: groupName, exact: true })
+    .evaluate((group) => {
+      const indicator = group.querySelector<HTMLElement>(
+        ".product-segmented-control-indicator",
+      );
+      const selected = group.querySelector<HTMLButtonElement>(
+        'button[aria-pressed="true"]',
+      );
+      if (!indicator || !selected) {
+        throw new Error(`Segmented indicator alignment is missing`);
+      }
+      const indicatorRect = indicator.getBoundingClientRect();
+      const selectedRect = selected.getBoundingClientRect();
+      const selectedStyle = getComputedStyle(selected);
+      return {
+        indicatorCount: group.querySelectorAll(
+          ".product-segmented-control-indicator",
+        ).length,
+        groupReady: group.getAttribute("data-indicator-ready"),
+        indicatorReady: indicator.getAttribute("data-ready"),
+        indicatorMotionReady: indicator.getAttribute("data-motion-ready"),
+        indicatorAriaHidden: indicator.getAttribute("aria-hidden"),
+        selectedName:
+          selected.getAttribute("aria-label") ??
+          selected.textContent?.replace(/\s+/g, " ").trim() ??
+          "",
+        pressedCount: group.querySelectorAll('button[aria-pressed="true"]')
+          .length,
+        startDelta: Math.abs(indicatorRect.left - selectedRect.left),
+        topDelta: Math.abs(indicatorRect.top - selectedRect.top),
+        widthDelta: Math.abs(indicatorRect.width - selectedRect.width),
+        heightDelta: Math.abs(indicatorRect.height - selectedRect.height),
+        selectedBackgroundColor: selectedStyle.backgroundColor,
+        selectedBoxShadow: selectedStyle.boxShadow,
+      };
+    });
+}
+
+async function assertSegmentedIndicatorAligned(
+  page: BrowserSmokePage,
+  groupName: string,
+  label: string,
+) {
+  const contract = await readSegmentedIndicatorAlignment(page, groupName);
+  assert.deepEqual(
+    {
+      indicatorCount: contract.indicatorCount,
+      groupReady: contract.groupReady,
+      indicatorReady: contract.indicatorReady,
+      indicatorMotionReady: contract.indicatorMotionReady,
+      indicatorAriaHidden: contract.indicatorAriaHidden,
+      pressedCount: contract.pressedCount,
+      selectedBackgroundColor: contract.selectedBackgroundColor,
+      selectedBoxShadow: contract.selectedBoxShadow,
+    },
+    {
+      indicatorCount: 1,
+      groupReady: "true",
+      indicatorReady: "true",
+      indicatorMotionReady: "true",
+      indicatorAriaHidden: "true",
+      pressedCount: 1,
+      selectedBackgroundColor: "rgba(0, 0, 0, 0)",
+      selectedBoxShadow: "none",
+    },
+    `${label}: one ready indicator and one transparent pressed option`,
+  );
+  for (const [axis, delta] of Object.entries({
+    start: contract.startDelta,
+    top: contract.topDelta,
+    width: contract.widthDelta,
+    height: contract.heightDelta,
+  })) {
+    assert.ok(
+      delta < 0.5,
+      `${label}: indicator ${axis} must align to selected option; got ${delta}`,
+    );
+  }
+  return contract;
+}
+
+async function activateSegmentedOptionWithMotion(
+  page: BrowserSmokePage,
+  options: {
+    groupName: string;
+    optionName: string;
+    label: string;
+    expectWidthTransition?: boolean;
+  },
+) {
+  const group = page.getByRole("group", {
+    name: options.groupName,
+    exact: true,
+  });
+  await group
+    .locator(
+      '.product-segmented-control-indicator[data-ready="true"][data-motion-ready="true"]',
+    )
+    .waitFor({ state: "attached" });
+  const marker = `${options.groupName}-${options.optionName}-${Date.now()}`;
+  const motion = await group.evaluate(
+    async (element, { optionName, marker: identity }) => {
+      const indicator = element.querySelector<HTMLElement>(
+        ".product-segmented-control-indicator",
+      );
+      const buttons = Array.from(
+        element.querySelectorAll<HTMLButtonElement>("button"),
+      );
+      const buttonName = (button: HTMLButtonElement) =>
+        button.getAttribute("aria-label") ??
+        button.textContent?.replace(/\s+/g, " ").trim() ??
+        "";
+      const selectedBefore = buttons.find(
+        (button) => button.getAttribute("aria-pressed") === "true",
+      );
+      const target = buttons.find(
+        (button) => buttonName(button) === optionName,
+      );
+      if (!indicator || !selectedBefore || !target) {
+        throw new Error(`Segmented motion elements are missing`);
+      }
+      if (selectedBefore === target) {
+        throw new Error(`Segmented motion target is already selected`);
+      }
+
+      indicator.dataset.browserSmokeIdentity = identity;
+      const initialIndicatorRect = indicator.getBoundingClientRect();
+      const initialSelectedRect = selectedBefore.getBoundingClientRect();
+      const targetRectBefore = target.getBoundingClientRect();
+      target.click();
+
+      let runningAnimations: Animation[] = [];
+      for (let frame = 0; frame < 30; frame += 1) {
+        await new Promise<void>((resolve) =>
+          window.requestAnimationFrame(() => resolve()),
+        );
+        runningAnimations = indicator
+          .getAnimations()
+          .filter((animation) => animation.playState === "running");
+        if (
+          target.getAttribute("aria-pressed") === "true" &&
+          runningAnimations.length > 0
+        ) {
+          break;
+        }
+      }
+
+      const running = runningAnimations.map((animation) => {
+        const transition = animation as CSSTransition;
+        const timing = animation.effect?.getComputedTiming();
+        return {
+          property: transition.transitionProperty ?? "",
+          duration:
+            typeof timing?.duration === "number" ? timing.duration : null,
+          playState: animation.playState,
+        };
+      });
+      const indicatorStyleDuringMotion = getComputedStyle(indicator);
+      await Promise.all(
+        indicator
+          .getAnimations()
+          .map((animation) => animation.finished.catch(() => undefined)),
+      );
+      await new Promise<void>((resolve) =>
+        window.requestAnimationFrame(() => resolve()),
+      );
+
+      const finalIndicator = element.querySelector<HTMLElement>(
+        ".product-segmented-control-indicator",
+      );
+      const selectedAfter = element.querySelector<HTMLButtonElement>(
+        'button[aria-pressed="true"]',
+      );
+      if (!finalIndicator || !selectedAfter) {
+        throw new Error(`Segmented motion final state is missing`);
+      }
+      const finalIndicatorRect = finalIndicator.getBoundingClientRect();
+      const finalSelectedRect = selectedAfter.getBoundingClientRect();
+      return {
+        selectedBefore: buttonName(selectedBefore),
+        selectedAfter: buttonName(selectedAfter),
+        initialIndicatorWidth: initialIndicatorRect.width,
+        initialSelectedWidth: initialSelectedRect.width,
+        targetWidth: targetRectBefore.width,
+        running,
+        transitionProperty: indicatorStyleDuringMotion.transitionProperty,
+        transitionDuration: indicatorStyleDuringMotion.transitionDuration,
+        transitionTimingFunction:
+          indicatorStyleDuringMotion.transitionTimingFunction,
+        sameIndicator:
+          finalIndicator === indicator &&
+          finalIndicator.dataset.browserSmokeIdentity === identity,
+        indicatorCount: element.querySelectorAll(
+          ".product-segmented-control-indicator",
+        ).length,
+        pressedCount: element.querySelectorAll('button[aria-pressed="true"]')
+          .length,
+        startDelta: Math.abs(finalIndicatorRect.left - finalSelectedRect.left),
+        topDelta: Math.abs(finalIndicatorRect.top - finalSelectedRect.top),
+        widthDelta: Math.abs(
+          finalIndicatorRect.width - finalSelectedRect.width,
+        ),
+        heightDelta: Math.abs(
+          finalIndicatorRect.height - finalSelectedRect.height,
+        ),
+      };
+    },
+    { optionName: options.optionName, marker },
+  );
+
+  assert.equal(motion.selectedAfter, options.optionName);
+  assert.notEqual(motion.selectedBefore, options.optionName);
+  assert.equal(motion.sameIndicator, true, `${options.label}: same indicator`);
+  assert.equal(motion.indicatorCount, 1, `${options.label}: one indicator`);
+  assert.equal(motion.pressedCount, 1, `${options.label}: one pressed option`);
+  assert.equal(
+    motion.transitionProperty,
+    "width, transform, opacity",
+    `${options.label}: shared motion properties`,
+  );
+  assert.equal(
+    motion.transitionDuration,
+    "0.36s, 0.36s, 0.12s",
+    `${options.label}: shared motion duration`,
+  );
+  assert.equal(
+    motion.transitionTimingFunction,
+    "cubic-bezier(0.22, 1, 0.36, 1), cubic-bezier(0.22, 1, 0.36, 1), ease",
+    `${options.label}: shared motion easing`,
+  );
+  assert.ok(
+    motion.running.some(
+      ({ property, duration, playState }) =>
+        property === "transform" && duration === 360 && playState === "running",
+    ),
+    `${options.label}: real 360ms transform transition must run: ${JSON.stringify(motion.running)}`,
+  );
+  if (options.expectWidthTransition) {
+    assert.notEqual(
+      motion.initialIndicatorWidth,
+      motion.targetWidth,
+      `${options.label}: selected text widths must differ`,
+    );
+    assert.ok(
+      motion.running.some(
+        ({ property, duration, playState }) =>
+          property === "width" && duration === 360 && playState === "running",
+      ),
+      `${options.label}: real 360ms width transition must run: ${JSON.stringify(motion.running)}`,
+    );
+  } else {
+    assert.ok(
+      Math.abs(motion.initialIndicatorWidth - motion.initialSelectedWidth) <
+        0.5,
+    );
+  }
+  for (const [axis, delta] of Object.entries({
+    start: motion.startDelta,
+    top: motion.topDelta,
+    width: motion.widthDelta,
+    height: motion.heightDelta,
+  })) {
+    assert.ok(
+      delta < 0.5,
+      `${options.label}: final ${axis} alignment failed with ${delta}`,
+    );
+  }
+  return motion;
+}
+
+async function assertRapidSegmentedRetarget(
+  page: BrowserSmokePage,
+  options: {
+    groupName: string;
+    firstOptionName: string;
+    finalOptionName: string;
+    label: string;
+  },
+) {
+  const group = page.getByRole("group", {
+    name: options.groupName,
+    exact: true,
+  });
+  await settleSegmentedIndicator(page, options.groupName);
+  const marker = `${options.groupName}-rapid-${Date.now()}`;
+  const result = await group.evaluate(
+    async (element, payload) => {
+      const root = element as HTMLElement;
+      const indicator = root.querySelector<HTMLElement>(
+        ".product-segmented-control-indicator",
+      );
+      const buttons = Array.from(
+        root.querySelectorAll<HTMLButtonElement>("button"),
+      );
+      const buttonName = (button: HTMLButtonElement) =>
+        button.getAttribute("aria-label") ??
+        button.textContent?.replace(/\s+/g, " ").trim() ??
+        "";
+      const first = buttons.find(
+        (button) => buttonName(button) === payload.firstOptionName,
+      );
+      const final = buttons.find(
+        (button) => buttonName(button) === payload.finalOptionName,
+      );
+      if (!indicator || !first || !final || first === final) {
+        throw new Error("Rapid segmented retarget elements are missing");
+      }
+
+      indicator.dataset.browserSmokeIdentity = payload.marker;
+      const initialIndicatorRect = indicator.getBoundingClientRect();
+      first.click();
+      let firstRunning: Animation[] = [];
+      let firstMoved = false;
+      for (let frame = 0; frame < 30; frame += 1) {
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => resolve()),
+        );
+        firstRunning = indicator
+          .getAnimations()
+          .filter((animation) => animation.playState === "running");
+        firstMoved =
+          Math.abs(
+            indicator.getBoundingClientRect().left - initialIndicatorRect.left,
+          ) > 0.5;
+        if (
+          first.getAttribute("aria-pressed") === "true" &&
+          firstRunning.length > 0 &&
+          firstMoved
+        ) {
+          break;
+        }
+      }
+      const firstProperties = firstRunning.map(
+        (animation) => (animation as CSSTransition).transitionProperty ?? "",
+      );
+
+      final.click();
+      let secondRunning: Animation[] = [];
+      for (let frame = 0; frame < 30; frame += 1) {
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => resolve()),
+        );
+        secondRunning = indicator
+          .getAnimations()
+          .filter((animation) => animation.playState === "running");
+        if (
+          final.getAttribute("aria-pressed") === "true" &&
+          secondRunning.length > 0
+        ) {
+          break;
+        }
+      }
+      const secondProperties = secondRunning.map(
+        (animation) => (animation as CSSTransition).transitionProperty ?? "",
+      );
+      await Promise.all(
+        indicator
+          .getAnimations()
+          .map((animation) => animation.finished.catch(() => undefined)),
+      );
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+
+      const selected = root.querySelector<HTMLButtonElement>(
+        'button[aria-pressed="true"]',
+      );
+      if (!selected) throw new Error("Rapid retarget selection is missing");
+      const indicatorRect = indicator.getBoundingClientRect();
+      const selectedRect = selected.getBoundingClientRect();
+      await new Promise<void>((resolve) => setTimeout(resolve, 420));
+      const stableRect = indicator.getBoundingClientRect();
+      return {
+        firstProperties,
+        firstMoved,
+        secondProperties,
+        sameIndicator:
+          root.querySelector(".product-segmented-control-indicator") ===
+            indicator &&
+          indicator.dataset.browserSmokeIdentity === payload.marker,
+        indicatorCount: root.querySelectorAll(
+          ".product-segmented-control-indicator",
+        ).length,
+        finalName: buttonName(selected),
+        pressedCount: root.querySelectorAll('button[aria-pressed="true"]')
+          .length,
+        startDelta: Math.abs(indicatorRect.left - selectedRect.left),
+        topDelta: Math.abs(indicatorRect.top - selectedRect.top),
+        widthDelta: Math.abs(indicatorRect.width - selectedRect.width),
+        heightDelta: Math.abs(indicatorRect.height - selectedRect.height),
+        stableStartDelta: Math.abs(stableRect.left - indicatorRect.left),
+        stableWidthDelta: Math.abs(stableRect.width - indicatorRect.width),
+      };
+    },
+    {
+      firstOptionName: options.firstOptionName,
+      finalOptionName: options.finalOptionName,
+      marker,
+    },
+  );
+
+  assert.ok(
+    result.firstProperties.includes("transform"),
+    `${options.label}: first retarget must start a transform transition`,
+  );
+  assert.equal(
+    result.firstMoved,
+    true,
+    `${options.label}: first transition must visibly advance before retargeting`,
+  );
+  assert.ok(
+    result.secondProperties.includes("transform"),
+    `${options.label}: second retarget must replace it with a running transform transition`,
+  );
+  assert.equal(result.sameIndicator, true, `${options.label}: same indicator`);
+  assert.equal(result.indicatorCount, 1, `${options.label}: one indicator`);
+  assert.equal(result.finalName, options.finalOptionName);
+  assert.equal(result.pressedCount, 1, `${options.label}: one pressed option`);
+  for (const [axis, delta] of Object.entries({
+    start: result.startDelta,
+    top: result.topDelta,
+    width: result.widthDelta,
+    height: result.heightDelta,
+    stableStart: result.stableStartDelta,
+    stableWidth: result.stableWidthDelta,
+  })) {
+    assert.ok(
+      delta < 0.5,
+      `${options.label}: final ${axis} alignment failed with ${delta}`,
+    );
+  }
+}
+
 async function readMobileEditableContract(page: BrowserSmokePage) {
   return page.evaluate(() => {
     const nonTextInputTypes = new Set([
@@ -3720,6 +4288,17 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
       exact: true,
     });
     assert.equal(await comfortableView.getAttribute("aria-pressed"), "true");
+    await assertSegmentedIndicatorAligned(
+      runtime.page,
+      "Вид товаров",
+      "Store desktop view",
+    );
+    await assertRapidSegmentedRetarget(runtime.page, {
+      groupName: "Вид товаров",
+      firstOptionName: "Показать компактные карточки товаров",
+      finalOptionName: "Показать крупные карточки товаров",
+      label: "Store rapid view retarget",
+    });
     const comfortableGrid = runtime.page.locator(
       '.store-product-grid[data-density="comfortable"]',
     );
@@ -3732,7 +4311,11 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
       ),
       3,
     );
-    await compactView.click();
+    await activateSegmentedOptionWithMotion(runtime.page, {
+      groupName: "Вид товаров",
+      optionName: "Показать компактные карточки товаров",
+      label: "Store comfortable-to-compact",
+    });
     const compactGrid = runtime.page.locator(
       '.store-product-grid[data-density="compact"]',
     );
@@ -3747,7 +4330,11 @@ test("browser smoke: Store cart and checkout remain an explicit local demo", asy
       ),
       6,
     );
-    await comfortableView.click();
+    await activateSegmentedOptionWithMotion(runtime.page, {
+      groupName: "Вид товаров",
+      optionName: "Показать крупные карточки товаров",
+      label: "Store compact-to-comfortable",
+    });
 
     const stationeryTab = runtime.page.getByRole("tab", {
       name: /Канцелярия/,
@@ -6363,6 +6950,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const inactiveViewButton = viewToggle?.querySelector<HTMLElement>(
         'button[aria-pressed="false"]',
       );
+      const viewIndicator = viewToggle?.querySelector<HTMLElement>(
+        ".product-segmented-control-indicator",
+      );
       const siteHeader = document.querySelector<HTMLElement>(
         ".site-header-shell-demo",
       );
@@ -6412,6 +7002,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         viewIcons.length !== 2 ||
         !activeViewButton ||
         !inactiveViewButton ||
+        !viewIndicator ||
         !siteHeader ||
         !headerPrimaryButton ||
         !headerPrimaryIcon ||
@@ -6445,6 +7036,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const dateNavigatorRect = dateNavigator.getBoundingClientRect();
       const datePickerRect = datePicker.getBoundingClientRect();
       const viewToggleRect = viewToggle.getBoundingClientRect();
+      const viewIndicatorRect = viewIndicator.getBoundingClientRect();
+      const activeViewButtonRect = activeViewButton.getBoundingClientRect();
       const userTriggerRect = userTrigger.getBoundingClientRect();
       const userAvatarRect = userAvatar.getBoundingClientRect();
       const userAvatarStyle = getComputedStyle(userAvatar);
@@ -6547,7 +7140,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             ...readGlyph(headerPrimaryIcon),
           },
         },
-        raisedControlShadow: getComputedStyle(activeViewButton).boxShadow,
+        raisedControlShadow: getComputedStyle(viewIndicator).boxShadow,
         viewToggleSurface: {
           backgroundColor: getComputedStyle(viewToggle).backgroundColor,
           borderTopWidth: getComputedStyle(viewToggle).borderTopWidth,
@@ -6564,6 +7157,38 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           borderRadius: getComputedStyle(viewToggle).borderRadius,
           backgroundColor: getComputedStyle(viewToggle).backgroundColor,
           backgroundClip: getComputedStyle(viewToggle).backgroundClip,
+          indicatorReady: viewToggle.getAttribute("data-indicator-ready"),
+          indicatorCount: viewToggle.querySelectorAll(
+            ".product-segmented-control-indicator",
+          ).length,
+          indicator: {
+            ...readSurface(viewIndicator),
+            ariaHidden: viewIndicator.getAttribute("aria-hidden"),
+            ready: viewIndicator.getAttribute("data-ready"),
+            motionReady: viewIndicator.getAttribute("data-motion-ready"),
+            pointerEvents: getComputedStyle(viewIndicator).pointerEvents,
+            opacity: getComputedStyle(viewIndicator).opacity,
+            transitionProperty:
+              getComputedStyle(viewIndicator).transitionProperty,
+            transitionDuration:
+              getComputedStyle(viewIndicator).transitionDuration,
+            transitionTimingFunction:
+              getComputedStyle(viewIndicator).transitionTimingFunction,
+            width: viewIndicatorRect.width,
+            height: viewIndicatorRect.height,
+            startDelta: Math.abs(
+              viewIndicatorRect.left - activeViewButtonRect.left,
+            ),
+            topDelta: Math.abs(
+              viewIndicatorRect.top - activeViewButtonRect.top,
+            ),
+            widthDelta: Math.abs(
+              viewIndicatorRect.width - activeViewButtonRect.width,
+            ),
+            heightDelta: Math.abs(
+              viewIndicatorRect.height - activeViewButtonRect.height,
+            ),
+          },
           optionWidths: viewOptions.map(
             (option) => option.getBoundingClientRect().width,
           ),
@@ -6747,6 +7372,36 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       borderRadius: "12px",
       backgroundColor: E2E_SEGMENTED_CONTROL_BACKGROUND,
       backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+      indicatorReady: "true",
+      indicatorCount: 1,
+      indicator: {
+        borderTopWidth: "0px",
+        borderTopStyle: "none",
+        borderRadius: "11px",
+        backgroundColor: "rgb(255, 255, 255)",
+        backgroundImage: "none",
+        backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+        boxShadow: E2E_RAISED_CONTROL_SHADOW,
+        transform: scheduleContract.desktopSegmentedControl.indicator.transform,
+        ariaHidden: "true",
+        ready: "true",
+        motionReady: "true",
+        pointerEvents: "none",
+        opacity: "1",
+        transitionProperty: "width, transform, opacity",
+        transitionDuration: "0.36s, 0.36s, 0.12s",
+        transitionTimingFunction:
+          "cubic-bezier(0.22, 1, 0.36, 1), cubic-bezier(0.22, 1, 0.36, 1), ease",
+        width: 38,
+        height: 38,
+        startDelta:
+          scheduleContract.desktopSegmentedControl.indicator.startDelta,
+        topDelta: scheduleContract.desktopSegmentedControl.indicator.topDelta,
+        widthDelta:
+          scheduleContract.desktopSegmentedControl.indicator.widthDelta,
+        heightDelta:
+          scheduleContract.desktopSegmentedControl.indicator.heightDelta,
+      },
       optionWidths: [38, 38],
       optionHeights: [38, 38],
       seamGaps: [2],
@@ -6769,10 +7424,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         borderTopWidth: "0px",
         borderTopStyle: "none",
         borderRadius: "11px",
-        backgroundColor: "rgb(255, 255, 255)",
+        backgroundColor: "rgba(0, 0, 0, 0)",
         backgroundImage: "none",
-        backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
-        boxShadow: E2E_RAISED_CONTROL_SHADOW,
+        backgroundClip: "border-box",
+        boxShadow: "none",
         transform: "none",
       },
       inactive: {
@@ -6786,6 +7441,22 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         transform: "none",
       },
     });
+    for (const [axis, delta] of Object.entries({
+      start: scheduleContract.desktopSegmentedControl.indicator.startDelta,
+      top: scheduleContract.desktopSegmentedControl.indicator.topDelta,
+      width: scheduleContract.desktopSegmentedControl.indicator.widthDelta,
+      height: scheduleContract.desktopSegmentedControl.indicator.heightDelta,
+    })) {
+      assert.ok(
+        delta < 0.5,
+        `Schedule desktop indicator ${axis} alignment failed with ${delta}`,
+      );
+    }
+    await assertSegmentedIndicatorAligned(
+      runtime.page,
+      "Вид занятий",
+      "Schedule desktop view toggle",
+    );
     const desktopInactiveViewOption = runtime.page.locator(
       '.teaching-schedule-view-toggle button[aria-pressed="false"]',
     );
@@ -7807,9 +8478,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       0,
     );
 
-    await runtime.page
-      .getByRole("button", { name: "Показать карточками", exact: true })
-      .click();
+    await activateSegmentedOptionWithMotion(runtime.page, {
+      groupName: "Вид занятий",
+      optionName: "Показать карточками",
+      label: "Schedule desktop table-to-cards",
+    });
     await runtime.page.locator(".teaching-run-card:first-child").waitFor();
     assert.deepEqual(
       await runtime.page.evaluate(() => {
@@ -7872,9 +8545,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.equal(await runtime.page.locator(".teaching-run-card").count(), 2);
     assert.equal(await scheduleTable.count(), 0);
 
-    await runtime.page
-      .getByRole("button", { name: "Показать таблицей", exact: true })
-      .click();
+    await activateSegmentedOptionWithMotion(runtime.page, {
+      groupName: "Вид занятий",
+      optionName: "Показать таблицей",
+      label: "Schedule desktop cards-to-table",
+    });
     await runtime.page
       .getByRole("table", {
         name: "Занятия за выбранную неделю",
@@ -8115,6 +8790,91 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.ok(cachedStudentsHeaderFrame.height > 0);
     assert.ok(cachedStudentsHeaderFrame.height < 200);
 
+    const pendingMembershipControl = runtime.page.getByRole("group", {
+      name: "Принадлежность к группе",
+      exact: true,
+    });
+    await pendingMembershipControl.waitFor({ state: "attached" });
+    const disabledMembershipIndicator = await pendingMembershipControl.evaluate(
+      (element) => {
+        const group = element as HTMLElement;
+        const indicator = group.querySelector<HTMLElement>(
+          ".product-segmented-control-indicator",
+        );
+        const selected = group.querySelector<HTMLButtonElement>(
+          'button[aria-pressed="true"]',
+        );
+        if (!indicator || !selected) {
+          throw new Error("Pending Students segmented control is missing");
+        }
+        const read = (): SegmentedEnableFrame => {
+          const indicatorStyle = getComputedStyle(indicator);
+          const selectedStyle = getComputedStyle(selected);
+          const indicatorRect = indicator.getBoundingClientRect();
+          const selectedRect = selected.getBoundingClientRect();
+          return {
+            groupReady: group.getAttribute("data-indicator-ready"),
+            indicatorReady: indicator.getAttribute("data-ready"),
+            motionReady: indicator.getAttribute("data-motion-ready"),
+            selectedDisabled: selected.disabled,
+            selectedBackground: selectedStyle.backgroundColor,
+            selectedShadow: selectedStyle.boxShadow,
+            indicatorBackground: indicatorStyle.backgroundColor,
+            indicatorOpacity: indicatorStyle.opacity,
+            transitionProperty: indicatorStyle.transitionProperty,
+            transitionDuration: indicatorStyle.transitionDuration,
+            maxAlignmentDelta: Math.max(
+              Math.abs(indicatorRect.left - selectedRect.left),
+              Math.abs(indicatorRect.top - selectedRect.top),
+              Math.abs(indicatorRect.width - selectedRect.width),
+              Math.abs(indicatorRect.height - selectedRect.height),
+            ),
+          };
+        };
+        const frames: ReturnType<typeof read>[] = [];
+        const observer = new MutationObserver(() => frames.push(read()));
+        observer.observe(group, {
+          attributes: true,
+          subtree: true,
+          attributeFilter: [
+            "data-indicator-ready",
+            "data-ready",
+            "data-motion-ready",
+            "disabled",
+          ],
+        });
+        (
+          window as typeof window & {
+            __e2eStudentsSegmentedEnable?: SegmentedEnableProbe;
+          }
+        ).__e2eStudentsSegmentedEnable = { frames, observer };
+        return read();
+      },
+    );
+    assert.deepEqual(
+      {
+        groupReady: disabledMembershipIndicator.groupReady,
+        indicatorReady: disabledMembershipIndicator.indicatorReady,
+        motionReady: disabledMembershipIndicator.motionReady,
+        selectedDisabled: disabledMembershipIndicator.selectedDisabled,
+        selectedBackground: disabledMembershipIndicator.selectedBackground,
+        selectedShadow: disabledMembershipIndicator.selectedShadow,
+        indicatorOpacity: disabledMembershipIndicator.indicatorOpacity,
+        transitionProperty: disabledMembershipIndicator.transitionProperty,
+      },
+      {
+        groupReady: null,
+        indicatorReady: null,
+        motionReady: null,
+        selectedDisabled: true,
+        selectedBackground: "rgb(255, 255, 255)",
+        selectedShadow: E2E_RAISED_CONTROL_SHADOW,
+        indicatorOpacity: "0",
+        transitionProperty: "none",
+      },
+      "Disabled selected option keeps the fallback surface while its indicator is unarmed",
+    );
+
     releaseStudentsContent();
     e2eStudentDirectoryRpcGate = null;
     e2eStudentDirectoryRpcObserved = null;
@@ -8127,6 +8887,83 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         exact: true,
       })
       .waitFor();
+    await runtime.page.waitForFunction(() => {
+      const frames = (
+        window as typeof window & {
+          __e2eStudentsSegmentedEnable?: SegmentedEnableProbe;
+        }
+      ).__e2eStudentsSegmentedEnable?.frames;
+      return Boolean(
+        frames?.some(
+          (frame) => frame.groupReady === "true" && frame.motionReady === null,
+        ) && frames.some((frame) => frame.motionReady === "true"),
+      );
+    });
+    const enabledMembershipIndicator = await runtime.page.evaluate(() => {
+      const state = (
+        window as typeof window & {
+          __e2eStudentsSegmentedEnable?: SegmentedEnableProbe;
+        }
+      ).__e2eStudentsSegmentedEnable;
+      if (!state) throw new Error("Students enable frames are missing");
+      state.observer.disconnect();
+      const instant = state.frames.find(
+        (frame) => frame.groupReady === "true" && frame.motionReady === null,
+      );
+      const armed = state.frames.find((frame) => frame.motionReady === "true");
+      delete (
+        window as typeof window & {
+          __e2eStudentsSegmentedEnable?: unknown;
+        }
+      ).__e2eStudentsSegmentedEnable;
+      return { instant, armed };
+    });
+    assert.deepEqual(
+      enabledMembershipIndicator.instant && {
+        groupReady: enabledMembershipIndicator.instant.groupReady,
+        indicatorReady: enabledMembershipIndicator.instant.indicatorReady,
+        motionReady: enabledMembershipIndicator.instant.motionReady,
+        selectedDisabled: enabledMembershipIndicator.instant.selectedDisabled,
+        selectedBackground:
+          enabledMembershipIndicator.instant.selectedBackground,
+        selectedShadow: enabledMembershipIndicator.instant.selectedShadow,
+        indicatorBackground:
+          enabledMembershipIndicator.instant.indicatorBackground,
+        indicatorOpacity: enabledMembershipIndicator.instant.indicatorOpacity,
+        transitionProperty:
+          enabledMembershipIndicator.instant.transitionProperty,
+      },
+      {
+        groupReady: "true",
+        indicatorReady: "true",
+        motionReady: null,
+        selectedDisabled: false,
+        selectedBackground: "rgba(0, 0, 0, 0)",
+        selectedShadow: "none",
+        indicatorBackground: "rgb(255, 255, 255)",
+        indicatorOpacity: "1",
+        transitionProperty: "none",
+      },
+      "Disabled-to-enabled indicator paints immediately before motion arms",
+    );
+    assert.equal(
+      enabledMembershipIndicator.armed?.motionReady,
+      "true",
+      "Students indicator arms motion on the next animation frame",
+    );
+    assert.equal(
+      enabledMembershipIndicator.armed?.transitionProperty,
+      "width, transform, opacity",
+    );
+    assert.equal(
+      enabledMembershipIndicator.armed?.transitionDuration,
+      "0.36s, 0.36s, 0.12s",
+    );
+    assert.ok(
+      enabledMembershipIndicator.instant &&
+        enabledMembershipIndicator.instant.maxAlignmentDelta < 0.5,
+      "Newly enabled indicator must be aligned before motion arms",
+    );
     await runtime.page.evaluate(async () => {
       await new Promise<void>((resolve) =>
         window.requestAnimationFrame(() => resolve()),
@@ -8821,7 +9658,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       membershipBoxShadow: "none",
       membershipButtonHeights: [38, 38, 38],
       activeMembershipHeight: "38px",
-      activeMembershipBoxShadow: E2E_RAISED_CONTROL_SHADOW,
+      activeMembershipBoxShadow: "none",
       activeMembershipTransform: "none",
       viewSwitchHeight: "40px",
       viewSwitchWidth: 80,
@@ -8835,7 +9672,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       viewSwitchBoxShadow: "none",
       viewButtonHeights: [38, 38],
       activeViewButtonHeight: "38px",
-      activeViewButtonBoxShadow: E2E_RAISED_CONTROL_SHADOW,
+      activeViewButtonBoxShadow: "none",
       viewSwitchInsideControls: true,
       membershipBeforeViewSwitch: true,
     });
@@ -8858,6 +9695,16 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     ]);
     assert.equal(studentsVisual.hasFilterTrigger, false);
     assert.equal(studentsVisual.nativeSelectCount, 0);
+    await assertSegmentedIndicatorAligned(
+      runtime.page,
+      "Принадлежность к группе",
+      "Students desktop membership",
+    );
+    await assertSegmentedIndicatorAligned(
+      runtime.page,
+      "Вид списка учеников",
+      "Students desktop view",
+    );
 
     const studentTableSurface = runtime.page.locator(
       ".student-directory-table-wrap",
@@ -8883,36 +9730,52 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     await runtime.page.waitForTimeout(220);
     assert.deepEqual(
       await activeLearnerViewButton.evaluate((button) => {
+        const indicator = button
+          .closest('[role="group"]')
+          ?.querySelector<HTMLElement>(".product-segmented-control-indicator");
+        if (!indicator) throw new Error("Students indicator is missing");
         const style = getComputedStyle(button);
         return {
-          boxShadow: style.boxShadow,
+          optionBoxShadow: style.boxShadow,
+          indicatorBoxShadow: getComputedStyle(indicator).boxShadow,
           transform: style.transform,
         };
       }),
-      { boxShadow: E2E_RAISED_CONTROL_SHADOW, transform: "none" },
+      {
+        optionBoxShadow: "none",
+        indicatorBoxShadow: E2E_RAISED_CONTROL_SHADOW,
+        transform: "none",
+      },
     );
     await runtime.page.mouse.down();
     await runtime.page.waitForTimeout(220);
     assert.deepEqual(
       await activeLearnerViewButton.evaluate((button) => {
+        const indicator = button
+          .closest('[role="group"]')
+          ?.querySelector<HTMLElement>(".product-segmented-control-indicator");
+        if (!indicator) throw new Error("Students indicator is missing");
         const style = getComputedStyle(button);
         return {
-          boxShadow: style.boxShadow,
+          optionBoxShadow: style.boxShadow,
+          indicatorBoxShadow: getComputedStyle(indicator).boxShadow,
           transform: style.transform,
         };
       }),
-      { boxShadow: E2E_RAISED_CONTROL_PRESSED_SHADOW, transform: "none" },
+      {
+        optionBoxShadow: "none",
+        indicatorBoxShadow: E2E_RAISED_CONTROL_PRESSED_SHADOW,
+        transform: "none",
+      },
     );
     await runtime.page.mouse.move(0, 0);
     await runtime.page.mouse.up();
 
-    const learnerViewSwitch = runtime.page.getByRole("group", {
-      name: "Вид списка учеников",
-      exact: true,
+    await activateSegmentedOptionWithMotion(runtime.page, {
+      groupName: "Вид списка учеников",
+      optionName: "Показать карточками",
+      label: "Students desktop table-to-cards",
     });
-    await learnerViewSwitch
-      .getByRole("button", { name: "Показать карточками", exact: true })
-      .click();
     const learnerCards = runtime.page.getByRole("region", {
       name: "Карточки учеников",
       exact: true,
@@ -8975,9 +9838,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       }),
       { boxShadow: E2E_RAISED_SURFACE_SHADOW, transform: "none" },
     );
-    await learnerViewSwitch
-      .getByRole("button", { name: "Показать таблицей", exact: true })
-      .click();
+    await activateSegmentedOptionWithMotion(runtime.page, {
+      groupName: "Вид списка учеников",
+      optionName: "Показать таблицей",
+      label: "Students desktop cards-to-table",
+    });
 
     const learnerTable = runtime.page.getByRole("table", {
       name: "Ученики, их статусы и группы",
@@ -9024,7 +9889,12 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           ),
         ).map((element) => element.textContent?.trim() ?? ""),
       );
-    await groupedMemberships.click();
+    await activateSegmentedOptionWithMotion(runtime.page, {
+      groupName: "Принадлежность к группе",
+      optionName: "В группе",
+      label: "Students desktop variable-width membership",
+      expectWidthTransition: true,
+    });
     assert.equal(await groupedMemberships.getAttribute("aria-pressed"), "true");
     assert.equal(
       await runtime.page
@@ -9055,10 +9925,34 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       "Клара Смирнова",
     ]);
     assert.equal(await clearLearnerSearch.count(), 0);
-    await ungroupedMemberships.click();
+    await ungroupedMemberships.press("Space");
+    await settleSegmentedIndicator(runtime.page, "Принадлежность к группе");
     assert.equal(
       await ungroupedMemberships.getAttribute("aria-pressed"),
       "true",
+    );
+    assert.deepEqual(
+      await ungroupedMemberships.evaluate((button) => {
+        const style = getComputedStyle(button);
+        return {
+          focused: document.activeElement === button,
+          pressed: button.getAttribute("aria-pressed"),
+          outlineStyle: style.outlineStyle,
+          outlineWidth: style.outlineWidth,
+        };
+      }),
+      {
+        focused: true,
+        pressed: "true",
+        outlineStyle: "solid",
+        outlineWidth: "2px",
+      },
+      "Students keyboard activation keeps focus and pressed semantics",
+    );
+    await assertSegmentedIndicatorAligned(
+      runtime.page,
+      "Принадлежность к группе",
+      "Students keyboard-selected membership",
     );
     await learnerTable
       .getByText("Ничего не найдено", { exact: true })
@@ -11205,6 +12099,15 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         const selectedBeforeStyle = getComputedStyle(selected, "::before");
         const inactiveStyle = getComputedStyle(inactive);
         const inactiveBeforeStyle = getComputedStyle(inactive, "::before");
+        const indicator = group.querySelector<HTMLElement>(
+          ".product-segmented-control-indicator",
+        );
+        if (!indicator) {
+          throw new Error("Mobile segmented indicator is missing");
+        }
+        const indicatorStyle = getComputedStyle(indicator);
+        const indicatorRect = indicator.getBoundingClientRect();
+        const selectedRect = selected.getBoundingClientRect();
         const options = Array.from(
           group.querySelectorAll<HTMLElement>("button"),
         );
@@ -11251,7 +12154,37 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
             backgroundClip: groupStyle.backgroundClip,
             boxShadow: groupStyle.boxShadow,
           },
+          groupIndicatorReady: group.getAttribute("data-indicator-ready"),
           groupBeforeContent: groupBeforeStyle.content,
+          indicatorCount: group.querySelectorAll(
+            ".product-segmented-control-indicator",
+          ).length,
+          indicator: {
+            surface: readSurface(indicator),
+            width: indicatorRect.width,
+            height: indicatorRect.height,
+            opacity: indicatorStyle.opacity,
+            display: indicatorStyle.display,
+            pointerEvents: indicatorStyle.pointerEvents,
+            backdropFilter: indicatorStyle.backdropFilter,
+            zIndex: indicatorStyle.zIndex,
+            ariaHidden: indicator.getAttribute("aria-hidden"),
+            ready: indicator.getAttribute("data-ready"),
+            motionReady: indicator.getAttribute("data-motion-ready"),
+            transitionProperty: indicatorStyle.transitionProperty,
+            transitionDuration: indicatorStyle.transitionDuration,
+            transitionTimingFunction: indicatorStyle.transitionTimingFunction,
+            selectedStartDelta: Math.abs(
+              indicatorRect.left - selectedRect.left,
+            ),
+            selectedTopDelta: Math.abs(indicatorRect.top - selectedRect.top),
+            selectedWidthDelta: Math.abs(
+              indicatorRect.width - selectedRect.width,
+            ),
+            selectedHeightDelta: Math.abs(
+              indicatorRect.height - selectedRect.height,
+            ),
+          },
           optionWidths: optionRects.map((rect) => rect.width),
           optionHeights: optionRects.map((rect) => rect.height),
           seamGaps: optionRects
@@ -11427,6 +12360,16 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       mobileScheduleContract.viewToggle,
       "Schedule mobile view toggle",
     );
+    await activateSegmentedOptionWithMotion(runtime.page, {
+      groupName: "Вид занятий",
+      optionName: "Показать карточками",
+      label: "Schedule mobile table-to-cards",
+    });
+    await activateSegmentedOptionWithMotion(runtime.page, {
+      groupName: "Вид занятий",
+      optionName: "Показать таблицей",
+      label: "Schedule mobile cards-to-table",
+    });
     await runtime.page.emulateMedia({ reducedMotion: "reduce" });
     const reducedMotionSegmentedTransitions = await runtime.page
       .locator(".teaching-schedule-view-toggle button")
@@ -11463,6 +12406,66 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       ),
       "Schedule mobile segmented options must stop transitioning under reduced motion",
     );
+    const reducedMotionIndicatorContract = await runtime.page
+      .getByRole("group", { name: "Вид занятий", exact: true })
+      .evaluate(async (group) => {
+        const root = group as HTMLElement;
+        const indicator = root.querySelector<HTMLElement>(
+          ".product-segmented-control-indicator",
+        );
+        const target = root.querySelector<HTMLButtonElement>(
+          'button[aria-label="Показать карточками"]',
+        );
+        if (!indicator || !target) {
+          throw new Error("Reduced-motion Schedule indicator is missing");
+        }
+        target.click();
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        );
+        const selected = root.querySelector<HTMLButtonElement>(
+          'button[aria-pressed="true"]',
+        );
+        if (!selected) {
+          throw new Error("Reduced-motion Schedule selection is missing");
+        }
+        const indicatorStyle = getComputedStyle(indicator);
+        const indicatorRect = indicator.getBoundingClientRect();
+        const selectedRect = selected.getBoundingClientRect();
+        return {
+          transitionProperty: indicatorStyle.transitionProperty,
+          transitionDuration: indicatorStyle.transitionDuration,
+          animationCount: indicator.getAnimations().length,
+          selectedLabel: selected.getAttribute("aria-label"),
+          startDelta: Math.abs(indicatorRect.left - selectedRect.left),
+          topDelta: Math.abs(indicatorRect.top - selectedRect.top),
+          widthDelta: Math.abs(indicatorRect.width - selectedRect.width),
+          heightDelta: Math.abs(indicatorRect.height - selectedRect.height),
+        };
+      });
+    assert.equal(reducedMotionIndicatorContract.transitionProperty, "none");
+    assert.ok(
+      Number.parseFloat(reducedMotionIndicatorContract.transitionDuration) <=
+        0.00001,
+    );
+    assert.equal(reducedMotionIndicatorContract.animationCount, 0);
+    assert.equal(
+      reducedMotionIndicatorContract.selectedLabel,
+      "Показать карточками",
+    );
+    assert.ok(
+      [
+        reducedMotionIndicatorContract.startDelta,
+        reducedMotionIndicatorContract.topDelta,
+        reducedMotionIndicatorContract.widthDelta,
+        reducedMotionIndicatorContract.heightDelta,
+      ].every((delta) => delta < 0.5),
+      "Schedule reduced-motion indicator must align instantly",
+    );
+    await runtime.page
+      .getByRole("button", { name: "Показать таблицей", exact: true })
+      .click();
+    await settleSegmentedIndicator(runtime.page, "Вид занятий");
     await runtime.page.emulateMedia({ reducedMotion: "no-preference" });
     const mobileSelectedViewOption = runtime.page.locator(
       '.teaching-schedule-view-toggle button[aria-pressed="true"]',
@@ -11471,16 +12474,22 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     await runtime.page.waitForTimeout(220);
     assert.deepEqual(
       await mobileSelectedViewOption.evaluate((option) => {
+        const indicator = option
+          .closest('[role="group"]')
+          ?.querySelector<HTMLElement>(".product-segmented-control-indicator");
+        if (!indicator) throw new Error("Schedule indicator is missing");
         const style = getComputedStyle(option);
         return {
           backgroundColor: style.backgroundColor,
-          boxShadow: style.boxShadow,
+          optionBoxShadow: style.boxShadow,
+          indicatorBoxShadow: getComputedStyle(indicator).boxShadow,
           transform: style.transform,
         };
       }),
       {
-        backgroundColor: "rgb(255, 255, 255)",
-        boxShadow: E2E_RAISED_CONTROL_SHADOW,
+        backgroundColor: "rgba(0, 0, 0, 0)",
+        optionBoxShadow: "none",
+        indicatorBoxShadow: E2E_RAISED_CONTROL_SHADOW,
         transform: "none",
       },
     );
@@ -11599,6 +12608,11 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     );
     assert.equal(narrowCalendarContract.allControlsInsideViewport, true);
     assert.ok(narrowCalendarContract.popoverWidth <= 288);
+    await assertSegmentedIndicatorAligned(
+      runtime.page,
+      "Вид занятий",
+      "Schedule mobile view at 320px",
+    );
     await runtime.page.setViewportSize({ width: 375, height: 812 });
 
     e2eScheduleFixtureVisible = true;
@@ -11726,9 +12740,11 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     );
     await runtime.page.setViewportSize({ width: 375, height: 812 });
 
-    await runtime.page
-      .getByRole("button", { name: "Показать карточками", exact: true })
-      .click();
+    await activateSegmentedOptionWithMotion(runtime.page, {
+      groupName: "Вид занятий",
+      optionName: "Показать карточками",
+      label: "Schedule mobile fixture table-to-cards",
+    });
     await runtime.page.locator(".teaching-run-card").waitFor();
     const mobileCardContract = await runtime.page.evaluate(() => {
       const cardBody = document.querySelector<HTMLElement>(
@@ -12388,6 +13404,15 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       );
       const activeViewStyle = getComputedStyle(activeViewButton);
       const inactiveViewStyle = getComputedStyle(inactiveViewButton);
+      const viewIndicator = viewSwitch.querySelector<HTMLElement>(
+        ".product-segmented-control-indicator",
+      );
+      if (!viewIndicator) {
+        throw new Error("Mobile Students view indicator is missing");
+      }
+      const viewIndicatorStyle = getComputedStyle(viewIndicator);
+      const viewIndicatorRect = viewIndicator.getBoundingClientRect();
+      const activeViewRect = activeViewButton.getBoundingClientRect();
       return {
         clientWidth: viewportWidth,
         scrollWidth: document.documentElement.scrollWidth,
@@ -12483,7 +13508,40 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
             backgroundClip: viewSwitchStyle.backgroundClip,
             boxShadow: viewSwitchStyle.boxShadow,
           },
+          groupIndicatorReady: viewSwitch.getAttribute("data-indicator-ready"),
           groupBeforeContent: getComputedStyle(viewSwitch, "::before").content,
+          indicatorCount: viewSwitch.querySelectorAll(
+            ".product-segmented-control-indicator",
+          ).length,
+          indicator: {
+            surface: readSurface(viewIndicator),
+            width: viewIndicatorRect.width,
+            height: viewIndicatorRect.height,
+            opacity: viewIndicatorStyle.opacity,
+            display: viewIndicatorStyle.display,
+            pointerEvents: viewIndicatorStyle.pointerEvents,
+            backdropFilter: viewIndicatorStyle.backdropFilter,
+            zIndex: viewIndicatorStyle.zIndex,
+            ariaHidden: viewIndicator.getAttribute("aria-hidden"),
+            ready: viewIndicator.getAttribute("data-ready"),
+            motionReady: viewIndicator.getAttribute("data-motion-ready"),
+            transitionProperty: viewIndicatorStyle.transitionProperty,
+            transitionDuration: viewIndicatorStyle.transitionDuration,
+            transitionTimingFunction:
+              viewIndicatorStyle.transitionTimingFunction,
+            selectedStartDelta: Math.abs(
+              viewIndicatorRect.left - activeViewRect.left,
+            ),
+            selectedTopDelta: Math.abs(
+              viewIndicatorRect.top - activeViewRect.top,
+            ),
+            selectedWidthDelta: Math.abs(
+              viewIndicatorRect.width - activeViewRect.width,
+            ),
+            selectedHeightDelta: Math.abs(
+              viewIndicatorRect.height - activeViewRect.height,
+            ),
+          },
           optionWidths: viewOptionRects.map((rect) => rect.width),
           optionHeights: viewOptionRects.map((rect) => rect.height),
           seamGaps: viewOptionRects
@@ -12607,6 +13665,11 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       mobileContract.viewToggle,
       "Students mobile view toggle",
     );
+    await assertSegmentedIndicatorAligned(
+      runtime.page,
+      "Принадлежность к группе",
+      "Students mobile membership at 375px",
+    );
     assert.equal(mobileContract.viewSwitchInsideViewport, true);
     assert.deepEqual(mobileContract.viewButtons, [
       { label: "Показать таблицей", pressed: "true" },
@@ -12703,6 +13766,11 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     );
     assert.equal(narrowMembershipContract.borderTopStyle, "solid");
     assert.deepEqual(narrowMembershipContract.optionHeights, [38, 38, 38]);
+    await assertSegmentedIndicatorAligned(
+      runtime.page,
+      "Принадлежность к группе",
+      "Students mobile membership at 320px",
+    );
     await runtime.page.setViewportSize({ width: 375, height: 812 });
   } finally {
     e2eCompletionPhase = null;
@@ -16161,6 +17229,16 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       ),
       `320px New Course must keep both short visible direction labels untruncated while preserving their full accessible names: ${JSON.stringify(newCourseAudienceContract.options)}`,
     );
+    await assertSegmentedIndicatorAligned(
+      runtime.page,
+      "Направление обучения",
+      "New Course audience at 320px",
+    );
+    await activateSegmentedOptionWithMotion(runtime.page, {
+      groupName: "Направление обучения",
+      optionName: "Обучение педагогов",
+      label: "New Course audience at 320px",
+    });
 
     await runtime.page.setViewportSize({ width: 375, height: 812 });
     await runtime.page.goto("/courses", { waitUntil: "networkidle" });
@@ -16610,6 +17688,15 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const viewSwitchStyle = getComputedStyle(viewSwitch);
       const selectedStyle = getComputedStyle(selectedViewOption);
       const inactiveStyle = getComputedStyle(inactiveViewOption);
+      const viewIndicator = viewSwitch.querySelector<HTMLElement>(
+        ".product-segmented-control-indicator",
+      );
+      if (!viewIndicator) {
+        throw new Error("Coarse-pointer Course view indicator is missing");
+      }
+      const viewIndicatorStyle = getComputedStyle(viewIndicator);
+      const viewIndicatorRect = viewIndicator.getBoundingClientRect();
+      const selectedViewRect = selectedViewOption.getBoundingClientRect();
       const viewOptions = Array.from(
         viewSwitch.querySelectorAll<HTMLElement>("button"),
       );
@@ -16697,7 +17784,40 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
             backgroundClip: viewSwitchStyle.backgroundClip,
             boxShadow: viewSwitchStyle.boxShadow,
           },
+          groupIndicatorReady: viewSwitch.getAttribute("data-indicator-ready"),
           groupBeforeContent: getComputedStyle(viewSwitch, "::before").content,
+          indicatorCount: viewSwitch.querySelectorAll(
+            ".product-segmented-control-indicator",
+          ).length,
+          indicator: {
+            surface: readSurface(viewIndicator),
+            width: viewIndicatorRect.width,
+            height: viewIndicatorRect.height,
+            opacity: viewIndicatorStyle.opacity,
+            display: viewIndicatorStyle.display,
+            pointerEvents: viewIndicatorStyle.pointerEvents,
+            backdropFilter: viewIndicatorStyle.backdropFilter,
+            zIndex: viewIndicatorStyle.zIndex,
+            ariaHidden: viewIndicator.getAttribute("aria-hidden"),
+            ready: viewIndicator.getAttribute("data-ready"),
+            motionReady: viewIndicator.getAttribute("data-motion-ready"),
+            transitionProperty: viewIndicatorStyle.transitionProperty,
+            transitionDuration: viewIndicatorStyle.transitionDuration,
+            transitionTimingFunction:
+              viewIndicatorStyle.transitionTimingFunction,
+            selectedStartDelta: Math.abs(
+              viewIndicatorRect.left - selectedViewRect.left,
+            ),
+            selectedTopDelta: Math.abs(
+              viewIndicatorRect.top - selectedViewRect.top,
+            ),
+            selectedWidthDelta: Math.abs(
+              viewIndicatorRect.width - selectedViewRect.width,
+            ),
+            selectedHeightDelta: Math.abs(
+              viewIndicatorRect.height - selectedViewRect.height,
+            ),
+          },
           optionWidths: viewOptionRects.map((rect) => rect.width),
           optionHeights: viewOptionRects.map((rect) => rect.height),
           seamGaps: viewOptionRects
@@ -17279,6 +18399,15 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         const groupStyle = getComputedStyle(viewToggle);
         const selectedStyle = getComputedStyle(selectedViewOption);
         const inactiveStyle = getComputedStyle(inactiveViewOption);
+        const viewIndicator = viewToggle.querySelector<HTMLElement>(
+          ".product-segmented-control-indicator",
+        );
+        if (!viewIndicator) {
+          throw new Error("Mobile Course view indicator is missing");
+        }
+        const viewIndicatorStyle = getComputedStyle(viewIndicator);
+        const viewIndicatorRect = viewIndicator.getBoundingClientRect();
+        const selectedViewRect = selectedViewOption.getBoundingClientRect();
         const options = Array.from(
           viewToggle.querySelectorAll<HTMLElement>("button"),
         );
@@ -17332,8 +18461,43 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
               backgroundClip: groupStyle.backgroundClip,
               boxShadow: groupStyle.boxShadow,
             },
+            groupIndicatorReady: viewToggle.getAttribute(
+              "data-indicator-ready",
+            ),
             groupBeforeContent: getComputedStyle(viewToggle, "::before")
               .content,
+            indicatorCount: viewToggle.querySelectorAll(
+              ".product-segmented-control-indicator",
+            ).length,
+            indicator: {
+              surface: readSurface(viewIndicator),
+              width: viewIndicatorRect.width,
+              height: viewIndicatorRect.height,
+              opacity: viewIndicatorStyle.opacity,
+              display: viewIndicatorStyle.display,
+              pointerEvents: viewIndicatorStyle.pointerEvents,
+              backdropFilter: viewIndicatorStyle.backdropFilter,
+              zIndex: viewIndicatorStyle.zIndex,
+              ariaHidden: viewIndicator.getAttribute("aria-hidden"),
+              ready: viewIndicator.getAttribute("data-ready"),
+              motionReady: viewIndicator.getAttribute("data-motion-ready"),
+              transitionProperty: viewIndicatorStyle.transitionProperty,
+              transitionDuration: viewIndicatorStyle.transitionDuration,
+              transitionTimingFunction:
+                viewIndicatorStyle.transitionTimingFunction,
+              selectedStartDelta: Math.abs(
+                viewIndicatorRect.left - selectedViewRect.left,
+              ),
+              selectedTopDelta: Math.abs(
+                viewIndicatorRect.top - selectedViewRect.top,
+              ),
+              selectedWidthDelta: Math.abs(
+                viewIndicatorRect.width - selectedViewRect.width,
+              ),
+              selectedHeightDelta: Math.abs(
+                viewIndicatorRect.height - selectedViewRect.height,
+              ),
+            },
             optionWidths: optionRects.map((rect) => rect.width),
             optionHeights: optionRects.map((rect) => rect.height),
             seamGaps: optionRects
@@ -17381,6 +18545,29 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       );
     }
 
+    const courseViewGroup = runtime.page.getByRole("group", {
+      name: "Вид списка курсов",
+      exact: true,
+    });
+    const initialCourseViewName =
+      (await courseViewGroup
+        .locator('button[aria-pressed="true"]')
+        .getAttribute("aria-label")) ?? "";
+    const alternateCourseViewName =
+      initialCourseViewName === "Показать таблицей"
+        ? "Показать карточками"
+        : "Показать таблицей";
+    await activateSegmentedOptionWithMotion(runtime.page, {
+      groupName: "Вид списка курсов",
+      optionName: alternateCourseViewName,
+      label: "Courses mobile view motion at 390px",
+    });
+    await activateSegmentedOptionWithMotion(runtime.page, {
+      groupName: "Вид списка курсов",
+      optionName: initialCourseViewName,
+      label: "Courses mobile view return at 390px",
+    });
+
     await runtime.page.setViewportSize({ width: 375, height: 812 });
     await runtime.page.emulateMedia({ forcedColors: "active" });
     try {
@@ -17398,7 +18585,10 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         const inactive = group?.querySelector<HTMLElement>(
           'button[aria-pressed="false"]',
         );
-        if (!group || !selected || !inactive) {
+        const indicator = group?.querySelector<HTMLElement>(
+          ".product-segmented-control-indicator",
+        );
+        if (!group || !selected || !inactive || !indicator) {
           throw new Error("Forced-colors Course toggle is missing");
         }
 
@@ -17450,6 +18640,16 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
             backgroundColor: groupStyle.backgroundColor,
             backgroundClip: groupStyle.backgroundClip,
             beforeContent: groupBeforeStyle.content,
+            indicatorReady: group.getAttribute("data-indicator-ready"),
+            indicatorCount: group.querySelectorAll(
+              ".product-segmented-control-indicator",
+            ).length,
+          },
+          indicator: {
+            ariaHidden: indicator.getAttribute("aria-hidden"),
+            display: getComputedStyle(indicator).display,
+            clientRectCount: indicator.getClientRects().length,
+            pointerEvents: getComputedStyle(indicator).pointerEvents,
           },
           inactive: {
             width: inactiveRect.width,
@@ -17495,6 +18695,14 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         backgroundColor: forcedColorsToggle.system.buttonFace,
         backgroundClip: "border-box",
         beforeContent: "none",
+        indicatorReady: "true",
+        indicatorCount: 1,
+      });
+      assert.deepEqual(forcedColorsToggle.indicator, {
+        ariaHidden: "true",
+        display: "none",
+        clientRectCount: 0,
+        pointerEvents: "none",
       });
       assert.deepEqual(forcedColorsToggle.inactive, {
         width: 38,

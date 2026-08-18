@@ -92,7 +92,7 @@ test("workspace tabs keep their accessible visual contract and raise positive co
   );
   assert.match(
     styles,
-    /:root\s*\{[^}]*--product-secondary-foreground: oklch\(0\.19 0 0 \/ 0\.6\);[^}]*--product-workspace-tabs-divider-color: oklch\(0\.19 0 0 \/ 0\.4\);/,
+    /:root\s*\{[^}]*--product-selection-motion-duration: 360ms;[^}]*--product-selection-motion-easing: cubic-bezier\(0\.22, 1, 0\.36, 1\);[^}]*--product-selection-motion-fade-duration: 120ms;[^}]*--product-secondary-foreground: oklch\(0\.19 0 0 \/ 0\.6\);[^}]*--product-workspace-tabs-divider-color: oklch\(0\.19 0 0 \/ 0\.4\);/,
   );
   assert.match(
     styles,
@@ -130,7 +130,11 @@ test("workspace tabs keep their accessible visual contract and raise positive co
   );
   assert.match(
     motionStyles,
-    /\.workspace-tabs-indicator\[data-motion-ready="true"\]\s*\{[^}]*transition:[^}]*width 360ms[^}]*transform 360ms/,
+    /\.workspace-tabs-indicator\[data-motion-ready="true"\]\s*\{[^}]*transition:[^}]*width var\(--product-selection-motion-duration\)\s*var\(--product-selection-motion-easing\),[^}]*transform var\(--product-selection-motion-duration\)\s*var\(--product-selection-motion-easing\),[^}]*opacity var\(--product-selection-motion-fade-duration\) ease;/,
+  );
+  assert.match(
+    motionStyles,
+    /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.workspace-tabs-indicator,\s*\.workspace-tabs-indicator\[data-motion-ready="true"\]\s*\{[^}]*transition: none;/,
   );
   assert.match(
     motionStyles,

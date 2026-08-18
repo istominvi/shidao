@@ -243,9 +243,20 @@ content typography с computed минимумом `16 px` для Safari anti-zoo
 Compound toggle использует тот же контракт на desktop и touch: shell
 `80 × 40 px` для двух icon-only cells, настоящая product-рамка `1 px`,
 `padding: 0`, gap `2 px`, radius `12 px` и две actual options
-`38 × 38 px` с концентрическим radius `11 px`. Selected option имеет
-`border: 0`, чисто-белый surface и base shadow обычной кнопки. Inactive option
-не получает фон или тень при hover — меняется только цвет. Exact `80 × 40 px`
+`38 × 38 px` с концентрическим radius `11 px`. Store view является одним из
+девяти current shared `SegmentedControl` consumers и не имеет локального motion
+fork. В current source / next production selected surface рисует единственный
+real `.product-segmented-control-indicator`: measured absolute plate высотой
+`38 px`, `aria-hidden`, `pointer-events: none`, с чисто-белым фоном,
+base/pressed shadow и тем же radius `11 px`. Actual selected button сохраняет
+`aria-pressed`, focus/disabled semantics и белый fallback до ready; после ready
+она прозрачна и без тени. Inactive option не получает фон или тень при hover —
+меняется только цвет. `ResizeObserver` поддерживает responsive measurement,
+readiness исключает initial fly-in, а rapid selection retargets тот же plate.
+Width/transform используют общие с `WorkspaceTabs` `360ms` /
+`cubic-bezier(0.22, 1, 0.36, 1)` tokens и `120ms` fade; reduced motion переносит
+plate мгновенно, а forced colors скрывает его и показывает actual selected
+button через `Highlight / HighlightText`. Exact `80 × 40 px`
 относится только к icon-only projection. В current source / next production
 semantic text groups на narrow/coarse сжимаются в пределах parent; options
 имеют `min-width: 0` и `flex: 1 1 0`, visible labels используют однострочный

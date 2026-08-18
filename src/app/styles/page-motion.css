@@ -142,9 +142,11 @@
 
 .workspace-tabs-indicator[data-motion-ready="true"] {
   transition:
-    width 360ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 120ms ease;
+    width var(--product-selection-motion-duration)
+      var(--product-selection-motion-easing),
+    transform var(--product-selection-motion-duration)
+      var(--product-selection-motion-easing),
+    opacity var(--product-selection-motion-fade-duration) ease;
 }
 
 .workspace-tabs-indicator[data-ready="true"] {
@@ -160,7 +162,8 @@
     transition: none;
   }
 
-  .workspace-tabs-indicator {
+  .workspace-tabs-indicator,
+  .workspace-tabs-indicator[data-motion-ready="true"] {
     transition: none;
   }
 

@@ -36,6 +36,9 @@
     var(--product-surface-border-color);
   --product-raised-control-hover-translate-y: -1px;
   --product-raised-control-transition: 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --product-selection-motion-duration: 360ms;
+  --product-selection-motion-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  --product-selection-motion-fade-duration: 120ms;
   --product-raised-surface-shadow: var(--product-raised-control-shadow);
   --product-entry-control-shadow: var(--product-raised-surface-shadow);
   --product-control-focus-halo: rgba(20, 20, 20, 0.58);
@@ -2181,6 +2184,40 @@ input.product-control-search::placeholder {
   box-shadow: none;
 }
 
+.product-segmented-control-indicator {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  left: 0;
+  display: block;
+  height: var(--product-segmented-control-option-size);
+  border: 0;
+  border-radius: var(--product-segmented-control-option-radius);
+  background-color: var(--product-surface-background);
+  background-image: none;
+  background-clip: padding-box;
+  box-shadow: var(--product-raised-control-shadow);
+  opacity: 0;
+  pointer-events: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  will-change: width, transform;
+  transition: none;
+}
+
+.product-segmented-control-indicator[data-ready="true"] {
+  opacity: 1;
+}
+
+.product-segmented-control-indicator[data-motion-ready="true"] {
+  transition:
+    width var(--product-selection-motion-duration)
+      var(--product-selection-motion-easing),
+    transform var(--product-selection-motion-duration)
+      var(--product-selection-motion-easing),
+    opacity var(--product-selection-motion-fade-duration) ease;
+}
+
 .product-segmented-control-option {
   position: relative;
   z-index: 1;
@@ -2206,11 +2243,7 @@ input.product-control-search::placeholder {
   font-weight: 500;
   line-height: 1;
   transform: none;
-  transition:
-    border-color var(--product-raised-control-transition),
-    background-color var(--product-raised-control-transition),
-    color var(--product-raised-control-transition),
-    box-shadow var(--product-raised-control-transition);
+  transition: color var(--product-raised-control-transition);
 }
 
 .product-segmented-control-option-icon-only {
@@ -2254,6 +2287,19 @@ input.product-control-search::placeholder {
 .product-segmented-control-option-selected:not(:disabled):active {
   box-shadow: var(--product-raised-control-shadow-pressed);
   transform: none;
+}
+
+.product-segmented-control[data-indicator-ready="true"]
+  .product-segmented-control-option-selected:not(:disabled) {
+  background: transparent;
+  box-shadow: none;
+}
+
+.product-segmented-control[data-indicator-ready="true"]:has(
+    .product-segmented-control-option-selected:not(:disabled):active
+  )
+  .product-segmented-control-indicator {
+  box-shadow: var(--product-raised-control-shadow-pressed);
 }
 
 .product-segmented-control-option:not(:disabled):active {
@@ -2896,6 +2942,11 @@ input.product-control-search::placeholder {
     transition: none;
   }
 
+  .product-segmented-control-indicator,
+  .product-segmented-control-indicator[data-motion-ready="true"] {
+    transition: none;
+  }
+
   .lesson-component-card-actions,
   .lesson-component-card-actions .component-card-action,
   .lesson-component-card-actions .component-card-visibility-action {
@@ -3155,6 +3206,10 @@ input.product-control-search::placeholder {
 
   .product-segmented-control-option {
     color: ButtonText !important;
+  }
+
+  .product-segmented-control-indicator {
+    display: none !important;
   }
 
   .product-segmented-control-option-selected {

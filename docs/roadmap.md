@@ -95,10 +95,23 @@
   реальную внешнюю product-рамку `1 px`, `padding: 0` и gap `2 px`; две actual
   icon-only options `38 × 38 px` внутри него дают ровно `80 × 40 px`.
   Shell использует radius `12 px`, options — концентрический radius `11 px`.
-  Selected option имеет `border: 0`, чисто-белый surface и base shadow обычной
-  кнопки. Неактивная option прозрачна и не получает фон или тень при hover —
-  меняется только цвет glyph. Прежние pseudo-слои удалены; Schedule использует
-  общий `SegmentedControl`; его glyph остаётся `16 px / 2 px` на всех
+  В current source / next production selection рисует один реальный measured
+  `.product-segmented-control-indicator` высотой `38 px` и radius `11 px`, а не
+  per-option или pseudo plates. Он absolute, `aria-hidden`,
+  `pointer-events: none`, не участвует в layout и получает pure-white surface с
+  base/pressed shadow обычной кнопки. Actual selected button сохраняет
+  `aria-pressed`, focus/disabled semantics и белый fallback до готовности
+  indicator; после ready она прозрачна и без тени. Неактивная option прозрачна
+  и не получает фон или тень при hover — меняется только цвет glyph.
+  `ResizeObserver` следит за group/options, readiness не допускает initial
+  fly-in, а rapid changes retarget тот же plate к последнему выбору. Motion
+  использует общие с `WorkspaceTabs` tokens: `360ms`,
+  `cubic-bezier(0.22, 1, 0.36, 1)` и `120ms` fade; reduced motion оставляет
+  мгновенный перенос, forced colors скрывает plate и показывает actual selected
+  button через `Highlight / HighlightText`. Все девять consumers — Schedule
+  period/view, Students membership/view, Owned Courses view, Catalog
+  audience/view, New Course audience и Store view — используют этот shared
+  `SegmentedControl` без локальных fork; glyph остаётся `16 px / 2 px` на всех
   плотностях.
   Exact `80 × 40 px` относится только к двум icon-only cells. В current source /
   next production semantic text groups на narrow/coarse могут сжиматься в
@@ -721,9 +734,15 @@ Keyboard outline и forced-colors fallback остаются отдельными
 красный текст. Строчные ellipsis и Component-card icon-actions остаются
 transparent/borderless/no-shadow; contextual menu panels/items тоже исключены.
 В current source / next production compound toggles получают настоящую внешнюю product-рамку `1 px`; shell
-`40 px` содержит actual options `38 px` с gap `2 px`. Выбранная чисто-белая
-option имеет `border: 0` и base shadow, а inactive option не получает фон или
-тень на hover — меняется только цвет. Shell использует фон
+`40 px` содержит actual options `38 px` с gap `2 px`. Единственный real
+`aria-hidden` / `pointer-events: none` indicator измеряет selected actual button и
+рисует её чисто-белую base/pressed surface; actual button остаётся semantic и
+служит белым fallback до ready, после чего прозрачна и без тени. Inactive option
+не получает фон или тень на hover — меняется только цвет. Readiness исключает
+initial fly-in, `ResizeObserver` поддерживает responsive width, а общие с
+`WorkspaceTabs` `360ms` / `cubic-bezier(0.22, 1, 0.36, 1)` tokens позволяют
+interruptible rapid retarget; reduced motion переносит plate мгновенно, forced
+colors скрывает его в пользу actual system-highlighted button. Shell использует фон
 `--product-surface-border-color`. Подзаголовки страниц и inactive tab text/icon
 получают `oklch(0.19 0 0 / 0.6)`, а отдельный 1.2 px tab baseline —
 `oklch(0.19 0 0 / 0.4)`. В deployed baseline белый sticky product TopNav

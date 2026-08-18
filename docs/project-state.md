@@ -288,17 +288,38 @@ labels сохраняют desktop `.88rem/400`, а segmented options — `.88rem
 `56 × 56 px / 24 px` Messages launcher, `44 × 44 px` actions authored Component
 card остаются явными touch/category exceptions. Portal `ActionMenu`, напротив,
 сохраняет desktop parity: row `40 px`, label `.88rem/400`, icon `16 px` также на
-mobile/coarse. Compound segmented control теперь использует один
-контракт на desktop, narrow и coarse: внешний shell высотой `40 px` имеет
-настоящую product-рамку `1 px`, `padding: 0`, gap `2 px` и две actual
-icon-only options `38 × 38 px`, поэтому итоговая геометрия равна ровно
-`80 × 40 px`. Радиус shell равен `12 px`, концентрический радиус option —
-`11 px`. Track использует `--product-surface-border-color`; selected actual
-option имеет `border: 0`, чисто-белый фон и базовую
-`--product-raised-control-shadow` обычной кнопки. Inactive option остаётся
-прозрачной и без тени; на fine-pointer hover меняется только цвет её glyph,
-без дополнительной заливки. Прежние pseudo-слои удалены. Schedule
-переиспользует shared `SegmentedControl`; glyph остаётся `16 px / 2 px` на
+mobile/coarse. В current source / next production compound
+`SegmentedControl` использует один контракт на desktop, narrow и coarse:
+внешний shell высотой `40 px` имеет настоящую product-рамку `1 px`,
+`padding: 0`, gap `2 px` и две actual icon-only options `38 × 38 px`, поэтому
+итоговая геометрия равна ровно `80 × 40 px`. Радиус shell равен `12 px`,
+концентрический радиус option и moving plate — `11 px`. Выбранную surface
+рисует один реальный absolute
+`.product-segmented-control-indicator`: он `aria-hidden`, не принимает события
+через `pointer-events: none`, не участвует во flex-layout и получает measured
+`left/width` выбранной actual button. Plate имеет высоту `38 px`, чисто-белый
+фон и базовую `--product-raised-control-shadow`; при pointer-down использует
+pressed shadow без transform. Actual buttons остаются выше plate и сохраняют
+`aria-pressed`, focus, disabled/busy и accessible-name semantics. До готового
+измерения, при отсутствующем/disabled выборе и как функциональный fallback
+selected actual button сама остаётся белой с base shadow; после
+`data-indicator-ready` она становится прозрачной и без тени, а visual selection
+переходит единственному plate. Inactive option всегда прозрачна и без тени; на
+fine-pointer hover меняется только цвет её glyph, без дополнительной заливки.
+Прежних per-option/pseudo plates нет.
+
+Group и все options наблюдаются через `ResizeObserver` с window-resize
+fallback, поэтому icon-only и variable-width text projections пересчитываются
+без layout drift. Readiness включается только после первого корректного
+измерения и отдельного animation frame: initial mount не прилетает из `left: 0`,
+а rapid retarget продолжает движение того же plate и завершается точно под
+последней выбранной actual button. `SegmentedControl` и `WorkspaceTabs`
+переиспользуют общие tokens `--product-selection-motion-duration: 360ms`,
+`--product-selection-motion-easing: cubic-bezier(0.22, 1, 0.36, 1)` и
+`--product-selection-motion-fade-duration: 120ms`. Этот shared contract
+обслуживает все девять current consumers без локальных fork: Schedule period и
+view, Students membership и view, Owned Courses view, Course Catalog audience и
+view, New Course audience и Store view. Glyph остаётся `16 px / 2 px` на
 desktop, narrow и coarse, а SVG использует стандартный `vector-effect`.
 Semantic text segmented groups intentionally do not inherit the exact
 `80 × 40 px` icon-only width. In current source / next production, a
@@ -308,9 +329,13 @@ option uses `min-width: 0` and `flex: 1 1 0`. The visible label stays on one
 line with ellipsis, while the unabridged button text remains its full accessible
 name. Exact `80 × 40 px` geometry remains exclusive to a two-cell icon-only
 projection.
-В `forced-colors` actual track/options используют контрастные системные
-`ButtonFace / ButtonText` и `Highlight / HighlightText`. Current source / next
-production не вводит отдельный mobile font/icon token: ordinary non-editable
+В `prefers-reduced-motion: reduce` measurement и выбор продолжают работать, но
+plate перемещается мгновенно без width/transform/opacity transition. В
+`forced-colors` декоративный plate скрывается, track использует
+`ButtonFace / CanvasText`, а actual buttons сохраняют контрастные
+`ButtonText` и selected `Highlight / HighlightText` вместе с настоящим focus
+outline. Current source / next production не вводит отдельный mobile font/icon
+token: ordinary non-editable
 product controls наследуют desktop type/icon rhythm. Native editable
 `input` / `select` / `textarea`, включая authored Lesson/Component, упражнения
 и поля ответа, сохраняют собственную content typography, но на narrow/coarse
@@ -785,10 +810,16 @@ toolbar/filter controls не имеют контекстных fork. На fine-p
 transparent/borderless/no-shadow; contextual menu panels/items также не
 получают product surface border. В current source / next production составные
 тумблеры используют настоящую внешнюю product-рамку `1 px`; shell `40 px`
-содержит actual options `38 px` с gap `2 px`. Выбранная чисто-белая option
-имеет `border: 0`, базовую тень
-обычной кнопки и собственный focus outline, а неактивная остаётся без заливки и
-тени даже при hover; hover меняет только её цвет. Фон compound shell использует
+содержит actual options `38 px` с gap `2 px`. Один measured real indicator
+рисует чисто-белую выбранную surface с base/pressed shadow и плавно меняет
+`width/transform` через общие с `WorkspaceTabs` selection-motion tokens. Actual
+selected button сохраняет `aria-pressed`, inset focus outline и белый fallback
+до готовности indicator, после чего становится прозрачной и без тени;
+неактивная остаётся без заливки и тени даже при hover, где меняется только её
+цвет. Readiness исключает initial fly-in, а `ResizeObserver` и interruptible
+`360 ms` retarget удерживают plate на последнем выборе. Reduced motion делает
+перенос мгновенным, forced colors скрывает plate и возвращает системную selected
+surface actual button. Фон compound shell использует
 `--product-surface-border-color`. Подзаголовок `AppPageHeader`, inactive text и
 16 px иконки `WorkspaceTabs` используют отдельный foreground
 `oklch(0.19 0 0 / 0.6)`, тогда как baseline остаётся визуально `1.2 px`, но

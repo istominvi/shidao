@@ -590,6 +590,10 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
+    /:root\s*\{[^}]*--product-selection-motion-duration: 360ms;[^}]*--product-selection-motion-easing: cubic-bezier\(0\.22, 1, 0\.36, 1\);[^}]*--product-selection-motion-fade-duration: 120ms;/,
+  );
+  assert.match(
+    styles,
     /:root\s*\{[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);[^}]*--product-entry-control-shadow: var\(--product-raised-surface-shadow\);[^}]*--product-control-focus-halo: rgba\(20, 20, 20, 0\.58\);/,
   );
   assert.doesNotMatch(styles, /--course-demo-header-action-border/);
@@ -673,6 +677,10 @@ test("product buttons share one animated raised-control elevation contract", () 
     reducedMotionStyles,
     /\.product-segmented-control-option\s*\{[^}]*transition: none;/,
   );
+  assert.match(
+    reducedMotionStyles,
+    /\.product-segmented-control-indicator,\s*\.product-segmented-control-indicator\[data-motion-ready="true"\]\s*\{[^}]*transition: none;/,
+  );
 
   assert.match(
     styles,
@@ -693,6 +701,10 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
+    /\.product-segmented-control-indicator\s*\{[^}]*position: absolute;[^}]*z-index: 0;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background-color: var\(--product-surface-background\);[^}]*background-image: none;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*pointer-events: none;[^}]*backdrop-filter: none;/,
+  );
+  assert.match(
+    styles,
     /\.product-segmented-control-option\s*\{[^}]*position: relative;[^}]*z-index: 1;[^}]*display: inline-flex;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*min-height: var\(--product-segmented-control-option-size\);[^}]*min-width: var\(--product-segmented-control-option-size\);[^}]*isolation: isolate;[^}]*box-sizing: border-box;[^}]*border: 0;[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background: transparent;[^}]*font-size: 0\.88rem;[^}]*transform: none;/,
   );
   assert.match(
@@ -705,6 +717,10 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
+    /\.product-segmented-control\[data-indicator-ready="true"\]\s*\.product-segmented-control-option-selected:not\(:disabled\)\s*\{[^}]*background: transparent;[^}]*box-shadow: none;/,
+  );
+  assert.match(
+    styles,
     /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.product-segmented-control-option:hover:not\(:disabled\):not\(\s*\.product-segmented-control-option-selected\s*\)\s*\{[^}]*background: transparent;[^}]*color: var\(--color-neutral-950, #0a0a0a\);[^}]*box-shadow: none;/,
   );
   assert.match(
@@ -713,10 +729,12 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   const segmentedSourceOrder = [
     styles.indexOf(".product-segmented-control {"),
+    styles.indexOf(".product-segmented-control-indicator {"),
     styles.indexOf(".product-segmented-control-option {"),
     styles.indexOf("@media (hover: hover) and (pointer: fine)"),
     styles.indexOf(".product-segmented-control-option:focus-visible"),
     styles.indexOf(".product-segmented-control-option-selected {"),
+    styles.indexOf('.product-segmented-control[data-indicator-ready="true"]'),
     styles.indexOf("@media (prefers-reduced-motion: reduce)"),
     segmentedForcedColorsStart,
     touchMediaStart,
@@ -729,6 +747,20 @@ test("product buttons share one animated raised-control elevation contract", () 
   assert.match(
     segmentedControl,
     /classNames\(\s*"product-segmented-control",\s*iconOnly\s*\?\s*"product-segmented-control-icon-only"\s*:\s*"product-segmented-control-text",\s*className,\s*\)/,
+  );
+  assert.equal(
+    segmentedControl.match(/className="product-segmented-control-indicator"/g)
+      ?.length,
+    1,
+  );
+  assert.ok(
+    segmentedControl.indexOf(
+      'className="product-segmented-control-indicator"',
+    ) < segmentedControl.indexOf("{items.map"),
+  );
+  assert.match(
+    segmentedControl,
+    /ref=\{groupRef\}[\s\S]*?data-indicator-ready=\{indicatorVisible \|\| undefined\}[\s\S]*?className="product-segmented-control-indicator"\s+aria-hidden="true"/,
   );
   assert.match(segmentedControl, /"product-segmented-control-option"/);
   assert.match(segmentedControl, /product-segmented-control-option-icon-only/);
@@ -743,6 +775,10 @@ test("product buttons share one animated raised-control elevation contract", () 
   assert.match(
     styles,
     /\.product-segmented-control-option-selected:not\(:disabled\):active\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);[^}]*transform: none;/,
+  );
+  assert.match(
+    styles,
+    /\.product-segmented-control\[data-indicator-ready="true"\]:has\(\s*\.product-segmented-control-option-selected:not\(:disabled\):active\s*\)\s*\.product-segmented-control-indicator\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);/,
   );
   assert.match(
     styles,
@@ -822,6 +858,10 @@ test("product buttons share one animated raised-control elevation contract", () 
   assert.match(
     forcedColorsStyles,
     /\.product-segmented-control-option\s*\{[^}]*color: ButtonText !important;/,
+  );
+  assert.match(
+    forcedColorsStyles,
+    /\.product-segmented-control-indicator\s*\{[^}]*display: none !important;/,
   );
   assert.match(
     forcedColorsStyles,

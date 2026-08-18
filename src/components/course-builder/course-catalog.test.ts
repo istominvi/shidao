@@ -277,6 +277,25 @@ test("shared course controls preserve pressed-button semantics", () => {
   assert.match(segmentedControlSource, /disabled=\{isDisabled\}/);
   assert.match(segmentedControlSource, /product-segmented-control/);
   assert.match(segmentedControlSource, /product-segmented-control-option/);
+  assert.equal(
+    segmentedControlSource.match(
+      /className="product-segmented-control-indicator"/g,
+    )?.length,
+    1,
+  );
+  assert.ok(
+    segmentedControlSource.indexOf(
+      'className="product-segmented-control-indicator"',
+    ) < segmentedControlSource.indexOf("{items.map"),
+  );
+  assert.match(
+    segmentedControlSource,
+    /ref=\{groupRef\}[\s\S]*?data-indicator-ready=\{indicatorVisible \|\| undefined\}/,
+  );
+  assert.match(
+    segmentedControlSource,
+    /className="product-segmented-control-indicator"\s+aria-hidden="true"/,
+  );
   assert.match(
     segmentedControlSource,
     /product-segmented-control-option-icon-only/,
@@ -287,7 +306,7 @@ test("shared course controls preserve pressed-button semantics", () => {
   );
   assert.match(
     globalStyles,
-    /:root\s*\{[^}]*--product-control-height: 2\.5rem;[^}]*--product-control-radius: var\(--product-element-radius\);[^}]*--product-control-icon-size: 1rem;[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);[^}]*--product-segmented-control-background: var\(--product-surface-border-color\);/,
+    /:root\s*\{[^}]*--product-control-height: 2\.5rem;[^}]*--product-control-radius: var\(--product-element-radius\);[^}]*--product-control-icon-size: 1rem;[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);[^}]*--product-selection-motion-duration: 360ms;[^}]*--product-selection-motion-easing: cubic-bezier\(0\.22, 1, 0\.36, 1\);[^}]*--product-selection-motion-fade-duration: 120ms;[^}]*--product-segmented-control-background: var\(--product-surface-border-color\);/,
   );
   assert.doesNotMatch(
     globalStyles,
@@ -311,7 +330,23 @@ test("shared course controls preserve pressed-button semantics", () => {
   );
   assert.match(
     globalStyles,
+    /\.product-segmented-control-indicator\s*\{[^}]*z-index: 0;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background-color: var\(--product-surface-background\);[^}]*background-image: none;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*pointer-events: none;[^}]*backdrop-filter: none;/,
+  );
+  assert.match(
+    globalStyles,
+    /\.product-segmented-control-option\s*\{[^}]*z-index: 1;/,
+  );
+  assert.match(
+    globalStyles,
     /\.product-segmented-control-option-selected\s*\{[^}]*border: 0;[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
+  );
+  assert.match(
+    globalStyles,
+    /\.product-segmented-control\[data-indicator-ready="true"\]\s*\.product-segmented-control-option-selected:not\(:disabled\)\s*\{[^}]*background: transparent;[^}]*box-shadow: none;/,
+  );
+  assert.match(
+    globalStyles,
+    /\.product-segmented-control\[data-indicator-ready="true"\]:has\(\s*\.product-segmented-control-option-selected:not\(:disabled\):active\s*\)\s*\.product-segmented-control-indicator\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);/,
   );
   assert.match(
     globalStyles,
@@ -323,7 +358,7 @@ test("shared course controls preserve pressed-button semantics", () => {
   );
   assert.match(
     globalStyles,
-    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control\s*\{[^}]*background: ButtonFace !important;[^}]*border: var\(--product-surface-border-width\) solid CanvasText;[^}]*outline: 0;[^}]*box-shadow: none;[^}]*forced-color-adjust: none;[^}]*\}[\s\S]*?\.product-segmented-control-option\s*\{[^}]*color: ButtonText !important;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected\s*\{[^}]*border: 1px solid Highlight !important;[^}]*background: Highlight !important;[^}]*color: HighlightText !important;[^}]*box-shadow: none !important;[^}]*forced-color-adjust: none;/,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control\s*\{[^}]*background: ButtonFace !important;[^}]*border: var\(--product-surface-border-width\) solid CanvasText;[^}]*outline: 0;[^}]*box-shadow: none;[^}]*forced-color-adjust: none;[^}]*\}[\s\S]*?\.product-segmented-control-option\s*\{[^}]*color: ButtonText !important;[^}]*\}[\s\S]*?\.product-segmented-control-indicator\s*\{[^}]*display: none !important;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected\s*\{[^}]*border: 1px solid Highlight !important;[^}]*background: Highlight !important;[^}]*color: HighlightText !important;[^}]*box-shadow: none !important;[^}]*forced-color-adjust: none;/,
   );
   assert.match(
     globalStyles,
@@ -331,7 +366,7 @@ test("shared course controls preserve pressed-button semantics", () => {
   );
   assert.match(
     globalStyles,
-    /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.product-segmented-control-option\s*\{[^}]*transition: none;/,
+    /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.product-segmented-control-option\s*\{[^}]*transition: none;[^}]*\}[\s\S]*?\.product-segmented-control-indicator,\s*\.product-segmented-control-indicator\[data-motion-ready="true"\]\s*\{[^}]*transition: none;/,
   );
   assert.doesNotMatch(
     segmentedControlSource,

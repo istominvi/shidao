@@ -755,9 +755,16 @@ Visual contract Course routes не меняет эту навигационну�
   Component-card icon-actions остаются transparent/borderless/no-shadow;
   contextual menu panels/items также исключены. В current source / next
   production compound toggles используют настоящую внешнюю product-рамку
-  `1 px`; shell `40 px` содержит actual options `38 px` с gap `2 px`. Selected
-  чисто-белая option имеет `border: 0` и base
-  shadow, а inactive option на hover меняет только цвет без фона или тени; фон
+  `1 px`; shell `40 px` содержит actual options `38 px` с gap `2 px`. Один real
+  `aria-hidden` / `pointer-events: none` indicator измеряет selected actual
+  button и рисует чисто-белую surface с base/pressed shadow; actual button
+  сохраняет semantic/focus и белый fallback до ready, после чего прозрачна и
+  без тени. Inactive option на hover меняет только цвет без фона или тени.
+  Readiness исключает initial fly-in, `ResizeObserver` пересчитывает responsive
+  options, а общие с `WorkspaceTabs` `360ms` /
+  `cubic-bezier(0.22, 1, 0.36, 1)` motion tokens обеспечивают interruptible rapid
+  retarget. Reduced motion переносит plate мгновенно, forced colors скрывает
+  его и оставляет actual selected system surface; фон
   shell использует `--product-surface-border-color`. Подзаголовок
   `AppPageHeader` и inactive tab
   text/icon используют `oklch(0.19 0 0 / 0.6)`, а независимый 1.2 px baseline —
@@ -862,8 +869,9 @@ Visual contract Course routes не меняет эту навигационну�
   углы имеют control-radius 12 px, а baseline рисуется отдельным слоем поверх
   светлого hover-фона. Квадратный непрозрачный чёрный active-сегмент 4 px лежит
   выше baseline. Current production реализует его одним absolute indicator,
-  измеряющим `offsetLeft/offsetWidth` активной кнопки и плавно меняющим
-  `transform/width`; выбранная persistent panel получает короткий directional
+  измеряющим active-button rect относительно tabs через
+  `getBoundingClientRect()` и плавно меняющим `transform/width`; выбранная
+  persistent panel получает короткий directional
   opacity/clipped-reveal entrance без layout animation и горизонтального
   document overflow. Быстрый повторный выбор
   отменяет прежнюю panel animation, ResizeObserver сохраняет indicator после
@@ -1038,9 +1046,24 @@ actions`; пять data headers сортируют полную client-loaded pr
   `38 × 38 px` образуют ровно `80 × 40 px`. Shell имеет radius `12 px`,
   options — концентрический radius `11 px`. Track использует цвет product
   border; inactive option прозрачна и на hover меняет только цвет без фона или
-  тени. Selected actual option имеет `border: 0`, чисто-белый surface и base
-  shadow обычной кнопки. Прежние pseudo-слои удалены. Schedule использует тот
-  же shared `SegmentedControl`; desktop сохраняет `16 px` glyph.
+  тени. В current source / next production один настоящий absolute
+  `.product-segmented-control-indicator` измеряет `left/width` selected actual
+  button; plate имеет высоту `38 px`, radius `11 px`, чисто-белый surface и
+  base/pressed shadow обычной кнопки. Он `aria-hidden`,
+  `pointer-events: none`, лежит ниже actual buttons и не влияет на flex-layout.
+  Selected actual button сохраняет `aria-pressed`, accessible name,
+  focus/disabled/busy semantics и белый fallback до готовности measurement;
+  после ready она становится прозрачной и без тени. Per-option/pseudo plate не
+  создаётся. `ResizeObserver` наблюдает group и options с resize fallback,
+  readiness после корректного measurement предотвращает initial fly-in, а
+  rapid selection retargets тот же plate к финальной кнопке. Width/transform
+  используют общие с `WorkspaceTabs` tokens
+  `--product-selection-motion-duration: 360ms` и
+  `--product-selection-motion-easing: cubic-bezier(0.22, 1, 0.36, 1)`; opacity —
+  общий `120ms` fade token. Все девять consumers — Schedule period/view,
+  Students membership/view, Owned Courses view, Catalog audience/view, New
+  Course audience и Store view — используют один shared component без
+  route-specific fork; desktop сохраняет `16 px` glyph.
   Exact `80 × 40 px` contract принадлежит только двум icon-only cells.
   Semantic text projection в current source / next production остаётся
   content-sized на desktop, а на narrow/coarse сжимается внутри parent:
@@ -1048,9 +1071,10 @@ actions`; пять data headers сортируют полную client-loaded pr
   и `flex-shrink: 1`, каждая option — `min-width: 0` и `flex: 1 1 0`. Видимый
   label обрезается однострочным ellipsis, но полный DOM-текст кнопки сохраняет
   её полное accessible name.
-  `forced-colors` использует
-  контрастные пары `ButtonFace / ButtonText` и
-  `Highlight / HighlightText` на actual surfaces. Current source / next
+  При `prefers-reduced-motion: reduce` measurement и selection работают, но
+  plate меняет положение мгновенно без transition. В `forced-colors` plate
+  скрывается, shell использует `ButtonFace / CanvasText`, а actual selected
+  button — `Highlight / HighlightText` и системный focus outline. Current source / next
   production не вводит отдельного mobile type/icon override: ordinary
   non-editable product controls наследуют desktop visual rhythm. Native
   inputs/selects/textareas, включая authored Lesson/Component и exercise

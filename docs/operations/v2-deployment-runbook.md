@@ -1381,15 +1381,40 @@ flow как permanent delete.
   что row ellipsis и Component-card icon-actions остаются
   transparent/borderless/no-shadow, а contextual menu panels/items сохраняют
   border `0`.
-  На desktop, narrow и coarse compound toggle имеет точный внешний размер
-  `80 × 40 px` для двух icon-only cells, настоящую product-рамку `1 px`,
-  `padding: 0` и gap `2 px`. Обе actual options равны `38 × 38 px`; shell имеет
-  radius `12 px`, options — концентрический radius `11 px`. Selected actual
-  option использует `border: 0`, чисто-белый surface и base shadow обычной
-  `.product-btn`. Inactive option прозрачна и не получает фон или тень при
-  fine-pointer hover: меняется только цвет glyph. Pseudo-layer отсутствует,
-  actual buttons не масштабируются при pressed, keyboard focus сохраняет
-  видимый inset outline. На desktop, narrow и coarse action-glyph равен
+  На desktop, narrow и coarse проверить все девять shared
+  `SegmentedControl` consumers: Schedule period/view, Students membership/view,
+  Owned Courses view, Course Catalog audience/view, New Course audience и Store
+  view. Двухкнопочный icon-only toggle имеет точный внешний размер
+  `80 × 40 px`, настоящую product-рамку `1 px`, `padding: 0` и gap `2 px`.
+  Обе actual options равны `38 × 38 px`; shell имеет radius `12 px`, options и
+  moving plate — концентрический radius `11 px`. В каждом group должен быть
+  ровно один реальный `.product-segmented-control-indicator`: absolute,
+  `aria-hidden`, `pointer-events: none`, вне flex-layout, высотой `38 px` и с
+  rect, совпадающим с selected actual button по start/width с допуском
+  `0.5 px`. Pure-white plate использует base shadow обычной `.product-btn`, а
+  при pointer-down — pressed shadow без transform. После ready actual selected
+  button прозрачна и без тени, но сохраняет `aria-pressed`, accessible name и
+  видимый inset focus outline; до ready/при disabled или отсутствующем
+  measurement она сама остаётся белым функциональным fallback. Inactive option
+  прозрачна и не получает фон или тень при fine-pointer hover: меняется только
+  цвет glyph. Per-option/pseudo plates отсутствуют, actual buttons не
+  масштабируются при pressed.
+
+  Проверить initial mount без fly-in из `left: 0`: transition включается только
+  после корректного measurement и следующего animation frame. После выбора,
+  rapid alternating clicks и изменения viewport/длины text option один и тот же
+  indicator должен retarget motion и завершиться точно под финальной selected
+  button; `ResizeObserver` наблюдает group и actual options, а fallback resize
+  listener сохраняет тот же результат. Computed transition для width/transform
+  равен общим с `WorkspaceTabs` tokens: `360ms` и
+  `cubic-bezier(0.22, 1, 0.36, 1)`; opacity использует общий `120ms` fade token.
+  При `prefers-reduced-motion: reduce` selection и remeasurement продолжают
+  работать, но transition duration становится нулевой и plate сразу совпадает с
+  новым выбором. В `forced-colors` decorative indicator не рисуется; outer
+  border становится `1 px CanvasText`, shell — `ButtonFace`, inactive actual
+  button — `ButtonText`, selected actual button —
+  `Highlight / HighlightText` с настоящей system border/focus outline.
+  На desktop, narrow и coarse action-glyph равен
   `16 px`, computed Lucide stroke — `2 px`, computed `vector-effect` —
   стандартный `none`; `non-scaling-stroke` отсутствует.
   Отдельно проверить semantic text segmented projection на narrow/coarse:
@@ -1404,11 +1429,7 @@ flow как permanent delete.
   content/response fields, сохраняют content typography с computed Safari
   anti-zoom floor ровно `16 px`. Проверить отсутствие touch type/icon custom
   properties и mobile font/icon overrides. Это current source / next production
-  acceptance. В `forced-colors` outer border должен стать
-  `1 px CanvasText`, а actual
-  options — сохранить контрастные
-  `ButtonFace / ButtonText` и `Highlight / HighlightText` на actual surfaces.
-  Menu items сохраняют border `0`.
+  acceptance. Menu items сохраняют border `0`.
   Повторить этот visual check на authenticated `/profile` и вкладках
   `?tab=observers|settings`: единый раздел использует beige product shell и
   solid-white demo TopNav; desktop Account avatar-link имеет ровно
@@ -1429,6 +1450,7 @@ flow как permanent delete.
   категорийные исключения, а не ordinary product controls; portal `ActionMenu`
   к ним не относится и сохраняет `40 px / .88rem/400` с `16 px` icon на
   mobile/coarse;
+
 - для current source compact-toolbar follow-up проверить, что Course и Store
   не рендерят filter trigger/panel и не применяют удалённые advanced-filter
   predicates. Students рендерит один inline membership control **Все / В

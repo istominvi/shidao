@@ -35,6 +35,10 @@ const teachingHubStyleSource = readFileSync(
   "utf8",
 );
 const globalStyleSource = readFileSync("src/app/globals.css", "utf8");
+const segmentedControlSource = readFileSync(
+  "src/components/ui/segmented-control.tsx",
+  "utf8",
+);
 const navigationStyleSource = readFileSync(
   "src/app/styles/navigation.css",
   "utf8",
@@ -911,6 +915,10 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
   );
   assert.match(
     globalStyleSource,
+    /:root\s*\{[^}]*--product-selection-motion-duration: 360ms;[^}]*--product-selection-motion-easing: cubic-bezier\(0\.22, 1, 0\.36, 1\);[^}]*--product-selection-motion-fade-duration: 120ms;/,
+  );
+  assert.match(
+    globalStyleSource,
     /\.product-segmented-control\s*\{[^}]*height: var\(--product-segmented-control-height\);[^}]*min-height: var\(--product-segmented-control-height\);[^}]*gap: var\(--product-segmented-control-gap\);[^}]*border: var\(--product-surface-border\);[^}]*border-radius: var\(--product-segmented-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*background-clip: padding-box;[^}]*padding: 0;[^}]*box-shadow: none;/,
   );
   assert.match(
@@ -923,7 +931,30 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
   );
   assert.match(
     globalStyleSource,
+    /\.product-segmented-control-indicator\s*\{[^}]*z-index: 0;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background-color: var\(--product-surface-background\);[^}]*background-image: none;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*pointer-events: none;[^}]*backdrop-filter: none;/,
+  );
+  assert.match(
+    globalStyleSource,
     /\.product-segmented-control-option-selected\s*\{[^}]*border: 0;[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
+  );
+  assert.match(
+    globalStyleSource,
+    /\.product-segmented-control\[data-indicator-ready="true"\]\s*\.product-segmented-control-option-selected:not\(:disabled\)\s*\{[^}]*background: transparent;[^}]*box-shadow: none;/,
+  );
+  assert.equal(
+    segmentedControlSource.match(
+      /className="product-segmented-control-indicator"/g,
+    )?.length,
+    1,
+  );
+  assert.ok(
+    segmentedControlSource.indexOf(
+      'className="product-segmented-control-indicator"',
+    ) < segmentedControlSource.indexOf("{items.map"),
+  );
+  assert.match(
+    segmentedControlSource,
+    /ref=\{groupRef\}[\s\S]*?data-indicator-ready=\{indicatorVisible \|\| undefined\}[\s\S]*?className="product-segmented-control-indicator"\s+aria-hidden="true"/,
   );
   assert.match(
     globalStyleSource,
@@ -931,7 +962,7 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
   );
   assert.match(
     globalStyleSource,
-    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option\s*\{[^}]*color: ButtonText !important;/,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option\s*\{[^}]*color: ButtonText !important;[^}]*\}[\s\S]*?\.product-segmented-control-indicator\s*\{[^}]*display: none !important;/,
   );
   assert.match(
     globalStyleSource,
@@ -943,7 +974,7 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
   );
   assert.match(
     globalStyleSource,
-    /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.product-segmented-control-option\s*\{[^}]*transition: none;/,
+    /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.product-segmented-control-option\s*\{[^}]*transition: none;[^}]*\}[\s\S]*?\.product-segmented-control-indicator,\s*\.product-segmented-control-indicator\[data-motion-ready="true"\]\s*\{[^}]*transition: none;/,
   );
 
   assert.doesNotMatch(
@@ -966,6 +997,10 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
   assert.match(
     globalStyleSource,
     /\.product-segmented-control-option-selected:not\(:disabled\):active\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);[^}]*transform: none;/,
+  );
+  assert.match(
+    globalStyleSource,
+    /\.product-segmented-control\[data-indicator-ready="true"\]:has\(\s*\.product-segmented-control-option-selected:not\(:disabled\):active\s*\)\s*\.product-segmented-control-indicator\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);/,
   );
   assert.match(
     globalStyleSource,
