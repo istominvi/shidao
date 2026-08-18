@@ -1,0 +1,98 @@
+name: Latin Domain Check
+
+on:
+  push:
+    branches:
+      - tmp/latin-domain-check-20260818
+    paths:
+      - .github/workflows/latin-domain-check.yml
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check 300 .com domains via Verisign RDAP
+        run: |
+          python - <<'PY'
+          import csv, json, time, urllib.request, urllib.error
+          from concurrent.futures import ThreadPoolExecutor, as_completed
+          from datetime import datetime, timezone
+
+          with open('tmp/latin_words.txt', encoding='utf-8') as f:
+              WORDS = [x.strip() for x in f if x.strip()]
+          assert len(WORDS) == 300, len(WORDS)
+          UA = 'latin-domain-research/1.0'
+
+          def check(word):
+              domain = word.lower() + '.com'
+              url = 'https://rdap.verisign.com/com/v1/domain/' + domain
+              last = None
+              for attempt in range(6):
+                  req = urllib.request.Request(url, headers={'User-Agent': UA, 'Accept': 'application/rdap+json, application/json'})
+                  try:
+                      with urllib.request.urlopen(req, timeout=20) as r:
+                          body = r.read()
+                          if r.status == 200:
+                              data = json.loads(body)
+                              events = data.get('events', [])
+                              created = next((e.get('eventDate') for e in events if e.get('eventAction') == 'registration'), '')
+                              expires = next((e.get('eventDate') for e in events if e.get('eventAction') == 'expiration'), '')
+                              return word, domain, 'TAKEN', r.status, created, expires, datetime.now(timezone.utc).isoformat()
+                          last = f'HTTP {r.status}'
+                  except urllib.error.HTTPError as e:
+                      if e.code == 404:
+                          return word, domain, 'AVAILABLE', 404, '', '', datetime.now(timezone.utc).isoformat()
+                      last = f'HTTP {e.code}'
+                      if e.code in (429, 500, 502, 503, 504):
+                          time.sleep(1.5 * (attempt + 1))
+                          continue
+                      return word, domain, 'ERROR', e.code, '', '', datetime.now(timezone.utc).isoformat()
+                  except Exception as e:
+                      last = repr(e)
+                      time.sleep(1.5 * (attempt + 1))
+              return word, domain, 'ERROR', last or '', '', '', datetime.now(timezone.utc).isoformat()
+
+          results = []
+          with ThreadPoolExecutor(max_workers=6) as ex:
+              futs = [ex.submit(check, w) for w in WORDS]
+              for fut in as_completed(futs):
+                  results.append(fut.result())
+
+          order = {w:i for i,w in enumerate(WORDS)}
+          results.sort(key=lambda r: order[r[0]])
+
+          fields = ['word','domain','status','rdap_http','registered_at','expires_at','checked_at_utc']
+          with open('latin-domain-results.csv', 'w', newline='', encoding='utf-8') as f:
+              wr = csv.writer(f)
+              wr.writerow(fields)
+              wr.writerows(results)
+          with open('latin-domain-results.json', 'w', encoding='utf-8') as f:
+              json.dump([dict(zip(fields, r)) for r in results], f, ensure_ascii=False, indent=2)
+
+          counts = {}
+          for r in results:
+              counts[r[2]] = counts.get(r[2], 0) + 1
+          print('COUNTS', json.dumps(counts, sort_keys=True))
+          for r in results:
+              if r[2] == 'AVAILABLE':
+                  print('AVAILABLE', r[1])
+          if counts.get('ERROR', 0):
+              raise SystemExit('Some RDAP checks failed; inspect artifact')
+          PY
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: latin-domain-results
+          path: |
+            latin-domain-results.csv
+            latin-domain-results.json
+          retention-days: 1
