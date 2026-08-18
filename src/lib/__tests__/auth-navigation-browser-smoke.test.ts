@@ -96,6 +96,51 @@ const E2E_WORKSPACE_TABS_DIVIDER = "oklch(0.19 0 0 / 0.4)";
 const E2E_SEGMENTED_CONTROL_BACKGROUND = E2E_PRODUCT_SURFACE_BORDER_COLOR;
 const E2E_DROPDOWN_SHADOW = "rgba(20, 20, 20, 0.24) 0px 24px 32px -24px";
 
+function splitCssLayerList(value: string) {
+  const layers: string[] = [];
+  let depth = 0;
+  let start = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index];
+    if (character === "(") depth += 1;
+    if (character === ")") depth = Math.max(0, depth - 1);
+    if (character === "," && depth === 0) {
+      layers.push(value.slice(start, index).trim());
+      start = index + 1;
+    }
+  }
+
+  layers.push(value.slice(start).trim());
+  return layers.filter(Boolean);
+}
+
+function assertSegmentedSurfaceShadow(
+  actual: string,
+  expectedOuterShadow: string,
+  label: string,
+) {
+  const layers = splitCssLayerList(actual);
+  const insetLayers = layers.filter((layer) => /\binset\b/.test(layer));
+  const outerLayers = layers.filter((layer) => !/\binset\b/.test(layer));
+
+  assert.equal(insetLayers.length, 1, `${label}: one inset boundary`);
+  assert.match(
+    insetLayers[0]!,
+    /\b0px 0px 0px 1px\b/,
+    `${label}: one-pixel inset boundary`,
+  );
+  assert.ok(
+    insetLayers[0]!.includes(E2E_PRODUCT_SURFACE_BORDER_COLOR),
+    `${label}: boundary reuses the product border color`,
+  );
+  assert.deepEqual(
+    outerLayers,
+    [expectedOuterShadow],
+    `${label}: outer elevation matches the ordinary control`,
+  );
+}
+
 type OpaqueWhiteSurfaceContract = {
   backgroundColor: string;
   backgroundImage: string;
@@ -271,7 +316,6 @@ function assertTouchSegmentedControl(
       backgroundColor: actual.indicator.surface.backgroundColor,
       backgroundImage: actual.indicator.surface.backgroundImage,
       backgroundClip: actual.indicator.surface.backgroundClip,
-      boxShadow: actual.indicator.surface.boxShadow,
       width: actual.indicator.width,
       height: actual.indicator.height,
       opacity: actual.indicator.opacity,
@@ -293,7 +337,6 @@ function assertTouchSegmentedControl(
       backgroundColor: actual.referenceButton.backgroundColor,
       backgroundImage: actual.referenceButton.backgroundImage,
       backgroundClip: actual.referenceButton.backgroundClip,
-      boxShadow: actual.referenceButton.boxShadow,
       width: 38,
       height: 38,
       opacity: "1",
@@ -310,6 +353,11 @@ function assertTouchSegmentedControl(
         "cubic-bezier(0.22, 1, 0.36, 1), cubic-bezier(0.22, 1, 0.36, 1), ease",
     },
     `${label}: one opaque raised indicator reuses the ordinary button surface`,
+  );
+  assertSegmentedSurfaceShadow(
+    actual.indicator.surface.boxShadow,
+    actual.referenceButton.boxShadow,
+    `${label}: selected surface shadow`,
   );
   for (const [axis, delta] of Object.entries({
     start: actual.indicator.selectedStartDelta,
@@ -3356,6 +3404,112 @@ async function assertSegmentedIndicatorAligned(
     );
   }
   return contract;
+}
+
+async function assertSegmentedIndicatorPaintsOuterShadow(
+  page: BrowserSmokePage,
+  groupName: string,
+  label: string,
+) {
+  await settleSegmentedIndicator(page, groupName);
+  const group = page.getByRole("group", { name: groupName, exact: true });
+  const indicator = group.locator(".product-segmented-control-indicator");
+  const computedShadow = await indicator.evaluate(
+    (element) => getComputedStyle(element).boxShadow,
+  );
+  assertSegmentedSurfaceShadow(
+    computedShadow,
+    E2E_RAISED_CONTROL_SHADOW,
+    `${label}: computed shadow`,
+  );
+  const boundaryShadow = splitCssLayerList(computedShadow).find((layer) =>
+    /\binset\b/.test(layer),
+  );
+  assert.ok(boundaryShadow, `${label}: inset boundary is available`);
+
+  const originalInlineShadow = await indicator.evaluate((element) => {
+    const indicatorElement = element as HTMLElement;
+    return {
+      value: indicatorElement.style.getPropertyValue("box-shadow"),
+      priority: indicatorElement.style.getPropertyPriority("box-shadow"),
+    };
+  });
+  const withOuterShadow = await group.screenshot();
+  let withoutOuterShadow: Buffer;
+
+  try {
+    await indicator.evaluate(async (element, insetShadow) => {
+      const indicatorElement = element as HTMLElement;
+      indicatorElement.style.setProperty(
+        "box-shadow",
+        insetShadow,
+        "important",
+      );
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+    }, boundaryShadow);
+    withoutOuterShadow = await group.screenshot();
+  } finally {
+    await indicator.evaluate(async (element, original) => {
+      const indicatorElement = element as HTMLElement;
+      if (original.value) {
+        indicatorElement.style.setProperty(
+          "box-shadow",
+          original.value,
+          original.priority,
+        );
+      } else {
+        indicatorElement.style.removeProperty("box-shadow");
+      }
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+    }, originalInlineShadow);
+  }
+
+  const [painted, boundaryOnly] = await Promise.all(
+    [withOuterShadow, withoutOuterShadow].map((png) =>
+      sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true }),
+    ),
+  );
+  assert.deepEqual(
+    {
+      width: painted.info.width,
+      height: painted.info.height,
+      channels: painted.info.channels,
+    },
+    {
+      width: boundaryOnly.info.width,
+      height: boundaryOnly.info.height,
+      channels: boundaryOnly.info.channels,
+    },
+    `${label}: screenshots use identical geometry`,
+  );
+
+  let changedPixelCount = 0;
+  let totalChannelDelta = 0;
+  let maximumChannelDelta = 0;
+  const channels = painted.info.channels;
+  for (let offset = 0; offset < painted.data.length; offset += channels) {
+    let pixelDelta = 0;
+    for (let channel = 0; channel < Math.min(3, channels); channel += 1) {
+      const delta = Math.abs(
+        painted.data[offset + channel]! - boundaryOnly.data[offset + channel]!,
+      );
+      pixelDelta += delta;
+      maximumChannelDelta = Math.max(maximumChannelDelta, delta);
+    }
+    totalChannelDelta += pixelDelta;
+    if (pixelDelta >= 3) changedPixelCount += 1;
+  }
+
+  assert.ok(
+    changedPixelCount >= 12 &&
+      totalChannelDelta >= 120 &&
+      maximumChannelDelta >= 2,
+    `${label}: the outer elevation must alter rendered pixels; got ${JSON.stringify({ changedPixelCount, totalChannelDelta, maximumChannelDelta })}`,
+  );
 }
 
 async function activateSegmentedOptionWithMotion(
@@ -7352,9 +7506,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         vectorEffect: "none",
       },
     });
-    assert.equal(
-      scheduleContract.headerPrimaryControl.boxShadow,
+    assertSegmentedSurfaceShadow(
       scheduleContract.raisedControlShadow,
+      scheduleContract.headerPrimaryControl.boxShadow,
+      "Schedule desktop selected surface shadow",
     );
     assert.deepEqual(scheduleContract.viewToggleSurface, {
       backgroundColor: E2E_SEGMENTED_CONTROL_BACKGROUND,
@@ -7381,7 +7536,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         backgroundColor: "rgb(255, 255, 255)",
         backgroundImage: "none",
         backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
-        boxShadow: E2E_RAISED_CONTROL_SHADOW,
+        boxShadow: scheduleContract.desktopSegmentedControl.indicator.boxShadow,
         transform: scheduleContract.desktopSegmentedControl.indicator.transform,
         ariaHidden: "true",
         ready: "true",
@@ -7441,6 +7596,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         transform: "none",
       },
     });
+    assertSegmentedSurfaceShadow(
+      scheduleContract.desktopSegmentedControl.indicator.boxShadow,
+      scheduleContract.headerPrimaryControl.boxShadow,
+      "Schedule desktop indicator shadow",
+    );
     for (const [axis, delta] of Object.entries({
       start: scheduleContract.desktopSegmentedControl.indicator.startDelta,
       top: scheduleContract.desktopSegmentedControl.indicator.topDelta,
@@ -8858,7 +9018,6 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         motionReady: disabledMembershipIndicator.motionReady,
         selectedDisabled: disabledMembershipIndicator.selectedDisabled,
         selectedBackground: disabledMembershipIndicator.selectedBackground,
-        selectedShadow: disabledMembershipIndicator.selectedShadow,
         indicatorOpacity: disabledMembershipIndicator.indicatorOpacity,
         transitionProperty: disabledMembershipIndicator.transitionProperty,
       },
@@ -8868,11 +9027,15 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         motionReady: null,
         selectedDisabled: true,
         selectedBackground: "rgb(255, 255, 255)",
-        selectedShadow: E2E_RAISED_CONTROL_SHADOW,
         indicatorOpacity: "0",
         transitionProperty: "none",
       },
       "Disabled selected option keeps the fallback surface while its indicator is unarmed",
+    );
+    assertSegmentedSurfaceShadow(
+      disabledMembershipIndicator.selectedShadow,
+      E2E_RAISED_CONTROL_SHADOW,
+      "Disabled Students selected fallback shadow",
     );
 
     releaseStudentsContent();
@@ -9254,6 +9417,14 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const activeMembershipButtonStyle = getComputedStyle(
         activeMembershipButton,
       );
+      const readControlTypography = (element: HTMLElement) => {
+        const style = getComputedStyle(element);
+        return {
+          fontSize: style.fontSize,
+          fontWeight: style.fontWeight,
+          lineHeight: style.lineHeight,
+        };
+      };
       const tableWrapperStyle = getComputedStyle(tableWrapper);
 
       return {
@@ -9396,6 +9567,13 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           placeholderOpacity: toolbarSearchPlaceholderStyle.opacity,
           iconColor: toolbarSearchIconStyle.color,
           iconOpacity: toolbarSearchIconStyle.opacity,
+        },
+        controlTypography: {
+          ordinaryButton: readControlTypography(headerAction),
+          searchInput: readControlTypography(toolbarSearchInput),
+          membershipOptions: Array.from(
+            membershipSwitch.querySelectorAll<HTMLElement>("button"),
+          ).map(readControlTypography),
         },
         controlGeometry: {
           membershipHeight: membershipSwitchStyle.height,
@@ -9589,6 +9767,24 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       iconColor: "rgb(20, 20, 20)",
       iconOpacity: "1",
     });
+    const canonicalDesktopControlTypography = {
+      fontSize: "14.08px",
+      fontWeight: "400",
+      lineHeight: "16.896px",
+    };
+    assert.deepEqual(
+      studentsVisual.controlTypography.ordinaryButton,
+      canonicalDesktopControlTypography,
+    );
+    assert.deepEqual(
+      studentsVisual.controlTypography.searchInput,
+      canonicalDesktopControlTypography,
+    );
+    assert.deepEqual(
+      studentsVisual.controlTypography.membershipOptions,
+      Array.from({ length: 3 }, () => canonicalDesktopControlTypography),
+      "Students membership options must use the same type token as buttons and search",
+    );
     const studentSearchSurface = runtime.page.locator(".teaching-hub-search");
     const studentSearchInput = studentSearchSurface.locator(
       'input[type="search"]',
@@ -9728,8 +9924,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     });
     await activeLearnerViewButton.hover();
     await runtime.page.waitForTimeout(220);
-    assert.deepEqual(
-      await activeLearnerViewButton.evaluate((button) => {
+    const learnerViewHover = await activeLearnerViewButton.evaluate(
+      (button) => {
         const indicator = button
           .closest('[role="group"]')
           ?.querySelector<HTMLElement>(".product-segmented-control-indicator");
@@ -9740,17 +9936,27 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           indicatorBoxShadow: getComputedStyle(indicator).boxShadow,
           transform: style.transform,
         };
-      }),
+      },
+    );
+    assert.deepEqual(
+      {
+        optionBoxShadow: learnerViewHover.optionBoxShadow,
+        transform: learnerViewHover.transform,
+      },
       {
         optionBoxShadow: "none",
-        indicatorBoxShadow: E2E_RAISED_CONTROL_SHADOW,
         transform: "none",
       },
     );
+    assertSegmentedSurfaceShadow(
+      learnerViewHover.indicatorBoxShadow,
+      E2E_RAISED_CONTROL_SHADOW,
+      "Students hovered selected indicator",
+    );
     await runtime.page.mouse.down();
     await runtime.page.waitForTimeout(220);
-    assert.deepEqual(
-      await activeLearnerViewButton.evaluate((button) => {
+    const learnerViewPressed = await activeLearnerViewButton.evaluate(
+      (button) => {
         const indicator = button
           .closest('[role="group"]')
           ?.querySelector<HTMLElement>(".product-segmented-control-indicator");
@@ -9761,12 +9967,22 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           indicatorBoxShadow: getComputedStyle(indicator).boxShadow,
           transform: style.transform,
         };
-      }),
+      },
+    );
+    assert.deepEqual(
+      {
+        optionBoxShadow: learnerViewPressed.optionBoxShadow,
+        transform: learnerViewPressed.transform,
+      },
       {
         optionBoxShadow: "none",
-        indicatorBoxShadow: E2E_RAISED_CONTROL_PRESSED_SHADOW,
         transform: "none",
       },
+    );
+    assertSegmentedSurfaceShadow(
+      learnerViewPressed.indicatorBoxShadow,
+      E2E_RAISED_CONTROL_PRESSED_SHADOW,
+      "Students pressed selected indicator",
     );
     await runtime.page.mouse.move(0, 0);
     await runtime.page.mouse.up();
@@ -9896,6 +10112,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       expectWidthTransition: true,
     });
     assert.equal(await groupedMemberships.getAttribute("aria-pressed"), "true");
+    await assertSegmentedIndicatorPaintsOuterShadow(
+      runtime.page,
+      "Принадлежность к группе",
+      "Students desktop membership indicator",
+    );
     assert.equal(
       await runtime.page
         .getByRole("button", { name: "Очистить поиск", exact: true })
@@ -12436,6 +12657,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
           transitionProperty: indicatorStyle.transitionProperty,
           transitionDuration: indicatorStyle.transitionDuration,
           animationCount: indicator.getAnimations().length,
+          boxShadow: indicatorStyle.boxShadow,
           selectedLabel: selected.getAttribute("aria-label"),
           startDelta: Math.abs(indicatorRect.left - selectedRect.left),
           topDelta: Math.abs(indicatorRect.top - selectedRect.top),
@@ -12449,6 +12671,11 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         0.00001,
     );
     assert.equal(reducedMotionIndicatorContract.animationCount, 0);
+    assertSegmentedSurfaceShadow(
+      reducedMotionIndicatorContract.boxShadow,
+      E2E_RAISED_CONTROL_SHADOW,
+      "Schedule reduced-motion indicator shadow",
+    );
     assert.equal(
       reducedMotionIndicatorContract.selectedLabel,
       "Показать карточками",
@@ -12472,8 +12699,8 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     );
     await mobileSelectedViewOption.hover();
     await runtime.page.waitForTimeout(220);
-    assert.deepEqual(
-      await mobileSelectedViewOption.evaluate((option) => {
+    const mobileSelectedViewHover = await mobileSelectedViewOption.evaluate(
+      (option) => {
         const indicator = option
           .closest('[role="group"]')
           ?.querySelector<HTMLElement>(".product-segmented-control-indicator");
@@ -12485,13 +12712,24 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
           indicatorBoxShadow: getComputedStyle(indicator).boxShadow,
           transform: style.transform,
         };
-      }),
+      },
+    );
+    assert.deepEqual(
+      {
+        backgroundColor: mobileSelectedViewHover.backgroundColor,
+        optionBoxShadow: mobileSelectedViewHover.optionBoxShadow,
+        transform: mobileSelectedViewHover.transform,
+      },
       {
         backgroundColor: "rgba(0, 0, 0, 0)",
         optionBoxShadow: "none",
-        indicatorBoxShadow: E2E_RAISED_CONTROL_SHADOW,
         transform: "none",
       },
+    );
+    assertSegmentedSurfaceShadow(
+      mobileSelectedViewHover.indicatorBoxShadow,
+      E2E_RAISED_CONTROL_SHADOW,
+      "Schedule mobile hovered selected indicator",
     );
     await runtime.page.mouse.move(1, 300);
 
@@ -13428,8 +13666,12 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         railScrollIsContained: rail.scrollWidth > rail.clientWidth,
         searchHeight: search.getBoundingClientRect().height,
         searchFontSize: getComputedStyle(searchInput).fontSize,
+        searchFontWeight: getComputedStyle(searchInput).fontWeight,
+        searchLineHeight: getComputedStyle(searchInput).lineHeight,
         primaryActionHeight: primaryAction.getBoundingClientRect().height,
         primaryActionFontSize: getComputedStyle(primaryAction).fontSize,
+        primaryActionFontWeight: getComputedStyle(primaryAction).fontWeight,
+        primaryActionLineHeight: getComputedStyle(primaryAction).lineHeight,
         workspaceTabHeights: Array.from(
           document.querySelectorAll<HTMLElement>(".workspace-tab"),
         )
@@ -13462,6 +13704,12 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         membershipButtonFontSizes: Array.from(
           membershipSwitch.querySelectorAll<HTMLElement>("button"),
         ).map((button) => getComputedStyle(button).fontSize),
+        membershipButtonFontWeights: Array.from(
+          membershipSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => getComputedStyle(button).fontWeight),
+        membershipButtonLineHeights: Array.from(
+          membershipSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => getComputedStyle(button).lineHeight),
         membershipSwitchInsideViewport: (() => {
           const rect = membershipSwitch.getBoundingClientRect();
           return rect.left >= 0 && rect.right <= viewportWidth;
@@ -13610,8 +13858,12 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     assert.equal(mobileContract.railScrollIsContained, false);
     assert.equal(mobileContract.searchHeight, 40);
     assert.equal(mobileContract.searchFontSize, "16px");
+    assert.equal(mobileContract.searchFontWeight, "400");
+    assert.equal(mobileContract.searchLineHeight, "19.2px");
     assert.equal(mobileContract.primaryActionHeight, 40);
     assert.equal(mobileContract.primaryActionFontSize, "14.08px");
+    assert.equal(mobileContract.primaryActionFontWeight, "400");
+    assert.equal(mobileContract.primaryActionLineHeight, "16.896px");
     assert.ok(mobileContract.workspaceTabHeights.length >= 2);
     assert.ok(
       mobileContract.workspaceTabHeights.every((height) => height === 40),
@@ -13647,6 +13899,28 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       "14.08px",
       "14.08px",
     ]);
+    assert.deepEqual(mobileContract.membershipButtonFontWeights, [
+      "400",
+      "400",
+      "400",
+    ]);
+    assert.deepEqual(mobileContract.membershipButtonLineHeights, [
+      "16.896px",
+      "16.896px",
+      "16.896px",
+    ]);
+    assert.ok(
+      mobileContract.membershipButtonFontSizes.every(
+        (fontSize) => fontSize === mobileContract.primaryActionFontSize,
+      ) &&
+        mobileContract.membershipButtonFontWeights.every(
+          (fontWeight) => fontWeight === mobileContract.primaryActionFontWeight,
+        ) &&
+        mobileContract.membershipButtonLineHeights.every(
+          (lineHeight) => lineHeight === mobileContract.primaryActionLineHeight,
+        ),
+      "Students mobile membership and ordinary button must share one typography token",
+    );
     assert.equal(mobileContract.membershipSwitchInsideViewport, true);
     assert.deepEqual(mobileContract.membershipButtons, [
       { label: "Все", pressed: "true" },
@@ -13740,6 +14014,9 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         borderTopWidth: groupStyle.borderTopWidth,
         borderTopStyle: groupStyle.borderTopStyle,
         optionHeights: optionRects.map((rect) => rect.height),
+        optionFontWeights: Array.from(
+          group.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => getComputedStyle(button).fontWeight),
       };
     });
     assert.equal(narrowMembershipContract.viewportWidth, 320);
@@ -13766,6 +14043,11 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     );
     assert.equal(narrowMembershipContract.borderTopStyle, "solid");
     assert.deepEqual(narrowMembershipContract.optionHeights, [38, 38, 38]);
+    assert.deepEqual(narrowMembershipContract.optionFontWeights, [
+      "400",
+      "400",
+      "400",
+    ]);
     await assertSegmentedIndicatorAligned(
       runtime.page,
       "Принадлежность к группе",
@@ -17742,6 +18024,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         segmentedButtonFontSizes: Array.from(
           viewSwitch.querySelectorAll<HTMLElement>("button"),
         ).map((button) => getComputedStyle(button).fontSize),
+        segmentedButtonFontWeights: Array.from(
+          viewSwitch.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => getComputedStyle(button).fontWeight),
         segmentedIconSizes: Array.from(
           viewSwitch.querySelectorAll<SVGElement>("button svg"),
         ).map((icon) => {
@@ -17752,8 +18037,10 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         searchFontSize: Number.parseFloat(
           getComputedStyle(searchInput).fontSize,
         ),
+        searchFontWeight: getComputedStyle(searchInput).fontWeight,
         primaryActionHeight: primaryAction.getBoundingClientRect().height,
         primaryActionFontSize: getComputedStyle(primaryAction).fontSize,
+        primaryActionFontWeight: getComputedStyle(primaryAction).fontWeight,
         tabHeights: visibleTabs.map(
           (tab) => tab.getBoundingClientRect().height,
         ),
@@ -17862,9 +18149,12 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         segmentedButtonHeights: mobileLandscapeContract.segmentedButtonHeights,
         segmentedButtonFontSizes:
           mobileLandscapeContract.segmentedButtonFontSizes,
+        segmentedButtonFontWeights:
+          mobileLandscapeContract.segmentedButtonFontWeights,
         segmentedIconSizes: mobileLandscapeContract.segmentedIconSizes,
         searchHeight: mobileLandscapeContract.searchHeight,
         searchFontSize: mobileLandscapeContract.searchFontSize,
+        searchFontWeight: mobileLandscapeContract.searchFontWeight,
       },
       {
         clientWidth: 844,
@@ -17875,16 +18165,19 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         segmentedPadding: "0px",
         segmentedButtonHeights: [38, 38],
         segmentedButtonFontSizes: ["14.08px", "14.08px"],
+        segmentedButtonFontWeights: ["400", "400"],
         segmentedIconSizes: [
           { width: 16, height: 16 },
           { width: 16, height: 16 },
         ],
         searchHeight: 40,
         searchFontSize: 16,
+        searchFontWeight: "400",
       },
     );
     assert.equal(mobileLandscapeContract.primaryActionHeight, 40);
     assert.equal(mobileLandscapeContract.primaryActionFontSize, "14.08px");
+    assert.equal(mobileLandscapeContract.primaryActionFontWeight, "400");
     assert.ok(
       mobileLandscapeContract.tabHeights.every((height) => height === 40),
     );
@@ -18655,13 +18948,16 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
             width: inactiveRect.width,
             height: inactiveRect.height,
             color: inactiveStyle.color,
+            fontWeight: inactiveStyle.fontWeight,
             backgroundColor: inactiveStyle.backgroundColor,
+            boxShadow: inactiveStyle.boxShadow,
             transform: inactiveStyle.transform,
           },
           selected: {
             width: selectedRect.width,
             height: selectedRect.height,
             color: selectedStyle.color,
+            fontWeight: selectedStyle.fontWeight,
             glyphColor: selectedGlyph
               ? getComputedStyle(selectedGlyph).color
               : null,
@@ -18671,6 +18967,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
             borderTopStyle: selectedStyle.borderTopStyle,
             borderTopColor: selectedStyle.borderTopColor,
             borderRadius: selectedStyle.borderRadius,
+            boxShadow: selectedStyle.boxShadow,
             beforeContent: selectedBeforeStyle.content,
           },
         };
@@ -18708,7 +19005,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         width: 38,
         height: 38,
         color: forcedColorsToggle.system.buttonText,
+        fontWeight: "400",
         backgroundColor: "rgba(0, 0, 0, 0)",
+        boxShadow: "none",
         transform: "none",
       });
       assert.notEqual(
@@ -18720,6 +19019,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         width: 38,
         height: 38,
         color: forcedColorsToggle.system.highlightText,
+        fontWeight: "400",
         glyphColor: forcedColorsToggle.system.highlightText,
         transform: "none",
         backgroundColor: forcedColorsToggle.system.highlight,
@@ -18727,6 +19027,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         borderTopStyle: "solid",
         borderTopColor: forcedColorsToggle.system.highlight,
         borderRadius: "11px",
+        boxShadow: "none",
         beforeContent: "none",
       });
 

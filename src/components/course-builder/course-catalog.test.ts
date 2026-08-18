@@ -318,11 +318,15 @@ test("shared course controls preserve pressed-button semantics", () => {
   );
   assert.match(
     globalStyles,
+    /:root\s*\{[\s\S]*?--product-segmented-control-surface-boundary: inset 0 0 0\s+var\(--product-surface-border-width\) var\(--product-surface-border-color\);[\s\S]*?--product-segmented-control-surface-shadow:\s*var\(\s*--product-segmented-control-surface-boundary\s*\),\s*var\(--product-raised-control-shadow\);[\s\S]*?--product-segmented-control-surface-shadow-pressed:\s*var\(\s*--product-segmented-control-surface-boundary\s*\),\s*var\(--product-raised-control-shadow-pressed\);/,
+  );
+  assert.match(
+    globalStyles,
     /\.product-segmented-control\s*\{[^}]*display: inline-flex;[^}]*height: var\(--product-segmented-control-height\);[^}]*min-height: var\(--product-segmented-control-height\);[^}]*gap: var\(--product-segmented-control-gap\);[^}]*border: var\(--product-surface-border\);[^}]*border-radius: var\(--product-segmented-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*background-clip: padding-box;[^}]*padding: 0;[^}]*box-shadow: none;/,
   );
   assert.match(
     globalStyles,
-    /\.product-segmented-control-option\s*\{[^}]*height: var\(--product-segmented-control-option-size\);[^}]*min-height: var\(--product-segmented-control-option-size\);[^}]*min-width: var\(--product-segmented-control-option-size\);[^}]*border: 0;[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background: transparent;[^}]*transform: none;/,
+    /\.product-segmented-control-option\s*\{[^}]*height: var\(--product-segmented-control-option-size\);[^}]*min-height: var\(--product-segmented-control-option-size\);[^}]*min-width: var\(--product-segmented-control-option-size\);[^}]*border: 0;[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background: transparent;[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*line-height: var\(--product-entry-control-line-height\);[^}]*transform: none;/,
   );
   assert.match(
     globalStyles,
@@ -330,7 +334,7 @@ test("shared course controls preserve pressed-button semantics", () => {
   );
   assert.match(
     globalStyles,
-    /\.product-segmented-control-indicator\s*\{[^}]*z-index: 0;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background-color: var\(--product-surface-background\);[^}]*background-image: none;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*pointer-events: none;[^}]*backdrop-filter: none;/,
+    /\.product-segmented-control-indicator\s*\{[^}]*z-index: 0;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background-color: var\(--product-surface-background\);[^}]*background-image: none;[^}]*box-shadow: var\(--product-segmented-control-surface-shadow\);[^}]*pointer-events: none;[^}]*backdrop-filter: none;/,
   );
   assert.match(
     globalStyles,
@@ -338,7 +342,7 @@ test("shared course controls preserve pressed-button semantics", () => {
   );
   assert.match(
     globalStyles,
-    /\.product-segmented-control-option-selected\s*\{[^}]*border: 0;[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
+    /\.product-segmented-control-option-selected\s*\{[^}]*border: 0;[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-segmented-control-surface-shadow\);/,
   );
   assert.match(
     globalStyles,
@@ -346,7 +350,11 @@ test("shared course controls preserve pressed-button semantics", () => {
   );
   assert.match(
     globalStyles,
-    /\.product-segmented-control\[data-indicator-ready="true"\]:has\(\s*\.product-segmented-control-option-selected:not\(:disabled\):active\s*\)\s*\.product-segmented-control-indicator\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);/,
+    /\.product-segmented-control-option-selected:not\(:disabled\):active\s*\{[^}]*box-shadow: var\(--product-segmented-control-surface-shadow-pressed\);[^}]*transform: none;/,
+  );
+  assert.match(
+    globalStyles,
+    /\.product-segmented-control\[data-indicator-ready="true"\]:has\(\s*\.product-segmented-control-option-selected:not\(:disabled\):active\s*\)\s*\.product-segmented-control-indicator\s*\{[^}]*box-shadow: var\(--product-segmented-control-surface-shadow-pressed\);/,
   );
   assert.match(
     globalStyles,

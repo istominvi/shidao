@@ -1349,9 +1349,10 @@ flow как permanent delete.
   active view option, вертикально центрированные иконку и текст, `.88rem/400`
   и canonical inset/gap на desktop, narrow и coarse; icon остаётся `16 px`.
   Отдельно проверить
-  canonical active V2 controls: exact `40 px / 12 px`, base/desktop
-  `.88rem/400`, тот же ordinary non-editable type на narrow/coarse,
-  `.88rem/500` для segmented labels и `16 px / 2 px` glyphs на всех viewport;
+  canonical active V2 controls: exact `40 px / 12 px`; ordinary non-editable
+  controls и segmented labels используют один base/desktop canonical type
+  `.88rem/400/1.2`, который сохраняется на narrow/coarse, и `16 px / 2 px`
+  glyphs на всех viewport;
   active navigation без
   inset/shadow/translate, icon opacity `1` и contrast-aware
   `currentColor`. Все канонические `.product-btn` должны быть белыми, иметь
@@ -1359,8 +1360,8 @@ flow как permanent delete.
   `--product-surface-border: 1px solid var(--product-surface-border-color)`, computed border
   `1px solid oklch(0 0 0 / 0.1)`, `background-clip: padding-box` и ту же
   computed base shadow
-  `oklch(0 0 0 / 0.05) 0px 1px 6px 0px`, что selected button переключателя
-  вида Расписания. Alpha-border должен смешиваться с ancestor/page background,
+  `oklch(0 0 0 / 0.05) 0px 1px 6px 0px`, общий для ordinary product buttons.
+  Alpha-border должен смешиваться с ancestor/page background,
   а не с белым button background. Header и ordinary toolbar CTA должны
   использовать один
   `.product-btn` state-contract и сохранять одинаковые width/height во всех
@@ -1391,8 +1392,12 @@ flow как permanent delete.
   ровно один реальный `.product-segmented-control-indicator`: absolute,
   `aria-hidden`, `pointer-events: none`, вне flex-layout, высотой `38 px` и с
   rect, совпадающим с selected actual button по start/width с допуском
-  `0.5 px`. Pure-white plate использует base shadow обычной `.product-btn`, а
-  при pointer-down — pressed shadow без transform. После ready actual selected
+  `0.5 px`. Pure-white plate использует tokenized inset boundary `1 px` цвета
+  product border и отдельной следующей layer неизменную base outer shadow
+  обычной `.product-btn`; при pointer-down сохраняет boundary и заменяет только
+  outer layer на ordinary pressed shadow без transform или hover elevation.
+  Проверить обе computed `box-shadow` layers и отсутствие второго
+  alpha-composite. После ready actual selected
   button прозрачна и без тени, но сохраняет `aria-pressed`, accessible name и
   видимый inset focus outline; до ready/при disabled или отсутствующем
   measurement она сама остаётся белым функциональным fallback. Inactive option
@@ -1423,8 +1428,8 @@ flow как permanent delete.
   ellipsis, а accessibility tree сохраняет полные имена кнопок. Эта projection
   не должна менять exact `80 × 40 px` icon-only contract.
   Ordinary non-editable product buttons, Schedule date navigator,
-  WorkspaceTabs и прочие labels на narrow/coarse должны наследовать desktop
-  `.88rem/400`; segmented options — `.88rem/500`. Native
+  WorkspaceTabs, segmented options и прочие labels на narrow/coarse должны
+  наследовать один desktop canonical type `.88rem/400/1.2`. Native
   inputs/search/selects/textareas, включая authored Lesson/Component и exercise
   content/response fields, сохраняют content typography с computed Safari
   anti-zoom floor ровно `16 px`. Проверить отсутствие touch type/icon custom

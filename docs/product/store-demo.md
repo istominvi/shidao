@@ -234,8 +234,8 @@ Base `.product-control` / `.field-input`, включая многострочн�
 shadow. Native `select`, standalone `DialogShell` и demo-only surfaces исключены
 из universal dropdown contract; Store sort намеренно использует product
 dropdown вместо native `select`. На narrow/coarse viewport обычные Store
-controls имеют внешнюю высоту `40 px`; ordinary non-editable labels наследуют
-desktop `.88rem/400`, segmented options используют `.88rem/500`, а glyphs
+controls имеют внешнюю высоту `40 px`; ordinary non-editable labels и segmented
+options используют один canonical desktop type `.88rem/400/1.2`, а glyphs
 остаются `16 px` со stroke `2 px` и стандартным SVG `vector-effect`. Отдельного
 mobile type/icon token нет. Native inputs/search/selects/textareas сохраняют
 content typography с computed минимумом `16 px` для Safari anti-zoom; это
@@ -247,8 +247,10 @@ Compound toggle использует тот же контракт на desktop �
 девяти current shared `SegmentedControl` consumers и не имеет локального motion
 fork. В current source / next production selected surface рисует единственный
 real `.product-segmented-control-indicator`: measured absolute plate высотой
-`38 px`, `aria-hidden`, `pointer-events: none`, с чисто-белым фоном,
-base/pressed shadow и тем же radius `11 px`. Actual selected button сохраняет
+`38 px`, `aria-hidden`, `pointer-events: none`, с чисто-белым фоном, tokenized
+inset product-boundary `1 px`, неизменной ordinary base/pressed outer shadow и
+тем же radius `11 px`. Composite не удваивает alpha-рамку и не получает hover
+elevation. Actual selected button сохраняет
 `aria-pressed`, focus/disabled semantics и белый fallback до ready; после ready
 она прозрачна и без тени. Inactive option не получает фон или тень при hover —
 меняется только цвет. `ResizeObserver` поддерживает responsive measurement,

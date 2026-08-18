@@ -96,11 +96,16 @@ test("segmented indicator preserves canonical geometry and owns selected elevati
   );
   assert.match(
     styles,
+    /:root\s*\{[\s\S]*?--product-segmented-control-surface-boundary: inset 0 0 0\s+var\(--product-surface-border-width\) var\(--product-surface-border-color\);[\s\S]*?--product-segmented-control-surface-shadow:\s*var\(\s*--product-segmented-control-surface-boundary\s*\),\s*var\(--product-raised-control-shadow\);[\s\S]*?--product-segmented-control-surface-shadow-pressed:\s*var\(\s*--product-segmented-control-surface-boundary\s*\),\s*var\(--product-raised-control-shadow-pressed\);/,
+    "The selected surface must pair one inset product boundary with the unchanged ordinary base/pressed shadows",
+  );
+  assert.match(
+    styles,
     /\.product-segmented-control\s*\{[^}]*position: relative;[^}]*box-sizing: border-box;[^}]*height: var\(--product-segmented-control-height\);[^}]*gap: var\(--product-segmented-control-gap\);[^}]*border: var\(--product-surface-border\);[^}]*border-radius: var\(--product-segmented-control-radius\);[^}]*padding: 0;/,
   );
   assert.match(
     styles,
-    /\.product-segmented-control-indicator\s*\{[^}]*position: absolute;[^}]*z-index: 0;[^}]*top: 0;[^}]*left: 0;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*border: 0;[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background-color: var\(--product-surface-background\);[^}]*background-image: none;[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*opacity: 0;[^}]*pointer-events: none;[^}]*backdrop-filter: none;[^}]*will-change: width, transform;[^}]*transition: none;/,
+    /\.product-segmented-control-indicator\s*\{[^}]*position: absolute;[^}]*z-index: 0;[^}]*top: 0;[^}]*left: 0;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*border: 0;[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background-color: var\(--product-surface-background\);[^}]*background-image: none;[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-segmented-control-surface-shadow\);[^}]*opacity: 0;[^}]*pointer-events: none;[^}]*backdrop-filter: none;[^}]*will-change: width, transform;[^}]*transition: none;/,
   );
   assert.match(
     styles,
@@ -108,11 +113,11 @@ test("segmented indicator preserves canonical geometry and owns selected elevati
   );
   assert.match(
     styles,
-    /\.product-segmented-control-option\s*\{[^}]*z-index: 1;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*min-width: var\(--product-segmented-control-option-size\);[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background: transparent;/,
+    /\.product-segmented-control-option\s*\{[^}]*z-index: 1;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*min-width: var\(--product-segmented-control-option-size\);[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background: transparent;[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*line-height: var\(--product-entry-control-line-height\);/,
   );
   assert.match(
     styles,
-    /\.product-segmented-control-option-selected\s*\{[^}]*background: var\(--product-surface-background\);[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
+    /\.product-segmented-control-option-selected\s*\{[^}]*background: var\(--product-surface-background\);[^}]*box-shadow: var\(--product-segmented-control-surface-shadow\);/,
     "The selected button must remain a painted fallback until measurement is ready",
   );
   assert.match(
@@ -121,7 +126,15 @@ test("segmented indicator preserves canonical geometry and owns selected elevati
   );
   assert.match(
     styles,
-    /\.product-segmented-control\[data-indicator-ready="true"\]:has\(\s*\.product-segmented-control-option-selected:not\(:disabled\):active\s*\)\s*\.product-segmented-control-indicator\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);/,
+    /\.product-segmented-control-option-selected:not\(:disabled\):active\s*\{[^}]*box-shadow: var\(--product-segmented-control-surface-shadow-pressed\);[^}]*transform: none;/,
+  );
+  assert.match(
+    styles,
+    /\.product-segmented-control\[data-indicator-ready="true"\]:has\(\s*\.product-segmented-control-option-selected:not\(:disabled\):active\s*\)\s*\.product-segmented-control-indicator\s*\{[^}]*box-shadow: var\(--product-segmented-control-surface-shadow-pressed\);/,
+  );
+  assert.match(
+    styles,
+    /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.product-segmented-control-option:hover:not\(:disabled\):not\(\s*\.product-segmented-control-option-selected\s*\)\s*\{[^}]*background: transparent;[^}]*color: var\(--color-neutral-950, #0a0a0a\);[^}]*box-shadow: none;/,
   );
   assert.doesNotMatch(
     styles,

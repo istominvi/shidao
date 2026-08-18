@@ -284,7 +284,8 @@ Course controls канонизированы в один внешний разм
 однострочные inputs/selects, primary actions, Schedule date navigator,
 WorkspaceTabs и segmented controls. Их action-glyphs используют один token
 `16 px` и Lucide stroke `2 px` без `non-scaling-stroke`; ordinary non-editable
-labels сохраняют desktop `.88rem/400`, а segmented options — `.88rem/500`.
+labels и segmented options используют один canonical product-control type
+`.88rem/400/1.2`.
 `56 × 56 px / 24 px` Messages launcher, `44 × 44 px` actions authored Component
 card остаются явными touch/category exceptions. Portal `ActionMenu`, напротив,
 сохраняет desktop parity: row `40 px`, label `.88rem/400`, icon `16 px` также на
@@ -298,8 +299,12 @@ mobile/coarse. В current source / next production compound
 `.product-segmented-control-indicator`: он `aria-hidden`, не принимает события
 через `pointer-events: none`, не участвует во flex-layout и получает measured
 `left/width` выбранной actual button. Plate имеет высоту `38 px`, чисто-белый
-фон и базовую `--product-raised-control-shadow`; при pointer-down использует
-pressed shadow без transform. Actual buttons остаются выше plate и сохраняют
+фон и tokenized inset boundary `1 px` цвета product border вместе с неизменной
+внешней тенью обычной кнопки через
+`--product-segmented-control-surface-shadow`; при pointer-down он сохраняет
+boundary и переключает только внешнюю часть на ordinary pressed shadow без
+transform или hover elevation. Такой единый composite не создаёт второй
+alpha-border поверх moving surface. Actual buttons остаются выше plate и сохраняют
 `aria-pressed`, focus, disabled/busy и accessible-name semantics. До готового
 измерения, при отсутствующем/disabled выборе и как функциональный fallback
 selected actual button сама остаётся белой с base shadow; после
@@ -809,10 +814,12 @@ toolbar/filter controls не имеют контекстных fork. На fine-p
 в строках таблиц и на Component cards намеренно остаются
 transparent/borderless/no-shadow; contextual menu panels/items также не
 получают product surface border. В current source / next production составные
-тумблеры используют настоящую внешнюю product-рамку `1 px`; shell `40 px`
+tумблеры используют настоящую внешнюю product-рамку `1 px`; shell `40 px`
 содержит actual options `38 px` с gap `2 px`. Один measured real indicator
-рисует чисто-белую выбранную surface с base/pressed shadow и плавно меняет
-`width/transform` через общие с `WorkspaceTabs` selection-motion tokens. Actual
+рисует чисто-белую выбранную surface с tokenized inset product-boundary `1 px`
+и неизменной ordinary base/pressed outer shadow, без второго alpha-composite и
+без hover elevation, и плавно меняет `width/transform` через общие с
+`WorkspaceTabs` selection-motion tokens. Actual
 selected button сохраняет `aria-pressed`, inset focus outline и белый fallback
 до готовности indicator, после чего становится прозрачной и без тени;
 неактивная остаётся без заливки и тени даже при hover, где меняется только её
@@ -991,10 +998,10 @@ Authenticated top header и profile menu теперь используют сп�
 без blur. Active V2 buttons и header controls используют единый raised-contract
 `40 px / 12 px`: белый surface, product border, базовая тень,
 pointer hover lift и отдельный pressed/focus contract; иконки полностью
-непрозрачны и наследуют контрастный цвет. Base/desktop типографика остаётся
-`.88rem/400`; current-source narrow/coarse ordinary non-editable controls
-наследуют тот же размер/weight и `16 px / 2 px` glyph rhythm без
-`non-scaling-stroke`, а segmented labels остаются `.88rem/500`. Native
+непрозрачны и наследуют контрастный цвет. Base/desktop типографика ordinary
+non-editable controls и segmented labels использует один canonical token
+`.88rem/400/1.2`; current-source narrow/coarse наследует тот же type и
+`16 px / 2 px` glyph rhythm без `non-scaling-stroke`. Native
 editables отдельно держат `16 px` Safari anti-zoom floor. Contextual menu items
 остаются плоскими без обычной рамки и сохраняют `40 px / .88rem/400` на touch,
 как на desktop. Отдельный Settings shell и side navigation удалены:

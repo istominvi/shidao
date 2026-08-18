@@ -90,8 +90,8 @@
   search/input/select, actions, Schedule date navigator, WorkspaceTabs и
   segmented controls имеют одну внешнюю высоту `40 px`. Action-glyphs равны
   `16 px` со stroke `2 px` и стандартным SVG `vector-effect`; ordinary
-  non-editable labels наследуют desktop `.88rem/400`, segmented options —
-  `.88rem/500`. На всех плотностях segmented shell имеет
+  non-editable labels и segmented options используют один canonical
+  product-control type `.88rem/400/1.2`. На всех плотностях segmented shell имеет
   реальную внешнюю product-рамку `1 px`, `padding: 0` и gap `2 px`; две actual
   icon-only options `38 × 38 px` внутри него дают ровно `80 × 40 px`.
   Shell использует radius `12 px`, options — концентрический radius `11 px`.
@@ -99,7 +99,9 @@
   `.product-segmented-control-indicator` высотой `38 px` и radius `11 px`, а не
   per-option или pseudo plates. Он absolute, `aria-hidden`,
   `pointer-events: none`, не участвует в layout и получает pure-white surface с
-  base/pressed shadow обычной кнопки. Actual selected button сохраняет
+  tokenized inset product-boundary `1 px` и неизменной ordinary base/pressed
+  outer shadow. Composite boundary + shadow не удваивает alpha-рамку и не
+  получает hover elevation. Actual selected button сохраняет
   `aria-pressed`, focus/disabled semantics и белый fallback до готовности
   indicator; после ready она прозрачна и без тени. Неактивная option прозрачна
   и не получает фон или тень при hover — меняется только цвет glyph.
@@ -574,9 +576,9 @@ cancel actions. Authenticated top header/profile menu стали
 сплошными белыми поверхностями без blur. Active V2 buttons/header controls
 унифицированы как raised `40 px / 12 px`: общий белый surface, product border,
 base shadow, hover lift, pressed/focus и reduced-motion states. Base/desktop
-ordinary non-editable typography остаётся `.88rem/400`; current-source / next
-production narrow/coarse наследует её без font override, segmented labels
-остаются `.88rem/500`, а полностью непрозрачные контрастные glyphs —
+ordinary non-editable controls и segmented labels используют один canonical
+type `.88rem/400/1.2`; current-source / next production narrow/coarse наследует
+его без font override, а полностью непрозрачные контрастные glyphs —
 `16 px / 2 px` со стандартным vector rendering. Contextual menu items остаются
 плоскими и на touch сохраняют desktop contract `40 px / .88rem/400`. Отдельный
 Settings shell и side navigation удалены:
@@ -736,7 +738,9 @@ transparent/borderless/no-shadow; contextual menu panels/items тоже искл
 В current source / next production compound toggles получают настоящую внешнюю product-рамку `1 px`; shell
 `40 px` содержит actual options `38 px` с gap `2 px`. Единственный real
 `aria-hidden` / `pointer-events: none` indicator измеряет selected actual button и
-рисует её чисто-белую base/pressed surface; actual button остаётся semantic и
+рисует её чисто-белую surface с tokenized inset product-boundary `1 px` и
+неизменной ordinary base/pressed outer shadow без второго alpha-composite или
+hover elevation; actual button остаётся semantic и
 служит белым fallback до ready, после чего прозрачна и без тени. Inactive option
 не получает фон или тень на hover — меняется только цвет. Readiness исключает
 initial fly-in, `ResizeObserver` поддерживает responsive width, а общие с
@@ -1377,9 +1381,10 @@ headers сортируют только локальную projection с default
 portal-actions: открыть Lesson и выполнить контекстное действие проведения.
 Authenticated top header и profile dropdown тоже стали сплошными белыми
 поверхностями без blur. Buttons/header controls используют единый raised
-`40 px / 12 px` contract. Base/desktop использует `.88rem/400`; current-source /
-next production narrow/coarse сохраняет этот ordinary type без override,
-segmented labels — `.88rem/500`, а fully opaque contrast-aware icons —
+`40 px / 12 px` contract. Base/desktop ordinary controls и segmented labels
+используют один canonical type `.88rem/400/1.2`; current-source / next
+production narrow/coarse сохраняет его без override, а fully opaque
+contrast-aware icons —
 `16 px / 2 px` со стандартным vector rendering,
 общим product border и base/hover/pressed states; menu items остаются
 borderless. Physical schema не

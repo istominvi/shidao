@@ -718,9 +718,9 @@ Visual contract Course routes не меняет эту навигационну�
   fallback, а `prefers-reduced-motion` выполняет навигацию и локальный
   Course/Lesson state update без анимации, сохраняя синхронный route dispatch;
 - основные кнопки и header controls — высотой 40 px с радиусом 12 px;
-  base/desktop ordinary non-editable шрифт остаётся `.88rem/400`, а
-  current-source / next production narrow/coarse наследует его без override;
-  segmented options используют `.88rem/500`. Ordinary control использует белый
+  base/desktop ordinary non-editable controls и segmented options используют
+  один canonical шрифт `.88rem/400/1.2`, а current-source / next production
+  narrow/coarse наследует его без override. Ordinary control использует белый
   surface, общий product border и raised base/hover/pressed contract.
   Action-glyphs имеют единый `16 px` rhythm и Lucide stroke `2 px`; current-source
   narrow/coarse сохраняет desktop размер и стандартный SVG `vector-effect`, без
@@ -757,7 +757,9 @@ Visual contract Course routes не меняет эту навигационну�
   production compound toggles используют настоящую внешнюю product-рамку
   `1 px`; shell `40 px` содержит actual options `38 px` с gap `2 px`. Один real
   `aria-hidden` / `pointer-events: none` indicator измеряет selected actual
-  button и рисует чисто-белую surface с base/pressed shadow; actual button
+  button и рисует чисто-белую surface с tokenized inset product-boundary `1 px`
+  и неизменной ordinary base/pressed outer shadow без второго alpha-composite
+  или hover elevation; actual button
   сохраняет semantic/focus и белый fallback до ready, после чего прозрачна и
   без тени. Inactive option на hover меняет только цвет без фона или тени.
   Readiness исключает initial fly-in, `ResizeObserver` пересчитывает responsive
@@ -1039,7 +1041,8 @@ actions`; пять data headers сортируют полную client-loaded pr
   search, однострочные inputs/selects, tabs, основные actions и Schedule date
   navigator используют один `40 px` control token. Action-glyphs равны
   `16 px` с Lucide stroke `2 px` и стандартным SVG `vector-effect`; ordinary
-  non-editable labels сохраняют `.88rem/400`, segmented options — `.88rem/500`.
+  non-editable labels и segmented options используют один canonical
+  product-control type `.88rem/400/1.2`.
   На desktop, narrow и coarse
   segmented group имеет высоту `40 px`, настоящую внешнюю product-рамку
   `1 px`, `padding: 0` и gap `2 px`; две actual icon-only options
@@ -1048,8 +1051,10 @@ actions`; пять data headers сортируют полную client-loaded pr
   border; inactive option прозрачна и на hover меняет только цвет без фона или
   тени. В current source / next production один настоящий absolute
   `.product-segmented-control-indicator` измеряет `left/width` selected actual
-  button; plate имеет высоту `38 px`, radius `11 px`, чисто-белый surface и
-  base/pressed shadow обычной кнопки. Он `aria-hidden`,
+  button; plate имеет высоту `38 px`, radius `11 px`, чисто-белый surface,
+  tokenized inset product-boundary `1 px` и неизменную ordinary base/pressed
+  outer shadow. Этот composite не удваивает alpha-рамку и не получает hover
+  elevation. Indicator остаётся `aria-hidden`,
   `pointer-events: none`, лежит ниже actual buttons и не влияет на flex-layout.
   Selected actual button сохраняет `aria-pressed`, accessible name,
   focus/disabled/busy semantics и белый fallback до готовности measurement;

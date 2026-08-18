@@ -586,6 +586,10 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
+    /:root\s*\{[\s\S]*?--product-segmented-control-surface-boundary: inset 0 0 0\s+var\(--product-surface-border-width\) var\(--product-surface-border-color\);[\s\S]*?--product-segmented-control-surface-shadow:\s*var\(\s*--product-segmented-control-surface-boundary\s*\),\s*var\(--product-raised-control-shadow\);[\s\S]*?--product-segmented-control-surface-shadow-pressed:\s*var\(\s*--product-segmented-control-surface-boundary\s*\),\s*var\(--product-raised-control-shadow-pressed\);/,
+  );
+  assert.match(
+    styles,
     /:root\s*\{[^}]*--product-raised-control-shadow:\s*0 1px 6px 0px oklch\(0% 0 0 \/ 0\.05\);[^}]*--product-raised-control-shadow-hover:\s*0 4px 10px -2px\s+oklch\(0% 0 0 \/ 0\.16\);[^}]*--product-raised-control-shadow-pressed:\s*0 1px 3px 0px\s+oklch\(0% 0 0 \/ 0\.14\);[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);[^}]*--product-raised-control-hover-translate-y: -1px;[^}]*--product-raised-control-transition: 160ms\s+cubic-bezier\(0\.2, 0\.8, 0\.2, 1\);/,
   );
   assert.match(
@@ -701,11 +705,11 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
-    /\.product-segmented-control-indicator\s*\{[^}]*position: absolute;[^}]*z-index: 0;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background-color: var\(--product-surface-background\);[^}]*background-image: none;[^}]*box-shadow: var\(--product-raised-control-shadow\);[^}]*pointer-events: none;[^}]*backdrop-filter: none;/,
+    /\.product-segmented-control-indicator\s*\{[^}]*position: absolute;[^}]*z-index: 0;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background-color: var\(--product-surface-background\);[^}]*background-image: none;[^}]*box-shadow: var\(--product-segmented-control-surface-shadow\);[^}]*pointer-events: none;[^}]*backdrop-filter: none;/,
   );
   assert.match(
     styles,
-    /\.product-segmented-control-option\s*\{[^}]*position: relative;[^}]*z-index: 1;[^}]*display: inline-flex;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*min-height: var\(--product-segmented-control-option-size\);[^}]*min-width: var\(--product-segmented-control-option-size\);[^}]*isolation: isolate;[^}]*box-sizing: border-box;[^}]*border: 0;[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background: transparent;[^}]*font-size: 0\.88rem;[^}]*transform: none;/,
+    /\.product-segmented-control-option\s*\{[^}]*position: relative;[^}]*z-index: 1;[^}]*display: inline-flex;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*min-height: var\(--product-segmented-control-option-size\);[^}]*min-width: var\(--product-segmented-control-option-size\);[^}]*isolation: isolate;[^}]*box-sizing: border-box;[^}]*border: 0;[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background: transparent;[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*line-height: var\(--product-entry-control-line-height\);[^}]*transform: none;/,
   );
   assert.match(
     styles,
@@ -713,7 +717,7 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
-    /\.product-segmented-control-option-selected\s*\{[^}]*border: 0;[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-control-shadow\);/,
+    /\.product-segmented-control-option-selected\s*\{[^}]*border: 0;[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-segmented-control-surface-shadow\);/,
   );
   assert.match(
     styles,
@@ -774,11 +778,11 @@ test("product buttons share one animated raised-control elevation contract", () 
   );
   assert.match(
     styles,
-    /\.product-segmented-control-option-selected:not\(:disabled\):active\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);[^}]*transform: none;/,
+    /\.product-segmented-control-option-selected:not\(:disabled\):active\s*\{[^}]*box-shadow: var\(--product-segmented-control-surface-shadow-pressed\);[^}]*transform: none;/,
   );
   assert.match(
     styles,
-    /\.product-segmented-control\[data-indicator-ready="true"\]:has\(\s*\.product-segmented-control-option-selected:not\(:disabled\):active\s*\)\s*\.product-segmented-control-indicator\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);/,
+    /\.product-segmented-control\[data-indicator-ready="true"\]:has\(\s*\.product-segmented-control-option-selected:not\(:disabled\):active\s*\)\s*\.product-segmented-control-indicator\s*\{[^}]*box-shadow: var\(--product-segmented-control-surface-shadow-pressed\);/,
   );
   assert.match(
     styles,
@@ -917,7 +921,7 @@ test("product buttons share one animated raised-control elevation contract", () 
 
   assert.match(
     teachingStyles,
-    /\.teaching-date-trigger\s*\{[^}]*font-size: var\(--course-demo-control-font-size\);[^}]*font-weight: var\(--course-demo-control-font-weight\);/,
+    /\.teaching-date-trigger\s*\{[^}]*font-size: var\(--course-demo-control-font-size\);[^}]*font-weight: var\(--course-demo-control-font-weight\);[^}]*line-height: var\(--course-demo-control-line-height\);/,
   );
 });
 
