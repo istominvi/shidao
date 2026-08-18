@@ -1,10 +1,11 @@
 export type PageTransitionDirection = "forward" | "back";
 
-const PRIMARY_ROUTE_GROUPS = [
+const SECTION_ROUTE_GROUPS = [
   ["/schedule"],
   ["/students", "/observing"],
   ["/courses"],
   ["/store"],
+  ["/profile"],
 ] as const;
 
 function normalizedPathname(value: string) {
@@ -13,8 +14,8 @@ function normalizedPathname(value: string) {
   return pathname.replace(/\/+$/, "");
 }
 
-function primaryRouteIndex(pathname: string) {
-  return PRIMARY_ROUTE_GROUPS.findIndex((routes) =>
+function sectionRouteIndex(pathname: string) {
+  return SECTION_ROUTE_GROUPS.findIndex((routes) =>
     routes.some(
       (route) => pathname === route || pathname.startsWith(`${route}/`),
     ),
@@ -31,15 +32,15 @@ export function resolvePageTransitionDirection(
 ): PageTransitionDirection {
   const fromPathname = normalizedPathname(from);
   const toPathname = normalizedPathname(to);
-  const fromPrimaryIndex = primaryRouteIndex(fromPathname);
-  const toPrimaryIndex = primaryRouteIndex(toPathname);
+  const fromSectionIndex = sectionRouteIndex(fromPathname);
+  const toSectionIndex = sectionRouteIndex(toPathname);
 
   if (
-    fromPrimaryIndex >= 0 &&
-    toPrimaryIndex >= 0 &&
-    fromPrimaryIndex !== toPrimaryIndex
+    fromSectionIndex >= 0 &&
+    toSectionIndex >= 0 &&
+    fromSectionIndex !== toSectionIndex
   ) {
-    return toPrimaryIndex > fromPrimaryIndex ? "forward" : "back";
+    return toSectionIndex > fromSectionIndex ? "forward" : "back";
   }
 
   const fromDepth = routeDepth(fromPathname);

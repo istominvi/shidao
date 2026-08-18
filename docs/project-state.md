@@ -112,8 +112,10 @@ copy в `AppPageHeader` теперь действительно optional и до
 кнопки, а остальные действия Lesson находятся в общем квадратном
 `MoreVertical` menu с сохранением destructive, keyboard и focus-return
 семантики. Persistent navigation-motion boundary сохраняет направление:
-движение `Расписание → Ученики → Курсы → Магазин` и drill-in уводит старый
-header влево, обратное движение/backlink — вправо. Асинхронная route navigation
+движение `Расписание → Ученики → Курсы → Магазин → Профиль` и drill-in уводит
+старый header влево, обратное движение/backlink — вправо. Поэтому открытие
+Profile по avatar является forward-переходом, а возврат из Profile в любой
+основной раздел, включая Магазин, — back-переходом. Асинхронная route navigation
 и ожидание RSC/data выполняются вне `document.startViewTransition`; после
 commit готового header включается отменяемый CSS entrance. Единственным
 допустимым named element для синхронного native update остаётся

@@ -1119,8 +1119,12 @@ ShiDao V2 application:
   плавно меняет measured `left/width`, а active panel мягко проявляется в
   направлении выбора; после rapid clicks indicator точно совпадает с active
   tab. При reduced motion indicator и panel меняются мгновенно;
-- при primary navigation `Расписание → Ученики → Курсы → Магазин` old page
-  header уходит влево с fade, new приходит справа; обратное движение зеркально.
+- при section navigation
+  `Расписание → Ученики → Курсы → Магазин → Профиль` old page header уходит
+  влево с fade, new приходит справа; обратное движение зеркально. Отдельно
+  проверить `Магазин → Профиль` через avatar как forward и
+  `Профиль → Магазин` как back, чтобы одинаковая route depth не возвращала
+  fallback-направление.
   Открытие Course/Lesson — forward, backlink — back. Проверить именованный
   `app-page-header` View Transition, отсутствие root cross-fade/layout shift и
   промежуточных Course loading-cards. Native named View Transition должен быть

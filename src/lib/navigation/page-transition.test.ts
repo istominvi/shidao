@@ -6,7 +6,7 @@ import {
   resolvePageTransitionDirection,
 } from "./page-transition";
 
-test("page transition direction follows primary navigation order", () => {
+test("page transition direction follows section navigation order", () => {
   assert.equal(
     resolvePageTransitionDirection("/schedule", "/students"),
     "forward",
@@ -20,6 +20,21 @@ test("page transition direction follows primary navigation order", () => {
     "forward",
   );
   assert.equal(resolvePageTransitionDirection("/store", "/courses"), "back");
+  assert.equal(
+    resolvePageTransitionDirection("/store", "/profile"),
+    "forward",
+    "Opening Profile from the avatar moves beyond the last primary section",
+  );
+  assert.equal(
+    resolvePageTransitionDirection("/profile", "/store"),
+    "back",
+    "Returning from Profile to Store reverses the header motion",
+  );
+  assert.equal(
+    resolvePageTransitionDirection("/profile?tab=settings", "/schedule"),
+    "back",
+    "Every primary section is behind Profile regardless of its selected tab",
+  );
   assert.equal(
     resolvePageTransitionDirection("/observing", "/courses"),
     "forward",
