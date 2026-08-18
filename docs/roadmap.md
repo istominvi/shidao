@@ -233,12 +233,18 @@
   ready commit используется отменяемый CSS entrance; named native element
   остаётся только `app-page-header` для синхронных updates. Единственный
   локальный black indicator анимирует `width/transform` к выбранному primary
-  button за `180 ms` одновременно с синхронным route dispatch и никогда его не
-  задерживает; собственный
-  named/native pill transition удалён, поэтому серый ghost, второй чёрный слой
-  и snapshot-scale не возникают. Glyphs визуально остаются `#000` вне pill и
-  `#fff` внутри: isolated nav-track имеет непрозрачный белый backdrop, а
-  nav-list не создаёт отдельный stacking context. Новый быстрый intent
+  button через общие с `WorkspaceTabs` и `SegmentedControl` tokens
+  `--product-selection-motion-duration: 360ms` и
+  `--product-selection-motion-easing: cubic-bezier(0.22, 1, 0.36, 1)`
+  одновременно с синхронным route dispatch и никогда его не задерживает;
+  `TopNav` принадлежит persistent `(app)/layout`, а не отдельным page, поэтому
+  тот же DOM pill переживает route commit. Onboarding и Course
+  `student-preview` остаются вне этого product chrome, а mobile session-меню
+  закрывается при изменении pathname. Собственный named/native pill transition
+  удалён, поэтому серый ghost, второй чёрный слой и snapshot-scale не возникают.
+  Glyphs визуально остаются `#000` вне pill и `#fff` внутри: isolated nav-track
+  имеет непрозрачный белый backdrop, а nav-list не создаёт отдельный stacking
+  context. Новый быстрый intent
   немедленно supersede-ит прежний pre-commit/pending route, перецеливает тот же
   pill и синхронно dispatch-ит новый URL; stale response не может commit-ить
   старый target. Ожидание данных не блокирует cursor, links, focus или следующие
@@ -1411,7 +1417,10 @@ UI-only follow-up без изменения LessonRun API, schema или migrati
 между primary sections и Course → Lesson/back получают зеркальный fade/slide,
 а вкладки сохраняют свой moving indicator. Primary header использует один
 локальный black active-pill: каждый click синхронно dispatch-ит route
-navigation, а `width/transform` параллельно анимируются `180 ms` без routing
+navigation, а `width/transform` параллельно анимируются через общие с
+`WorkspaceTabs` и `SegmentedControl` tokens
+`--product-selection-motion-duration: 360ms` и
+`--product-selection-motion-easing: cubic-bezier(0.22, 1, 0.36, 1)` без routing
 gate, named/native pill View Transition, второго
 чёрного слоя, серого ghost или snapshot-scale. Glyphs визуально имеют `#000`
 вне pill и `#fff` внутри. Rapid primary intent немедленно supersede-ит

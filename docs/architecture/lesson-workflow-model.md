@@ -697,10 +697,18 @@ Visual contract Course routes не меняет эту навигационну�
   active-pill намеренно не является named/native View Transition. Это один
   локальный измеряемый слой: каждый click синхронно dispatch-ит route navigation
   и в том же interaction перецеливает pill; его `width/transform` анимируются
-  `180 ms` параллельно и не gate-ят routing. Каждый следующий primary intent
+  через общие с `WorkspaceTabs` и `SegmentedControl` tokens
+  `--product-selection-motion-duration: 360ms` и
+  `--product-selection-motion-easing: cubic-bezier(0.22, 1, 0.36, 1)`
+  параллельно и не gate-ят routing. Каждый следующий primary intent
   немедленно supersede-ит предыдущий pre-commit/pending route state, синхронно
   dispatch-ит новый URL и становится единственным intent, которому разрешён
   navigation commit; stale response старого intent обязан остаться без commit.
+  `TopNav` живёт над меняющимися route children в persistent `(app)/layout`,
+  поэтому один и тот же DOM pill продолжает движение через route commit;
+  page-local копий нет. Onboarding и Course `student-preview` намеренно не
+  входят в этот product chrome. Persisted mobile session-меню наблюдает pathname
+  и закрывается при переходе в другой раздел.
   Поэтому browser не создаёт отдельные old/new pill
   snapshots, серый ghost, второй чёрный слой или snapshot-scale.
   Один glyph-layer визуально остаётся `#000` вне чёрного pill и `#fff` внутри

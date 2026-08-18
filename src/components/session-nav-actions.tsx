@@ -46,6 +46,7 @@ export function SessionNavActions({
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const previousPathnameRef = useRef(pathname);
   const focusMenuOnOpenRef = useRef(false);
   const [open, setOpen] = useState(false);
   const isProtectedTopNav = variant === "top-nav";
@@ -96,6 +97,12 @@ export function SessionNavActions({
       triggerRef.current?.blur();
     }
   }, []);
+
+  useEffect(() => {
+    if (previousPathnameRef.current === pathname) return;
+    previousPathnameRef.current = pathname;
+    closeMenu();
+  }, [closeMenu, pathname]);
 
   useEffect(() => {
     if (!open) return;

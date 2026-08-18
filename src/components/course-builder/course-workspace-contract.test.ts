@@ -429,8 +429,20 @@ test("course routes use the flat demo background and unified visual controls", (
   );
   assert.match(topNav, /container course-top-nav/);
   assert.match(
+    appLayout,
+    /<div className="app-product-chrome">[\s\S]*?<PersistentTopNav \/>[\s\S]*?\{children\}/,
+  );
+  assert.match(
     navigationStyles,
     /\.course-top-nav\s*\{[^}]*position: relative;[^}]*z-index: 60;[^}]*padding-top: 1rem;/,
+  );
+  assert.match(
+    navigationStyles,
+    /@media \(min-width: 768px\)\s*\{\s*\.app-product-chrome > \.course-top-nav\s*\{[^}]*width: min\(1240px, calc\(100% - 2rem\)\);/,
+  );
+  assert.match(
+    navigationStyles,
+    /@media \(min-width: 768px\)[\s\S]*?\.app-product-chrome > main\.course-demo-shell\s*\{[^}]*min-height: calc\(100vh - 5rem\);[^}]*min-height: calc\(100dvh - 5rem\);/,
   );
   assert.match(
     navigationStyles,
@@ -442,7 +454,7 @@ test("course routes use the flat demo background and unified visual controls", (
   );
   assert.match(
     navigationStyles,
-    /@media \(max-width: 767px\)[\s\S]*?\.course-top-nav\s*\{[^}]*position: fixed;[^}]*inset-block-start: 0;[^}]*inset-inline: 0;[^}]*height: var\(--mobile-header-stack-height\);[^}]*isolation: isolate;[^}]*background-color: transparent;[^}]*background-image: none;[^}]*pointer-events: none;/,
+    /@media \(max-width: 767px\)[\s\S]*?\.course-top-nav,\s*\.app-product-chrome > \.course-top-nav\s*\{[^}]*position: fixed;[^}]*inset-block-start: 0;[^}]*inset-inline: 0;[^}]*width: 100%;[^}]*height: var\(--mobile-header-stack-height\);[^}]*max-width: none;[^}]*margin-inline: 0;[^}]*isolation: isolate;[^}]*background-color: transparent;[^}]*background-image: none;[^}]*pointer-events: none;/,
   );
   assert.match(
     navigationStyles,

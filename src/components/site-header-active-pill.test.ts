@@ -9,12 +9,50 @@ function source(path: string) {
 test("Account TopNav alone enables one measured desktop active pill", () => {
   const header = source("src/components/site-header.tsx");
   const topNav = source("src/components/top-nav.tsx");
+  const appLayout = source("src/app/(app)/layout.tsx");
   const landing = source("src/components/landing-page.tsx");
 
   assert.match(header, /movingActivePill\?: boolean/);
   assert.match(header, /movingActivePill = false/);
   assert.match(topNav, /movingActivePill=\{primaryNavId === "account"\}/);
   assert.doesNotMatch(landing, /movingActivePill/);
+  assert.match(appLayout, /<div className="app-product-chrome">/);
+  assert.match(appLayout, /<PersistentTopNav \/>[\s\S]*?\{children\}/);
+  assert.match(
+    topNav,
+    /export function shouldRenderPersistentProductTopNav\(pathname: string\)/,
+  );
+  for (const routeName of [
+    "schedule",
+    "students",
+    "courses",
+    "store",
+    "profile",
+  ]) {
+    assert.match(topNav, new RegExp(`pathname === ROUTES\\.${routeName}`));
+  }
+  assert.match(topNav, /export function PersistentTopNav\(\)/);
+  assert.match(
+    topNav,
+    /if \(!shouldRenderPersistentProductTopNav\(pathname\)\)\s*\{\s*return null;/,
+  );
+  assert.doesNotMatch(appLayout, /<PersistentTopNav[^>]*\bkey=/);
+  assert.match(
+    topNav,
+    /pathname\.startsWith\(`\$\{ROUTES\.courses\}\/`\)[\s\S]*?!pathname\.endsWith\("\/student-preview"\)/,
+  );
+  for (const pagePath of [
+    "src/app/(app)/(teacher-required)/schedule/page.tsx",
+    "src/app/(app)/(teacher-required)/students/page.tsx",
+    "src/app/(app)/courses/page.tsx",
+    "src/app/(app)/courses/new/page.tsx",
+    "src/app/(app)/courses/[courseId]/page.tsx",
+    "src/app/(app)/courses/catalog/[publicationId]/page.tsx",
+    "src/app/(app)/store/page.tsx",
+    "src/app/(app)/profile/page.tsx",
+  ]) {
+    assert.doesNotMatch(source(pagePath), /<TopNav|import \{ TopNav \}/);
+  }
 
   assert.match(header, /const navTrackRef = useRef<HTMLElement>\(null\)/);
   assert.match(
@@ -70,8 +108,15 @@ test("Account TopNav alone enables one measured desktop active pill", () => {
   );
 });
 
-test("active pill preserves SSR fallback and uses one fast local motion layer", () => {
+test("active pill preserves SSR fallback and shares the canonical selection motion", () => {
   const styles = source("src/app/styles/navigation.css");
+  const globals = source("src/app/globals.css");
+  const pageMotion = source("src/app/styles/page-motion.css");
+
+  assert.match(
+    globals,
+    /--product-selection-motion-duration: 360ms;[\s\S]*?--product-selection-motion-easing: cubic-bezier\(0\.22, 1, 0\.36, 1\);[\s\S]*?--product-selection-motion-fade-duration: 120ms;/,
+  );
 
   assert.match(
     styles,
@@ -87,7 +132,19 @@ test("active pill preserves SSR fallback and uses one fast local motion layer", 
   );
   assert.match(
     styles,
-    /\.site-header-nav-active-pill\[data-motion-ready="true"\]\s*\{[^}]*width 180ms cubic-bezier\(0\.22, 1, 0\.36, 1\),[^}]*transform 180ms cubic-bezier\(0\.22, 1, 0\.36, 1\);/,
+    /\.site-header-nav-active-pill\[data-motion-ready="true"\]\s*\{[^}]*width var\(--product-selection-motion-duration\)[^}]*var\(--product-selection-motion-easing\),[^}]*transform var\(--product-selection-motion-duration\)[^}]*var\(--product-selection-motion-easing\),[^}]*opacity var\(--product-selection-motion-fade-duration\) ease;/,
+  );
+  assert.doesNotMatch(
+    styles,
+    /\.site-header-nav-active-pill\[data-motion-ready="true"\]\s*\{[^}]*\b180ms\b/,
+  );
+  assert.match(
+    pageMotion,
+    /\.workspace-tabs-indicator\[data-motion-ready="true"\]\s*\{[^}]*width var\(--product-selection-motion-duration\)[^}]*var\(--product-selection-motion-easing\),[^}]*transform var\(--product-selection-motion-duration\)[^}]*var\(--product-selection-motion-easing\),[^}]*opacity var\(--product-selection-motion-fade-duration\) ease;/,
+  );
+  assert.match(
+    globals,
+    /\.product-segmented-control-indicator\[data-motion-ready="true"\]\s*\{[^}]*width var\(--product-selection-motion-duration\)[^}]*var\(--product-selection-motion-easing\),[^}]*transform var\(--product-selection-motion-duration\)[^}]*var\(--product-selection-motion-easing\),[^}]*opacity var\(--product-selection-motion-fade-duration\) ease;/,
   );
   assert.match(
     styles,

@@ -1,5 +1,4 @@
 import { PublishedCourseWorkspace } from "@/components/course-builder/published-course-workspace";
-import { TopNav } from "@/components/top-nav";
 
 export default async function PublishedCoursePage({
   params,
@@ -15,7 +14,6 @@ export default async function PublishedCoursePage({
 
   return (
     <main className="course-demo-shell pb-12">
-      <TopNav demoStyle />
       <PublishedCourseWorkspace
         publicationId={publicationId}
         catalogAudience={catalogAudience}

@@ -104,3 +104,30 @@ export function TopNav({ demoStyle = false }: { demoStyle?: boolean }) {
     </div>
   );
 }
+
+export function shouldRenderPersistentProductTopNav(pathname: string) {
+  if (
+    pathname === ROUTES.schedule ||
+    pathname === ROUTES.students ||
+    pathname === ROUTES.courses ||
+    pathname === ROUTES.store ||
+    pathname === ROUTES.profile
+  ) {
+    return true;
+  }
+
+  return (
+    pathname.startsWith(`${ROUTES.courses}/`) &&
+    !pathname.endsWith("/student-preview")
+  );
+}
+
+export function PersistentTopNav() {
+  const pathname = usePathname();
+
+  if (!shouldRenderPersistentProductTopNav(pathname)) {
+    return null;
+  }
+
+  return <TopNav demoStyle />;
+}

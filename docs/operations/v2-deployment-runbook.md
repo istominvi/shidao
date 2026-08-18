@@ -1126,11 +1126,21 @@ ShiDao V2 application:
   промежуточных Course loading-cards. Native named View Transition должен быть
   только у `app-page-header`: primary-nav pill не имеет собственного
   `view-transition-name`. Каждый click должен синхронно dispatch-ить route
-  navigation, пока один локальный чёрный indicator параллельно за `180 ms`
-  перемещает `width/transform` к выбранному link; pill motion не должен
-  gate-ить routing. Серый ghost, второй чёрный слой и snapshot-scale
-  отсутствуют. Glyphs визуально остаются `#000` вне pill и `#fff` внутри даже
-  во время motion.
+  navigation, пока один локальный измеряемый чёрный indicator параллельно
+  перемещает `width/transform` к выбранному link через общие с
+  `WorkspaceTabs` и `SegmentedControl` tokens
+  `--product-selection-motion-duration: 360ms` и
+  `--product-selection-motion-easing: cubic-bezier(0.22, 1, 0.36, 1)`; его
+  первые два computed duration должны быть `.36s, .36s` с одинаковым easing
+  для `width/transform`, а третий opacity entry — `.12s ease`. Pill motion не
+  должен gate-ить routing. Серый ghost, второй чёрный
+  слой и snapshot-scale отсутствуют. Glyphs визуально остаются `#000` вне pill
+  и `#fff` внутри даже во время motion.
+  Подтвердить, что `TopNav` принадлежит persistent `(app)/layout`, page-local
+  копий нет и один помеченный DOM pill сохраняет identity до и после route
+  commit. Onboarding и Course `student-preview` не должны получать этот product
+  TopNav. На mobile открытое session-меню должно закрыться после изменения
+  pathname, не оставляя активной burger-кнопку на следующем route.
   Проверить computed `background: rgb(255, 255, 255)` и `isolation: isolate` у
   nav-track, `z-index: auto` у nav-list и фактические тёмные пиксели inactive
   glyphs. Hover неактивного link должен дать exact 5%-black

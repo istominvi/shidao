@@ -5,6 +5,7 @@ import { CommunicationCenter } from "@/components/communication/communication-ce
 import { CommunicationCenterProvider } from "@/components/communication/communication-center-provider";
 import { PageTransitionProvider } from "@/components/navigation/page-transition-provider";
 import { PrimaryHeaderSummaryProvider } from "@/components/navigation/primary-header-summary-provider";
+import { PersistentTopNav } from "@/components/top-nav";
 import { primaryHeaderSummaryOwnerKey } from "@/lib/navigation/primary-header-summary-owner";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import { resolveAppLayoutRedirect } from "@/lib/server/access-guards";
@@ -36,7 +37,10 @@ export default async function AppLayout({
       <PrimaryHeaderSummaryProvider key={accountKey} accountKey={accountKey}>
         <SystemAssistantProvider>
           <CommunicationCenterProvider>
-            {children}
+            <div className="app-product-chrome">
+              <PersistentTopNav />
+              {children}
+            </div>
             <CommunicationCenter />
           </CommunicationCenterProvider>
         </SystemAssistantProvider>

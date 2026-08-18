@@ -120,8 +120,16 @@ commit готового header включается отменяемый CSS ent
 `app-page-header`. Чёрный active-pill
 primary navigation остаётся одним локальным измеряемым indicator: нажатие
 синхронно отправляет route navigation и одновременно перенаправляет его
-`width/transform` к выбранному пункту; локальная анимация длится `180 ms`, но
-никогда не gate-ит router dispatch. Быстрый следующий primary intent немедленно
+`width/transform` к выбранному пункту. Движение использует те же общие
+`--product-selection-motion-duration: 360ms` и
+`--product-selection-motion-easing: cubic-bezier(0.22, 1, 0.36, 1)`, что
+`WorkspaceTabs` и `SegmentedControl`, но никогда не gate-ит router dispatch.
+`TopNav` смонтирован один раз над route children в persistent `(app)/layout`,
+а page-local копии удалены, поэтому тот же DOM indicator переживает route
+commit без remount/reset. Onboarding и Course `student-preview` намеренно не
+получают этот product TopNav. Открытое mobile session-меню закрывается при
+изменении pathname и не переносится в следующий раздел.
+Быстрый следующий primary intent немедленно
 supersede-ит предыдущий pre-commit/pending route, сразу перенаправляет тот же
 pill и становится единственным актуальным target; stale response больше не
 может commit-ить прежний URL. Для pill не используется
@@ -318,10 +326,12 @@ fallback, поэтому icon-only и variable-width text projections перес
 без layout drift. Readiness включается только после первого корректного
 измерения и отдельного animation frame: initial mount не прилетает из `left: 0`,
 а rapid retarget продолжает движение того же plate и завершается точно под
-последней выбранной actual button. `SegmentedControl` и `WorkspaceTabs`
-переиспользуют общие tokens `--product-selection-motion-duration: 360ms`,
-`--product-selection-motion-easing: cubic-bezier(0.22, 1, 0.36, 1)` и
-`--product-selection-motion-fade-duration: 120ms`. Этот shared contract
+последней выбранной actual button. `SegmentedControl`, `WorkspaceTabs` и
+измеряемый primary-navigation active-pill переиспользуют общие motion tokens
+`--product-selection-motion-duration: 360ms` и
+`--product-selection-motion-easing: cubic-bezier(0.22, 1, 0.36, 1)`.
+Все три indicator-системы дополнительно используют общий
+`--product-selection-motion-fade-duration: 120ms`. Shared `SegmentedControl`
 обслуживает все девять current consumers без локальных fork: Schedule period и
 view, Students membership и view, Owned Courses view, Course Catalog audience и
 view, New Course audience и Store view. Glyph остаётся `16 px / 2 px` на

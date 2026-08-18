@@ -9,6 +9,7 @@ function source(path: string) {
 
 test("profile, observers, and account settings share one product workspace", () => {
   const page = source("src/app/(app)/profile/page.tsx");
+  const appLayout = source("src/app/(app)/layout.tsx");
   const workspace = source(
     "src/components/learner-identity/learning-profile-workspace.tsx",
   );
@@ -22,7 +23,8 @@ test("profile, observers, and account settings share one product workspace", () 
     "src/components/learner-identity/observers-settings-workspace.tsx",
   );
 
-  assert.match(page, /<TopNav demoStyle \/>/);
+  assert.doesNotMatch(page, /<TopNav|import \{ TopNav \}/);
+  assert.match(appLayout, /<PersistentTopNav \/>/);
   assert.match(page, /<LearningProfileWorkspace/);
   assert.match(workspace, /value: "profile", label: "Профиль"/);
   assert.match(workspace, /value: "observers",\s*label: "Наблюдатели"/);

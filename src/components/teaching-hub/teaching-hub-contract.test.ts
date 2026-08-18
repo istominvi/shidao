@@ -18,6 +18,7 @@ const teacherLayoutSource = readFileSync(
   "src/app/(app)/(teacher-required)/layout.tsx",
   "utf8",
 );
+const appLayoutSource = readFileSync("src/app/(app)/layout.tsx", "utf8");
 const scheduleWorkspaceSource = readFileSync(
   "src/components/teaching-hub/schedule-workspace.tsx",
   "utf8",
@@ -107,13 +108,18 @@ const combinedSources = `${pageSources}\n${teacherLayoutSource}\n${workspaceSour
 test("teaching hub pages share the demo shell and canonical page header", () => {
   for (const source of [schedulePageSource, studentsPageSource]) {
     assert.match(source, /course-demo-shell teaching-hub-shell/);
-    assert.match(source, /<TopNav demoStyle \/>/);
+    assert.doesNotMatch(source, /<TopNav|import \{ TopNav \}/);
     assert.doesNotMatch(source, /landing-noise/);
     assert.doesNotMatch(
       source,
       /course-index-page-header|course-builder-page-header|teaching-hub-page-header|workspace-page-header/,
     );
   }
+
+  assert.match(
+    appLayoutSource,
+    /<div className="app-product-chrome">[\s\S]*?<PersistentTopNav \/>[\s\S]*?\{children\}/,
+  );
 
   assert.match(scheduleWorkspaceSource, /title="Расписание"/);
   assert.match(scheduleWorkspaceSource, /<AppPageHeader/);

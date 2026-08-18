@@ -95,6 +95,57 @@ const E2E_MUTED_FOREGROUND = "oklch(0.19 0 0 / 0.6)";
 const E2E_WORKSPACE_TABS_DIVIDER = "oklch(0.19 0 0 / 0.4)";
 const E2E_SEGMENTED_CONTROL_BACKGROUND = E2E_PRODUCT_SURFACE_BORDER_COLOR;
 const E2E_DROPDOWN_SHADOW = "rgba(20, 20, 20, 0.24) 0px 24px 32px -24px";
+const E2E_SELECTION_MOTION_DURATION_MS = 360;
+const E2E_SELECTION_MOTION_DURATION = "0.36s";
+const E2E_SELECTION_MOTION_FADE_DURATION = "0.12s";
+const E2E_SELECTION_MOTION_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+function assertPrimaryNavSelectionMotion(
+  actual: {
+    transitionProperty: string;
+    transitionDuration: string;
+    transitionTimingFunction: string;
+  },
+  label: string,
+) {
+  const properties = actual.transitionProperty
+    .split(",")
+    .map((value) => value.trim());
+  const durations = actual.transitionDuration
+    .split(",")
+    .map((value) => value.trim());
+  const easings = actual.transitionTimingFunction
+    .split(/,(?![^()]*\))/)
+    .map((value) => value.trim());
+
+  assert.deepEqual(
+    properties.slice(0, 2),
+    ["width", "transform"],
+    `${label}: measured width and transform motion`,
+  );
+  assert.deepEqual(
+    durations.slice(0, 2),
+    [E2E_SELECTION_MOTION_DURATION, E2E_SELECTION_MOTION_DURATION],
+    `${label}: shared selection duration`,
+  );
+  assert.deepEqual(
+    easings.slice(0, 2),
+    [E2E_SELECTION_MOTION_EASING, E2E_SELECTION_MOTION_EASING],
+    `${label}: shared selection easing`,
+  );
+
+  if (properties.length === 3) {
+    assert.equal(properties[2], "opacity", `${label}: optional fade property`);
+    assert.equal(
+      durations[2],
+      E2E_SELECTION_MOTION_FADE_DURATION,
+      `${label}: shared fade duration`,
+    );
+    assert.equal(easings[2], "ease", `${label}: shared fade easing`);
+  } else {
+    assert.equal(properties.length, 2, `${label}: no unrelated transitions`);
+  }
+}
 
 function assertSegmentedSurfaceShadow(
   actual: string,
@@ -1270,7 +1321,13 @@ type PlaywrightChromium = {
           json: () => Promise<unknown>;
         } | null>;
         content: () => Promise<string>;
-        evaluate: <T>(pageFunction: () => T) => Promise<T>;
+        evaluate: {
+          <T>(pageFunction: () => T): Promise<Awaited<T>>;
+          <T, Arg>(
+            pageFunction: (argument: Arg) => T,
+            argument: Arg,
+          ): Promise<Awaited<T>>;
+        };
         getByRole: (
           role: string,
           options?: {
@@ -5300,6 +5357,9 @@ test("browser smoke: protected pages expose the unified messages center with key
       .getByRole("button", { name: "Назад к сообщениям", exact: true })
       .click();
     await panel.getByLabel("Найти диалог").waitFor();
+    await runtime.page.waitForFunction(
+      () => document.activeElement?.id === "communication-center-panel",
+    );
 
     const newDialog = panel.getByRole("button", {
       name: "Новый диалог",
@@ -5307,9 +5367,8 @@ test("browser smoke: protected pages expose the unified messages center with key
     });
     await newDialog.press("Enter");
     await panel.getByText("Новый диалог", { exact: true }).waitFor();
-    await runtime.page.evaluate(
-      () =>
-        new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+    await runtime.page.waitForFunction(
+      () => document.activeElement?.id === "communication-center-panel",
     );
     assert.equal(
       await runtime.page.evaluate(
@@ -5321,9 +5380,8 @@ test("browser smoke: protected pages expose the unified messages center with key
       .getByRole("button", { name: "Назад к сообщениям", exact: true })
       .press("Enter");
     await panel.getByLabel("Найти диалог").waitFor();
-    await runtime.page.evaluate(
-      () =>
-        new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+    await runtime.page.waitForFunction(
+      () => document.activeElement?.id === "communication-center-panel",
     );
     assert.equal(
       await runtime.page.evaluate(
@@ -5345,9 +5403,12 @@ test("browser smoke: protected pages expose the unified messages center with key
 
     await search.press("Escape");
     await panel.waitFor({ state: "hidden" });
-    await runtime.page.evaluate(
-      () =>
-        new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+    await runtime.page.waitForFunction(() =>
+      Boolean(
+        document.activeElement?.classList.contains(
+          "communication-center-launcher",
+        ),
+      ),
     );
     assert.equal(
       await runtime.page.evaluate(() =>
@@ -5913,7 +5974,7 @@ test("browser smoke: authenticated /login redirects by access policy", async (t)
   }
 });
 
-test("browser smoke: primary navigation uses one fast local pill while route navigation is pending", async (t) => {
+test("browser smoke: primary navigation shares selection motion while route navigation is pending", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
     return;
@@ -6121,7 +6182,8 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
       "rgba(0, 0, 0, 0.05)",
     );
 
-    const start = await runtime.page.evaluate(() => {
+    const pendingPillMarker = `pending-students-${Date.now()}`;
+    const start = await runtime.page.evaluate((marker) => {
       const track = document.querySelector<HTMLElement>(
         ".site-header-nav-track",
       );
@@ -6134,11 +6196,18 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
       if (!track || !pill || !target) {
         throw new Error("Primary navigation start geometry is missing");
       }
+      pill.dataset.browserSmokeIdentity = marker;
       return {
         pillLeft: pill.getBoundingClientRect().left,
+        pillWidth: pill.getBoundingClientRect().width,
         targetLeft: target.getBoundingClientRect().left,
+        targetWidth: target.getBoundingClientRect().width,
       };
-    });
+    }, pendingPillMarker);
+    assert.ok(
+      Math.abs(start.pillWidth - start.targetWidth) > 0.5,
+      "Schedule and Students must exercise a real width transition",
+    );
 
     await studentsLink.click();
     await runtime.page.evaluate(
@@ -6150,7 +6219,7 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
         ),
     );
 
-    const handoff = await runtime.page.evaluate(() => {
+    const handoff = await runtime.page.evaluate((marker) => {
       const track = document.querySelector<HTMLElement>(
         ".site-header-nav-track",
       );
@@ -6177,7 +6246,11 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
       const pillStyle = getComputedStyle(pill);
       const targetLinkStyle = getComputedStyle(targetLink);
       const targetContentStyle = getComputedStyle(targetContent);
+      const activeLink = track.querySelector<HTMLAnchorElement>(
+        '.site-header-nav-pill[aria-current="page"]',
+      );
       return {
+        sameIndicator: pill.dataset.browserSmokeIdentity === marker,
         pillCount: track.querySelectorAll(".site-header-nav-active-pill")
           .length,
         pillLeft: pill.getBoundingClientRect().left,
@@ -6192,6 +6265,11 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
         targetContentColor: targetContentStyle.color,
         targetContentMixBlendMode: targetContentStyle.mixBlendMode,
         targetIconOpacity: getComputedStyle(targetIcon).opacity,
+        activeHref: activeLink?.getAttribute("href") ?? null,
+        pathname: window.location.pathname,
+        transitionProperty: pillStyle.transitionProperty,
+        transitionDuration: pillStyle.transitionDuration,
+        transitionTimingFunction: pillStyle.transitionTimingFunction,
         transitionProperties: pill
           .getAnimations()
           .filter(
@@ -6207,11 +6285,18 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
             (duration): duration is number => typeof duration === "number",
           )
           .sort((left, right) => left - right),
+        transitionPlayStates: pill
+          .getAnimations()
+          .map((animation) => animation.playState)
+          .sort(),
       };
-    });
+    }, pendingPillMarker);
+
+    assertPrimaryNavSelectionMotion(handoff, "Pending primary navigation");
 
     assert.deepEqual(
       {
+        sameIndicator: handoff.sameIndicator,
         pillCount: handoff.pillCount,
         pillBackgroundColor: handoff.pillBackgroundColor,
         pillViewTransitionName: handoff.pillViewTransitionName,
@@ -6224,10 +6309,14 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
         targetContentColor: handoff.targetContentColor,
         targetContentMixBlendMode: handoff.targetContentMixBlendMode,
         targetIconOpacity: handoff.targetIconOpacity,
+        activeHref: handoff.activeHref,
+        pathname: handoff.pathname,
         transitionProperties: handoff.transitionProperties,
         transitionDurations: handoff.transitionDurations,
+        transitionPlayStates: handoff.transitionPlayStates,
       },
       {
+        sameIndicator: true,
         pillCount: 1,
         pillBackgroundColor: "rgb(0, 0, 0)",
         pillViewTransitionName: "none",
@@ -6240,8 +6329,14 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
         targetContentColor: "rgb(255, 255, 255)",
         targetContentMixBlendMode: "difference",
         targetIconOpacity: "1",
+        activeHref: "/schedule",
+        pathname: "/schedule",
         transitionProperties: ["transform", "width"],
-        transitionDurations: [180, 180],
+        transitionDurations: [
+          E2E_SELECTION_MOTION_DURATION_MS,
+          E2E_SELECTION_MOTION_DURATION_MS,
+        ],
+        transitionPlayStates: ["running", "running"],
       },
     );
     assert.ok(
@@ -6272,17 +6367,119 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
     } finally {
       if (observedTimeout) clearTimeout(observedTimeout);
     }
+
+    const settledPending = await runtime.page.evaluate(async (marker) => {
+      const track = document.querySelector<HTMLElement>(
+        ".site-header-nav-track",
+      );
+      const pill = track?.querySelector<HTMLElement>(
+        ".site-header-nav-active-pill",
+      );
+      const target = track?.querySelector<HTMLAnchorElement>(
+        '.site-header-nav-pill[href="/students"]',
+      );
+      const activeLink = track?.querySelector<HTMLAnchorElement>(
+        '.site-header-nav-pill[aria-current="page"]',
+      );
+      if (!track || !pill || !target) {
+        throw new Error("Pending primary navigation settlement is missing");
+      }
+      await Promise.all(
+        pill
+          .getAnimations()
+          .map((animation) => animation.finished.catch(() => undefined)),
+      );
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+      const pillRect = pill.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      return {
+        sameIndicator: pill.dataset.browserSmokeIdentity === marker,
+        indicatorCount: track.querySelectorAll(".site-header-nav-active-pill")
+          .length,
+        activeHref: activeLink?.getAttribute("href") ?? null,
+        pathname: window.location.pathname,
+        startDelta: Math.abs(pillRect.left - targetRect.left),
+        topDelta: Math.abs(pillRect.top - targetRect.top),
+        widthDelta: Math.abs(pillRect.width - targetRect.width),
+        heightDelta: Math.abs(pillRect.height - targetRect.height),
+      };
+    }, pendingPillMarker);
+    assert.deepEqual(
+      {
+        sameIndicator: settledPending.sameIndicator,
+        indicatorCount: settledPending.indicatorCount,
+        activeHref: settledPending.activeHref,
+        pathname: settledPending.pathname,
+      },
+      {
+        sameIndicator: true,
+        indicatorCount: 1,
+        activeHref: "/schedule",
+        pathname: "/schedule",
+      },
+      "The local indicator must finish independently while the route remains pending",
+    );
+    assert.ok(
+      [
+        settledPending.startDelta,
+        settledPending.topDelta,
+        settledPending.widthDelta,
+        settledPending.heightDelta,
+      ].every((delta) => delta < 0.5),
+      `Pending indicator must align to Students: ${JSON.stringify(settledPending)}`,
+    );
+
     releaseStudentsRsc();
 
     await runtime.page.waitForURL(/\/students$/);
     await runtime.page
       .getByRole("heading", { name: "Ученики", exact: true, level: 1 })
       .waitFor();
-    assert.equal(
-      await runtime.page
-        .locator('.site-header-nav-pill[aria-current="page"]')
-        .evaluate((link) => link.getAttribute("href")),
-      "/students",
+    const committedStudents = await runtime.page.evaluate((marker) => {
+      const track = document.querySelector<HTMLElement>(
+        ".site-header-nav-track",
+      );
+      const pill = track?.querySelector<HTMLElement>(
+        ".site-header-nav-active-pill",
+      );
+      const activeLink = track?.querySelector<HTMLAnchorElement>(
+        '.site-header-nav-pill[aria-current="page"]',
+      );
+      if (!track || !pill || !activeLink) {
+        throw new Error("Committed primary navigation indicator is missing");
+      }
+      const pillRect = pill.getBoundingClientRect();
+      const activeRect = activeLink.getBoundingClientRect();
+      return {
+        sameIndicator: pill.dataset.browserSmokeIdentity === marker,
+        indicatorCount: track.querySelectorAll(".site-header-nav-active-pill")
+          .length,
+        activeHref: activeLink.getAttribute("href"),
+        startDelta: Math.abs(pillRect.left - activeRect.left),
+        topDelta: Math.abs(pillRect.top - activeRect.top),
+        widthDelta: Math.abs(pillRect.width - activeRect.width),
+        heightDelta: Math.abs(pillRect.height - activeRect.height),
+      };
+    }, pendingPillMarker);
+    assert.deepEqual(
+      {
+        sameIndicator: committedStudents.sameIndicator,
+        indicatorCount: committedStudents.indicatorCount,
+        activeHref: committedStudents.activeHref,
+      },
+      { sameIndicator: true, indicatorCount: 1, activeHref: "/students" },
+      "Route commit must preserve the moving indicator DOM node",
+    );
+    assert.ok(
+      [
+        committedStudents.startDelta,
+        committedStudents.topDelta,
+        committedStudents.widthDelta,
+        committedStudents.heightDelta,
+      ].every((delta) => delta < 0.5),
+      `Committed indicator must stay aligned: ${JSON.stringify(committedStudents)}`,
     );
   } finally {
     releaseStudentsRsc();
@@ -6290,34 +6487,57 @@ test("browser smoke: primary navigation uses one fast local pill while route nav
   }
 });
 
-test("browser smoke: latest primary navigation click wins while the first destination is pending", async (t) => {
+test("browser smoke: latest primary navigation click smoothly retargets the same pending indicator", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
     return;
   }
 
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
-  let resolveStudentDirectoryRpc: (() => void) | null = null;
-  const releaseStudentDirectoryRpc = () => {
-    resolveStudentDirectoryRpc?.();
-    resolveStudentDirectoryRpc = null;
+  let resolveStudentsRscGate: (() => void) | null = null;
+  let markStudentsRscObserved: (() => void) | null = null;
+  const studentsRscGate = new Promise<void>((resolve) => {
+    resolveStudentsRscGate = resolve;
+  });
+  const studentsRscObserved = new Promise<void>((resolve) => {
+    markStudentsRscObserved = resolve;
+  });
+  const releaseStudentsRsc = () => {
+    resolveStudentsRscGate?.();
+    resolveStudentsRscGate = null;
   };
 
   try {
+    await runtime.page.route("**/students*", async (route) => {
+      const requestUrl = new URL(route.request().url());
+      const isStudentsRsc =
+        requestUrl.pathname === "/students" &&
+        requestUrl.searchParams.has("_rsc");
+      if (!isStudentsRsc) {
+        await route.continue();
+        return;
+      }
+
+      markStudentsRscObserved?.();
+      markStudentsRscObserved = null;
+      await studentsRscGate;
+      try {
+        await route.continue();
+      } catch {
+        // A superseded prefetch/navigation request may already be cancelled.
+      }
+    });
+
     await runtime.page.clock.setFixedTime("2026-08-11T00:00:00.000Z");
-    await runtime.page.goto("/schedule", { waitUntil: "networkidle" });
+    await runtime.page.goto("/schedule", { waitUntil: "domcontentloaded" });
+    await runtime.page
+      .getByRole("heading", { name: "Расписание", exact: true, level: 1 })
+      .waitFor();
     await runtime.page
       .locator(
         '.site-header-nav-active-pill[data-ready="true"][data-motion-ready="true"]',
       )
       .waitFor();
-
-    const studentDirectoryRpcObserved = new Promise<void>((resolve) => {
-      e2eStudentDirectoryRpcObserved = resolve;
-    });
-    e2eStudentDirectoryRpcGate = new Promise<void>((resolve) => {
-      resolveStudentDirectoryRpc = resolve;
-    });
 
     await runtime.page.evaluate(() => {
       const testWindow = window as typeof window & {
@@ -6354,20 +6574,116 @@ test("browser smoke: latest primary navigation click wins while the first destin
       y: storeBox.y + storeBox.height / 2,
     };
 
+    const rapidPillMarker = `rapid-store-${Date.now()}`;
+    const initialGeometry = await runtime.page.evaluate((marker) => {
+      const track = document.querySelector<HTMLElement>(
+        ".site-header-nav-track",
+      );
+      const pill = track?.querySelector<HTMLElement>(
+        ".site-header-nav-active-pill",
+      );
+      const students = track?.querySelector<HTMLAnchorElement>(
+        '.site-header-nav-pill[href="/students"]',
+      );
+      if (!track || !pill || !students) {
+        throw new Error("Rapid primary navigation geometry is missing");
+      }
+      pill.dataset.browserSmokeIdentity = marker;
+      const pillRect = pill.getBoundingClientRect();
+      const studentsRect = students.getBoundingClientRect();
+      return {
+        pillLeft: pillRect.left,
+        pillWidth: pillRect.width,
+        studentsLeft: studentsRect.left,
+        studentsWidth: studentsRect.width,
+      };
+    }, rapidPillMarker);
+    assert.ok(
+      Math.abs(initialGeometry.pillWidth - initialGeometry.studentsWidth) > 0.5,
+      "Rapid navigation must exercise a real width transition",
+    );
+
     await runtime.page
       .getByRole("link", { name: "Ученики", exact: true })
       .click();
 
+    const firstMotion = await runtime.page.evaluate(async (marker) => {
+      const track = document.querySelector<HTMLElement>(
+        ".site-header-nav-track",
+      );
+      const pill = track?.querySelector<HTMLElement>(
+        ".site-header-nav-active-pill",
+      );
+      if (!track || !pill) {
+        throw new Error("First primary navigation motion is missing");
+      }
+      let running: Animation[] = [];
+      let moved = false;
+      const initialLeft = pill.getBoundingClientRect().left;
+      for (let frame = 0; frame < 30; frame += 1) {
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => resolve()),
+        );
+        running = pill
+          .getAnimations()
+          .filter((animation) => animation.playState === "running");
+        moved = Math.abs(pill.getBoundingClientRect().left - initialLeft) > 0.5;
+        if (running.length > 0 && moved) break;
+      }
+      const typedWindow = window as typeof window & {
+        __e2ePrimaryNavFirstAnimations?: Animation[];
+      };
+      const runningContract = running
+        .map((animation) => ({
+          property:
+            animation instanceof CSSTransition
+              ? animation.transitionProperty
+              : "",
+          duration: animation.effect?.getComputedTiming().duration ?? null,
+          playState: animation.playState,
+        }))
+        .sort((left, right) => left.property.localeCompare(right.property));
+      running.forEach((animation) => animation.pause());
+      typedWindow.__e2ePrimaryNavFirstAnimations = running;
+      const style = getComputedStyle(pill);
+      return {
+        sameIndicator: pill.dataset.browserSmokeIdentity === marker,
+        moved,
+        currentLeft: pill.getBoundingClientRect().left,
+        transitionProperty: style.transitionProperty,
+        transitionDuration: style.transitionDuration,
+        transitionTimingFunction: style.transitionTimingFunction,
+        running: runningContract,
+      };
+    }, rapidPillMarker);
+    assertPrimaryNavSelectionMotion(firstMotion, "First rapid nav target");
+    assert.equal(firstMotion.sameIndicator, true);
+    assert.equal(firstMotion.moved, true);
+    assert.ok(firstMotion.currentLeft > initialGeometry.pillLeft + 0.5);
+    assert.ok(firstMotion.currentLeft < initialGeometry.studentsLeft - 0.5);
+    assert.deepEqual(firstMotion.running, [
+      {
+        property: "transform",
+        duration: E2E_SELECTION_MOTION_DURATION_MS,
+        playState: "running",
+      },
+      {
+        property: "width",
+        duration: E2E_SELECTION_MOTION_DURATION_MS,
+        playState: "running",
+      },
+    ]);
+
     let observedTimeout: ReturnType<typeof setTimeout> | null = null;
     try {
       await Promise.race([
-        studentDirectoryRpcObserved,
+        studentsRscObserved,
         new Promise<void>((_, reject) => {
           observedTimeout = setTimeout(
             () =>
               reject(
                 new Error(
-                  "Students navigation did not reach the gated directory request",
+                  "Students navigation did not reach the gated Next RSC request",
                 ),
               ),
             5_000,
@@ -6403,6 +6719,94 @@ test("browser smoke: latest primary navigation click wins while the first destin
     await runtime.page.mouse.down();
     await runtime.page.mouse.up();
 
+    const secondMotion = await runtime.page.evaluate(
+      async ({ marker, firstLeft }) => {
+        const track = document.querySelector<HTMLElement>(
+          ".site-header-nav-track",
+        );
+        const pill = track?.querySelector<HTMLElement>(
+          ".site-header-nav-active-pill",
+        );
+        if (!track || !pill) {
+          throw new Error("Retargeted primary navigation motion is missing");
+        }
+        const typedWindow = window as typeof window & {
+          __e2ePrimaryNavFirstAnimations?: Animation[];
+        };
+        const firstAnimations =
+          typedWindow.__e2ePrimaryNavFirstAnimations ?? [];
+        let running: Animation[] = [];
+        let movedTowardLatest = false;
+        for (let frame = 0; frame < 30; frame += 1) {
+          await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => resolve()),
+          );
+          running = pill
+            .getAnimations()
+            .filter((animation) => animation.playState === "running");
+          movedTowardLatest =
+            pill.getBoundingClientRect().left > firstLeft + 0.5;
+          if (running.length > 0 && movedTowardLatest) break;
+        }
+        const currentAnimations = pill.getAnimations();
+        const style = getComputedStyle(pill);
+        delete typedWindow.__e2ePrimaryNavFirstAnimations;
+        return {
+          sameIndicator: pill.dataset.browserSmokeIdentity === marker,
+          indicatorCount: track.querySelectorAll(".site-header-nav-active-pill")
+            .length,
+          firstTransitionInterrupted:
+            firstAnimations.length > 0 &&
+            firstAnimations.every(
+              (animation) => !currentAnimations.includes(animation),
+            ),
+          movedTowardLatest,
+          transitionProperty: style.transitionProperty,
+          transitionDuration: style.transitionDuration,
+          transitionTimingFunction: style.transitionTimingFunction,
+          running: running
+            .map((animation) => ({
+              property:
+                animation instanceof CSSTransition
+                  ? animation.transitionProperty
+                  : "",
+              duration: animation.effect?.getComputedTiming().duration ?? null,
+              playState: animation.playState,
+            }))
+            .sort((left, right) => left.property.localeCompare(right.property)),
+        };
+      },
+      { marker: rapidPillMarker, firstLeft: firstMotion.currentLeft },
+    );
+    assertPrimaryNavSelectionMotion(secondMotion, "Latest rapid nav target");
+    assert.deepEqual(
+      {
+        sameIndicator: secondMotion.sameIndicator,
+        indicatorCount: secondMotion.indicatorCount,
+        firstTransitionInterrupted: secondMotion.firstTransitionInterrupted,
+        movedTowardLatest: secondMotion.movedTowardLatest,
+      },
+      {
+        sameIndicator: true,
+        indicatorCount: 1,
+        firstTransitionInterrupted: true,
+        movedTowardLatest: true,
+      },
+      "The latest click must retarget the same moving indicator",
+    );
+    assert.deepEqual(secondMotion.running, [
+      {
+        property: "transform",
+        duration: E2E_SELECTION_MOTION_DURATION_MS,
+        playState: "running",
+      },
+      {
+        property: "width",
+        duration: E2E_SELECTION_MOTION_DURATION_MS,
+        playState: "running",
+      },
+    ]);
+
     const trustedClick = await runtime.page.evaluate(() => {
       const clicks = (
         window as typeof window & {
@@ -6433,7 +6837,67 @@ test("browser smoke: latest primary navigation click wins while the first destin
       .getByRole("heading", { name: "Магазин", exact: true, level: 1 })
       .waitFor();
 
-    releaseStudentDirectoryRpc();
+    const committedStore = await runtime.page.evaluate(async (marker) => {
+      const track = document.querySelector<HTMLElement>(
+        ".site-header-nav-track",
+      );
+      const pill = track?.querySelector<HTMLElement>(
+        ".site-header-nav-active-pill",
+      );
+      const activeLink = track?.querySelector<HTMLAnchorElement>(
+        '.site-header-nav-pill[aria-current="page"]',
+      );
+      if (!track || !pill || !activeLink) {
+        throw new Error("Committed Store navigation indicator is missing");
+      }
+      await Promise.all(
+        pill
+          .getAnimations()
+          .map((animation) => animation.finished.catch(() => undefined)),
+      );
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+      const pillRect = pill.getBoundingClientRect();
+      const activeRect = activeLink.getBoundingClientRect();
+      return {
+        sameIndicator: pill.dataset.browserSmokeIdentity === marker,
+        indicatorCount: track.querySelectorAll(".site-header-nav-active-pill")
+          .length,
+        activeHref: activeLink.getAttribute("href"),
+        pathname: window.location.pathname,
+        startDelta: Math.abs(pillRect.left - activeRect.left),
+        topDelta: Math.abs(pillRect.top - activeRect.top),
+        widthDelta: Math.abs(pillRect.width - activeRect.width),
+        heightDelta: Math.abs(pillRect.height - activeRect.height),
+      };
+    }, rapidPillMarker);
+    assert.deepEqual(
+      {
+        sameIndicator: committedStore.sameIndicator,
+        indicatorCount: committedStore.indicatorCount,
+        activeHref: committedStore.activeHref,
+        pathname: committedStore.pathname,
+      },
+      {
+        sameIndicator: true,
+        indicatorCount: 1,
+        activeHref: "/store",
+        pathname: "/store",
+      },
+      "Store commit must preserve the retargeted indicator DOM node",
+    );
+    assert.ok(
+      [
+        committedStore.startDelta,
+        committedStore.topDelta,
+        committedStore.widthDelta,
+        committedStore.heightDelta,
+      ].every((delta) => delta < 0.5),
+      `Committed Store indicator must align exactly: ${JSON.stringify(committedStore)}`,
+    );
+
+    releaseStudentsRsc();
     await runtime.page.waitForTimeout(250);
 
     assert.equal(new URL(runtime.page.url()).pathname, "/store");
@@ -6445,9 +6909,7 @@ test("browser smoke: latest primary navigation click wins while the first destin
       "The released stale Students request must not replace the latest Store navigation",
     );
   } finally {
-    releaseStudentDirectoryRpc();
-    e2eStudentDirectoryRpcGate = null;
-    e2eStudentDirectoryRpcObserved = null;
+    releaseStudentsRsc();
     await runtime.close();
   }
 });
@@ -8831,10 +9293,6 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         ready: scheduleNavActivePill.ready,
         motionReady: scheduleNavActivePill.motionReady,
         opacity: scheduleNavActivePill.opacity,
-        transitionProperty: scheduleNavActivePill.transitionProperty,
-        transitionDuration: scheduleNavActivePill.transitionDuration,
-        transitionTimingFunction:
-          scheduleNavActivePill.transitionTimingFunction,
       },
       {
         activeHref: "/schedule",
@@ -8843,11 +9301,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         ready: "true",
         motionReady: "true",
         opacity: "1",
-        transitionProperty: "width, transform",
-        transitionDuration: "0.18s, 0.18s",
-        transitionTimingFunction:
-          "cubic-bezier(0.22, 1, 0.36, 1), cubic-bezier(0.22, 1, 0.36, 1)",
       },
+    );
+    assertPrimaryNavSelectionMotion(
+      scheduleNavActivePill,
+      "Settled Schedule primary navigation",
     );
     assert.ok(scheduleNavActivePill.leftDelta < 0.5);
     assert.ok(scheduleNavActivePill.topDelta < 0.5);
@@ -9291,10 +9749,6 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         ready: studentsNavActivePill.ready,
         motionReady: studentsNavActivePill.motionReady,
         opacity: studentsNavActivePill.opacity,
-        transitionProperty: studentsNavActivePill.transitionProperty,
-        transitionDuration: studentsNavActivePill.transitionDuration,
-        transitionTimingFunction:
-          studentsNavActivePill.transitionTimingFunction,
       },
       {
         activeHref: "/students",
@@ -9303,11 +9757,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         ready: "true",
         motionReady: "true",
         opacity: "1",
-        transitionProperty: "width, transform",
-        transitionDuration: "0.18s, 0.18s",
-        transitionTimingFunction:
-          "cubic-bezier(0.22, 1, 0.36, 1), cubic-bezier(0.22, 1, 0.36, 1)",
       },
+    );
+    assertPrimaryNavSelectionMotion(
+      studentsNavActivePill,
+      "Settled Students primary navigation",
     );
     assert.ok(studentsNavActivePill.leftDelta < 0.5);
     assert.ok(studentsNavActivePill.topDelta < 0.5);
@@ -13270,8 +13724,14 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       borderTopWidth: "0px",
       contained: true,
     });
-    assert.ok(Math.abs(mobileAccountMenuContract.menu.leftInset - 12) < 0.5);
-    assert.ok(Math.abs(mobileAccountMenuContract.menu.rightInset - 12) < 0.5);
+    assert.ok(
+      Math.abs(mobileAccountMenuContract.menu.leftInset - 12) < 0.5,
+      `Mobile Account menu left inset must be 12px; received ${mobileAccountMenuContract.menu.leftInset}px`,
+    );
+    assert.ok(
+      Math.abs(mobileAccountMenuContract.menu.rightInset - 12) < 0.5,
+      `Mobile Account menu right inset must be 12px; received ${mobileAccountMenuContract.menu.rightInset}px`,
+    );
     assert.ok(Math.abs(mobileAccountMenuContract.menu.topGap - 12) < 0.5);
     assert.equal(mobileAccountMenuContract.menu.borderRadius, "16px");
     assert.equal(mobileAccountMenuContract.menu.insideViewport, true);

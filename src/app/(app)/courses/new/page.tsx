@@ -1,6 +1,5 @@
 import { AppPageHeader } from "@/components/app/page-header";
 import { NewCourseForm } from "@/components/course-builder/new-course-form";
-import { TopNav } from "@/components/top-nav";
 import { ROUTES } from "@/lib/auth";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 
@@ -12,7 +11,6 @@ export default async function NewCoursePage() {
 
   return (
     <main className="course-demo-shell pb-12">
-      <TopNav demoStyle />
       <div className="container app-page-container course-workspace-container pb-16">
         <AppPageHeader
           title="Новый курс"

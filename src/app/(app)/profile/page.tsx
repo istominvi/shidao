@@ -1,5 +1,4 @@
 import { LearningProfileWorkspace } from "@/components/learner-identity/learning-profile-workspace";
-import { TopNav } from "@/components/top-nav";
 import {
   resolveProfileTab,
   type ProfileRouteSearchParams,
@@ -29,7 +28,6 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
 
   return (
     <main className="course-demo-shell teaching-hub-shell pb-12">
-      <TopNav demoStyle />
       <div className="container app-page-container">
         <LearningProfileWorkspace
           initialSurface={resolveProfileTab(params.tab)}

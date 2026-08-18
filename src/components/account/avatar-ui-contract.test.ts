@@ -336,6 +336,10 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
     /const closeMenu = useCallback\([\s\S]*?setOpen\(false\)[\s\S]*?triggerRef\.current\?\.blur\(\)/,
   );
   assert.match(
+    navigation,
+    /const previousPathnameRef = useRef\(pathname\)[\s\S]*?if \(previousPathnameRef\.current === pathname\) return;[\s\S]*?previousPathnameRef\.current = pathname;[\s\S]*?closeMenu\(\);/,
+  );
+  assert.match(
     navigationCss,
     /\.nav-dropdown-item:focus-visible\s*\{[^}]*outline: none;[^}]*box-shadow: 0 0 0 2px rgba\(20, 20, 20, 0\.18\);/,
   );

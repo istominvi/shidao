@@ -7,6 +7,7 @@ function source(path: string) {
 }
 
 const page = source("src/app/(app)/store/page.tsx");
+const appLayout = source("src/app/(app)/layout.tsx");
 const workspace = source("src/components/store/store-workspace.tsx");
 const carousel = source("src/components/store/store-product-carousel.tsx");
 const productDialog = source("src/components/store/store-product-dialog.tsx");
@@ -19,7 +20,8 @@ const globalStyles = source("src/app/globals.css");
 
 test("Store is an Account page built from the shared product shell", () => {
   assert.match(page, /className="course-demo-shell store-shell pb-12"/);
-  assert.match(page, /<TopNav demoStyle \/>/);
+  assert.doesNotMatch(page, /<TopNav|import \{ TopNav \}/);
+  assert.match(appLayout, /<PersistentTopNav \/>/);
   assert.match(page, /className="container app-page-container space-y-6"/);
   assert.match(page, /<StoreWorkspace initialProductSlug=/);
 
