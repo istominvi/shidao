@@ -661,16 +661,9 @@
   }
 
   .site-header-shell-demo .nav-mobile-action-icon {
-    width: var(--course-demo-control-icon-size, 1.25rem);
-    height: var(--course-demo-control-icon-size, 1.25rem);
-    flex: 0 0 var(--course-demo-control-icon-size, 1.25rem);
-    stroke-width: var(--product-control-icon-stroke-width, 2px);
-  }
-
-  .site-header-shell-demo
-    .nav-mobile-action-icon
-    :is(path, line, polyline, polygon, circle, ellipse, rect) {
-    vector-effect: non-scaling-stroke;
+    width: var(--course-demo-control-icon-size, 1rem);
+    height: var(--course-demo-control-icon-size, 1rem);
+    flex: 0 0 var(--course-demo-control-icon-size, 1rem);
   }
 
   .nav-account-menu-mobile {
@@ -714,29 +707,18 @@
     height: 3rem;
     flex: 0 0 3rem;
     border-radius: var(--product-element-radius, 0.75rem);
-    font-size: 1rem;
-  }
-
-  .nav-account-menu-mobile .nav-dropdown-profile p:first-child {
-    font-size: var(--product-touch-control-font-size, 1.2rem);
-    line-height: 1.25;
   }
 
   .nav-account-menu-mobile
     .nav-dropdown-profile
     p:last-child:not(:first-child) {
     margin-top: 0.25rem;
-    font-size: 0.9375rem;
-    line-height: 1.3;
   }
 
   .nav-account-menu-mobile .nav-dropdown-item {
     min-height: 4.25rem;
     border-radius: 0.75rem;
     padding: 0.875rem 1rem;
-    font-size: var(--product-touch-control-font-size, 1.2rem);
-    font-weight: 500;
-    line-height: 1.25;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }

@@ -234,13 +234,12 @@ Base `.product-control` / `.field-input`, включая многострочн�
 shadow. Native `select`, standalone `DialogShell` и demo-only surfaces исключены
 из universal dropdown contract; Store sort намеренно использует product
 dropdown вместо native `select`. На narrow/coarse viewport обычные Store
-controls имеют внешнюю высоту `40 px`, action-glyph `20 px / 2 px` и общий
-`--product-touch-control-font-size: 1.2rem` для buttons, inputs/search/select,
-segmented options и WorkspaceTabs. При стандартном root `16 px` это
-`19.2 px`; token остаётся масштабируемым вместе с пользовательским root. Это
-scope ordinary product editables/controls: он не расширяется на authored
-Lesson/Component или exercise content fields, которые сохраняют собственную
-content typography и независимый `16 px` anti-zoom floor.
+controls имеют внешнюю высоту `40 px`; ordinary non-editable labels наследуют
+desktop `.88rem/400`, segmented options используют `.88rem/500`, а glyphs
+остаются `16 px` со stroke `2 px` и стандартным SVG `vector-effect`. Отдельного
+mobile type/icon token нет. Native inputs/search/selects/textareas сохраняют
+content typography с computed минимумом `16 px` для Safari anti-zoom; это
+правило также не меняет authored Lesson/Component или exercise content model.
 Compound toggle использует тот же контракт на desktop и touch: shell
 `80 × 40 px` для двух icon-only cells, настоящая product-рамка `1 px`,
 `padding: 0`, gap `2 px`, radius `12 px` и две actual options
@@ -250,7 +249,10 @@ Compound toggle использует тот же контракт на desktop �
 относится только к icon-only projection. В current source / next production
 semantic text groups на narrow/coarse сжимаются в пределах parent; options
 имеют `min-width: 0` и `flex: 1 1 0`, visible labels используют однострочный
-ellipsis, а полное accessible name кнопки остаётся доступным. Это UI-only
+ellipsis, а полное accessible name кнопки остаётся доступным. Shared contextual
+`ActionMenu` сохраняет desktop parity и на touch: row `40 px`, label
+`.88rem/400`, icon `16 px`; глобальный Messages launcher сохраняет
+`56 × 56 px / 24 px`, а authored Component-card actions — `44 × 44 px`. Это UI-only
 acceptance без Product/Order/Inventory, API,
 persistence, schema, migration,
 оплаты или delivery integration. Этот follow-up является current source / next

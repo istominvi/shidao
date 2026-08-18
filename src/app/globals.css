@@ -18,8 +18,6 @@
   --product-control-height: 2.5rem;
   --product-control-radius: var(--product-element-radius);
   --product-control-icon-size: 1rem;
-  --product-control-icon-stroke-width: 2px;
-  --product-touch-control-font-size: 1.2rem;
   --product-table-divider-color: #ececef;
   --product-table-body-color: #141414;
   --product-table-body-font-size: 0.88rem;
@@ -3767,75 +3765,12 @@ input.product-control-search::placeholder {
     ) !important;
   }
 
-  .course-demo-shell {
-    --product-control-icon-size: 1.25rem;
-    --course-demo-control-padding-inline: 0.875rem;
-    --course-demo-control-font-size: 1rem;
-  }
-
-  .course-demo-shell
-    :is(
-      .product-btn,
-      .product-segmented-control-option,
-      .teaching-date-navigator,
-      .teaching-hub-search,
-      .product-search-wrap,
-      .product-select-wrap,
-      .workspace-tab,
-      .fade-chevron-control
-    )
-    svg.lucide
-    * {
-    stroke-width: var(--product-control-icon-stroke-width);
-    vector-effect: non-scaling-stroke;
-  }
-
-  .course-demo-shell .product-btn,
-  .course-demo-shell .product-control,
-  .course-demo-shell :is(input, select).field-input,
-  .course-demo-shell .teaching-date-navigator,
-  .course-demo-shell .teaching-hub-search {
-    height: var(--product-control-height);
-    min-height: var(--product-control-height);
-    font-size: var(--product-touch-control-font-size);
-  }
-
-  .course-demo-shell
-    :where(
-      .product-control,
-      .field-input,
-      .teaching-hub-search input,
-      .student-directory-picker-search input
-    ) {
-    font-size: var(--product-touch-control-font-size) !important;
-  }
-
-  .course-demo-shell .teaching-date-trigger {
-    font-size: var(--product-touch-control-font-size);
-  }
-
-  .course-demo-shell .product-control-search {
-    height: var(--product-control-height);
-    min-height: var(--product-control-height);
-    font-size: var(--product-touch-control-font-size);
-  }
-
   .workspace-tab {
-    height: var(--product-control-height);
-    min-height: var(--product-control-height);
-    padding-inline: 0.875rem;
-    font-size: var(--product-touch-control-font-size);
     touch-action: manipulation;
   }
 
   .course-demo-shell .product-segmented-control-option {
-    padding-inline: 0.875rem;
-    font-size: var(--product-touch-control-font-size);
     touch-action: manipulation;
-  }
-
-  .course-demo-shell .product-segmented-control-option-icon-only {
-    padding-inline: 0;
   }
 
   .course-demo-shell .product-segmented-control-text {
@@ -3904,22 +3839,12 @@ input.product-control-search::placeholder {
     .product-segmented-control-option {
     min-width: 0;
     flex: 1 1 0;
-    padding-inline: 0.5rem;
-    font-size: var(--product-touch-control-font-size);
   }
 
   .course-demo-shell .surface-card {
     border-radius: 1rem;
     background-color: #fff;
     padding: 1rem;
-  }
-
-  .course-demo-shell .action-menu-item {
-    min-height: 3rem;
-    border-radius: 0.75rem;
-    padding-block: 0.7rem;
-    font-size: 1rem;
-    touch-action: manipulation;
   }
 
   .course-demo-shell .product-table-wrap {

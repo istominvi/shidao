@@ -287,7 +287,11 @@ test("shared course controls preserve pressed-button semantics", () => {
   );
   assert.match(
     globalStyles,
-    /:root\s*\{[^}]*--product-control-height: 2\.5rem;[^}]*--product-control-radius: var\(--product-element-radius\);[^}]*--product-control-icon-size: 1rem;[^}]*--product-control-icon-stroke-width: 2px;[^}]*--product-touch-control-font-size: 1\.2rem;[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);[^}]*--product-segmented-control-background: var\(--product-surface-border-color\);/,
+    /:root\s*\{[^}]*--product-control-height: 2\.5rem;[^}]*--product-control-radius: var\(--product-element-radius\);[^}]*--product-control-icon-size: 1rem;[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);[^}]*--product-segmented-control-background: var\(--product-surface-border-color\);/,
+  );
+  assert.doesNotMatch(
+    globalStyles,
+    /--product-(?:touch-control-font-size|control-icon-stroke-width)/,
   );
   assert.match(
     globalStyles,
@@ -380,7 +384,6 @@ test("course index keeps ergonomic mobile cards and one segmented geometry", () 
   assert.ok(narrowMediaStart > touchMediaStart);
 
   const touchStyles = globalStyles.slice(touchMediaStart, narrowMediaStart);
-  const baseStyles = globalStyles.slice(0, touchMediaStart);
 
   for (const panelSource of [
     ownedCoursesPanelSource,
@@ -401,46 +404,35 @@ test("course index keeps ergonomic mobile cards and one segmented geometry", () 
     /@media \(max-width: 767px\)[\s\S]*?\.courses-index-shell \.course-index-table-wrap\s*\{[^}]*display: none;[^}]*\}[\s\S]*?\.course-index-mobile-list\s*\{[^}]*display: grid;/,
   );
   assert.match(
-    touchStyles,
-    /\.course-demo-shell\s*\{[^}]*--product-control-icon-size: 1\.25rem;[^}]*--course-demo-control-font-size: 1rem;/,
+    globalStyles,
+    /\.course-demo-shell\s*\{[^}]*--course-demo-control-padding-inline: 0\.75rem;[^}]*--course-demo-control-font-size: 0\.88rem;[^}]*--course-demo-control-icon-size: var\(--product-control-icon-size\);/,
   );
   assert.doesNotMatch(
-    /\.course-demo-shell\s*\{[^}]*\}/.exec(touchStyles)?.[0] ?? "",
-    /--product-entry-control-font-size/,
+    touchStyles,
+    /--product-touch-control-font-size|--product-control-icon-size|--course-demo-control-(?:padding-inline|font-size)|vector-effect:\s*non-scaling-stroke/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-btn,\s*\.course-demo-shell \.product-control,\s*\.course-demo-shell :is\(input, select\)\.field-input,\s*\.course-demo-shell \.teaching-date-navigator,\s*\.course-demo-shell \.teaching-hub-search\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: var\(--product-touch-control-font-size\);/,
+    /\.workspace-tab\s*\{[^}]*touch-action: manipulation;/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-control-search\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: var\(--product-touch-control-font-size\);/,
-  );
-  assert.match(
-    touchStyles,
-    /\.workspace-tab\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: var\(--product-touch-control-font-size\);/,
-  );
-  assert.match(
-    touchStyles,
-    /\.course-demo-shell \.teaching-date-trigger\s*\{[^}]*font-size: var\(--product-touch-control-font-size\);/,
-  );
-  assert.match(
-    touchStyles,
-    /\.course-demo-shell\s+:where\(\s*\.product-control,\s*\.field-input,\s*\.teaching-hub-search input,\s*\.student-directory-picker-search input\s*\)\s*\{[^}]*font-size: var\(--product-touch-control-font-size\) !important;/,
+    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*touch-action: manipulation;/,
   );
   assert.match(
     globalStyles,
     /\.product-segmented-control-option svg\.lucide\s*\{[^}]*width: var\(--product-control-icon-size\);[^}]*height: var\(--product-control-icon-size\);[^}]*flex: 0 0 var\(--product-control-icon-size\);/,
   );
-  assert.match(
-    touchStyles,
-    /\.course-demo-shell\s+:is\([\s\S]*?\.product-segmented-control-option,[\s\S]*?\)\s+svg\.lucide\s+\*\s*\{[^}]*stroke-width: var\(--product-control-icon-stroke-width\);[^}]*vector-effect: non-scaling-stroke;/,
-  );
-  assert.doesNotMatch(baseStyles, /vector-effect:\s*non-scaling-stroke/);
+  assert.doesNotMatch(globalStyles, /vector-effect:\s*non-scaling-stroke/);
   assert.match(
     globalStyles,
-    /@media \(max-width: 767px\)[\s\S]*?\.course-catalog-audience-control[\s\S]*?\.product-segmented-control-option\s*\{[^}]*font-size: var\(--product-touch-control-font-size\);/,
+    /@media \(max-width: 767px\)[\s\S]*?\.course-catalog-audience-control[\s\S]*?\.product-segmented-control-option\s*\{[^}]*min-width: 0;[^}]*flex: 1 1 0;/,
   );
+  const narrowAudienceOptionStyles =
+    /\.course-demo-shell\s+\.course-catalog-audience-control\s+\.product-segmented-control-option\s*\{[^}]*\}/.exec(
+      globalStyles.slice(narrowMediaStart),
+    )?.[0] ?? "";
+  assert.doesNotMatch(narrowAudienceOptionStyles, /font-size:|padding-inline:/);
   assert.doesNotMatch(
     globalStyles,
     /\.product-segmented-control(?:::before|[^\s,{]*::before)/,
@@ -448,7 +440,7 @@ test("course index keeps ergonomic mobile cards and one segmented geometry", () 
   assert.doesNotMatch(touchStyles, /transform: scale\(/);
   assert.doesNotMatch(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control(?:-option(?:-icon-only|-selected)?)?\s*\{[^}]*(?:height|min-height|width|min-width|gap|border|border-radius|background|box-shadow|transform):/,
+    /\.course-demo-shell \.product-segmented-control(?:-option(?:-icon-only|-selected)?)?\s*\{[^}]*(?:height|min-height|width|min-width|gap|border|border-radius|background|padding|color|font-size|box-shadow|transform):/,
   );
   assert.match(
     touchStyles,

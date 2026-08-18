@@ -266,14 +266,15 @@ viewport вместо WebKit-sensitive sticky positioning: прозрачный 
 surface без blur, а reserved flow-height предотвращает начальный layout jump.
 Wordmark увеличен до `26 px`, закрытый burger остаётся на чистом белом фоне без
 залипающего touch-hover/focus halo. Mobile burger имеет target `48 × 48 px` и
-канонический action-glyph `20 px` с физической толщиной stroke `2 px`;
+канонический `16 px` Lucide glyph со stroke `2 px` и стандартным SVG
+`vector-effect` без mobile non-scaling override;
 открытый panel занимает ширину viewport с inset `12 px`, gap `12 px`, радиусом
 `16 px`, показывает `48 px` Account avatar, отделяет одинаково отцентрованный
-profile header full-bleed светлым divider и использует строки `68 px`. Пункты
-меню и имя в profile header получают общий
-`--product-touch-control-font-size: 1.2rem`; при стандартном корневом размере
-`16 px` это `19.2 px`, а не жёстко зафиксированные физические пиксели. Те же
-`20 px / 2 px` action-glyphs сохраняются без изменения. Pointer-open не
+profile header full-bleed светлым divider и использует строки `68 px`. Подписи
+пунктов меню имеют `14 px / 400`, имя — `14 px / 600`, email — `12 px / 400`,
+а fallback-инициалы в `48 px` avatar наследуют `.72rem` (`11.52 px` только при
+стандартном root `16 px`). Burger и пять menu glyphs используют те же
+`16 px / 2 px` и стандартный vector rendering. Pointer-open не
 переводит фокус на первый пункт;
 keyboard-open, стрелки, Home/End, Escape, outside-click и focus-return остаются
 полностью доступны с компактным inset focus indicator вместо внешнего halo.
@@ -282,9 +283,12 @@ keyboard-open, стрелки, Home/End, Escape, outside-click и focus-return �
 Course controls канонизированы в один внешний размер `40 px`: это search,
 однострочные inputs/selects, primary actions, Schedule date navigator,
 WorkspaceTabs и segmented controls. Их action-glyphs используют один token
-`20 px` и физический Lucide stroke `2 px`; статусные glyphs, иллюстрации,
-`56 px` Messages launcher и крупные navigation rows остаются явными
-категорийными исключениями. Compound segmented control теперь использует один
+`16 px` и Lucide stroke `2 px` без `non-scaling-stroke`; ordinary non-editable
+labels сохраняют desktop `.88rem/400`, а segmented options — `.88rem/500`.
+`56 × 56 px / 24 px` Messages launcher, `44 × 44 px` actions authored Component
+card остаются явными touch/category exceptions. Portal `ActionMenu`, напротив,
+сохраняет desktop parity: row `40 px`, label `.88rem/400`, icon `16 px` также на
+mobile/coarse. Compound segmented control теперь использует один
 контракт на desktop, narrow и coarse: внешний shell высотой `40 px` имеет
 настоящую product-рамку `1 px`, `padding: 0`, gap `2 px` и две actual
 icon-only options `38 × 38 px`, поэтому итоговая геометрия равна ровно
@@ -294,8 +298,8 @@ option имеет `border: 0`, чисто-белый фон и базовую
 `--product-raised-control-shadow` обычной кнопки. Inactive option остаётся
 прозрачной и без тени; на fine-pointer hover меняется только цвет её glyph,
 без дополнительной заливки. Прежние pseudo-слои удалены. Schedule
-переиспользует shared `SegmentedControl`; desktop glyph остаётся `16 px`, а
-narrow/coarse glyph — `20 px / 2 px`.
+переиспользует shared `SegmentedControl`; glyph остаётся `16 px / 2 px` на
+desktop, narrow и coarse, а SVG использует стандартный `vector-effect`.
 Semantic text segmented groups intentionally do not inherit the exact
 `80 × 40 px` icon-only width. In current source / next production, a
 `.product-segmented-control-text` group on narrow/coarse viewports can shrink
@@ -305,15 +309,13 @@ line with ellipsis, while the unabridged button text remains its full accessible
 name. Exact `80 × 40 px` geometry remains exclusive to a two-cell icon-only
 projection.
 В `forced-colors` actual track/options используют контрастные системные
-`ButtonFace / ButtonText` и `Highlight / HighlightText`. Только ordinary
-product editables/controls — product `input` / `select` / `textarea`, search,
-ordinary actions, Schedule date navigator, segmented options и WorkspaceTabs —
-в touch-контракте используют тот же
-`--product-touch-control-font-size: 1.2rem`. Этот token не распространяется на
-поля authored Lesson/Component и упражнений, включая поля ответа: они сохраняют
-собственную content typography и независимый минимум `16 px` для защиты от iOS
-focus zoom. Pinch zoom при этом не запрещается через viewport. Это разделение
-является current source / next production. Global launcher
+`ButtonFace / ButtonText` и `Highlight / HighlightText`. Current source / next
+production не вводит отдельный mobile font/icon token: ordinary non-editable
+product controls наследуют desktop type/icon rhythm. Native editable
+`input` / `select` / `textarea`, включая authored Lesson/Component, упражнения
+и поля ответа, сохраняют собственную content typography, но на narrow/coarse
+имеют независимый минимум `16 px` для защиты от iOS focus zoom. Pinch zoom при
+этом не запрещается через viewport. Global launcher
 «Сообщения» в том же narrow/coarse contract увеличен до `56 × 56 px` с glyph
 не меньше `24 px` и сохраняет safe-area inset; non-fullscreen panel остаётся
 ровно на `12 px` выше увеличенного launcher. Fullscreen mobile panel находится
@@ -950,17 +952,21 @@ plain «Ожидается». Видимые data-заголовки Schedule я
 кнопками сортировки: первый клик включает возрастание, повторный — убывание,
 а текущее направление отражается в `aria-sort`. Видимый заголовок последней колонки
 отсутствует: постоянная кнопка с вертикальным троеточием открывает все действия
-в portal-menu; других кнопок действий в строке нет. Пункты portal-menu имеют
-точную высоту 40 px, вертикально центрированные иконку и текст,
-шрифт `.88rem/400` и канонические внутренние интервалы.
+в portal-menu; других кнопок действий в строке нет. Пункты
+portal-menu имеют точную высоту 40 px, вертикально центрированные иконку и
+текст, шрифт `.88rem/400`, icon `16 px` и канонические внутренние интервалы на
+desktop, narrow и coarse.
 Authenticated top header и profile menu теперь используют сплошной белый фон
 без blur. Active V2 buttons и header controls используют единый raised-contract
 `40 px / 12 px`: белый surface, product border, базовая тень,
 pointer hover lift и отдельный pressed/focus contract; иконки полностью
 непрозрачны и наследуют контрастный цвет. Base/desktop типографика остаётся
-`.88rem/400`, а narrow/coarse переходит на общий
-`--product-touch-control-font-size: 1.2rem`; contextual menu items остаются
-плоскими без обычной рамки. Отдельный Settings shell и side navigation удалены:
+`.88rem/400`; current-source narrow/coarse ordinary non-editable controls
+наследуют тот же размер/weight и `16 px / 2 px` glyph rhythm без
+`non-scaling-stroke`, а segmented labels остаются `.88rem/500`. Native
+editables отдельно держат `16 px` Safari anti-zoom floor. Contextual menu items
+остаются плоскими без обычной рамки и сохраняют `40 px / .88rem/400` на touch,
+как на desktop. Отдельный Settings shell и side navigation удалены:
 `/settings`, `/settings/profile`, `/settings/security` и
 `/settings/observers` являются compatibility redirects в соответствующие
 вкладки единого `/profile`, где используются общий product shell, TopNav и
@@ -1534,15 +1540,16 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   Container, baseline и scroll-row используют канонический `inline-inset: 0`
   на всех поверхностях. Неактивный label использует тот же 50%-black token,
   tab-кнопки разделены gap 12 px и имеют верхние радиусы 12 px; baseline
-  остаётся видимым поверх hover-фона. Base/desktop tab имеет `16 px` иконку,
-  narrow/coarse — `20 px` с физическим stroke `2 px`. Только
+  остаётся видимым поверх hover-фона. Tab имеет `16 px` Lucide-иконку со stroke
+  `2 px` и стандартным vector rendering на desktop, narrow и coarse. Только
   положительный числовой count отображается маленьким приподнятым `sup`, без
   badge, с weight 500 — на один шаг плотнее основного текста вкладки;
   каждый tab владеет существующим persistent `tabpanel` через симметричные
   `aria-controls / aria-labelledby`. Base/desktop кнопки, header controls и
   вкладки используют шрифт `.88rem/400`, flat primary без 3D-блика/подъёма,
-  fully opaque icons и единый 16 px icon rhythm; current-source narrow/coarse
-  слой использует `1.2rem` и glyph `20 px / 2 px`. Исходный
+  fully opaque icons и единый `16 px / 2 px` icon rhythm; current-source
+  narrow/coarse слой сохраняет эту desktop visual parity без отдельного
+  type/icon override. Исходный
   layout-контракт подтверждён production postflight release `77870e3`, а
   control-полировка развёрнута production release PR #242. Предыдущий
   1.5 px tab-refinement вошёл в exact source
@@ -1601,7 +1608,8 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   через `aria-sort`; action header не сортируется. Последняя колонка без видимого заголовка
   показывает только постоянное вертикальное троеточие со всеми действиями.
   Других кнопок действий в строке нет; пункты portal-menu имеют 40 px,
-  вертикально центрированы и используют `.88rem/400`. System Assistant намеренно
+  вертикально центрированы и используют `.88rem/400` на desktop, narrow и
+  coarse. System Assistant намеренно
   продолжает получать только опорную локальную дату, а не всё видимое окно.
 - `/students` показывает единый teacher-scoped projection
   `TeacherLearner + LearnerProfile` во вкладках «Ученики / Группы» и

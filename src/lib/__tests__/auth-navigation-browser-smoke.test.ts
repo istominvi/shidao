@@ -203,16 +203,16 @@ function assertTouchSegmentedControl(
   assert.deepEqual(actual.optionRadii, ["11px", "11px"]);
   assert.deepEqual(actual.iconStyles, [
     {
-      width: 20,
-      height: 20,
+      width: 16,
+      height: 16,
       strokeWidth: "2px",
-      vectorEffect: "non-scaling-stroke",
+      vectorEffect: "none",
     },
     {
-      width: 20,
-      height: 20,
+      width: 16,
+      height: 16,
       strokeWidth: "2px",
-      vectorEffect: "non-scaling-stroke",
+      vectorEffect: "none",
     },
   ]);
   assert.deepEqual(
@@ -3230,8 +3230,8 @@ function assertMobileEditableContract(
   assert.ok(
     contract.controls
       .filter((control) => control.ordinaryProductEditable)
-      .every((control) => Math.abs(control.fontSize - 19.2) < 0.02),
-    `${label}: ordinary product editables must use shared 1.2rem typography: ${JSON.stringify(contract.controls)}`,
+      .every((control) => Math.abs(control.fontSize - 16) < 0.02),
+    `${label}: ordinary product editables must stay at the 16px Safari anti-zoom floor: ${JSON.stringify(contract.controls)}`,
   );
   assert.ok(
     contract.controls
@@ -3245,9 +3245,9 @@ function assertMobileEditableContract(
       .every(
         (control) =>
           Math.abs(control.height - 40) < 0.5 &&
-          Math.abs(control.fontSize - 19.2) < 0.02,
+          Math.abs(control.fontSize - 16) < 0.02,
       ),
-    `${label}: canonical single-line controls must be exactly 40px with shared 1.2rem typography: ${JSON.stringify(contract.controls)}`,
+    `${label}: canonical single-line controls must be exactly 40px with a 16px anti-zoom font: ${JSON.stringify(contract.controls)}`,
   );
 }
 
@@ -11388,23 +11388,23 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         controlsEndInset: 0,
         externalPeriodSwitchCount: 0,
         primaryActionHeight: 40,
-        primaryActionFontSize: "19.2px",
+        primaryActionFontSize: "14.08px",
         navigatorHeight: 40,
-        dateTriggerFontSize: "19.2px",
+        dateTriggerFontSize: "14.08px",
         viewToggleHeight: 40,
         viewTogglePadding: "0px",
         viewToggleButtonHeights: [38, 38],
         viewToggleIconSizes: [
-          { width: 20, height: 20 },
-          { width: 20, height: 20 },
+          { width: 16, height: 16 },
+          { width: 16, height: 16 },
         ],
       },
     );
     assert.deepEqual(mobileScheduleContract.iconMatrix.primaryAction, {
-      width: 20,
-      height: 20,
+      width: 16,
+      height: 16,
       strokeWidth: "2px",
-      vectorEffect: "non-scaling-stroke",
+      vectorEffect: "none",
     });
     assert.ok(mobileScheduleContract.iconMatrix.dateNavigator.length >= 3);
     for (const glyph of [
@@ -11412,10 +11412,10 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       ...mobileScheduleContract.iconMatrix.viewToggle,
     ]) {
       assert.deepEqual(glyph, {
-        width: 20,
-        height: 20,
+        width: 16,
+        height: 16,
         strokeWidth: "2px",
-        vectorEffect: "non-scaling-stroke",
+        vectorEffect: "none",
       });
     }
     for (const [surfaceName, surface] of Object.entries(
@@ -11546,7 +11546,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       periodSwitchBackgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
       periodSwitchBeforeContent: "none",
       periodButtonHeights: [38, 38, 38],
-      periodButtonFontSizes: ["19.2px", "19.2px", "19.2px"],
+      periodButtonFontSizes: ["14.08px", "14.08px", "14.08px"],
     });
     assert.ok(mobilePopoverContract.periodSwitchWidth > 80);
 
@@ -11792,6 +11792,9 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       );
       const profileName =
         profileHeader?.querySelector<HTMLElement>("p:first-child");
+      const profileEmail = profileHeader?.querySelector<HTMLElement>(
+        "p:last-child:not(:first-child)",
+      );
       const items = menu?.querySelector<HTMLElement>(".nav-dropdown-items");
       if (
         !trigger ||
@@ -11801,6 +11804,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         !profileHeader ||
         !profileAvatar ||
         !profileName ||
+        !profileEmail ||
         !items
       ) {
         throw new Error("Mobile account menu contract is missing");
@@ -11840,9 +11844,10 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         },
         profileName: profileName.textContent?.trim(),
         profileNameFontSize: getComputedStyle(profileName).fontSize,
-        profileEmail: profileHeader
-          .querySelector("p:last-child")
-          ?.textContent?.trim(),
+        profileNameFontWeight: getComputedStyle(profileName).fontWeight,
+        profileEmail: profileEmail.textContent?.trim(),
+        profileEmailFontSize: getComputedStyle(profileEmail).fontSize,
+        profileEmailFontWeight: getComputedStyle(profileEmail).fontWeight,
         profileAvatarCount: profileHeader.querySelectorAll(
           ".nav-user-trigger-avatar",
         ).length,
@@ -11902,6 +11907,9 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         itemFontSizes: visibleMenuItems.map(
           (item) => getComputedStyle(item).fontSize,
         ),
+        itemFontWeights: visibleMenuItems.map(
+          (item) => getComputedStyle(item).fontWeight,
+        ),
         itemIconStyles: visibleMenuItems.map((item) => {
           const icon = item.querySelector<SVGElement>("svg");
           if (!icon) throw new Error("Mobile account menu icon is missing");
@@ -11916,25 +11924,28 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       width: 48,
       height: 48,
       burger: {
-        width: 20,
-        height: 20,
+        width: 16,
+        height: 16,
         strokeWidth: "2px",
-        vectorEffect: "non-scaling-stroke",
+        vectorEffect: "none",
       },
       visibleAvatarCount: 0,
     });
     assert.equal(mobileAccountMenuContract.profileName, "E2E Adult");
-    assert.equal(mobileAccountMenuContract.profileNameFontSize, "19.2px");
+    assert.equal(mobileAccountMenuContract.profileNameFontSize, "14px");
+    assert.equal(mobileAccountMenuContract.profileNameFontWeight, "600");
     assert.equal(
       mobileAccountMenuContract.profileEmail,
       "adult-e2e@example.test",
     );
+    assert.equal(mobileAccountMenuContract.profileEmailFontSize, "12px");
+    assert.equal(mobileAccountMenuContract.profileEmailFontWeight, "400");
     assert.equal(mobileAccountMenuContract.profileAvatarCount, 1);
     assert.equal(mobileAccountMenuContract.profileImageCount, 1);
     assert.deepEqual(mobileAccountMenuContract.profileAvatar, {
       width: 48,
       height: 48,
-      fontSize: "16px",
+      fontSize: "11.52px",
     });
     assert.equal(
       mobileAccountMenuContract.profileDivider.borderBottomWidth,
@@ -11978,19 +11989,26 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
       [68, 68, 68, 68, 68],
     );
     assert.deepEqual(mobileAccountMenuContract.itemFontSizes, [
-      "19.2px",
-      "19.2px",
-      "19.2px",
-      "19.2px",
-      "19.2px",
+      "14px",
+      "14px",
+      "14px",
+      "14px",
+      "14px",
+    ]);
+    assert.deepEqual(mobileAccountMenuContract.itemFontWeights, [
+      "400",
+      "400",
+      "400",
+      "400",
+      "400",
     ]);
     assert.deepEqual(
       mobileAccountMenuContract.itemIconStyles,
       Array.from({ length: 5 }, () => ({
-        width: 20,
-        height: 20,
+        width: 16,
+        height: 16,
         strokeWidth: "2px",
-        vectorEffect: "non-scaling-stroke",
+        vectorEffect: "none",
       })),
     );
     assert.deepEqual(mobileAccountMenuContract.visibleMenuItems, [
@@ -12533,16 +12551,16 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     assert.equal(mobileContract.railFlexWrap, "wrap");
     assert.equal(mobileContract.railScrollIsContained, false);
     assert.equal(mobileContract.searchHeight, 40);
-    assert.equal(mobileContract.searchFontSize, "19.2px");
+    assert.equal(mobileContract.searchFontSize, "16px");
     assert.equal(mobileContract.primaryActionHeight, 40);
-    assert.equal(mobileContract.primaryActionFontSize, "19.2px");
+    assert.equal(mobileContract.primaryActionFontSize, "14.08px");
     assert.ok(mobileContract.workspaceTabHeights.length >= 2);
     assert.ok(
       mobileContract.workspaceTabHeights.every((height) => height === 40),
     );
     assert.ok(
       mobileContract.workspaceTabFontSizes.every(
-        (fontSize) => fontSize === "19.2px",
+        (fontSize) => fontSize === "14.08px",
       ),
     );
     assert.equal(mobileContract.membershipSwitchHeight, "40px");
@@ -12567,9 +12585,9 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     );
     assert.deepEqual(mobileContract.membershipButtonHeights, [38, 38, 38]);
     assert.deepEqual(mobileContract.membershipButtonFontSizes, [
-      "19.2px",
-      "19.2px",
-      "19.2px",
+      "14.08px",
+      "14.08px",
+      "14.08px",
     ]);
     assert.equal(mobileContract.membershipSwitchInsideViewport, true);
     assert.deepEqual(mobileContract.membershipButtons, [
@@ -12581,8 +12599,8 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     assert.equal(mobileContract.viewSwitchPadding, "0px");
     assert.deepEqual(mobileContract.viewButtonHeights, [38, 38]);
     assert.deepEqual(mobileContract.viewIconSizes, [
-      { width: 20, height: 20 },
-      { width: 20, height: 20 },
+      { width: 16, height: 16 },
+      { width: 16, height: 16 },
     ]);
     assert.equal(mobileContract.activeViewButtonHeight, "38px");
     assertTouchSegmentedControl(
@@ -16130,7 +16148,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       newCourseAudienceContract.options.every(
         ({ height, fontSize, overflow, textOverflow, whiteSpace }) =>
           height === 38 &&
-          fontSize === "19.2px" &&
+          fontSize === "14.08px" &&
           overflow === "hidden" &&
           textOverflow === "ellipsis" &&
           whiteSpace === "nowrap",
@@ -16445,26 +16463,26 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     );
     assert.equal(mobileCoursesToolbar.activeButtonHeight, "38px");
     assert.equal(mobileCoursesToolbar.searchHeight, 40);
-    assert.equal(mobileCoursesToolbar.searchFontSize, "19.2px");
+    assert.equal(mobileCoursesToolbar.searchFontSize, "16px");
     assert.ok(
       mobileCoursesToolbar.workspaceTabHeights.every((height) => height === 40),
     );
     assert.ok(
       mobileCoursesToolbar.workspaceTabFontSizes.every(
-        (fontSize) => fontSize === "19.2px",
+        (fontSize) => fontSize === "14.08px",
       ),
     );
     assert.deepEqual(mobileCoursesToolbar.viewButtonHeights, [38, 38]);
     assert.deepEqual(mobileCoursesToolbar.viewButtonFontSizes, [
-      "19.2px",
-      "19.2px",
+      "14.08px",
+      "14.08px",
     ]);
     assert.deepEqual(mobileCoursesToolbar.viewIconSizes, [
-      { width: 20, height: 20 },
-      { width: 20, height: 20 },
+      { width: 16, height: 16 },
+      { width: 16, height: 16 },
     ]);
     assert.equal(mobileCoursesToolbar.pageHeader.actionHeight, 40);
-    assert.equal(mobileCoursesToolbar.pageHeader.actionFontSize, "19.2px");
+    assert.equal(mobileCoursesToolbar.pageHeader.actionFontSize, "14.08px");
     assert.notEqual(mobileCoursesToolbar.mobileProjection.listDisplay, "none");
     assert.equal(mobileCoursesToolbar.mobileProjection.listVisible, true);
     assert.equal(
@@ -16506,12 +16524,14 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         mobileCoursesToolbar.pageHeader.actionsWidth,
     );
     assert.ok(mobileCoursesToolbar.pageHeader.actionsFitContentDelta < 0.5);
-    assert.equal(mobileCoursesToolbar.pageHeader.actionsShareTitleRow, false);
+    assert.equal(mobileCoursesToolbar.pageHeader.actionsShareTitleRow, true);
     assert.equal(
       mobileCoursesToolbar.pageHeader.actionsWrappedBelowTitle,
-      true,
+      false,
     );
-    assert.ok(mobileCoursesToolbar.pageHeader.actionStackGapDelta < 0.5);
+    assert.ok(mobileCoursesToolbar.pageHeader.titleActionBottomDelta < 0.5);
+    assert.ok(mobileCoursesToolbar.pageHeader.actionControlBottomDelta < 0.5);
+    assert.ok(mobileCoursesToolbar.pageHeader.titleActionGap >= 0);
     assert.ok(mobileCoursesToolbar.pageHeader.actionRightInsetDelta < 0.5);
     assert.equal(
       mobileCoursesToolbar.pageHeader.actionsDoNotOverlapTitle,
@@ -16734,23 +16754,23 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         segmentedHeight: 40,
         segmentedPadding: "0px",
         segmentedButtonHeights: [38, 38],
-        segmentedButtonFontSizes: ["19.2px", "19.2px"],
+        segmentedButtonFontSizes: ["14.08px", "14.08px"],
         segmentedIconSizes: [
-          { width: 20, height: 20 },
-          { width: 20, height: 20 },
+          { width: 16, height: 16 },
+          { width: 16, height: 16 },
         ],
         searchHeight: 40,
-        searchFontSize: 19.2,
+        searchFontSize: 16,
       },
     );
     assert.equal(mobileLandscapeContract.primaryActionHeight, 40);
-    assert.equal(mobileLandscapeContract.primaryActionFontSize, "19.2px");
+    assert.equal(mobileLandscapeContract.primaryActionFontSize, "14.08px");
     assert.ok(
       mobileLandscapeContract.tabHeights.every((height) => height === 40),
     );
     assert.ok(
       mobileLandscapeContract.tabFontSizes.every(
-        (fontSize) => fontSize === "19.2px",
+        (fontSize) => fontSize === "14.08px",
       ),
     );
     assert.ok(mobileLandscapeContract.launcher.width >= 56);
@@ -17746,12 +17766,12 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     assert.deepEqual(mobileCatalogToolbar.viewButtonHeights, [38, 38]);
     assert.deepEqual(mobileCatalogToolbar.viewButtonWidths, [38, 38]);
     assert.deepEqual(mobileCatalogToolbar.viewButtonFontSizes, [
-      "19.2px",
-      "19.2px",
+      "14.08px",
+      "14.08px",
     ]);
     assert.deepEqual(mobileCatalogToolbar.viewIconSizes, [
-      { width: 20, height: 20 },
-      { width: 20, height: 20 },
+      { width: 16, height: 16 },
+      { width: 16, height: 16 },
     ]);
     assert.equal(mobileCatalogToolbar.audienceShellHeight, "40px");
     assert.ok(mobileCatalogToolbar.audienceShellWidth > 80);
@@ -17773,11 +17793,11 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     assert.equal(mobileCatalogToolbar.audienceShellBeforeContent, "none");
     assert.deepEqual(mobileCatalogToolbar.audienceButtonHeights, [38, 38]);
     assert.deepEqual(mobileCatalogToolbar.audienceButtonFontSizes, [
-      "19.2px",
-      "19.2px",
+      "14.08px",
+      "14.08px",
     ]);
     assert.equal(mobileCatalogToolbar.searchHeight, 40);
-    assert.equal(mobileCatalogToolbar.searchFontSize, "19.2px");
+    assert.equal(mobileCatalogToolbar.searchFontSize, "16px");
     assert.notEqual(mobileCatalogToolbar.mobileProjection.listDisplay, "none");
     assert.equal(mobileCatalogToolbar.mobileProjection.listVisible, true);
     assert.equal(
@@ -17876,9 +17896,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         toolbarPaddingLeft: "0px",
         toolbarPaddingRight: "0px",
         addButtonHeight: "40px",
-        addButtonFontSize: "19.2px",
+        addButtonFontSize: "14.08px",
         searchHeight: 40,
-        searchFontSize: "19.2px",
+        searchFontSize: "16px",
         wrapperOverflowX: "auto",
       },
     );
@@ -17915,9 +17935,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       lessonEditableContract.controls.some(
         (control) =>
           control.ordinaryProductEditable &&
-          Math.abs(control.fontSize - 19.2) < 0.02,
+          Math.abs(control.fontSize - 16) < 0.02,
       ),
-      "Lesson shell must retain 19.2px typography on ordinary product editables",
+      "Lesson shell must retain the 16px Safari anti-zoom floor on ordinary product editables",
     );
     assert.equal(
       lessonEditableContract.controls.filter(
@@ -17997,16 +18017,16 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     );
     assert.ok(
       mobileRawFieldContract.selects.every(
-        ({ height, fontSize }) => height === 40 && fontSize === "19.2px",
+        ({ height, fontSize }) => height === 40 && fontSize === "16px",
       ),
-      "Every mobile raw select.field-input must be exactly 40px tall with shared 1.2rem typography",
+      "Every mobile raw select.field-input must be exactly 40px tall with a 16px anti-zoom font",
     );
     assert.ok(
       mobileRawFieldContract.textareas.length > 0 &&
         mobileRawFieldContract.textareas.every(
-          ({ height, fontSize }) => height > 40 && fontSize === "19.2px",
+          ({ height, fontSize }) => height > 40 && fontSize === "16px",
         ),
-      "Mobile textarea.field-input must retain its flexible multi-line height and shared typography",
+      "Mobile textarea.field-input must retain its flexible multi-line height and 16px anti-zoom font",
     );
     assert.equal(
       mobileRawFieldContract.documentScrollWidth,
@@ -18232,7 +18252,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     assert.ok(mobileVisual.pageHeader.actionsFitContentDelta < 0.5);
     assert.ok(
       mobileVisual.pageHeader.actionControlFontSizes.every(
-        (fontSize) => fontSize === "19.2px",
+        (fontSize) => fontSize === "14.08px",
       ),
     );
     assert.ok(mobileVisual.pageHeader.metricGapDelta < 0.5);
@@ -18259,7 +18279,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     assert.ok(mobileVisual.visibleTabHeights.every((height) => height === 40));
     assert.ok(
       mobileVisual.visibleTabFontSizes.every(
-        (fontSize) => fontSize === "19.2px",
+        (fontSize) => fontSize === "14.08px",
       ),
     );
     assert.ok(mobileVisual.selectedTabLeft >= mobileVisual.tabStripLeft - 1);

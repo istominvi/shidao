@@ -718,14 +718,14 @@ Visual contract Course routes не меняет эту навигационну�
   fallback, а `prefers-reduced-motion` выполняет навигацию и локальный
   Course/Lesson state update без анимации, сохраняя синхронный route dispatch;
 - основные кнопки и header controls — высотой 40 px с радиусом 12 px;
-  base/desktop шрифт остаётся `.88rem/400`, narrow/coarse использует
-  `--product-touch-control-font-size: 1.2rem`. Ordinary control использует
-  белый surface, общий product border и raised base/hover/pressed contract.
-  Base/desktop action-glyphs имеют
-  единый `16 px` rhythm; на narrow/coarse viewport shared token приводит их к
-  `20 px` с физическим Lucide stroke `2 px`. Иконки полностью непрозрачны и
-  наследуют контрастный цвет, а contextual menu items остаются плоскими и
-  borderless;
+  base/desktop ordinary non-editable шрифт остаётся `.88rem/400`, а
+  current-source / next production narrow/coarse наследует его без override;
+  segmented options используют `.88rem/500`. Ordinary control использует белый
+  surface, общий product border и raised base/hover/pressed contract.
+  Action-glyphs имеют единый `16 px` rhythm и Lucide stroke `2 px`; current-source
+  narrow/coarse сохраняет desktop размер и стандартный SVG `vector-effect`, без
+  mobile `non-scaling-stroke`. Иконки полностью непрозрачны и наследуют
+  контрастный цвет, а contextual menu items остаются плоскими и borderless;
 - исторический header-only baseline для всех product buttons внутри
   `AppPageHeader` задавал белый surface высотой
   `40 px`, получает border `0` и общий двухслойный
@@ -867,8 +867,9 @@ Visual contract Course routes не меняет эту навигационну�
   opacity/clipped-reveal entrance без layout animation и горизонтального
   document overflow. Быстрый повторный выбор
   отменяет прежнюю panel animation, ResizeObserver сохраняет indicator после
-  resize, а reduced-motion делает оба эффекта мгновенными. Base/desktop tab
-  имеет `16 px` Lucide icon; narrow/coarse token вычисляется в `20 px / 2 px`.
+  resize, а reduced-motion делает оба эффекта мгновенными. Tab на desktop,
+  narrow и coarse имеет `16 px` Lucide icon со stroke `2 px` и стандартным
+  vector rendering.
   Только positive numeric
   count показывается маленьким приподнятым `sup` с weight 500, а `0` отсутствует. Каждый tab
   ссылается на постоянный matching `tabpanel`, который возвращает его id через
@@ -1029,7 +1030,9 @@ actions`; пять data headers сортируют полную client-loaded pr
   horizontal scroll. На ширине до `767 px` и при любом coarse/touch pointer
   search, однострочные inputs/selects, tabs, основные actions и Schedule date
   navigator используют один `40 px` control token. Action-glyphs равны
-  `20 px` с физическим Lucide stroke `2 px`. На desktop, narrow и coarse
+  `16 px` с Lucide stroke `2 px` и стандартным SVG `vector-effect`; ordinary
+  non-editable labels сохраняют `.88rem/400`, segmented options — `.88rem/500`.
+  На desktop, narrow и coarse
   segmented group имеет высоту `40 px`, настоящую внешнюю product-рамку
   `1 px`, `padding: 0` и gap `2 px`; две actual icon-only options
   `38 × 38 px` образуют ровно `80 × 40 px`. Shell имеет radius `12 px`,
@@ -1047,21 +1050,22 @@ actions`; пять data headers сортируют полную client-loaded pr
   её полное accessible name.
   `forced-colors` использует
   контрастные пары `ButtonFace / ButtonText` и
-  `Highlight / HighlightText` на actual surfaces. Только ordinary product
-  editables/controls — product inputs/selects/textareas, search, ordinary
-  buttons, Schedule date navigator, segmented options и WorkspaceTabs — используют
-  `--product-touch-control-font-size: 1.2rem`; при стандартном root `16 px` это
-  `19.2 px`. Authored Lesson/Component и exercise content fields, включая поля
-  ответа, исключены из этого product token: они сохраняют собственную content
-  typography и независимый anti-zoom floor `16 px`. Поэтому iOS не выполняет
-  focus zoom в portrait или landscape, при этом viewport не запрещает pinch
-  zoom. Это current source / next production boundary, а не изменение authored
-  content model.
+  `Highlight / HighlightText` на actual surfaces. Current source / next
+  production не вводит отдельного mobile type/icon override: ordinary
+  non-editable product controls наследуют desktop visual rhythm. Native
+  inputs/selects/textareas, включая authored Lesson/Component и exercise
+  content fields/поля ответа, сохраняют собственную content typography, но
+  получают независимый anti-zoom floor `16 px`. Поэтому iOS не выполняет focus
+  zoom в portrait или landscape, при этом viewport не запрещает pinch zoom.
+  Это responsive boundary, а не изменение authored content model.
   Launcher «Сообщения» в том же narrow/coarse contract равен
   `56 × 56 px` с glyph минимум `24 px` и safe-area inset; non-fullscreen panel
   находится на `12 px` выше launcher. Его fullscreen mobile projection живёт
   на слое `110` поверх fixed TopNav `100`, оставаясь ниже confirmation dialogs
   `120`, поэтому modal полностью владеет hit-testing.
+  Authored Component-card actions `44 × 44 px` остаются явным touch/category
+  exception. Portal `ActionMenu` сохраняет desktop parity на mobile/coarse:
+  row `40 px`, label `.88rem/400`, icon `16 px`;
   Обычные белые product surfaces канонизированы через
   `--product-surface-background: #fff`: TopNav/dropdown, plain cards/workspaces,
   product/field inputs вместе с `select`/`textarea`, Run history и published-Course
@@ -1109,11 +1113,12 @@ header показывает `48 px` Account avatar, Account name и только
 публичный email, использует равные block-insets и отделён от navigation
 full-bleed светлым divider, а
 visible items ограничены «Расписание / Ученики / Курсы / Магазин / Профиль».
-Burger target равен `48 × 48 px`, action-glyph — `20 px` с физическим stroke
-`2 px`; panel остаётся внутри viewport с inset/gap `12 px`, радиусом `16 px` и
-строками `68 px`. Текст menu rows и Account name используют тот же
-`--product-touch-control-font-size: 1.2rem` (`19.2 px` при стандартном root
-`16 px`); action-glyphs остаются `20 px / 2 px`. Pointer-open не переводит
+Burger target равен `48 × 48 px`, action-glyph — `16 px` с Lucide stroke
+`2 px` и стандартным vector rendering; panel остаётся внутри viewport с
+inset/gap `12 px`, радиусом `16 px` и строками `68 px`. Menu labels используют
+`14 px / 400`, Account name — `14 px / 600`, email — `12 px / 400`, а fallback
+инициалов в `48 px` avatar — `.72rem`. Все burger/menu glyphs остаются
+`16 px / 2 px` без `non-scaling-stroke`. Pointer-open не переводит
 focus на первый пункт;
 keyboard-open сохраняет inset focus indicator, стрелки, Home/End, Escape и
 focus-return semantics.

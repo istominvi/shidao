@@ -123,9 +123,14 @@ object or a signed URL public.
   `object-fit: cover`, decorative alternative text because the trigger already
   has an accessible Account name.
 - Current source / next production protected mobile header replaces that
-  visible avatar with a `20 px` burger inside the same `40 × 40` accessible
-  trigger. This burger opens the only navigation dropdown: its header shows
-  Account name and a privacy-safe email when available, and its items are only
+  visible avatar with a `16 px` burger inside a `48 × 48 px` accessible trigger;
+  Lucide stroke remains `2 px`, while SVG uses its standard `vector-effect`
+  without `non-scaling-stroke`. Mobile wordmark remains `26 px`. This burger
+  opens the only navigation dropdown: its rows remain `68 px`, with
+  `14 px / 400` labels and `16 px / 2 px` glyphs. The profile header shows a
+  `48 × 48 px` Account avatar, `14 px / 600` Account name and a privacy-safe
+  `12 px / 400` email when available; fallback initials inherit `.72rem`
+  (`11.52 px` only at the default `16 px` root). Its items are only
   `Расписание / Ученики / Курсы / Магазин / Профиль`.
 - Current source / next production protected desktop and authenticated landing
   keep the selected avatar visible, but it is a direct accessible link to
@@ -194,7 +199,9 @@ responsive image delivery are current source / next production. Their source
 acceptance requires public presets to resolve through `/_next/image` at a
 viewport-appropriate width, while custom avatars resolve directly through the
 authenticated same-origin route with an allowlisted width. It also covers
-visible initials during loading/error, exact revision/key checks, private cache
+the `48 px` mobile avatar with `.72rem` initials fallback, the `48 px / 16 px`
+burger contract, `14/12 px` profile typography, visible initials during
+loading/error, exact revision/key checks, private cache
 headers/ETag, two Accounts with the same numeric revision, logout/cross-Account
 denial and the absence of Storage path, identity or signed token in SessionView
 and image URL. The blob URL used only for the unsaved upload preview remains

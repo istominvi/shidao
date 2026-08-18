@@ -560,7 +560,6 @@ test("product buttons share one animated raised-control elevation contract", () 
     "@media (max-width: 767px)",
     touchMediaStart + touchMediaQuery.length,
   );
-  const baseStyles = styles.slice(0, touchMediaStart);
   const touchStyles = styles.slice(touchMediaStart, narrowMediaStart);
   const productFocusStyles =
     /\.product-btn:focus-visible\s*\{[^}]*\}/.exec(styles)?.[0] ?? "";
@@ -575,11 +574,11 @@ test("product buttons share one animated raised-control elevation contract", () 
 
   assert.match(
     styles,
-    /:root\s*\{[\s\S]*?--product-element-radius: 0\.75rem;[\s\S]*?--product-card-radius: 1\.25rem;[\s\S]*?--product-row-height: 2\.5rem;[\s\S]*?--product-control-height: 2\.5rem;[\s\S]*?--product-control-radius: var\(--product-element-radius\);[\s\S]*?--product-control-icon-size: 1rem;[\s\S]*?--product-control-icon-stroke-width: 2px;[\s\S]*?\.course-demo-shell\s*\{[\s\S]*?--course-demo-element-radius: var\(--product-element-radius\);[\s\S]*?--course-demo-card-radius: var\(--product-card-radius\);[\s\S]*?--course-demo-table-radius: var\(--course-demo-element-radius\);[\s\S]*?--course-demo-table-row-height: var\(--product-row-height\);[\s\S]*?--course-demo-control-height: var\(--product-control-height\);[\s\S]*?--course-demo-control-radius: var\(--product-control-radius\);[\s\S]*?--course-demo-control-padding-inline: 0\.75rem;[\s\S]*?--course-demo-content-inset: 0\.75rem;[\s\S]*?--course-demo-control-font-size: 0\.88rem;[\s\S]*?--course-demo-control-font-weight: 400;[\s\S]*?--course-demo-control-icon-size: var\(--product-control-icon-size\);/,
+    /:root\s*\{[\s\S]*?--product-element-radius: 0\.75rem;[\s\S]*?--product-card-radius: 1\.25rem;[\s\S]*?--product-row-height: 2\.5rem;[\s\S]*?--product-control-height: 2\.5rem;[\s\S]*?--product-control-radius: var\(--product-element-radius\);[\s\S]*?--product-control-icon-size: 1rem;[\s\S]*?\.course-demo-shell\s*\{[\s\S]*?--course-demo-element-radius: var\(--product-element-radius\);[\s\S]*?--course-demo-card-radius: var\(--product-card-radius\);[\s\S]*?--course-demo-table-radius: var\(--course-demo-element-radius\);[\s\S]*?--course-demo-table-row-height: var\(--product-row-height\);[\s\S]*?--course-demo-control-height: var\(--product-control-height\);[\s\S]*?--course-demo-control-radius: var\(--product-control-radius\);[\s\S]*?--course-demo-control-padding-inline: 0\.75rem;[\s\S]*?--course-demo-content-inset: 0\.75rem;[\s\S]*?--course-demo-control-font-size: 0\.88rem;[\s\S]*?--course-demo-control-font-weight: 400;[\s\S]*?--course-demo-control-icon-size: var\(--product-control-icon-size\);/,
   );
-  assert.match(
+  assert.doesNotMatch(
     styles,
-    /:root\s*\{[^}]*--product-control-icon-stroke-width: 2px;[^}]*--product-touch-control-font-size: 1\.2rem;/,
+    /--product-(?:touch-control-font-size|control-icon-stroke-width)/,
   );
   assert.match(
     styles,
@@ -616,11 +615,7 @@ test("product buttons share one animated raised-control elevation contract", () 
     styles,
     /\.product-segmented-control-option svg\.lucide\s*\{[^}]*width: var\(--product-control-icon-size\);[^}]*height: var\(--product-control-icon-size\);[^}]*flex: 0 0 var\(--product-control-icon-size\);[^}]*color: currentColor;[^}]*opacity: 1;/,
   );
-  assert.match(
-    touchStyles,
-    /\.course-demo-shell\s+:is\([\s\S]*?\.product-btn,[\s\S]*?\.product-segmented-control-option,[\s\S]*?\.teaching-date-navigator,[\s\S]*?\.teaching-hub-search,[\s\S]*?\.product-search-wrap,[\s\S]*?\.product-select-wrap,[\s\S]*?\.workspace-tab,[\s\S]*?\.fade-chevron-control[\s\S]*?\)\s+svg\.lucide\s+\*\s*\{[^}]*stroke-width: var\(--product-control-icon-stroke-width\);[^}]*vector-effect: non-scaling-stroke;/,
-  );
-  assert.doesNotMatch(baseStyles, /vector-effect:\s*non-scaling-stroke/);
+  assert.doesNotMatch(styles, /vector-effect:\s*non-scaling-stroke/);
   assert.match(
     styles,
     /\.course-demo-shell \.product-search-icon,[\s\S]*?\.course-demo-shell \.product-select-icon\s*\{[^}]*color: var\(--course-demo-control-foreground\);[^}]*opacity: 1;/,
@@ -763,25 +758,21 @@ test("product buttons share one animated raised-control elevation contract", () 
     )?.[0] ?? "",
     /transform: scale\(/,
   );
-  assert.match(
-    touchStyles,
-    /\.course-demo-shell\s*\{[^}]*--product-control-icon-size: 1\.25rem;[^}]*--course-demo-control-font-size: 1rem;/,
-  );
   assert.doesNotMatch(
-    /\.course-demo-shell\s*\{[^}]*\}/.exec(touchStyles)?.[0] ?? "",
-    /--product-entry-control-font-size/,
+    touchStyles,
+    /--product-touch-control-font-size|--product-control-icon-size|--course-demo-control-(?:padding-inline|font-size)|vector-effect:\s*non-scaling-stroke/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell\s+:where\(\s*\.product-control,\s*\.field-input,\s*\.teaching-hub-search input,\s*\.student-directory-picker-search input\s*\)\s*\{[^}]*font-size: var\(--product-touch-control-font-size\) !important;/,
+    /\.workspace-tab\s*\{[^}]*touch-action: manipulation;/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*padding-inline: 0\.875rem;[^}]*font-size: var\(--product-touch-control-font-size\);[^}]*touch-action: manipulation;/,
+    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*touch-action: manipulation;/,
   );
   assert.doesNotMatch(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control(?:-option(?:-icon-only|-selected)?)?\s*\{[^}]*(?:height|min-height|width|min-width|gap|border|border-radius|background|box-shadow|transform):/,
+    /\.course-demo-shell \.product-segmented-control(?:-option(?:-icon-only|-selected)?)?\s*\{[^}]*(?:height|min-height|width|min-width|gap|border|border-radius|background|padding|color|font-size|box-shadow|transform):/,
   );
   assert.match(
     touchStyles,

@@ -23,7 +23,11 @@ test("single-line product inputs use one static raised typography contract", () 
   );
   assert.match(
     globalStyles,
-    /:root\s*\{[^}]*--product-control-height: 2\.5rem;[^}]*--product-control-radius: var\(--product-element-radius\);[^}]*--product-control-icon-size: 1rem;[^}]*--product-control-icon-stroke-width: 2px;[^}]*--product-touch-control-font-size: 1\.2rem;[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);[^}]*--product-entry-control-shadow: var\(--product-raised-surface-shadow\);[^}]*--product-control-focus-halo: rgba\(20, 20, 20, 0\.58\);[^}]*--product-entry-control-foreground: #171717;[^}]*--product-entry-control-font-size: 0\.9rem;[^}]*--product-entry-control-font-weight: 600;[^}]*--product-entry-control-line-height: 1;/,
+    /:root\s*\{[^}]*--product-control-height: 2\.5rem;[^}]*--product-control-radius: var\(--product-element-radius\);[^}]*--product-control-icon-size: 1rem;[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);[^}]*--product-raised-surface-shadow: var\(--product-raised-control-shadow\);[^}]*--product-entry-control-shadow: var\(--product-raised-surface-shadow\);[^}]*--product-control-focus-halo: rgba\(20, 20, 20, 0\.58\);[^}]*--product-entry-control-foreground: #171717;[^}]*--product-entry-control-font-size: 0\.9rem;[^}]*--product-entry-control-font-weight: 600;[^}]*--product-entry-control-line-height: 1;/,
+  );
+  assert.doesNotMatch(
+    globalStyles,
+    /--product-(?:touch-control-font-size|control-icon-stroke-width)/,
   );
   assert.match(
     globalStyles,
@@ -171,13 +175,6 @@ test("narrow and coarse-touch editable controls prevent iOS focus zoom without d
     editableRuleStart,
     editableRuleEnd + 4,
   );
-  const touchShellRule =
-    /\.course-demo-shell\s*\{[^}]*\}/.exec(touchStyles)?.[0] ?? "";
-  const scopedProductEditableRule =
-    /\.course-demo-shell\s+:where\(\s*\.product-control,\s*\.field-input,\s*\.teaching-hub-search input,\s*\.student-directory-picker-search input\s*\)\s*\{[^}]*\}/.exec(
-      touchStyles,
-    )?.[0] ?? "";
-
   assert.ok(editableRuleStart >= 0);
   assert.match(editableRule, /input:not\(\[type="button"\]\)/);
   assert.match(editableRule, /select,/);
@@ -198,40 +195,20 @@ test("narrow and coarse-touch editable controls prevent iOS focus zoom without d
     assert.match(editableRule, new RegExp(`\\[type="${nonEditableType}"\\]`));
   }
 
-  assert.match(
-    touchShellRule,
-    /--product-control-icon-size: 1\.25rem;[^}]*--course-demo-control-font-size: 1rem;/,
-  );
-  assert.doesNotMatch(touchShellRule, /--product-entry-control-font-size/);
-  assert.match(
-    scopedProductEditableRule,
-    /font-size: var\(--product-touch-control-font-size\) !important;/,
-  );
   assert.equal(
-    (
-      touchStyles.match(
-        /font-size: var\(--product-touch-control-font-size\) !important;/g,
-      ) ?? []
-    ).length,
+    (touchStyles.match(/font-size:/g) ?? []).length,
     1,
-    "the 1.2rem override must remain scoped to ordinary product editables",
+    "the native editable anti-zoom rule must be the only touch font override",
   );
   assert.doesNotMatch(
     touchStyles,
-    /\.course-demo-shell\s+(?:input|select|textarea)\s*\{[^}]*--product-touch-control-font-size/,
-    "raw authored controls must not inherit the product touch typography",
+    /--product-touch-control-font-size|--product-control-icon-size|--course-demo-control-(?:padding-inline|font-size)|vector-effect:\s*non-scaling-stroke/,
+    "product control typography and icons must not fork from desktop on touch",
   );
-  assert.match(
+  assert.doesNotMatch(
     touchStyles,
-    /\.course-demo-shell \.product-btn,\s*\.course-demo-shell \.product-control,\s*\.course-demo-shell :is\(input, select\)\.field-input,\s*\.course-demo-shell \.teaching-date-navigator,\s*\.course-demo-shell \.teaching-hub-search\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: var\(--product-touch-control-font-size\);/,
-  );
-  assert.match(
-    touchStyles,
-    /\.course-demo-shell \.teaching-date-trigger\s*\{[^}]*font-size: var\(--product-touch-control-font-size\);/,
-  );
-  assert.match(
-    touchStyles,
-    /\.course-demo-shell \.product-control-search\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: var\(--product-touch-control-font-size\);/,
+    /\.course-demo-shell[^{]*\{[^}]*font-size:/,
+    "ordinary product controls must inherit desktop typography",
   );
   assert.doesNotMatch(
     touchStyles,

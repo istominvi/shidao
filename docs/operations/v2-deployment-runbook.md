@@ -1110,7 +1110,8 @@ ShiDao V2 application:
   label и base/desktop `16 px` иконка имеют цвет
   `oklch(0.19 0 0 / 0.6)`, gap между tab-кнопками и верхний radius равны 12 px;
   светлый hover не перекрывает baseline. На narrow/coarse viewport tab-glyph
-  равен `20 px` с физическим Lucide stroke `2 px`. Только positive numeric
+  сохраняет desktop `16 px` с Lucide stroke `2 px` и стандартным
+  `vector-effect`. Только positive numeric
   count показан маленьким приподнятым `sup` с
   weight 500, а ноль не рендерится; каждый `aria-controls` tab разрешается в matching
   `tabpanel` с обратным `aria-labelledby`, а на mobile вкладки скроллятся
@@ -1344,13 +1345,14 @@ flow как permanent delete.
   `1px solid CanvasText`. Native `select`, самостоятельный modal dialog и
   reference/demo-only surface не должны получать universal dropdown class;
   календарная panel остаётся в contract, несмотря на `role="dialog"`.
-  Каждый пункт portal-menu имеет exact 40 px, радиус 8 px как у base/desktop
+  Каждый пункт portal-menu имеет exact 40 px, радиус 8 px как у
   active view option, вертикально центрированные иконку и текст, `.88rem/400`
-  и canonical inset/gap.
+  и canonical inset/gap на desktop, narrow и coarse; icon остаётся `16 px`.
   Отдельно проверить
   canonical active V2 controls: exact `40 px / 12 px`, base/desktop
-  `.88rem/400` и narrow/coarse
-  `--product-touch-control-font-size: 1.2rem`; active navigation без
+  `.88rem/400`, тот же ordinary non-editable type на narrow/coarse,
+  `.88rem/500` для segmented labels и `16 px / 2 px` glyphs на всех viewport;
+  active navigation без
   inset/shadow/translate, icon opacity `1` и contrast-aware
   `currentColor`. Все канонические `.product-btn` должны быть белыми, иметь
   `--product-surface-border-color: oklch(0 0 0 / .1)` и
@@ -1387,22 +1389,22 @@ flow как permanent delete.
   `.product-btn`. Inactive option прозрачна и не получает фон или тень при
   fine-pointer hover: меняется только цвет glyph. Pseudo-layer отсутствует,
   actual buttons не масштабируются при pressed, keyboard focus сохраняет
-  видимый inset outline. Desktop glyph остаётся `16 px`; на narrow/coarse
-  action-glyph равен `20 px`, computed Lucide stroke — `2 px`.
+  видимый inset outline. На desktop, narrow и coarse action-glyph равен
+  `16 px`, computed Lucide stroke — `2 px`, computed `vector-effect` —
+  стандартный `none`; `non-scaling-stroke` отсутствует.
   Отдельно проверить semantic text segmented projection на narrow/coarse:
   group не шире parent и может сжиматься с `min-width: 0`, options делят
   доступную ширину через `flex: 1 1 0`, visible labels получают однострочный
   ellipsis, а accessibility tree сохраняет полные имена кнопок. Эта projection
   не должна менять exact `80 × 40 px` icon-only contract.
-  Ordinary product buttons/editables, inputs/search/select, Schedule date
-  navigator, segmented options и WorkspaceTabs на narrow/coarse используют общий
-  `--product-touch-control-font-size: 1.2rem`; menu rows и имя в mobile profile
-  header используют тот же token. При стандартном root `16 px` computed size
-  равен `19.2 px`; при ином пользовательском root он масштабируется вместе с
-  ним. Убедиться, что authored Lesson/Component и exercise content fields,
-  включая поля ответа, этот token не наследуют: их content typography и
-  независимый anti-zoom floor `16 px` сохраняются. Это current source / next
-  production acceptance. В `forced-colors` outer border должен стать
+  Ordinary non-editable product buttons, Schedule date navigator,
+  WorkspaceTabs и прочие labels на narrow/coarse должны наследовать desktop
+  `.88rem/400`; segmented options — `.88rem/500`. Native
+  inputs/search/selects/textareas, включая authored Lesson/Component и exercise
+  content/response fields, сохраняют content typography с computed Safari
+  anti-zoom floor ровно `16 px`. Проверить отсутствие touch type/icon custom
+  properties и mobile font/icon overrides. Это current source / next production
+  acceptance. В `forced-colors` outer border должен стать
   `1 px CanvasText`, а actual
   options — сохранить контрастные
   `ButtonFace / ButtonText` и `Highlight / HighlightText` на actual surfaces.
@@ -1412,15 +1414,21 @@ flow как permanent delete.
   solid-white demo TopNav; desktop Account avatar-link имеет ровно
   `40 × 40 px` и radius `12 px`, видимого имени рядом нет. На mobile burger имеет
   `48 × 48 px`, а navigation-panel profile header содержит `48 px` avatar,
-  ФИО/email и один full-bleed светлый divider перед items. Tabs и
+  ФИО/email и один full-bleed светлый divider перед items. Burger и пять menu
+  glyphs имеют `16 px / 2 px` и стандартный `vector-effect`; navigation rows
+  остаются `68 px / 14 px / 400`, profile name — `14 px / 600`, email —
+  `12 px / 400`, avatar fallback — `.72rem` (`11.52 px` при root `16 px`). Tabs и
   primary/secondary/destructive actions используют shared product controls без
   raw Tailwind visual fork. Старые `/settings/*` должны перенаправлять в нужную
   вкладку и не рендерить отдельный side-nav. Auth-кнопки, построенные
   на canonical `.product-btn`, следуют тому же контракту; raw Landing controls
   и non-product controls полноэкранного Student Screen не должны измениться;
-  mobile burger остаётся `48 × 48 px` с glyph `20 px / 2 px`, navigation rows —
+  mobile burger остаётся `48 × 48 px` с glyph `16 px / 2 px`, navigation rows —
   `68 px` с теми же glyphs, а Messages launcher — `56 × 56 px` с glyph не
-  меньше `24 px`. Это категорийные исключения, а не ordinary product controls;
+  меньше `24 px`. Authored Component-card actions остаются `44 × 44 px`. Это
+  категорийные исключения, а не ordinary product controls; portal `ActionMenu`
+  к ним не относится и сохраняет `40 px / .88rem/400` с `16 px` icon на
+  mobile/coarse;
 - для current source compact-toolbar follow-up проверить, что Course и Store
   не рендерят filter trigger/panel и не применяют удалённые advanced-filter
   predicates. Students рендерит один inline membership control **Все / В

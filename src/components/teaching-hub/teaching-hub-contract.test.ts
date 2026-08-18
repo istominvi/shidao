@@ -897,11 +897,13 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
     touchMediaStart,
     narrowMediaStart,
   );
-  const baseStyles = globalStyleSource.slice(0, touchMediaStart);
-
   assert.match(
     globalStyleSource,
-    /:root\s*\{[^}]*--product-control-height: 2\.5rem;[^}]*--product-control-radius: var\(--product-element-radius\);[^}]*--product-control-icon-size: 1rem;[^}]*--product-control-icon-stroke-width: 2px;[^}]*--product-touch-control-font-size: 1\.2rem;[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);/,
+    /:root\s*\{[^}]*--product-control-height: 2\.5rem;[^}]*--product-control-radius: var\(--product-element-radius\);[^}]*--product-control-icon-size: 1rem;[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border: var\(--product-surface-border-width\) solid\s+var\(--product-surface-border-color\);/,
+  );
+  assert.doesNotMatch(
+    globalStyleSource,
+    /--product-(?:touch-control-font-size|control-icon-stroke-width)/,
   );
   assert.match(
     globalStyleSource,
@@ -944,43 +946,23 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
     /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.product-segmented-control-option\s*\{[^}]*transition: none;/,
   );
 
-  assert.match(
-    touchStyles,
-    /\.course-demo-shell\s*\{[^}]*--product-control-icon-size: 1\.25rem;[^}]*--course-demo-control-font-size: 1rem;/,
-  );
   assert.doesNotMatch(
-    /\.course-demo-shell\s*\{[^}]*\}/.exec(touchStyles)?.[0] ?? "",
-    /--product-entry-control-font-size/,
+    touchStyles,
+    /--product-touch-control-font-size|--product-control-icon-size|--course-demo-control-(?:padding-inline|font-size)|vector-effect:\s*non-scaling-stroke/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell\s+:where\(\s*\.product-control,\s*\.field-input,\s*\.teaching-hub-search input,\s*\.student-directory-picker-search input\s*\)\s*\{[^}]*font-size: var\(--product-touch-control-font-size\) !important;/,
+    /\.workspace-tab\s*\{[^}]*touch-action: manipulation;/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-btn,\s*\.course-demo-shell \.product-control,\s*\.course-demo-shell :is\(input, select\)\.field-input,\s*\.course-demo-shell \.teaching-date-navigator,\s*\.course-demo-shell \.teaching-hub-search\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: var\(--product-touch-control-font-size\);/,
-  );
-  assert.match(
-    touchStyles,
-    /\.course-demo-shell \.teaching-date-trigger\s*\{[^}]*font-size: var\(--product-touch-control-font-size\);/,
-  );
-  assert.match(
-    touchStyles,
-    /\.workspace-tab\s*\{[^}]*height: var\(--product-control-height\);[^}]*min-height: var\(--product-control-height\);[^}]*font-size: var\(--product-touch-control-font-size\);/,
-  );
-  assert.match(
-    touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*padding-inline: 0\.875rem;[^}]*font-size: var\(--product-touch-control-font-size\);[^}]*touch-action: manipulation;/,
+    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*touch-action: manipulation;/,
   );
   assert.match(
     globalStyleSource,
     /\.product-segmented-control-option svg\.lucide\s*\{[^}]*width: var\(--product-control-icon-size\);[^}]*height: var\(--product-control-icon-size\);[^}]*flex: 0 0 var\(--product-control-icon-size\);/,
   );
-  assert.match(
-    touchStyles,
-    /\.course-demo-shell\s+:is\([\s\S]*?\.product-segmented-control-option,[\s\S]*?\)\s+svg\.lucide\s+\*\s*\{[^}]*stroke-width: var\(--product-control-icon-stroke-width\);[^}]*vector-effect: non-scaling-stroke;/,
-  );
-  assert.doesNotMatch(baseStyles, /vector-effect:\s*non-scaling-stroke/);
+  assert.doesNotMatch(globalStyleSource, /vector-effect:\s*non-scaling-stroke/);
   assert.match(
     globalStyleSource,
     /\.product-segmented-control-option-selected:not\(:disabled\):active\s*\{[^}]*box-shadow: var\(--product-raised-control-shadow-pressed\);[^}]*transform: none;/,
@@ -996,7 +978,7 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
   assert.doesNotMatch(touchStyles, /transform: scale\(/);
   assert.doesNotMatch(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control(?:-option(?:-icon-only|-selected)?)?\s*\{[^}]*(?:height|min-height|width|min-width|gap|border|border-radius|background|box-shadow|transform):/,
+    /\.course-demo-shell \.product-segmented-control(?:-option(?:-icon-only|-selected)?)?\s*\{[^}]*(?:height|min-height|width|min-width|gap|border|border-radius|background|padding|color|font-size|box-shadow|transform):/,
   );
   assert.match(
     touchStyles,

@@ -148,10 +148,9 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
     /\.site-header-shell-demo \.nav-mobile-action-icon\s*\{[^}]*\}/.exec(
       navigationCss,
     )?.[0] ?? "";
-  const mobileIconShapeStyles =
-    /\.site-header-shell-demo\s+\.nav-mobile-action-icon\s+:is\(path, line, polyline, polygon, circle, ellipse, rect\)\s*\{[^}]*\}/.exec(
-      navigationCss,
-    )?.[0] ?? "";
+  const baseMenuItemStyles =
+    /(?:^|\n)\.nav-dropdown-item\s*\{[^}]*\}/.exec(baseNavigationStyles)?.[0] ??
+    "";
   const mobileMenuStyles =
     /\.nav-account-menu-mobile\s*\{[^}]*\}/.exec(navigationCss)?.[0] ?? "";
   const mobileMenuSurfaceStyles =
@@ -170,8 +169,8 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
     /\.nav-account-menu-mobile\s+\.nav-dropdown-profile-avatar\s*\{[^}]*\}/.exec(
       navigationCss,
     )?.[0] ?? "";
-  const mobileProfileNameStyles =
-    /\.nav-account-menu-mobile\s+\.nav-dropdown-profile p:first-child\s*\{[^}]*\}/.exec(
+  const mobileProfileEmailStyles =
+    /\.nav-account-menu-mobile\s+\.nav-dropdown-profile\s+p:last-child:not\(:first-child\)\s*\{[^}]*\}/.exec(
       navigationCss,
     )?.[0] ?? "";
   const mobileMenuItemFocusStyles =
@@ -203,24 +202,19 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
   );
   assert.match(
     mobileTriggerIconStyles,
-    /width: var\(--course-demo-control-icon-size, 1\.25rem\);/,
+    /width: var\(--course-demo-control-icon-size, 1rem\);/,
   );
   assert.match(
     mobileTriggerIconStyles,
-    /height: var\(--course-demo-control-icon-size, 1\.25rem\);/,
+    /height: var\(--course-demo-control-icon-size, 1rem\);/,
   );
   assert.match(
     mobileTriggerIconStyles,
-    /flex: 0 0 var\(--course-demo-control-icon-size, 1\.25rem\);/,
+    /flex: 0 0 var\(--course-demo-control-icon-size, 1rem\);/,
   );
-  assert.match(
-    mobileTriggerIconStyles,
-    /stroke-width: var\(--product-control-icon-stroke-width, 2px\);/,
-  );
-  assert.match(mobileIconShapeStyles, /vector-effect: non-scaling-stroke;/);
   assert.doesNotMatch(
-    baseNavigationStyles,
-    /vector-effect:\s*non-scaling-stroke/,
+    `${navigationCss}\n${globalStyles}`,
+    /--product-(?:touch-control-font-size|control-icon-stroke-width)|vector-effect:\s*non-scaling-stroke/,
   );
   assert.match(mobileBrandStyles, /font-size: (?:1\.625rem|26px);/);
   assert.match(demoHeaderStyles, /border-radius:/);
@@ -258,9 +252,11 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
     "The menu must cancel the 8px shell inset and retain the 12px safe viewport inset",
   );
   assert.match(mobileMenuItemStyles, /min-height: (?:4\.25rem|68px);/);
-  assert.match(
+  assert.match(baseMenuItemStyles, /font-size: 0\.875rem;/);
+  assert.match(baseMenuItemStyles, /font-weight: 600;/);
+  assert.doesNotMatch(
     mobileMenuItemStyles,
-    /font-size: var\(--product-touch-control-font-size, 1\.2rem\);/,
+    /font-size:|font-weight:|line-height:/,
   );
   assert.match(
     mobileMenuItemStyles,
@@ -279,12 +275,25 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
   );
   assert.match(mobileProfileAvatarStyles, /width: (?:3rem|48px);/);
   assert.match(mobileProfileAvatarStyles, /height: (?:3rem|48px);/);
-  assert.match(mobileProfileAvatarStyles, /font-size: (?:1rem|16px);/);
+  assert.doesNotMatch(mobileProfileAvatarStyles, /font-size:/);
   assert.match(
-    mobileProfileNameStyles,
-    /font-size: var\(--product-touch-control-font-size, 1\.2rem\);/,
+    baseNavigationStyles,
+    /\.nav-user-trigger-avatar\s*\{[^}]*font-size: 0\.72rem;/,
   );
-  assert.match(globalStyles, /--product-touch-control-font-size: 1\.2rem;/);
+  assert.match(
+    navigation,
+    /<p className="truncate text-sm font-semibold text-neutral-900">/,
+  );
+  assert.match(navigation, /<p className="truncate text-xs text-neutral-500">/);
+  assert.doesNotMatch(
+    navigationCss,
+    /\.nav-account-menu-mobile\s+\.nav-dropdown-profile p:first-child\s*\{/,
+  );
+  assert.match(mobileProfileEmailStyles, /margin-top: 0\.25rem;/);
+  assert.doesNotMatch(
+    mobileProfileEmailStyles,
+    /font-size:|font-weight:|line-height:/,
+  );
   assert.match(mobileMenuItemFocusStyles, /box-shadow: none;/);
   assert.match(
     navigationPrimitives,
