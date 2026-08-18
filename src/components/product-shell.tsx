@@ -47,36 +47,6 @@ export function PageHero({ eyebrow, title, description }: PageHeroProps) {
   );
 }
 
-type ContextCardProps = {
-  title: string;
-  description: string;
-  tone?: "lime" | "sky" | "pink" | "violet" | "amber" | "neutral";
-};
-
-const toneClass: Record<NonNullable<ContextCardProps["tone"]>, string> = {
-  lime: "bg-lime-100/75",
-  sky: "bg-sky-100/70",
-  pink: "bg-fuchsia-100/70",
-  violet: "bg-violet-100/70",
-  amber: "bg-amber-100/75",
-  neutral: "bg-white/80",
-};
-
-export function ContextCard({
-  title,
-  description,
-  tone = "neutral",
-}: ContextCardProps) {
-  return (
-    <article className={`context-card ${toneClass[tone]}`}>
-      <h3 className="text-sm font-bold text-neutral-900">{title}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-neutral-700">
-        {description}
-      </p>
-    </article>
-  );
-}
-
 export function StatusMessage({
   kind,
   children,

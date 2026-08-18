@@ -3,7 +3,6 @@
 import { type ReactNode, type Ref } from "react";
 import { PageTransitionLink } from "@/components/navigation/page-transition-link";
 import { usePageTransition } from "@/components/navigation/page-transition-provider";
-import { classNames } from "@/lib/ui/classnames";
 
 type AppPageHeaderBack =
   | {
@@ -51,11 +50,7 @@ export function AppPageHeader({
 
   return (
     <header
-      className={classNames(
-        "app-page-header",
-        back && "app-page-header-with-back",
-        Boolean(actions) && "app-page-header-with-actions",
-      )}
+      className="app-page-header"
       data-page-header-async-metric={usesAsyncMetric ? "" : undefined}
       data-page-header-pending={metricIsPending ? "" : undefined}
     >
@@ -97,29 +92,27 @@ export function AppPageHeader({
             </button>
           ) : null}
         </div>
-        <div className="app-page-heading">
-          <div className="app-page-title-row">
-            <h1
-              ref={headingRef}
-              className="app-page-title"
-              tabIndex={headingRef ? -1 : undefined}
-            >
-              {title}
-            </h1>
-            {actions ? <div className="app-page-actions">{actions}</div> : null}
-          </div>
-          {hasMetric || usesAsyncMetric ? (
-            <p
-              className="app-page-description app-page-metric"
-              data-page-header-metric-placeholder={hasMetric ? undefined : ""}
-              aria-busy={metricIsPending || undefined}
-              aria-live={usesAsyncMetric ? "polite" : undefined}
-              title={typeof metric === "string" ? metric : undefined}
-            >
-              {hasMetric ? metric : "\u00a0"}
-            </p>
-          ) : null}
+        <div className="app-page-title-row">
+          <h1
+            ref={headingRef}
+            className="app-page-title"
+            tabIndex={headingRef ? -1 : undefined}
+          >
+            {title}
+          </h1>
+          {actions ? <div className="app-page-actions">{actions}</div> : null}
         </div>
+        {hasMetric || usesAsyncMetric ? (
+          <p
+            className="app-page-description app-page-metric"
+            data-page-header-metric-placeholder={hasMetric ? undefined : ""}
+            aria-busy={metricIsPending || undefined}
+            aria-live={usesAsyncMetric ? "polite" : undefined}
+            title={typeof metric === "string" ? metric : undefined}
+          >
+            {hasMetric ? metric : "\u00a0"}
+          </p>
+        ) : null}
         {meta ? <div className="app-page-meta">{meta}</div> : null}
       </div>
     </header>

@@ -30,10 +30,7 @@ test("assistant apply client sends the server-issued proposal signature unchange
       type: "course.add_lesson",
       courseId: "22222222-2222-4222-8222-222222222222",
       courseTitle: "Математика для дошкольников",
-      input: {
-        title: "4 урок",
-        summary: "",
-      },
+      input: { title: "4 урок", summary: "" },
     },
   } satisfies SystemAssistantActionProposal;
   const result = {
@@ -72,7 +69,6 @@ test("apply route verifies the signed proposal before any idempotent mutation", 
     source("src/app/api/v2/assistant/actions/apply/route.ts"),
     source("src/modules/ai/system-assistant-service.ts"),
   ]);
-
   const verification = route.indexOf("verifySystemAssistantActionProposal(");
   const idempotentApply = route.indexOf("runIdempotentAiAssistantAction(");
   const mutation = route.indexOf("assistant.applyAction(parsed.data.action)");
@@ -84,7 +80,6 @@ test("apply route verifies the signed proposal before any idempotent mutation", 
     route.slice(verification, idempotentApply),
     /verifySystemAssistantActionProposal\(parsed\.data\.signature/,
   );
-
   const reply = service.indexOf("proposedAction: unsignedProposal");
   const sealing = service.indexOf("sealSystemAssistantActionProposal(", reply);
   assert.ok(reply >= 0);
@@ -99,16 +94,15 @@ test("apply route verifies the signed proposal before any idempotent mutation", 
   );
 });
 
-test("assistant renders every action kind and warns before destructive lesson deletion", async () => {
-  const assistant = await source(
-    "src/components/assistant/system-assistant.tsx",
+test("communication action card renders every action kind and warns before destructive lesson deletion", async () => {
+  const actionUi = await source(
+    "src/components/communication/assistant-action-card.tsx",
   );
   const titles = between(
-    assistant,
-    "function actionTitle(",
-    "function verifiedMessage(",
+    actionUi,
+    "export function actionTitle(",
+    "export function verifiedMessage(",
   );
-
   for (const actionType of [
     "course.create_draft",
     "course.add_lesson",
@@ -117,141 +111,125 @@ test("assistant renders every action kind and warns before destructive lesson de
     "lesson.delete",
     "lesson.schedule_run",
   ]) {
-    assert.match(titles, new RegExp(`case [\"']${actionType}[\"']:`));
+    assert.match(titles, new RegExp(`case ["']${actionType}["']:`));
   }
-  assert.match(titles, /Назначить урок/);
-
-  const card = between(
-    assistant,
-    "function AssistantActionCard(",
-    "export function SystemAssistant()",
+  const card = actionUi.slice(
+    actionUi.indexOf("export function AssistantActionCard("),
   );
-  assert.match(card, /action\.type === "course\.add_lesson_with_plan"/);
-  assert.match(card, /action\.type === "lesson\.fill"/);
   assert.match(card, /action\.input\.plan\.components\.map/);
-  assert.match(card, /action\.type === "lesson\.delete"/);
-  assert.match(card, /action\.type === "lesson\.schedule_run"/);
   assert.match(card, /Будет удалён урок/);
   assert.match(
     card,
     /Завершённые индивидуальные результаты учеников сохранятся/,
   );
-  assert.match(card, /system-assistant-danger-button/);
+  assert.match(card, /communication-assistant-danger-button/);
+  assert.doesNotMatch(
+    card,
+    /system-assistant-(?:action|plan|danger|primary|secondary)/,
+  );
 });
 
-test("exact confirmation or cancellation targets only the latest pending proposal without a provider call", async () => {
-  const assistant = await source(
-    "src/components/assistant/system-assistant.tsx",
-  );
+test("exact confirmation or cancellation targets only the latest persisted proposal without a provider call", async () => {
+  const [actionUi, conversation] = await Promise.all([
+    source("src/components/communication/assistant-action-card.tsx"),
+    source("src/components/communication/assistant-conversation.tsx"),
+  ]);
   const confirmation = between(
-    assistant,
+    actionUi,
     "const CONFIRM_WORDS",
-    "function localDate(",
+    "export function actionTitle(",
   );
-  assert.match(confirmation, /[\"']да[\"']/);
-  assert.match(confirmation, /[\"']нет[\"']/);
+  assert.match(confirmation, /["']да["']/);
+  assert.match(confirmation, /["']нет["']/);
   assert.match(confirmation, /CONFIRM_WORDS\.has\(normalized\)/);
   assert.match(confirmation, /CANCEL_WORDS\.has\(normalized\)/);
   assert.doesNotMatch(confirmation, /includes\(normalized\)/);
-  assert.match(
-    confirmation,
-    /for \(let index = messages\.length - 1; index >= 0; index -= 1\)/,
-  );
-  assert.match(confirmation, /if \(!proposal\) continue/);
-  assert.match(confirmation, /return proposal/);
 
-  const send = between(assistant, "async function send(", "function submit(");
-  const intentBranch = send.indexOf("if (pendingProposal && intent)");
-  const providerCall = send.indexOf("sendSystemAssistantMessage(");
+  const pending = between(
+    conversation,
+    "function latestPendingProposal(",
+    "function errorMessage(",
+  );
+  assert.match(
+    pending,
+    /for \(let index = turns\.length - 1; index >= 0; index -= 1\)/,
+  );
+  assert.match(pending, /if \(!proposal\) continue/);
+  assert.match(pending, /return proposal/);
+
+  const send = between(
+    conversation,
+    "async function send(",
+    "function submit(",
+  );
+  const intentBranch = send.indexOf('if (proposal && intent === "confirm")');
+  const providerCall = send.indexOf("sendAssistantTurn(");
   assert.ok(intentBranch >= 0);
   assert.ok(providerCall > intentBranch);
   const beforeProvider = send.slice(intentBranch, providerCall);
-  assert.match(beforeProvider, /intent === "confirm"/);
-  assert.match(beforeProvider, /applyAction\(pendingProposal\)/);
-  assert.match(beforeProvider, /cancelAction\(pendingProposal\)/);
+  assert.match(beforeProvider, /applyAction\(proposal\)/);
+  assert.match(beforeProvider, /intent === "cancel"/);
+  assert.match(beforeProvider, /cancelAction\(proposal\)/);
   assert.match(beforeProvider, /return;/);
 });
 
-test("a new user request supersedes an older pending proposal", async () => {
-  const assistant = await source(
-    "src/components/assistant/system-assistant.tsx",
+test("a new persisted assistant request supersedes an older pending proposal", async () => {
+  const conversation = await source(
+    "src/components/communication/assistant-conversation.tsx",
   );
-  const send = between(assistant, "async function send(", "function submit(");
-  const cancelOld = send.indexOf(
-    "if (pendingProposal) cancelAction(pendingProposal, false);",
+  const send = between(
+    conversation,
+    "async function send(",
+    "function submit(",
   );
-  const providerCall = send.indexOf("sendSystemAssistantMessage(");
+  const cancelOld = send.indexOf("if (proposal) cancelAction(proposal);");
+  const providerCall = send.indexOf("sendAssistantTurn(");
   assert.ok(cancelOld >= 0);
   assert.ok(providerCall > cancelOld);
   assert.match(
     send.slice(providerCall),
-    /if \(reply\.proposedAction\)[\s\S]*next\[key\] = \{ status: "cancelled" \}/,
+    /if \(exchange\.proposedAction\)[\s\S]*next\[prior\.idempotencyKey\] = \{ status: "cancelled" \}/,
   );
 });
 
-test("quick replies are one-time choices on only the latest turn and send their structured message", async () => {
-  const assistant = await source(
-    "src/components/assistant/system-assistant.tsx",
+test("quick replies are one-time choices on only the latest persisted turn", async () => {
+  const conversation = await source(
+    "src/components/communication/assistant-conversation.tsx",
   );
-
   assert.match(
-    assistant,
-    /type TranscriptMessage = AiAssistantMessage & \{[\s\S]*quickReplies\?: SystemAssistantQuickReply\[\]/,
+    conversation,
+    /type AssistantTurnMetadata = \{[\s\S]*quickReplies: SystemAssistantQuickReply\[\]/,
   );
-  assert.match(assistant, /const latestMessageId = messages\.at\(-1\)\?\.id/);
-  const replyRendering = between(
-    assistant,
-    "{message.quickReplies",
-    "{message.proposal",
+  const rendering = between(
+    conversation,
+    "{turnMetadata.quickReplies",
+    "{turnMetadata.proposedAction",
   );
-  assert.match(replyRendering, /message\.id === latestMessageId/);
-  assert.match(replyRendering, /message\.quickReplies\.map/);
-  assert.match(replyRendering, /quickReply\.label/);
+  assert.match(rendering, /turn\.id === latestTurnId/);
+  assert.match(rendering, /turn\.id !== hiddenQuickRepliesForTurnId/);
+  assert.match(rendering, /turnMetadata\.quickReplies\.map/);
+  assert.match(rendering, /onClick=\{\(\) => void send\(reply\.message\)\}/);
+  assert.match(rendering, /disabled=\{Boolean\(pending\) \|\| applying\}/);
   assert.match(
-    replyRendering,
-    /onClick=\{\(\) => void send\(quickReply\.message\)\}/,
+    conversation,
+    /className="communication-assistant-quick-replies"/,
   );
-  assert.match(replyRendering, /disabled=\{sending \|\| actionApplying\}/);
-
-  const send = between(assistant, "async function send(", "function submit(");
-  assert.match(send, /quickReplies: reply\.quickReplies/);
-  assert.match(send, /sendingRef\.current/);
 });
 
-test("changing Course or Lesson context invalidates pending proposals", async () => {
-  const assistant = await source(
-    "src/components/assistant/system-assistant.tsx",
+test("persisted proposals are restored stale and only a live reply can be applied", async () => {
+  const conversation = await source(
+    "src/components/communication/assistant-conversation.tsx",
   );
-  const contextLifecycle = between(
-    assistant,
-    "const pageContextKey =",
-    "useEffect(() => {\n    if (!open) return;",
-  );
+  assert.match(conversation, /loadAssistantTurns\(conversation\.id\)/);
+  assert.match(conversation, /loadedProposals\.map/);
+  assert.match(conversation, /status: "stale" as const/);
+  assert.match(conversation, /setLiveProposalKey\(null\)/);
+  assert.match(conversation, /idempotencyKey !==[\s\S]*liveProposalKey/);
   assert.match(
-    contextLifecycle,
-    /page\.surface.*page\.view.*page\.courseId.*page\.lessonId/,
+    conversation,
+    /Подготовьте это предложение заново перед применением/,
   );
-  assert.match(contextLifecycle, /previousPageContextKeyRef\.current/);
-  assert.match(contextLifecycle, /next\[key\] = \{ status: "cancelled" \}/);
-  assert.match(
-    contextLifecycle,
-    /Открытая страница изменилась\. Неподтверждённое действие отменено/,
-  );
-  assert.match(contextLifecycle, /delete next\.quickReplies;/);
-  assert.match(contextLifecycle, /delete next\.quickRepliesContextKey;/);
-
-  const send = between(assistant, "async function send(", "function submit(");
-  assert.match(send, /requestPageContextKey = pageContextKey/);
-  assert.match(send, /pageContextKeyRef\.current !== requestPageContextKey/);
-  assert.match(send, /старое предложение не показано/);
-  assert.match(
-    assistant,
-    /proposalContextKeysRef\.current\[reply\.proposedAction\.idempotencyKey\]/,
-  );
-  assert.match(
-    assistant,
-    /proposalContextKeysRef\.current\[key\] !== pageContextKeyRef\.current/,
-  );
+  assert.doesNotMatch(conversation, /pageContextKey|proposalContextKeysRef/);
 });
 
 test("Course workspace reloads and opens, refreshes, or leaves a deleted Lesson after assistant apply", async () => {
@@ -272,7 +250,6 @@ test("Course workspace reloads and opens, refreshes, or leaves a deleted Lesson 
   assert.match(callback, /returnToCourseWorkspace\(current\)/);
   assert.match(callback, /result\.lessonId/);
   assert.match(callback, /window\.history\.replaceState/);
-
   const registration = workspace.slice(
     workspace.indexOf("useSystemAssistantPageContext("),
     workspace.indexOf(

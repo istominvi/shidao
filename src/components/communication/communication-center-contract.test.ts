@@ -285,10 +285,11 @@ test("communication client uses only the canonical V2 API and atomic persisted A
 });
 
 test("persisted AI proposals fail closed and reuse signed explicit apply", async () => {
-  const [assistant, actionClient, actionUi] = await Promise.all([
+  const [assistant, actionClient, actionUi, css] = await Promise.all([
     source("src/components/communication/assistant-conversation.tsx"),
     source("src/components/assistant/system-assistant-client.ts"),
-    source("src/components/assistant/system-assistant.tsx"),
+    source("src/components/communication/assistant-action-card.tsx"),
+    source("src/app/styles/communication-center.css"),
   ]);
 
   assert.match(assistant, /applySystemAssistantAction\(proposal\)/);
@@ -300,6 +301,11 @@ test("persisted AI proposals fail closed and reuse signed explicit apply", async
   assert.match(actionUi, /case "lesson\.schedule_run"/);
   assert.match(actionUi, /Назначить урок/);
   assert.match(actionUi, /existingLessonRunId/);
+  assert.match(actionUi, /communication-assistant-action-card/);
+  assert.match(css, /\.communication-assistant-action-card\s*\{/);
+  assert.match(css, /\.communication-assistant-quick-replies\s*\{/);
+  assert.doesNotMatch(actionUi, /system-assistant-(?:action|quick|plan)/);
+  assert.doesNotMatch(css, /\.system-assistant-(?:action|quick|plan)/);
 });
 
 test("context shortcuts expose only eligible learner and child-course chat targets", async () => {

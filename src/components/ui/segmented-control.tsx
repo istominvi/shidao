@@ -122,14 +122,9 @@ export function SegmentedControl<T extends string>({
       ref={groupRef}
       role="group"
       aria-label={ariaLabel}
+      data-variant={iconOnly ? "icon" : "text"}
       data-indicator-ready={indicatorVisible || undefined}
-      className={classNames(
-        "product-segmented-control",
-        iconOnly
-          ? "product-segmented-control-icon-only"
-          : "product-segmented-control-text",
-        className,
-      )}
+      className={classNames("product-segmented-control", className)}
     >
       <span
         className="product-segmented-control-indicator"
@@ -162,18 +157,14 @@ export function SegmentedControl<T extends string>({
             disabled={isDisabled}
             onClick={() => onChange(item.value)}
             aria-busy={item.busy || undefined}
-            className={classNames(
-              "product-segmented-control-option",
-              iconOnly
-                ? "product-segmented-control-option-icon-only"
-                : undefined,
-              isSelected
-                ? "product-segmented-control-option-selected"
-                : undefined,
-            )}
+            className="product-segmented-control-option"
           >
             {Icon ? <Icon aria-hidden="true" /> : null}
-            {!iconOnly ? <span>{item.label}</span> : null}
+            {!iconOnly ? (
+              <span className="product-segmented-control-option-label">
+                {item.label}
+              </span>
+            ) : null}
             {!iconOnly && item.count !== undefined ? (
               <span className="product-segmented-control-option-count">
                 {item.count}

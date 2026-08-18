@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
 **Статус:** current / next / later priorities после production identity release
-**Актуально на:** 17 августа 2026 года
+**Актуально на:** 18 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -22,6 +22,34 @@
    обновляются в том же изменении.
 8. Нельзя расширять scope за счёт Auth, SMTP, JWT/API keys, базового Storage или
    recovery V1 без отдельного решения.
+
+## Current source / next production — frontend structural cleanup
+
+- **Current:** shared `SegmentedControl` выражает visual variant через
+  `data-variant`, selection через `aria-pressed` и имеет одну option class;
+  измеряемый indicator, exact geometry и accessibility contracts сохранены.
+- **Current:** compact `ActionMenu` является явным `triggerSize="compact"`
+  primitive variant вместо Course/Lesson/Schedule/Students specificity forks.
+- **Current:** `AppPageHeader` не содержит redundant heading wrapper или state
+  classes; Communication Center владеет единственным current assistant action
+  UI, а несмонтированные floating launcher/panel и глобальный stylesheet
+  удалены.
+- **Current:** удалены только selectors/tokens/components с подтверждённым
+  отсутствием production references; marketing reduced-motion override
+  ограничен своей landing surface. Schema, API и Lesson workflow не меняются.
+- **Current verification:** `727/727` unit/contract, `28/28` strict
+  production-mode browser scenarios, typecheck, lint, repository-wide format
+  check и production build проходят.
+- **Next:** отдельным атомарным slice переименовать исторический
+  `course-demo-shell` в app shell, затем route-scope remaining global feature
+  CSS и устранить оставшиеся duplicate-property forks с independent browser
+  visual-parity gate на каждом шаге.
+- **Later:** включить automated CSS ownership/specificity/dead-token checks
+  после разделения route boundaries; dynamic variants нельзя удалять только по
+  статическому совпадению.
+
+Канонические правила находятся в
+[`docs/architecture/frontend-style-system.md`](./architecture/frontend-style-system.md).
 
 ## Current source / next production — TopNav, backlink rhythm и title-row
 

@@ -112,8 +112,9 @@ test("product tables use the element radius instead of the card radius", () => {
   );
   assert.match(
     styles,
-    /@media \(forced-colors: active\)\s*\{[\s\S]*?\.product-raised-surface,\s*\.product-raised-surface:not\(\.border\),\s*\.surface-card,\s*\.surface-card:not\(\.border\),[\s\S]*?border-color: CanvasText;/,
+    /@media \(forced-colors: active\)\s*\{[\s\S]*?\.surface-card,\s*\.surface-card:not\(\.border\),\s*\.course-demo-shell \.product-table-wrap,[\s\S]*?border-color: CanvasText;/,
   );
+  assert.doesNotMatch(styles, /\.product-raised-surface\b/);
   assert.doesNotMatch(
     styles,
     /\.(?:course-index-table-wrap)\s*\{[^}]*0 20px 52px/,
@@ -179,7 +180,7 @@ test("Course index and Course Lessons tables use the dense Schedule geometry", (
   );
   assert.match(
     styles,
-    /\.course-demo-shell[\s\S]*?\.course-index-table-action-menu[\s\S]*?\.product-btn\.action-menu-trigger\s*\{[^}]*width: var\(--product-inner-control-size, 2rem\);[^}]*min-width: var\(--product-inner-control-size, 2rem\);[^}]*height: var\(--product-inner-control-size, 2rem\);[^}]*min-height: var\(--product-inner-control-size, 2rem\);[^}]*border-radius: var\(--product-inner-control-radius, 0\.5rem\);[^}]*padding: 0;/,
+    /\.action-menu-root\[data-trigger-size="compact"\]\s*> \.product-btn\.action-menu-trigger\s*\{[^}]*width: var\(--product-inner-control-size, 2rem\);[^}]*min-width: var\(--product-inner-control-size, 2rem\);[^}]*height: var\(--product-inner-control-size, 2rem\);[^}]*min-height: var\(--product-inner-control-size, 2rem\);[^}]*border-radius: var\(--product-inner-control-radius, 0\.5rem\);/,
   );
   assert.match(
     ownedCoursesSource,
@@ -224,9 +225,10 @@ test("Course index and Course Lessons tables use the dense Schedule geometry", (
     courseWorkspaceSource,
     /<ProductTableActionCell className="course-index-table-action-cell text-right">/,
   );
-  assert.match(
+  assert.match(courseWorkspaceSource, /triggerSize="compact"/);
+  assert.doesNotMatch(
     courseWorkspaceSource,
-    /className="course-index-table-action-menu course-lessons-table-action-menu"/,
+    /course-(?:index|lessons)-table-action-menu/,
   );
   assert.doesNotMatch(ownedCoursesSource, /className="h-16"/);
   assert.doesNotMatch(catalogSource, /className="h-16"/);

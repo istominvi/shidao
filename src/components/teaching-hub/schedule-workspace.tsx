@@ -713,11 +713,11 @@ export function ScheduleWorkspace() {
                         <ProductTableActionCell className="teaching-run-table-action-cell text-right">
                           <span className="teaching-run-table-actions">
                             <ActionMenu
-                              className="teaching-run-action-menu"
                               label={`Действия с занятием «${run.lessonTitle}»`}
                               items={actionItems}
                               triggerIcon={MoreVertical}
                               triggerVariant="ghost"
+                              triggerSize="compact"
                               disabled={Boolean(busyLabel)}
                               portal
                             />

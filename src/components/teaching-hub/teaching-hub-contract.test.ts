@@ -332,6 +332,7 @@ test("schedule keeps the compact date control and dense one-line table contract"
   assert.match(scheduleWorkspaceSource, /<ActionMenu/);
   assert.match(scheduleWorkspaceSource, /triggerIcon=\{MoreVertical\}/);
   assert.match(scheduleWorkspaceSource, /triggerVariant="ghost"/);
+  assert.match(scheduleWorkspaceSource, /triggerSize="compact"/);
   assert.match(scheduleWorkspaceSource, /\sportal\s/);
   assert.match(scheduleWorkspaceSource, /label: "Начать урок"/);
   assert.match(scheduleWorkspaceSource, /label: "Изменить"/);
@@ -443,9 +444,10 @@ test("schedule keeps the compact date control and dense one-line table contract"
     /\.teaching-run-table-action-cell\s*\{[^}]*padding-inline:\s*var\(--product-inner-control-inset, 0\.25rem\) !important;[^}]*line-height:\s*0;/,
   );
   assert.match(
-    teachingHubStyleSource,
-    /\.course-demo-shell[\s\S]*?\.teaching-run-action-menu[\s\S]*?\.product-btn\.action-menu-trigger\s*\{[^}]*width:\s*var\(--product-inner-control-size, 2rem\);[^}]*min-width:\s*var\(--product-inner-control-size, 2rem\);[^}]*height:\s*var\(--product-inner-control-size, 2rem\);[^}]*min-height:\s*var\(--product-inner-control-size, 2rem\);[^}]*flex:\s*0 0 var\(--product-inner-control-size, 2rem\);[^}]*border-radius:\s*var\(--product-inner-control-radius, 0\.5rem\);[^}]*padding:\s*0;/,
+    globalStyleSource,
+    /\.action-menu-root\[data-trigger-size="compact"\][\s\S]*?> \.product-btn\.action-menu-trigger\s*\{[^}]*width:\s*var\(--product-inner-control-size, 2rem\);[^}]*min-width:\s*var\(--product-inner-control-size, 2rem\);[^}]*height:\s*var\(--product-inner-control-size, 2rem\);[^}]*min-height:\s*var\(--product-inner-control-size, 2rem\);[^}]*flex:\s*0 0 var\(--product-inner-control-size, 2rem\);[^}]*border-radius:\s*var\(--product-inner-control-radius, 0\.5rem\);/,
   );
+  assert.doesNotMatch(teachingHubStyleSource, /teaching-run-action-menu/);
   assert.match(
     teachingHubStyleSource,
     /\.action-menu-panel-portal \.action-menu-item\s*\{[^}]*height:\s*var\(\s*--course-demo-table-row-height,[^}]*min-height:\s*var\(\s*--course-demo-table-row-height,[^}]*align-items:\s*center;[^}]*gap:\s*var\(--course-demo-control-padding-inline,[^}]*border-radius:\s*var\(--product-inner-control-radius, 0\.5rem\);[^}]*padding-inline:\s*var\(--course-demo-control-padding-inline,[^}]*color:\s*#141414;[^}]*font-size:\s*var\(--course-demo-control-font-size,[^}]*font-weight:\s*var\(--course-demo-control-font-weight,/,
@@ -933,15 +935,15 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
   );
   assert.match(
     globalStyleSource,
-    /\.product-segmented-control\s*\{[^}]*height: var\(--product-segmented-control-height\);[^}]*min-height: var\(--product-segmented-control-height\);[^}]*gap: var\(--product-segmented-control-gap\);[^}]*overflow: visible;[^}]*border: var\(--product-surface-border\);[^}]*border-radius: var\(--product-segmented-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*background-clip: padding-box;[^}]*padding: 0;[^}]*box-shadow: none;/,
+    /\.product-segmented-control\s*\{[^}]*--segmented-option-width: auto;[^}]*height: var\(--product-segmented-control-height\);[^}]*gap: var\(--product-segmented-control-gap\);[^}]*overflow: visible;[^}]*border: var\(--product-surface-border\);[^}]*border-radius: var\(--product-segmented-control-radius\);[^}]*background: var\(--product-segmented-control-background\);[^}]*background-clip: padding-box;[^}]*padding: 0;[^}]*box-shadow: none;/,
   );
   assert.match(
     globalStyleSource,
-    /\.product-segmented-control-option\s*\{[^}]*height: var\(--product-segmented-control-option-size\);[^}]*min-height: var\(--product-segmented-control-option-size\);[^}]*min-width: var\(--product-segmented-control-option-size\);[^}]*border: 0;[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background: transparent;[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*line-height: var\(--product-entry-control-line-height\);[^}]*transform: none;/,
+    /\.product-segmented-control-option\s*\{[^}]*width: var\(--segmented-option-width\);[^}]*height: var\(--product-segmented-control-option-size\);[^}]*min-width: var\(--segmented-option-min-width\);[^}]*flex: var\(--segmented-option-flex\);[^}]*border: 0;[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background: transparent;[^}]*padding-inline: var\(--segmented-option-padding-inline\);/,
   );
   assert.match(
     globalStyleSource,
-    /\.product-segmented-control-option-icon-only\s*\{[^}]*width: var\(--product-segmented-control-option-size\);[^}]*min-width: var\(--product-segmented-control-option-size\);[^}]*flex-basis: var\(--product-segmented-control-option-size\);[^}]*padding-inline: 0;/,
+    /\.product-segmented-control\[data-variant="icon"\]\s*\{[^}]*--segmented-option-width: var\(--product-segmented-control-option-size\);[^}]*--segmented-option-flex: 0 0 var\(--product-segmented-control-option-size\);[^}]*--segmented-option-padding-inline: 0;/,
   );
   assert.match(
     globalStyleSource,
@@ -949,11 +951,11 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
   );
   assert.match(
     globalStyleSource,
-    /\.product-segmented-control-option-selected\s*\{[^}]*border: 0;[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-segmented-control-surface-shadow\);/,
+    /\.product-segmented-control-option\[aria-pressed="true"\]\s*\{[^}]*background: var\(--segmented-selected-background\);[^}]*background-clip: var\(--segmented-selected-background-clip\);[^}]*box-shadow: var\(--segmented-selected-shadow\);/,
   );
   assert.match(
     globalStyleSource,
-    /\.product-segmented-control\[data-indicator-ready="true"\]\s*\.product-segmented-control-option-selected:not\(:disabled\)\s*\{[^}]*background: transparent;[^}]*box-shadow: none;/,
+    /\.product-segmented-control\[data-indicator-ready="true"\]\s*\{[^}]*--segmented-selected-background: transparent;[^}]*--segmented-selected-background-clip: border-box;[^}]*--segmented-selected-shadow: none;/,
   );
   assert.equal(
     segmentedControlSource.match(
@@ -980,11 +982,11 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
   );
   assert.match(
     globalStyleSource,
-    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option-selected\s*\{[^}]*border: 1px solid Highlight !important;[^}]*background: Highlight !important;[^}]*color: HighlightText !important;[^}]*box-shadow: none !important;[^}]*forced-color-adjust: none;/,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option\[aria-pressed="true"\]\s*\{[^}]*border: 1px solid Highlight !important;[^}]*background: Highlight !important;[^}]*color: HighlightText !important;[^}]*box-shadow: none !important;[^}]*forced-color-adjust: none;/,
   );
   assert.match(
     globalStyleSource,
-    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid Highlight !important;[^}]*outline-offset: -2px;[^}]*box-shadow: none !important;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected:focus-visible\s*\{[^}]*outline-color: HighlightText !important;/,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-option:focus-visible\s*\{[^}]*outline: 2px solid Highlight !important;[^}]*outline-offset: -2px;[^}]*box-shadow: none !important;[^}]*\}[\s\S]*?\.product-segmented-control-option\[aria-pressed="true"\]:focus-visible\s*\{[^}]*outline-color: HighlightText !important;/,
   );
   assert.match(
     globalStyleSource,
@@ -1010,15 +1012,11 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
   assert.doesNotMatch(globalStyleSource, /vector-effect:\s*non-scaling-stroke/);
   assert.match(
     globalStyleSource,
-    /\.product-segmented-control-option-selected:not\(:disabled\):active\s*\{[^}]*box-shadow: var\(--product-segmented-control-surface-shadow-pressed\);[^}]*transform: none;/,
+    /\.product-segmented-control\[data-indicator-ready="true"\]:has\([\s\S]*?\.product-segmented-control-option\[aria-pressed="true"\][\s\S]*?\)\s*\.product-segmented-control-indicator\s*\{[^}]*box-shadow: var\(--product-segmented-control-surface-shadow-pressed\);/,
   );
   assert.match(
     globalStyleSource,
-    /\.product-segmented-control\[data-indicator-ready="true"\]:has\(\s*\.product-segmented-control-option-selected:not\(:disabled\):active\s*\)\s*\.product-segmented-control-indicator\s*\{[^}]*box-shadow: var\(--product-segmented-control-surface-shadow-pressed\);/,
-  );
-  assert.match(
-    globalStyleSource,
-    /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.product-segmented-control-option:hover:not\(:disabled\):not\(\s*\.product-segmented-control-option-selected\s*\)\s*\{[^}]*background: transparent;[^}]*color: var\(--color-neutral-950, #0a0a0a\);[^}]*box-shadow: none;/,
+    /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.product-segmented-control-option:hover:not\(:disabled\)\[aria-pressed="false"\]\s*\{[^}]*color: var\(--color-neutral-950, #0a0a0a\);/,
   );
   assert.match(
     teachingHubStyleSource,
@@ -1031,18 +1029,14 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
   assert.doesNotMatch(touchStyles, /transform: scale\(/);
   assert.doesNotMatch(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control(?:-option(?:-icon-only|-selected)?)?\s*\{[^}]*(?:height|min-height|width|min-width|gap|border|border-radius|background|padding|color|font-size|box-shadow|transform):/,
+    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*(?:height|min-height|width|min-width|gap|border|border-radius|background|padding|color|font-size|box-shadow|transform):/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-text\s*\{[^}]*max-width: 100%;[^}]*min-width: 0;[^}]*flex-shrink: 1;/,
+    /\.course-demo-shell \.product-segmented-control\[data-variant="text"\]\s*\{[^}]*max-width: 100%;[^}]*min-width: 0;[^}]*flex-shrink: 1;[^}]*--segmented-option-min-width: 0;[^}]*--segmented-option-flex: 1 1 0;/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell\s+\.product-segmented-control-text\s*> \.product-segmented-control-option\s*\{[^}]*min-width: 0;[^}]*flex: 1 1 0;/,
-  );
-  assert.match(
-    touchStyles,
-    /\.product-segmented-control-text[\s\S]*?> \.product-segmented-control-option[\s\S]*?> span:not\(\.product-segmented-control-option-count\)\s*\{[^}]*overflow: hidden;[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/,
+    /\.product-segmented-control\[data-variant="text"\][\s\S]*?> \.product-segmented-control-option\s*> \.product-segmented-control-option-label\s*\{[^}]*overflow: hidden;[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/,
   );
 });

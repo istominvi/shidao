@@ -67,8 +67,9 @@ test("search fields keep one foreground across copy and icons", () => {
   );
   assert.match(
     globalStyles,
-    /\.product-search-wrap,\s*\.product-select-wrap\s*\{[^}]*color: var\(--product-entry-control-foreground\);/,
+    /\.product-search-wrap\s*\{[^}]*color: var\(--product-entry-control-foreground\);/,
   );
+  assert.doesNotMatch(globalStyles, /\.product-select-(?:wrap|icon)\b/);
   assert.match(
     globalStyles,
     /\.product-search-icon\s*\{[^}]*color: currentColor;[^}]*opacity: 1;[^}]*pointer-events: none;/,

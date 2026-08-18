@@ -799,10 +799,10 @@ function CourseLessonsPanel({
                       <ProductTableActionCell className="course-index-table-action-cell text-right">
                         <span className="course-index-table-actions">
                           <ActionMenu
-                            className="course-index-table-action-menu course-lessons-table-action-menu"
                             label={`Действия с уроком «${lesson.title}»`}
                             triggerIcon={MoreVertical}
                             triggerVariant="ghost"
+                            triggerSize="compact"
                             disabled={disabled}
                             portal
                             items={lessonActionItems}

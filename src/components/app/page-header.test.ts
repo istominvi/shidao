@@ -124,14 +124,15 @@ test("active V2 pages share one page header contract without visual modifiers", 
   assert.doesNotMatch(header, /description\?: ReactNode/);
   assert.match(header, /direction="back"/);
   assert.match(header, /pageTransition\.runUpdate\("back", back\.onClick\)/);
-  assert.match(header, /"app-page-header"/);
-  assert.match(header, /back && "app-page-header-with-back"/);
-  assert.match(header, /Boolean\(actions\) && "app-page-header-with-actions"/);
+  assert.match(header, /className="app-page-header"/);
+  assert.doesNotMatch(header, /app-page-header-with-(?:back|actions)/);
+  assert.doesNotMatch(header, /classNames/);
   assert.match(header, /className="app-page-header-content"/);
   assert.match(
     header,
-    /<div className="app-page-back-slot">[\s\S]*?\{back\?\.type === "link" \? \([\s\S]*?\) : back \? \([\s\S]*?\) : null\}[\s\S]*?<\/div>\s*<div className="app-page-heading">/,
+    /<div className="app-page-back-slot">[\s\S]*?\{back\?\.type === "link" \? \([\s\S]*?\) : back \? \([\s\S]*?\) : null\}[\s\S]*?<\/div>\s*<div className="app-page-title-row">/,
   );
+  assert.doesNotMatch(header, /app-page-heading/);
   assert.doesNotMatch(
     header,
     /className="app-page-back-slot"[^>]*(?:aria-label|role|tabIndex)=/,

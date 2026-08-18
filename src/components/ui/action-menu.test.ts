@@ -13,11 +13,17 @@ const actionMenuConsumers = [
   "src/components/teaching-hub/student-directory-table.tsx",
 ].map((path) => readFileSync(path, "utf8"));
 
-test("action menu keeps legacy trigger defaults and exposes optional schedule controls", () => {
+test("action menu keeps stable trigger defaults and exposes explicit compact sizing", () => {
   assert.match(actionMenuSource, /triggerIcon: TriggerIcon = MoreHorizontal/);
   assert.match(actionMenuSource, /triggerVariant = "secondary"/);
+  assert.match(actionMenuSource, /triggerSize = "default"/);
   assert.match(actionMenuSource, /portal = false/);
   assert.match(actionMenuSource, /productButtonClassName\(\s*triggerVariant/);
+  assert.match(
+    actionMenuSource,
+    /data-trigger-size=\{triggerSize === "compact" \? "compact" : undefined\}/,
+  );
+  assert.doesNotMatch(actionMenuSource, /action-menu-trigger px-3/);
   assert.match(actionMenuSource, /<TriggerIcon/);
 });
 
@@ -57,9 +63,9 @@ test("contextual action menus use one borderless surface without separators", ()
     rootStyles,
     /--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;[^}]*--product-surface-border-color: oklch\(0 0 0 \/ 0\.1\);[^}]*--product-surface-border:\s*var\(--product-surface-border-width\) solid\s*var\(--product-surface-border-color\);[^}]*--product-dropdown-background: var\(--product-surface-background\);[^}]*--product-dropdown-radius: var\(--product-element-radius\);[^}]*--product-dropdown-inset: 0\.375rem;[^}]*--product-dropdown-shadow: 0 24px 32px -24px rgba\(20, 20, 20, 0\.24\);/,
   );
-  assert.match(
+  assert.doesNotMatch(
     rootStyles,
-    /--product-context-menu-surface: var\(--product-dropdown-background\);[^}]*--product-context-menu-radius: var\(--product-dropdown-radius\);[^}]*--product-context-menu-inset: var\(--product-dropdown-inset\);[^}]*--product-context-menu-shadow: var\(--product-dropdown-shadow\);/,
+    /--product-context-menu-(?:surface|radius|inset|shadow)/,
   );
   assert.match(dropdownStyles, /border: 0;/);
   assert.match(
@@ -96,6 +102,17 @@ test("contextual action menus use one borderless surface without separators", ()
   );
   for (const consumer of actionMenuConsumers) {
     assert.doesNotMatch(consumer, /separatorBefore/);
+  }
+  assert.match(
+    styles,
+    /\.action-menu-root\[data-trigger-size="compact"\][\s\S]*?> \.product-btn\.action-menu-trigger\s*\{[^}]*width: var\(--product-inner-control-size, 2rem\);[^}]*height: var\(--product-inner-control-size, 2rem\);[^}]*border: 0;[^}]*border-radius: var\(--product-inner-control-radius, 0\.5rem\);/,
+  );
+  for (const consumer of actionMenuConsumers) {
+    assert.match(consumer, /triggerSize="compact"|triggerSize=\{/);
+    assert.doesNotMatch(
+      consumer,
+      /(?:course-index-table|teaching-run|student-directory)-action-menu/,
+    );
   }
   assert.match(
     forcedColorsStyles,

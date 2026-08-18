@@ -4,7 +4,7 @@
 
 **Дата решения:** 5 августа 2026 года
 
-**Актуально на:** 17 августа 2026 года
+**Актуально на:** 18 августа 2026 года
 
 **Область:** Course Builder / Lesson / Components / Student Screen / audience / scheduling / learning history / course materials / homework
 
@@ -19,16 +19,18 @@ publications с revision progress и аттестацией также явля�
 production. Homework, enrollment/consumption детских Course через
 LearnerProfile и live Student Screen sync остаются later.
 
-Current deployed follow-up добавляет global System Assistant в
-protected `(app)` layout. Он не меняет Lesson hierarchy или schema: по
-allowlisted page context читает bounded authorized проекции, а после отдельного
-explicit Apply может создать Course draft, пустую или наполненную Lesson,
+Historical deployed follow-up добавил global System Assistant в protected
+`(app)` layout. Base release `b7c6cfe`, exact conversational follow-up
+`246cf49` и quick-reply follow-up `69a74a7` развёрнуты; их backend
+contracts/routes/services сохранены; новая Lesson/Component schema для этого
+follow-up не потребовалась. Current source удаляет отдельный floating
+`SystemAssistant` и переносит тот же bounded conversation/action contract в
+единственный persisted `CommunicationCenter`. `SystemAssistantProvider`
+остаётся только allowlisted page-context provider. После отдельного explicit
+Apply assistant может создать Course draft, пустую или наполненную Lesson,
 дополнить существующую Lesson либо удалить exact Lesson. Наполнение
 переиспользует canonical Lesson plan/preview/apply и не создаёт Step или второй
 Component order; удаление вызывает тот же history-preserving `deleteLesson`.
-Base release `b7c6cfe`, exact conversational follow-up `246cf49` и quick-reply
-follow-up `69a74a7` развёрнуты; новая Lesson/Component schema для этого не
-потребовалась.
 
 ## Product decision
 
@@ -499,10 +501,11 @@ course-wide каталога. Она не создаёт lesson attachment, не
 reload. Перестройка navigation, inline settings/audience и pre-persistence shell
 не меняют Course/Audience/attachment contracts или физическую schema.
 
-Current deployed UI не размещает отдельную кнопку assistant в Course или
-Lesson header. Один floating widget смонтирован выше этих workspace в protected
-Account layout; Course workspace регистрирует только typed `courseId` и
-optional selected `lessonId`, а fullscreen preview — текущую preview Lesson.
+Current UI не размещает отдельную кнопку assistant в Course или Lesson header.
+Единственный persisted `CommunicationCenter` смонтирован выше этих workspace в
+protected Account layout; `SystemAssistantProvider` только принимает typed
+allowlisted page context. Course workspace регистрирует `courseId` и optional
+selected `lessonId`, а fullscreen preview — текущую preview Lesson.
 Произвольный URL, DOM, search/hash и несохранённые поля Lesson в page context не
 передаются. Старый course-scoped assistant route может временно оставаться как
 compatibility, но его dialog больше не является частью Course/Lesson UI.
@@ -1016,12 +1019,13 @@ Current production делает `/schedule` и `/students` доступными
   Active profile можно открыть, изменить группы, добавить в выбранный Course
   реальным flow с сохранением существующей group/direct audience или «Убрать
   из списка». Пункт
-  «Написать сообщение» disabled и явно помечен как недоступный, поэтому
-  communication layer не заявляется реализованным. Archived profile и pending
-  request получают только допустимые restore/permanent-delete или cancel
-  actions; trigger/menu не превращаются в неявный row click. Это current
-  production UI/application refinement поверх существующих Group/Course
-  audience boundaries без новой schema или migration;
+  «Написать сообщение» открывает direct conversation в единственном
+  `CommunicationCenter` для claimed/merged Account и остаётся disabled с
+  объясняющим hint только для offline/pending identity. Archived profile и
+  pending request получают только допустимые restore/permanent-delete или
+  cancel actions; trigger/menu не превращаются в неявный row click. Это current
+  UI/application refinement поверх существующих Group/Course audience и
+  communication boundaries;
 - current source / next production упрощает Students toolbar: прежний
   disclosure удалён, а единственным membership control становится постоянно
   видимый `SegmentedControl` **Все / В группе / Без группы**. Membership
@@ -1084,10 +1088,10 @@ actions`; пять data headers сортируют полную client-loaded pr
   Exact `80 × 40 px` contract принадлежит только двум icon-only cells.
   Semantic text projection в current source / next production остаётся
   content-sized на desktop, а на narrow/coarse сжимается внутри parent:
-  `.product-segmented-control-text` использует `max-width: 100%`, `min-width: 0`
-  и `flex-shrink: 1`, каждая option — `min-width: 0` и `flex: 1 1 0`. Видимый
-  label обрезается однострочным ellipsis, но полный DOM-текст кнопки сохраняет
-  её полное accessible name.
+  `[data-variant="text"]` использует `max-width: 100%`, `min-width: 0` и
+  `flex-shrink: 1`, каждая option — `min-width: 0` и `flex: 1 1 0`.
+  `.product-segmented-control-option-label` обрезается однострочным ellipsis, но
+  полный DOM-текст кнопки сохраняет её полное accessible name.
   При `prefers-reduced-motion: reduce` measurement и selection работают, но
   plate меняет положение мгновенно без transition. В `forced-colors` plate
   скрывается, shell использует `ButtonFace / CanvasText`, а actual selected
@@ -1367,8 +1371,15 @@ Implementation map:
 - AI provider/contracts/service: `src/modules/ai/`;
 - AI routes: `src/app/api/v2/courses/[courseId]/ai-*/`, compatibility
   `assistant/` и deployed `src/app/api/v2/assistant/`;
-- System Assistant UI/context: `src/components/assistant/`,
-  `src/app/(app)/layout.tsx`, `src/app/styles/system-assistant.css`;
+- allowlisted System Assistant page context:
+  `src/components/assistant/system-assistant-provider.tsx`,
+  `src/app/(app)/layout.tsx`;
+- persisted assistant conversation/action UI:
+  `src/components/communication/assistant-conversation.tsx`,
+  `src/components/communication/assistant-action-card.tsx`;
+- Communication Center shell/styles:
+  `src/components/communication/communication-center.tsx`,
+  `src/app/styles/communication-center.css`;
 - authoring UI: `src/components/course-builder/lesson-authoring-workspace.tsx`;
 - publication/catalog: `src/modules/course-publications/`,
   `src/components/course-builder/course-catalog-panel.tsx`;
@@ -1433,15 +1444,16 @@ flow. Он может видеть ограниченный Course context и в
 может временно оставаться compatibility boundary, но Course/Lesson dialog и
 header actions удалены из current deployed UI.
 
-Deployed base global System Assistant монтируется один раз только в protected
-`(app)` layout. Browser передаёт strict allowlisted surface и typed
-view текущей вкладки, Course/Lesson IDs при допустимости, локальную дату и UTC offset; DOM,
-произвольный URL/search/hash и несохранённые form values не передаются. Server
-повторно проходит universal active/provisional Account gate, user-JWT/RLS и
-owner check. Он даёт provider bounded compact Course catalog и только
-surface-specific projection: current Course/Lesson с разрешённой history,
-Students/Groups либо Schedule выбранного дня. Technical/Auth/Storage IDs и file
-contents исключены.
+Current source монтирует один persisted `CommunicationCenter` только в
+protected `(app)` layout. Сохранившийся `SystemAssistantProvider` не владеет
+launcher, panel или conversation state: он передаёт Communication Center strict
+allowlisted surface и typed view текущей вкладки, Course/Lesson IDs при
+допустимости, локальную дату и UTC offset. DOM, произвольный URL/search/hash и
+несохранённые form values не передаются. Server повторно проходит universal
+active/provisional Account gate, user-JWT/RLS и owner check. Он даёт provider
+bounded compact Course catalog и только surface-specific projection: current
+Course/Lesson с разрешённой history, Students/Groups либо Schedule выбранного
+дня. Technical/Auth/Storage IDs и file contents исключены.
 
 Schedule day/week/month presentation не расширяет этот AI boundary: assistant
 получает только опорную `localDate` integrated calendar control и server-side
@@ -1449,9 +1461,10 @@ Schedule day/week/month presentation не расширяет этот AI boundar
 описывать модели как полностью загруженный day/week/month context без отдельного
 contract change.
 
-Current deployed signed conversational follow-up возвращает ответ или максимум
-одно strict proposal. Provider ничего не записывает. Action card и отдельный
-explicit Apply разрешают
+Current persisted assistant flow возвращает ответ или максимум одно strict
+proposal. Provider не выполняет Course/Lesson mutation; Communication
+orchestration сохраняет user/assistant turns. Action card и отдельный explicit
+Apply разрешают
 `course.create_draft`, пустой `course.add_lesson`, наполненный
 `course.add_lesson_with_plan`, `lesson.fill` и `lesson.delete`. Это не open-ended
 tool calling: произвольный update, Auth/security, audience, Students/Groups,
@@ -1465,15 +1478,19 @@ mutation и не provider-output 502. Пустой ref может означат
 только на уже проверенной Course surface; неизвестный непустой ref остаётся
 ошибкой строгого контракта.
 
-История global dialog остаётся в React state до reload/явного сброса. Rate и
+Account-owned assistant conversations и turns сохраняются в
+`assistant_conversation` / `assistant_turn`, поэтому закрытие panel и reload не
+сбрасывают историю. Transient composer/panel state остаётся client-local. Rate и
 concurrency guard, actor+target mutex и 10-минутный idempotency result cache
 живут только в одном Node process. Restart или другая replica их не видят;
 durable action ledger, distributed exactly-once и сериализация concurrent
 Lesson append остаются next hardening. Proposal HMAC действует 10 минут, но не
 заменяет durable ledger; delete fingerprint compare и RPC имеют известное
-неатомарное TOCTOU окно. Новая schema/migration в System Assistant slice
-отсутствует. Exact conversational follow-up `246cf49` развёрнут и прошёл
-running-image/HTTP/guest postflight.
+неатомарное TOCTOU окно. Historical System Assistant release сам не добавлял
+schema; current conversation persistence принадлежит Communication Center
+domain. Exact conversational follow-up `246cf49` развёрнут и прошёл
+running-image/HTTP/guest postflight; это historical backend/action acceptance,
+а не current floating-UI contract.
 
 Lesson planning, compatibility course-scoped Assistant и global Course context
 получают выбранные direct learners, teacher-local
@@ -1554,9 +1571,10 @@ application services и MCP не импортируют demo fixtures; все н
 
 ## Not implemented yet
 
-- persisted assistant history, generalized tool calling и mutations за
-  пределами подтверждаемого allowlist Course draft / новая пустая или
-  наполненная Lesson / fill exact Lesson / delete exact Lesson;
+- generalized tool calling и mutations за пределами подтверждаемого allowlist
+  Course draft / новая пустая или наполненная Lesson / fill exact Lesson /
+  delete exact Lesson; persisted assistant conversations/turns уже реализованы
+  в Communication Center;
 - distributed assistant rate/idempotency ledger и exactly-once mutations между
   replicas;
 - persistent AI quota/ledger, billing и change sets/undo;

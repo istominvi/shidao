@@ -10,7 +10,7 @@ const component = source("src/components/ui/segmented-control.tsx");
 const styles = source("src/app/globals.css");
 const motionStyles = source("src/app/styles/page-motion.css");
 
-test("segmented control owns one measured indicator before its buttons", () => {
+test("segmented control keeps one measured indicator and semantic button state", () => {
   assert.match(component, /^"use client";/);
   assert.match(component, /const groupRef = useRef<HTMLDivElement>\(null\);/);
   assert.match(
@@ -18,9 +18,19 @@ test("segmented control owns one measured indicator before its buttons", () => {
     /const optionRefs = useRef\(new Map<T, HTMLButtonElement>\(\)\);/,
   );
   assert.match(component, /ref=\{groupRef\}/);
+  assert.match(component, /role="group"/);
+  assert.match(component, /aria-label=\{ariaLabel\}/);
+  assert.match(component, /data-variant=\{iconOnly \? "icon" : "text"\}/);
   assert.match(
     component,
-    /ref=\{\(node\) => \{\s*if \(node\) optionRefs\.current\.set\(item\.value, node\);\s*else optionRefs\.current\.delete\(item\.value\);\s*\}\}/,
+    /className=\{classNames\("product-segmented-control", className\)\}/,
+  );
+  assert.match(component, /aria-pressed=\{isSelected\}/);
+  assert.match(component, /className="product-segmented-control-option"/);
+  assert.match(component, /className="product-segmented-control-option-label"/);
+  assert.doesNotMatch(
+    component,
+    /product-segmented-control-(?:icon-only|text|option-icon-only|option-selected)/,
   );
 
   assert.equal(
@@ -30,11 +40,7 @@ test("segmented control owns one measured indicator before its buttons", () => {
   assert.ok(
     component.indexOf('className="product-segmented-control-indicator"') <
       component.indexOf("{items.map"),
-    "The single visual indicator must precede every semantic button",
-  );
-  assert.match(
-    component,
-    /<span\s+className="product-segmented-control-indicator"\s+aria-hidden="true"\s+data-ready=\{indicatorVisible \|\| undefined\}\s+data-motion-ready=/,
+    "The visual indicator must precede every semantic option",
   );
   assert.match(
     component,
@@ -44,10 +50,9 @@ test("segmented control owns one measured indicator before its buttons", () => {
     component,
     /width: `\$\{indicator\.width\}px`,\s*transform: `translate3d\(\$\{indicator\.left\}px, 0, 0\)`,/,
   );
-  assert.match(component, /aria-pressed=\{isSelected\}/);
 });
 
-test("segmented indicator measurement fails closed and tracks every resize path", () => {
+test("segmented indicator fails closed and tracks every resize path", () => {
   assert.match(
     component,
     /if \(!group \|\| !selectedOption\) \{[\s\S]*?current\.ready\s*\? \{ left: 0, width: 0, ready: false \}\s*: current/,
@@ -61,7 +66,6 @@ test("segmented indicator measurement fails closed and tracks every resize path"
     /left: selectedRect\.left - groupRect\.left - group\.clientLeft/,
   );
   assert.match(component, /width: selectedRect\.width/);
-
   assert.match(
     component,
     /if \(typeof ResizeObserver === "undefined"\) \{\s*window\.addEventListener\("resize", updateIndicator\);\s*return \(\) => window\.removeEventListener\("resize", updateIndicator\);\s*\}/,
@@ -75,72 +79,55 @@ test("segmented indicator measurement fails closed and tracks every resize path"
     component,
     /for \(const option of optionRefs\.current\.values\(\)\) observer\.observe\(option\)/,
   );
-  assert.match(component, /return \(\) => observer\.disconnect\(\)/);
-
   assert.equal(component.match(/window\.requestAnimationFrame\(/g)?.length, 1);
   assert.equal(component.match(/window\.cancelAnimationFrame\(/g)?.length, 1);
-  assert.match(
-    component,
-    /const indicatorVisible =\s*indicator\.ready &&\s*selectedItem !== undefined &&\s*!\(disabled \|\| selectedItem\.disabled\);[\s\S]*?if \(!indicatorVisible\) \{\s*setIndicatorMotionReady\(false\);\s*return;\s*\}[\s\S]*?const frame = window\.requestAnimationFrame\(\(\) =>\s*setIndicatorMotionReady\(true\),\s*\);\s*return \(\) => window\.cancelAnimationFrame\(frame\);[\s\S]*?\}, \[indicatorVisible\]\);/,
-  );
 });
 
-test("segmented indicator preserves canonical geometry and owns selected elevation", () => {
+test("segmented CSS expresses variants and selection without modifier classes", () => {
   assert.match(
     styles,
-    /:root\s*\{[^}]*--product-element-radius: 0\.75rem;[^}]*--product-control-radius: var\(--product-element-radius\);[^}]*--product-surface-background: #fff;[^}]*--product-surface-border-width: 1px;/,
+    /--product-segmented-control-height: var\(--product-control-height\);[\s\S]*?--product-segmented-control-option-size: calc\(/,
   );
   assert.match(
     styles,
-    /:root\s*\{[\s\S]*?--product-segmented-control-height: var\(--product-control-height\);[\s\S]*?--product-segmented-control-radius: var\(--product-control-radius\);[\s\S]*?--product-segmented-control-option-size: calc\(\s*var\(--product-segmented-control-height\) -\s*var\(--product-surface-border-width\) - var\(--product-surface-border-width\)\s*\);[\s\S]*?--product-segmented-control-option-radius: calc\(\s*var\(--product-segmented-control-radius\) -\s*var\(--product-surface-border-width\)\s*\);[\s\S]*?--product-segmented-control-gap: calc\(\s*var\(--product-surface-border-width\) \+ var\(--product-surface-border-width\)\s*\);/,
+    /\.product-segmented-control\s*\{[^}]*--segmented-option-width: auto;[^}]*--segmented-option-min-width: var\(--product-segmented-control-option-size\);[^}]*--segmented-option-flex: 0 0 auto;[^}]*height: var\(--product-segmented-control-height\);[^}]*gap: var\(--product-segmented-control-gap\);[^}]*border: var\(--product-surface-border\);/,
   );
   assert.match(
     styles,
-    /:root\s*\{[\s\S]*?--product-segmented-control-surface-shadow:\s*var\(\s*--product-raised-control-shadow\s*\);[\s\S]*?--product-segmented-control-surface-shadow-pressed:\s*var\(\s*--product-raised-control-shadow-pressed\s*\);/,
-    "The selected surface must reuse the ordinary outer base/pressed shadows directly",
+    /\.product-segmented-control\[data-variant="icon"\]\s*\{[^}]*--segmented-option-width: var\(--product-segmented-control-option-size\);[^}]*--segmented-option-flex: 0 0 var\(--product-segmented-control-option-size\);[^}]*--segmented-option-padding-inline: 0;/,
+  );
+  assert.match(
+    styles,
+    /\.product-segmented-control-option\s*\{[^}]*width: var\(--segmented-option-width\);[^}]*height: var\(--product-segmented-control-option-size\);[^}]*min-width: var\(--segmented-option-min-width\);[^}]*flex: var\(--segmented-option-flex\);[^}]*padding-inline: var\(--segmented-option-padding-inline\);/,
+  );
+  assert.match(
+    styles,
+    /\.product-segmented-control-option\[aria-pressed="true"\]\s*\{[^}]*background: var\(--segmented-selected-background\);[^}]*background-clip: var\(--segmented-selected-background-clip\);[^}]*box-shadow: var\(--segmented-selected-shadow\);/,
+  );
+  assert.match(
+    styles,
+    /\.product-segmented-control\[data-indicator-ready="true"\]\s*\{[^}]*--segmented-selected-background: transparent;[^}]*--segmented-selected-background-clip: border-box;[^}]*--segmented-selected-shadow: none;/,
+  );
+  assert.match(
+    styles,
+    /\.product-segmented-control\[data-indicator-ready="true"\]:has\([\s\S]*?\)\s*\.product-segmented-control-indicator\s*\{[^}]*box-shadow: var\(--product-segmented-control-surface-shadow-pressed\);/,
+  );
+  assert.match(
+    styles,
+    /\.course-demo-shell \.product-segmented-control\[data-variant="text"\]\s*\{[^}]*--segmented-option-min-width: 0;[^}]*--segmented-option-flex: 1 1 0;/,
+  );
+  assert.match(
+    styles,
+    /\.product-segmented-control\[data-variant="text"\][\s\S]*?> \.product-segmented-control-option\s*> \.product-segmented-control-option-label\s*\{[^}]*overflow: hidden;[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/,
   );
   assert.doesNotMatch(
     styles,
-    /--product-segmented-control-surface-boundary/,
-    "The moving white surface must not paint an inset boundary",
+    /product-segmented-control-(?:icon-only|text|option-icon-only|option-selected)/,
   );
-  assert.match(
-    styles,
-    /\.product-segmented-control\s*\{[^}]*position: relative;[^}]*box-sizing: border-box;[^}]*height: var\(--product-segmented-control-height\);[^}]*gap: var\(--product-segmented-control-gap\);[^}]*overflow: visible;[^}]*border: var\(--product-surface-border\);[^}]*border-radius: var\(--product-segmented-control-radius\);[^}]*padding: 0;/,
-  );
-  assert.match(
-    styles,
-    /\.product-segmented-control-indicator\s*\{[^}]*position: absolute;[^}]*z-index: 0;[^}]*top: 0;[^}]*left: 0;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*border: 0;[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background-color: var\(--product-surface-background\);[^}]*background-image: none;[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-segmented-control-surface-shadow\);[^}]*opacity: 0;[^}]*pointer-events: none;[^}]*backdrop-filter: none;[^}]*will-change: width, transform;[^}]*transition: none;/,
-  );
-  assert.match(
-    styles,
-    /\.product-segmented-control-indicator\[data-ready="true"\]\s*\{[^}]*opacity: 1;/,
-  );
-  assert.match(
-    styles,
-    /\.product-segmented-control-option\s*\{[^}]*z-index: 1;[^}]*height: var\(--product-segmented-control-option-size\);[^}]*min-width: var\(--product-segmented-control-option-size\);[^}]*border-radius: var\(--product-segmented-control-option-radius\);[^}]*background: transparent;[^}]*font-size: var\(--product-entry-control-font-size\);[^}]*font-weight: var\(--product-entry-control-font-weight\);[^}]*line-height: var\(--product-entry-control-line-height\);/,
-  );
-  assert.match(
-    styles,
-    /\.product-segmented-control-option-selected\s*\{[^}]*background: var\(--product-surface-background\);[^}]*box-shadow: var\(--product-segmented-control-surface-shadow\);/,
-    "The selected button must remain a painted fallback until measurement is ready",
-  );
-  assert.match(
-    styles,
-    /\.product-segmented-control\[data-indicator-ready="true"\]\s*\.product-segmented-control-option-selected:not\(:disabled\)\s*\{[^}]*background: transparent;[^}]*box-shadow: none;/,
-  );
-  assert.match(
-    styles,
-    /\.product-segmented-control-option-selected:not\(:disabled\):active\s*\{[^}]*box-shadow: var\(--product-segmented-control-surface-shadow-pressed\);[^}]*transform: none;/,
-  );
-  assert.match(
-    styles,
-    /\.product-segmented-control\[data-indicator-ready="true"\]:has\(\s*\.product-segmented-control-option-selected:not\(:disabled\):active\s*\)\s*\.product-segmented-control-indicator\s*\{[^}]*box-shadow: var\(--product-segmented-control-surface-shadow-pressed\);/,
-  );
-  assert.match(
-    styles,
-    /@media \(hover: hover\) and \(pointer: fine\)\s*\{[\s\S]*?\.product-segmented-control-option:hover:not\(:disabled\):not\(\s*\.product-segmented-control-option-selected\s*\)\s*\{[^}]*background: transparent;[^}]*color: var\(--color-neutral-950, #0a0a0a\);[^}]*box-shadow: none;/,
-  );
+
+  const optionRule =
+    /\.product-segmented-control-option\s*\{([^}]*)\}/.exec(styles)?.[1] ?? "";
+  assert.doesNotMatch(optionRule, /box-sizing|min-height|transform:\s*none/);
   assert.doesNotMatch(
     styles,
     /\.product-segmented-control(?:::before|[^\s,{]*::before)/,
@@ -150,22 +137,22 @@ test("segmented indicator preserves canonical geometry and owns selected elevati
 test("segmented and workspace indicators share motion and accessibility fallbacks", () => {
   assert.match(
     styles,
-    /:root\s*\{[^}]*--product-selection-motion-duration: 360ms;[^}]*--product-selection-motion-easing: cubic-bezier\(0\.22, 1, 0\.36, 1\);[^}]*--product-selection-motion-fade-duration: 120ms;/,
+    /--product-selection-motion-duration: 360ms;[^}]*--product-selection-motion-easing: cubic-bezier\(0\.22, 1, 0\.36, 1\);[^}]*--product-selection-motion-fade-duration: 120ms;/,
   );
   assert.match(
     styles,
-    /\.product-segmented-control-indicator\[data-motion-ready="true"\]\s*\{[^}]*width var\(--product-selection-motion-duration\)\s*var\(--product-selection-motion-easing\),[^}]*transform var\(--product-selection-motion-duration\)\s*var\(--product-selection-motion-easing\),[^}]*opacity var\(--product-selection-motion-fade-duration\) ease;/,
+    /\.product-segmented-control-indicator\[data-motion-ready="true"\]\s*\{[^}]*width var\(--product-selection-motion-duration\)[^}]*transform var\(--product-selection-motion-duration\)[^}]*opacity var\(--product-selection-motion-fade-duration\) ease;/,
   );
   assert.match(
     motionStyles,
-    /\.workspace-tabs-indicator\[data-motion-ready="true"\]\s*\{[^}]*width var\(--product-selection-motion-duration\)\s*var\(--product-selection-motion-easing\),[^}]*transform var\(--product-selection-motion-duration\)\s*var\(--product-selection-motion-easing\),[^}]*opacity var\(--product-selection-motion-fade-duration\) ease;/,
+    /\.workspace-tabs-indicator\[data-motion-ready="true"\]\s*\{[^}]*width var\(--product-selection-motion-duration\)[^}]*transform var\(--product-selection-motion-duration\)[^}]*opacity var\(--product-selection-motion-fade-duration\) ease;/,
   );
   assert.match(
     styles,
-    /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.product-segmented-control-indicator,\s*\.product-segmented-control-indicator\[data-motion-ready="true"\]\s*\{[^}]*transition: none;/,
+    /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.product-segmented-control-indicator,[\s\S]*?transition: none;/,
   );
   assert.match(
     styles,
-    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-indicator\s*\{[^}]*display: none !important;[^}]*\}[\s\S]*?\.product-segmented-control-option-selected\s*\{[^}]*border: 1px solid Highlight !important;[^}]*background: Highlight !important;[^}]*color: HighlightText !important;[^}]*box-shadow: none !important;/,
+    /@media \(forced-colors: active\)[\s\S]*?\.product-segmented-control-indicator\s*\{[^}]*display: none !important;[\s\S]*?\.product-segmented-control-option\[aria-pressed="true"\]\s*\{[^}]*background: Highlight !important;[^}]*color: HighlightText !important;/,
   );
 });

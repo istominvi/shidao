@@ -34,6 +34,7 @@ type ActionMenuProps = {
   className?: string;
   triggerIcon?: LucideIcon;
   triggerVariant?: "secondary" | "ghost";
+  triggerSize?: "default" | "compact";
   portal?: boolean;
 };
 
@@ -50,6 +51,7 @@ export function ActionMenu({
   className,
   triggerIcon: TriggerIcon = MoreHorizontal,
   triggerVariant = "secondary",
+  triggerSize = "default",
   portal = false,
 }: ActionMenuProps) {
   const menuId = useId();
@@ -300,13 +302,17 @@ export function ActionMenu({
   ) : null;
 
   return (
-    <div ref={rootRef} className={classNames("action-menu-root", className)}>
+    <div
+      ref={rootRef}
+      className={classNames("action-menu-root", className)}
+      data-trigger-size={triggerSize === "compact" ? "compact" : undefined}
+    >
       <button
         ref={triggerRef}
         type="button"
         className={productButtonClassName(
           triggerVariant,
-          "action-menu-trigger px-3",
+          "action-menu-trigger",
         )}
         aria-label={label}
         aria-haspopup="menu"

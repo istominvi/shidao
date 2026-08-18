@@ -455,11 +455,9 @@ export function CourseActions({
           label={`Действия с курсом «${course.title}»`}
           items={items}
           disabled={Boolean(busyAction)}
-          className={
-            variant === "table" ? "course-index-table-action-menu" : undefined
-          }
           triggerIcon={MoreVertical}
           triggerVariant={variant === "table" ? "ghost" : "secondary"}
+          triggerSize={variant === "table" ? "compact" : "default"}
           portal
         />
         {actionError && !dialogMode ? (

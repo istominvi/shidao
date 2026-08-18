@@ -563,11 +563,11 @@ export function LearnersDirectoryTable({
                   >
                     <span className="student-directory-actions">
                       <ActionMenu
-                        className="student-directory-action-menu"
                         label={`Действия с учеником «${displayName}»`}
                         items={actionItems}
                         triggerIcon={MoreVertical}
                         triggerVariant="ghost"
+                        triggerSize="compact"
                         disabled={disabled}
                         portal
                       />
@@ -681,11 +681,11 @@ export function LearnersDirectoryCards({
                 )}
 
                 <ActionMenu
-                  className="student-directory-action-menu"
                   label={`Действия с учеником «${displayName}»`}
                   items={actionItems}
                   triggerIcon={MoreVertical}
                   triggerVariant="ghost"
+                  triggerSize="compact"
                   disabled={disabled}
                   portal
                 />

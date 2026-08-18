@@ -311,20 +311,11 @@
 }
 
 @media (min-width: 900px) {
-  .auth-shell-grid {
-    grid-template-columns: 0.95fr 1.05fr;
-    gap: 1.5rem;
-  }
-
-  .product-hero-card,
-  .dashboard-hero {
+  .product-hero-card {
     padding: 1.8rem;
   }
 
-  .primary-form-card,
-  .context-card,
-  .dashboard-grid-card,
-  .role-choice-card {
+  .primary-form-card {
     border-radius: 1.55rem;
     padding: 1.25rem;
   }
@@ -378,14 +369,16 @@
     box-shadow: none;
   }
 
-  .role-choice-card:hover,
   .role-card:hover {
     transform: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
+  html:has(.landing-main-marketing),
+  body:has(.landing-main-marketing),
+  .landing-main-marketing,
+  .landing-main-marketing * {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;

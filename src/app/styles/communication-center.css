@@ -716,14 +716,205 @@
   }
 }
 
-.communication-message .system-assistant-action-card {
+.communication-assistant-quick-replies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  max-width: 92%;
+}
+
+.communication-message .communication-assistant-quick-replies {
+  margin-top: 0.45rem;
+}
+
+.communication-assistant-quick-replies button {
+  min-height: 2.75rem;
+  border: 1px solid #141414;
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.55rem 0.9rem;
+  color: #141414;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.communication-assistant-quick-replies button:hover {
+  background: #141414;
+  color: #fff;
+}
+
+.communication-assistant-quick-replies button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.communication-assistant-action-card {
+  border: 1px solid rgba(20, 20, 20, 0.12);
+  border-radius: 1rem;
+  background: rgba(201, 255, 79, 0.2);
+  padding: 0.75rem;
+}
+
+.communication-message .communication-assistant-action-card {
   width: min(22rem, calc(100vw - 4rem));
   max-width: 100%;
   margin-top: 0.45rem;
 }
 
-.communication-message .system-assistant-quick-replies {
-  margin-top: 0.45rem;
+.communication-assistant-action-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #303617;
+  font-size: 0.78rem;
+}
+
+.communication-assistant-action-card dl {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.65rem 0;
+}
+
+.communication-assistant-action-card dl > div {
+  display: grid;
+  gap: 0.08rem;
+}
+
+.communication-assistant-action-card dt {
+  color: #6a704a;
+  font-size: 0.63rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.communication-assistant-action-card dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #353921;
+  font-size: 0.75rem;
+  line-height: 1.42;
+}
+
+.communication-assistant-plan-preview {
+  display: grid;
+  max-height: 15rem;
+  gap: 0.42rem;
+  margin: 0.25rem 0 0;
+  padding: 0 0.15rem 0 1.15rem;
+  overflow-y: auto;
+}
+
+.communication-assistant-plan-preview li {
+  padding-left: 0.1rem;
+}
+
+.communication-assistant-plan-preview strong,
+.communication-assistant-plan-preview span {
+  display: block;
+}
+
+.communication-assistant-plan-preview strong {
+  color: #5a6239;
+  font-size: 0.65rem;
+}
+
+.communication-assistant-plan-preview span {
+  margin-top: 0.08rem;
+  white-space: pre-wrap;
+}
+
+.communication-assistant-action-warning {
+  margin: 0.6rem 0;
+  border: 1px solid rgba(190, 18, 60, 0.2);
+  border-radius: 0.7rem;
+  background: rgba(255, 241, 242, 0.9);
+  padding: 0.55rem 0.62rem;
+  color: #9f1239;
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+.communication-assistant-action-buttons,
+.communication-assistant-action-result {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.communication-assistant-action-buttons button,
+.communication-assistant-action-result a {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.32rem;
+  border-radius: 0.72rem;
+  padding: 0.5rem 0.68rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.communication-assistant-action-buttons button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.communication-assistant-secondary-button {
+  border: 1px solid rgba(20, 20, 20, 0.16);
+  background: rgba(255, 255, 255, 0.8);
+  color: #41443a;
+}
+
+.communication-assistant-primary-button {
+  border: 1px solid #141414;
+  background: #141414;
+  color: #fff;
+}
+
+.communication-assistant-danger-button {
+  border: 1px solid #be123c;
+  background: #be123c;
+  color: #fff;
+}
+
+.communication-assistant-action-result {
+  justify-content: space-between;
+}
+
+.communication-assistant-action-result > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #4d5c16;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.communication-assistant-action-result a {
+  color: #141414;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.communication-assistant-action-note {
+  margin: 0.6rem 0 0;
+  color: #646a43;
+  font-size: 0.72rem;
+}
+
+.communication-assistant-action-error {
+  margin: 0.55rem 0 0;
+  border: 1px solid #fecdd3;
+  border-radius: 0.75rem;
+  background: #fff1f2;
+  padding: 0.58rem 0.65rem;
+  color: #9f1239;
+  font-size: 0.74rem;
+  line-height: 1.4;
 }
 
 .communication-message-error {
@@ -860,7 +1051,10 @@
 .communication-empty button:focus-visible,
 .communication-load-older:focus-visible,
 .communication-assistant-empty button:focus-visible,
-.communication-composer button:focus-visible {
+.communication-composer button:focus-visible,
+.communication-assistant-quick-replies button:focus-visible,
+.communication-assistant-action-buttons button:focus-visible,
+.communication-assistant-action-result a:focus-visible {
   outline: 3px solid #141414;
   outline-offset: 2px;
 }
@@ -934,6 +1128,14 @@
 
   .communication-message {
     max-width: 92%;
+  }
+
+  .communication-assistant-quick-replies {
+    max-width: 100%;
+  }
+
+  .communication-assistant-quick-replies button {
+    flex: 1 1 8rem;
   }
 }
 

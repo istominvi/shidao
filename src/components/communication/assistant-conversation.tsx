@@ -14,7 +14,7 @@ import {
   confirmationIntent,
   verifiedMessage,
   type AssistantActionState,
-} from "@/components/assistant/system-assistant";
+} from "@/components/communication/assistant-action-card";
 import {
   applySystemAssistantAction,
   SystemAssistantClientError,
@@ -522,7 +522,7 @@ export function AssistantConversationView({
                 turn.id === latestTurnId &&
                 turn.id !== hiddenQuickRepliesForTurnId ? (
                   <div
-                    className="system-assistant-quick-replies"
+                    className="communication-assistant-quick-replies"
                     role="group"
                     aria-label="Варианты ответа"
                   >

@@ -1,9 +1,9 @@
 # AI provider integration
 
-**Статус:** canonical contract для deployed Course AI и deployed signed
-conversational System Assistant
+**Статус:** canonical contract для deployed Course AI, backend signed
+conversational System Assistant и current persisted Communication Center UI
 
-**Актуально на:** 16 августа 2026 года
+**Актуально на:** 18 августа 2026 года
 
 **Deployment state:** AI application slice развёрнут на `v2.shidao.ru` в release
 `0276aed`; server runtime получает `ROUTERAI_API_KEY` из production secret
@@ -15,23 +15,29 @@ schema и read-only UI postflight завершены. Provider smoke с непу
 в roleless functional release `01aa88a` после M1–M6 и identity/browser
 postflight.
 
-Global System Assistant, protected floating UI и routes
-`/api/v2/assistant*` развёрнуты в exact functional release `b7c6cfe`.
+Historical Global System Assistant, его прежний protected floating UI и routes
+`/api/v2/assistant*` были развёрнуты в exact functional release `b7c6cfe`.
 Coolify/running-container SHA и HTTP/guest/API boundary postflight подтверждены;
 RouterAI no-write smoke с synthetic current Course подтверждён, authenticated
-production Apply ещё не выполнен и не заявляется пройденным.
+production Apply ещё не выполнен и не заявляется пройденным. Dedicated floating
+UI этого release superseded в current source единым persisted
+`CommunicationCenter`; backend contracts, routes и service boundary System
+Assistant сохранены.
 Conversational action follow-up расширяет allowlist наполнением и удалением
 Lesson, подписывает proposal и вводит one-active confirmation state machine;
 exact release `246cf49d2cd07bc7109b83acec46296be874312c` развёрнут. Running image и
 HTTP/guest boundary postflight подтверждены, authenticated production action
 postflight пока не выполнялся.
 
-**Schema state:** AI authoring не добавляет provider/quota persistence; он читает
-bounded projection из `teacher_learner`, `lesson_run` и `learning_record`.
+**Schema state:** AI authoring не добавляет отдельный provider accounting/quota
+ledger; он читает bounded projection из `teacher_learner`, `lesson_run` и
+`learning_record`.
 Identity slice отдельно хранит course-scoped authorization в
 `learner_ai_consent`; это не открывает provider raw history или teacher API.
-System Assistant также не меняет PostgreSQL schema и не добавляет
-таблицу dialog/action/idempotency.
+Historical standalone System Assistant slice сам не менял PostgreSQL schema.
+Current Communication Center сохраняет Account-owned AI-диалоги и turns в
+`assistant_conversation` / `assistant_turn`; отдельной durable таблицы
+action-execution/idempotency и billing ledger по-прежнему нет.
 
 ## Граница текущего среза
 
@@ -46,15 +52,16 @@ Base production slice подключает RouterAI к существующем�
 Это authoring assistance, а не AI-преподаватель и не автономный агент. Ассистент
 не проводит занятия и не управляет Student Screen.
 
-Base deployed follow-up заменяет course-owned dialog в UI одним global System
-Assistant внутри protected Account layout. Текущий conversational follow-up
-сохраняет обычный model-authored диалог по bounded authorized данным Account и
-открытой страницы и расширяет strict proposal allowlist: создать Course draft,
-добавить пустую или наполненную Lesson, дополнить открытую Lesson либо удалить
-exact Lesson. Provider только формирует validated preview/proposal; mutation
-начинается после отдельного явного подтверждения пользователя и вызывает
-canonical application service. Это не generalized tool calling и не автономная
-запись из свободного текста чата.
+Historical base follow-up заменил course-owned dialog одним global System
+Assistant внутри protected Account layout. Current source сохраняет тот же
+bounded conversational/action boundary внутри persisted Communication Center:
+пользователь создаёт или открывает Account-owned AI-диалог, а turns переживают
+закрытие panel и reload. Strict proposal allowlist разрешает создать Course
+draft, добавить пустую или наполненную Lesson, дополнить открытую Lesson либо
+удалить exact Lesson. Provider только формирует validated reply/proposal;
+Course/Lesson mutation начинается после отдельного явного подтверждения
+пользователя и вызывает canonical application service. Это не generalized tool
+calling и не автономная запись из свободного текста чата.
 
 ## Архитектурный поток
 
@@ -78,17 +85,20 @@ Production web не запускает локальный `stdio` MCP и не п
 actor. MCP остаётся development adapter над тем же application service; AI-срез
 переиспользует domain/service contracts напрямую.
 
-Current global flow:
+Current persisted assistant flow:
 
 ```text
-protected (app) layout + floating widget
-→ strict allowlisted page context + bounded React-state dialog
-→ POST /api/v2/assistant
-→ universal active/provisional Account gate
+protected (app) layout
+→ SystemAssistantProvider (strict allowlisted page context only)
+→ one persisted CommunicationCenter + AssistantConversationView
+→ POST /api/v2/assistant/conversations/{conversationId}/turns
+→ communication orchestration + universal active/provisional Account gate
+→ owner-scoped persisted conversation/history
 → per-request actor + user-JWT Course/LessonRuns services
 → bounded owner/recorder/consent-scoped context
 → RouterAI strict JSON turn
-→ text reply OR one signed strict proposal (no write)
+→ text reply OR one signed strict proposal (no Course/Lesson write)
+→ persisted assistant turn
 → explicit Apply in action card
 → POST /api/v2/assistant/actions/apply
 → signature + strict action validation + process-local replay/mutex guard
@@ -96,8 +106,9 @@ protected (app) layout + floating widget
 → user JWT / ownership / RLS
 ```
 
-Новый flow не вызывает старый HTTP route изнутри приложения, не запускает MCP и
-не конструирует publication service-role adapters.
+Current Communication Center не вызывает legacy `POST /api/v2/assistant` для
+нового turn, не запускает MCP и не конструирует publication service-role
+adapters. Backend route остаётся compatibility boundary.
 
 ## Provider contract
 
@@ -221,8 +232,8 @@ execution или MCP transport. System contract прямо запрещает у
 ассистент уже изменил Course.
 
 Прежний Course/Lesson dialog удалён из current deployed UI. Сам route пока
-может оставаться для compatibility, но global widget его не вызывает. История
-этого старого dialog по контракту была ephemeral:
+может оставаться для compatibility, но current Communication Center его не
+вызывает. История этого старого dialog по контракту была ephemeral:
 
 - сообщения не записываются в PostgreSQL, Storage или browser persistence;
 - закрытие dialog или reload начинает новый диалог;
@@ -233,28 +244,30 @@ execution или MCP transport. System contract прямо запрещает у
 Следовательно, это **read-only ephemeral assistant**, а не persisted Course chat,
 change history или автономный editor.
 
-## Global System Assistant — current deployed boundary
+## Persisted Communication Center — current source boundary
 
-`SystemAssistantProvider` и единственный floating `SystemAssistant` монтируются
-в `src/app/(app)/layout.tsx` после Account guard. Public landing, Auth и
-standalone demo его не получают. Panel остаётся non-modal, поддерживает Escape,
-focus return, mobile safe area и reduced motion. Диалог хранится только в React
-state protected layout: закрытие panel его не удаляет, явный «Новый диалог» или
-reload сбрасывает; PostgreSQL, localStorage и durable browser persistence не
-используются.
+`src/app/(app)/layout.tsx` после Account guard сохраняет
+`SystemAssistantProvider` только как typed allowlisted page-context provider.
+Он больше не рендерит отдельный assistant launcher или panel. В том же protected
+layout один раз монтируются `CommunicationCenterProvider` и единственный
+`CommunicationCenter`; public landing, Auth и standalone demo этот UI не
+получают.
 
-**Current source / next production presentation:** launcher остаётся одним
-fixed control, но имеет exact geometry `40 × 40 px`, правый и нижний inset
-`12 px` плюс соответствующий safe area, общий `--product-element-radius` и
-светлую aqua/mint/milk/lavender/pink opal-поверхность без border. Видимый
-`Sparkles` glyph icon-only и тёмный; доступное имя остаётся на button. Два
-independent SVG turbulence/displacement-поля и CSS transforms меняют форму и
-направление широких каустических волн с несоизмеримыми циклами вместо движения
-готовых radial gradients. `overflow: hidden` удерживает эффект внутри launcher,
-а `prefers-reduced-motion` оставляет композицию статичной. Panel выровнен по
-тому же правому inset и расположен на `12 px` выше launcher. Это UI-only
-изменение: page context, dialog state, routes, Apply boundary и schema не
-меняются.
+AI conversation UI принадлежит
+`src/components/communication/assistant-conversation.tsx`, а подтверждаемая
+action card — `src/components/communication/assistant-action-card.tsx`. Новый
+диалог, его title/archive state и turns сохраняются через Communication API;
+закрытие panel и reload их не удаляют. Локальными остаются transient composer,
+in-flight/error и открытое состояние panel. Styles этого UI живут в
+`src/app/styles/communication-center.css`. Прежние floating
+`src/components/assistant/system-assistant.tsx` и
+`src/app/styles/system-assistant.css` удалены из current source.
+
+Это изменение UI ownership не удаляет `src/modules/ai/system-assistant-*`,
+strict provider/context contracts, compatibility routes или explicit Apply
+boundary. Persisted turn orchestration переиспользует System Assistant service,
+а Course/Lesson mutation по-прежнему возможна только через отдельно
+подтверждённую action card.
 
 ### Allowlisted page context
 
@@ -445,8 +458,10 @@ durable action ledger или гарантией exactly-once. Signed proposal з
 сохраняет известный read-next-position ordering debt до отдельной DB/service
 serialization.
 
-В текущем срезе **нет persistent quota/ledger, billing units, balance или
-subscription enforcement**. Нулевой или отсутствующий usage в provider response
+Communication Center показывает monthly quota projection, агрегированную из
+persisted assistant turns и их bounded usage metadata. Это не отдельный
+authoritative billing ledger: balance, billing units и subscription enforcement
+в текущем срезе отсутствуют. Нулевой или отсутствующий usage в provider response
 нормализуется для UI, но не превращается в подтверждённое списание. Платные
 лимиты нельзя включать до отдельной persisted accounting model.
 
@@ -466,6 +481,8 @@ teacher_learner
 lesson_run
 learning_record
 learner_ai_consent
+assistant_conversation
+assistant_turn
 ```
 
 `lesson_run` и `learning_record` принадлежат scheduling/learning-history domain,
@@ -474,14 +491,16 @@ history ограничена `recorded_by_account_id`; foreign history вход�
 через `build_cross_provider_learner_context` как consent-gated sanitized
 projection. SQL и service-role credentials модели не доступны. Persisted
 результат AI после Apply не отличается по domain contract от результата ручного
-редактора. Provider request/response, assistant dialog history и quota state в
-БД не сохраняются.
+редактора. Raw provider request не архивируется. Communication domain сохраняет
+Account-owned assistant conversation и user/assistant turns, включая bounded
+reply payload/usage; monthly quota вычисляется из этих turns, а не хранится как
+отдельный billing balance.
 
-Global System Assistant также не добавляет физические сущности: proposal,
-action UUID/HMAC, in-flight lock и idempotency result существуют только в
-response, React state, stateless signed token или process memory. Созданные
-после Apply Course/Lesson являются обычными существующими domain rows;
-отдельного AI-owned Course/Lesson типа нет.
+System Assistant не добавляет отдельного AI-owned Course/Lesson типа. Signed
+proposal может сохраняться внутри assistant turn payload, но in-flight lock и
+idempotency result остаются process-local; durable action-execution ledger и
+exactly-once boundary отсутствуют. Созданные после Apply Course/Lesson являются
+обычными существующими domain rows.
 
 Identity, provenance и current access boundary зафиксированы в
 [`learner-identity-access-model.md`](./learner-identity-access-model.md).
@@ -493,9 +512,10 @@ course-scoped subject consent и через sanitized server projection; teacher
 ## Не входит в текущий срез
 
 - UI выбора модели пользователем;
-- persistent assistant history, Course chat и notifications;
+- durable AI action-execution history/change sets/undo за пределами persisted
+  conversation turns;
 - generalized/native tool calling и mutations вне allowlisted Course/Lesson
-  actions, durable action history и AI change sets/undo;
+  actions;
 - distributed rate limit, durable idempotency/action ledger и exactly-once
   mutations между replicas;
 - attachment parsing/OCR/RAG и citation provenance;
@@ -507,24 +527,31 @@ course-scoped subject consent и через sanitized server projection; teacher
 
 ## Карта реализации
 
-| Область                            | Каноническое место                                                                                 |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Provider adapter                   | `src/modules/ai/routerai.ts`                                                                       |
-| Provider lesson transport          | `src/modules/ai/lesson-provider-contracts.ts`                                                      |
-| AI request/response contracts      | `src/modules/ai/course-builder-contracts.ts`                                                       |
-| Bounded model context              | `src/modules/ai/course-context.ts`                                                                 |
-| Consented safe history             | `src/modules/ai/shared-history.ts`                                                                 |
-| Learning history service           | `src/modules/lesson-runs/service.ts`                                                               |
-| Planning/apply/chat service        | `src/modules/ai/course-builder-service.ts`                                                         |
-| System Assistant contracts/service | `src/modules/ai/system-assistant-contracts.ts`, `src/modules/ai/system-assistant-service.ts`       |
-| Rate/error boundary                | `src/modules/ai/server-context.ts`                                                                 |
-| API routes                         | `src/app/api/v2/courses/[courseId]/ai-*/`, compatibility `assistant/`, `src/app/api/v2/assistant/` |
-| Browser client                     | `src/components/course-builder/course-builder-client.ts`                                           |
-| Course preview UI                  | `src/components/course-builder/ai-course-plan-dialog.tsx`                                          |
-| Lesson preview UI                  | `src/components/course-builder/ai-lesson-plan-dialog.tsx`                                          |
-| System Assistant UI/context        | `src/components/assistant/`, `src/app/(app)/layout.tsx`, `src/app/styles/system-assistant.css`     |
+| Область                             | Каноническое место                                                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Provider adapter                    | `src/modules/ai/routerai.ts`                                                                                        |
+| Provider lesson transport           | `src/modules/ai/lesson-provider-contracts.ts`                                                                       |
+| AI request/response contracts       | `src/modules/ai/course-builder-contracts.ts`                                                                        |
+| Bounded model context               | `src/modules/ai/course-context.ts`                                                                                  |
+| Consented safe history              | `src/modules/ai/shared-history.ts`                                                                                  |
+| Learning history service            | `src/modules/lesson-runs/service.ts`                                                                                |
+| Planning/apply/chat service         | `src/modules/ai/course-builder-service.ts`                                                                          |
+| System Assistant contracts/service  | `src/modules/ai/system-assistant-contracts.ts`, `src/modules/ai/system-assistant-service.ts`                        |
+| Persisted assistant orchestration   | `src/modules/communication/assistant-orchestration.ts`, `src/modules/communication/assistant-runtime.ts`            |
+| Rate/error boundary                 | `src/modules/ai/server-context.ts`                                                                                  |
+| API routes                          | `src/app/api/v2/courses/[courseId]/ai-*/`, compatibility `assistant/`, `src/app/api/v2/assistant/`                  |
+| Browser client                      | `src/components/course-builder/course-builder-client.ts`                                                            |
+| Course preview UI                   | `src/components/course-builder/ai-course-plan-dialog.tsx`                                                           |
+| Lesson preview UI                   | `src/components/course-builder/ai-lesson-plan-dialog.tsx`                                                           |
+| Allowlisted page-context provider   | `src/components/assistant/system-assistant-provider.tsx`, `src/app/(app)/layout.tsx`                                |
+| Persisted assistant conversation UI | `src/components/communication/assistant-conversation.tsx`, `src/components/communication/assistant-action-card.tsx` |
+| Communication shell/styles          | `src/components/communication/communication-center.tsx`, `src/app/styles/communication-center.css`                  |
 
-## Conversational System Assistant release acceptance
+## Conversational System Assistant release acceptance — historical UI
+
+Следующие acceptance-факты относятся к прежнему dedicated floating UI. Они
+сохраняют release evidence backend conversational/action boundary, но не
+описывают current source ownership UI после перехода в Communication Center.
 
 Signed five-action conversational follow-up входит в exact functional release
 `246cf49d2cd07bc7109b83acec46296be874312c`. Финальный gate прошёл 435/435
@@ -548,7 +575,7 @@ webhook deployment `qps8curjf688ndlmw95hdck2` завершился `Success` з�
 restart count `0` и state `running`. HTTP login/robots — `200`, guest assistant
 POST — `401`; authenticated mutation postflight не выполнялся.
 
-## Base Global System Assistant release acceptance
+## Base Global System Assistant release acceptance — historical UI
 
 Global System Assistant входит в functional release
 `b7c6cfe73809d2006d7fb4fafc833a93a905f4af`. Release gate прошёл typecheck,

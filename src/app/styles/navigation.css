@@ -548,12 +548,6 @@
   background: rgba(153, 27, 27, 0.1);
 }
 
-.nav-dropdown-item-inline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
 @media (max-width: 767px) {
   html:has(.course-demo-shell) {
     --mobile-header-safe-top: max(0.75rem, env(safe-area-inset-top, 0px));
