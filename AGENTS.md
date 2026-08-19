@@ -61,6 +61,12 @@ course-material docs/code, read:
 
 - `docs/architecture/lesson-workflow-model.md`
 
+Before changing assessable components, learner responses, teacher observations,
+learning evidence/profile state, adaptive behavior, voice/pronunciation or
+activity telemetry, also read:
+
+- `docs/architecture/learning-activity-system.md`
+
 Policy:
 
 - The canonical authored hierarchy is `Course → Lesson → ordered Components`.

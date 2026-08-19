@@ -1,210 +1,304 @@
 # Каталог компонентов Course Builder
 
-**Статус:** current production registry + product decision
-**Актуально на:** 17 августа 2026 года
+**Статус:** CURRENT registry + NEXT/LATER product catalog
+**Актуально на:** 19 августа 2026 года
 
-Этот документ фиксирует проверенные публичные возможности ProgressMe,
-нашу продуктовую интерпретацию и фактическую границу ShiDao. Текущий
-20-типовый registry и D1 cleanup развёрнуты в production; сведения о стороннем
-продукте не являются утверждением о его внутренней архитектуре.
+Этот документ отвечает на три вопроса:
 
-## Что подтверждено официальными материалами ProgressMe
+1. какие Component types уже существуют в ShiDao;
+2. какую учебную роль они могут выполнять;
+3. какие engines и recipes следует развивать дальше.
 
-Открытая статья базы знаний «Собственные материалы на платформе»
-перечисляет 28 именованных шаблонов и интеграционных блоков. Это счёт
-пунктов публичного списка, а не утверждение о внутренней архитектуре или числе
-типов в коде ProgressMe.
+Педагогический и data contract находится в
+[`Learning Activity System`](../architecture/learning-activity-system.md).
+Канонический список runtime keys хранится только в code-first registry. Таблицы
+ниже являются продуктовой проекцией и не создают второй registry.
 
-| Семейство                  | Подтверждённые публичные варианты                                                                                                                                                                                                                      |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Контент и медиа            | Изображение/карусель, GIF, видео, топик «текст + изображение», текст, аудио с транскриптом, PDF через Google Drive                                                                                                                                     |
-| Автопроверяемые упражнения | Перенос слов в текст, тест с одним/несколькими ответами, пропуски, сопоставление описания и изображения, сборка предложения, выбор формы, истина/ложь/неизвестно, сопоставление двух колонок, сборка слова, категоризация, порядок предложений/абзацев |
-| Свободный ответ и словарь  | Сочинение без автопроверки, запись голоса, список слов для словаря, кнопка-ссылка                                                                                                                                                                      |
-| Служебные и внешние блоки  | Заметка учителю, интересный факт, разделяющая линия, Miro, Wordwall, LearningApps                                                                                                                                                                      |
+## Главный принцип каталога
 
-Официальные инструкции также подтверждают:
+Количество карточек в palette не равно количеству технических engines.
+Преподавателю можно предложить много понятных шаблонов, но внутри платформы
+должно оставаться немного хорошо проверенных primitives:
 
-- если в упражнении заданы правильные ответы, ProgressMe может проверять их
-  автоматически; задания без ответов проверяет учитель;
-- платформа показывает историю попыток для автопроверяемых заданий;
-- в Wordwall/LearningApps-интеграциях ответы ученика не сохраняются у учителя;
-- обновлённый конструктор делает акцент на preview карточки, ввод с клавиатуры,
-  bulk paste и избранные шаблоны.
+```text
+content/media
+choice
+cloze/text input
+matching/classification/order
+constructed response
+media response
+```
 
-Источники:
+Например, «Верно/неверно», «Один вариант» и «Несколько вариантов» могут быть
+presets одного choice engine. Worked example, self-explanation и exit ticket
+могут быть recipes из общих content/response/feedback primitives. Так scoring,
+telemetry, accessibility и исправления не расходятся между десятками похожих
+реализаций.
 
-- [«Собственные материалы на платформе»](https://help.progressme.ru/article/1237) —
-  перечень шаблонов и краткие описания;
-- [«Инструкция к ProgressMe для учеников»](https://help.progressme.ru/article/1266) —
-  learner behavior и виды ответов;
-- [«Работа с упражнениями»](https://help.progressme.ru/article/1233) —
-  автопроверка, попытки и ручная проверка;
-- [«Интеграция LearningApps и Wordwall»](https://help.progressme.ru/article/2641) —
-  внешние игры и отсутствие сохранения ответов;
-- [«Визуальный конструктор упражнений обновился»](https://help.progressme.ru/article/26665) —
-  UX создания упражнений;
-- [«8 инструментов ProgressMe»](https://blog.progressme.ru/resheniya/8-instrumentov-progressme-oblegchayushhih-rabotu-repetitorov/) —
-  обзор более 30 шаблонов и продуктового контекста.
+## CURRENT: 20 runtime types
 
-## Наша интерпретация
+### Content и resources
 
-Все решения ниже — продуктовый выбор ShiDao, а не факты о ProgressMe. Мы
-переносим учебную задачу, но не копируем названия, provider-specific payload или
-внутреннюю модель стороннего продукта.
+| Type              | Назначение                          | Current boundary                                   | Создаёт learning evidence |
+| ----------------- | ----------------------------------- | -------------------------------------------------- | ------------------------- |
+| `rich_text`       | Заголовок и/или Markdown-текст      | Ручное создание и редактирование                   | Нет                       |
+| `callout`         | Пояснение, правило, заметный акцент | Ручное создание и редактирование                   | Нет                       |
+| `quote`           | Цитата с optional автором           | Ручное создание и редактирование                   | Нет                       |
+| `heading`         | Legacy отдельный заголовок          | Runtime/edit compatibility; новое создание закрыто | Нет                       |
+| `image`           | Одно изображение                    | Existing Storage/reference contract                | Нет                       |
+| `video`           | Видео по HTTPS URL                  | Без upload/transcoding                             | Нет                       |
+| `audio`           | Аудио с optional transcript         | Только HTTPS URL                                   | Нет                       |
+| `slideshow`       | Галерея изображений                 | Existing asset contract                            | Нет                       |
+| `vocabulary_list` | Термины и переводы/определения      | Не обновляет learner vocabulary state              | Нет                       |
+| `external_link`   | Ссылка на внешний материал          | Только HTTPS; без embed telemetry                  | Нет                       |
+| `file`            | Attachment                          | Existing Storage/reference contract                | Нет                       |
 
-### Current runtime registry: 20 supported типов
+### Survey
 
-| Тип ShiDao                            | Задача                                                     | Граница текущего среза                                                 |
-| ------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `rich_text`, `callout`, `quote`       | Текст с заголовком и/или основным текстом, акцент и цитата | 3 варианта ручной текстовой категории                                  |
-| `heading`                             | Совместимость отдельного заголовка                         | Только legacy runtime/editor/PATCH/publication; новое создание закрыто |
-| `image`, `slideshow`, `file`          | Изображение, галерея и attachment                          | Существующие Storage/reference контракты                               |
-| `video`, `audio`                      | Видео; аудио с optional transcript                         | Только прямой HTTPS URL, без upload/transcoding                        |
-| `single_choice_poll`, `matching_game` | Один выбор и сопоставление пар                             | Текущие interactive блоки                                              |
-| `choice_quiz`                         | Один или несколько правильных вариантов                    | Самопроверка только в preview state                                    |
-| `fill_blanks`, `word_bank`            | Ввод ответов в пропуски и выбор из банка                   | Самопроверка только в preview state                                    |
-| `sequence`, `categorize`              | Восстановление порядка и распределение по категориям       | Доступные select/move controls; самопроверка не персистится            |
-| `free_response`                       | Короткий или развёрнутый свободный ответ                   | Текст живёт только в preview; teacher review нет                       |
-| `external_link`                       | Кнопка на внешний материал                                 | Только HTTPS URL; контент не встраивается                              |
-| `word_builder`                        | Сборка слова из букв                                       | Самопроверка только в preview state                                    |
-| `vocabulary_list`                     | Список терминов с переводом/определением                   | Карточки/список; не добавляет слова в learner profile                  |
+| Type                 | Назначение                           | Current boundary        | Создаёт learning evidence |
+| -------------------- | ------------------------------------ | ----------------------- | ------------------------- |
+| `single_choice_poll` | Мнение, выбор, быстрый вопрос группе | Local interactive state | Нет; это survey           |
 
-Всего в registry остаётся 20 типов: девять прежних содержательных типов
-сохранены, добавлены 11 новых, а `divider` удалён. Точный канонический
-список хранится в code-first registry, а не в этой матрице.
+### Deterministic practice
 
-### Current production: 19 вариантов создания и локальный draft
+| Type            | Учебное действие                   | Current boundary                    | NEXT evaluator role        |
+| --------------- | ---------------------------------- | ----------------------------------- | -------------------------- |
+| `choice_quiz`   | Выбрать один или несколько ответов | Самопроверка только в preview state | Recognition/discrimination |
+| `fill_blanks`   | Ввести ответы в пропуски           | Самопроверка только в preview state | Cued production            |
+| `word_bank`     | Заполнить пропуски из банка        | Самопроверка только в preview state | Cued selection             |
+| `matching_game` | Сопоставить пары                   | Local interactive state             | Association/discrimination |
+| `sequence`      | Восстановить порядок               | Local interactive state             | Ordered procedure          |
+| `categorize`    | Распределить по категориям         | Local interactive state             | Classification             |
+| `word_builder`  | Собрать слово из букв              | Самопроверка только в preview state | Constrained production     |
 
-Palette показывает короткое назначение и статический representative
-mini-preview у 19 вручную создаваемых типов. В текстовой категории «Текст»
-показывает заголовок вместе с обычными абзацами, рядом остаются
-поясняющий callout и цитата с левой линией/автором. Отдельный `heading` не
-показывается, чтобы преподавателю не приходилось собирать один смысловой
-текстовый блок из двух Components. Он остаётся двадцатым runtime key только для
-чтения, рендера, modal editing/PATCH уже сохранённых Lessons и immutable
-publication revisions.
+### Constructed response
 
-Presentation map остаётся exhaustive по 19 создаваемым типам, а runtime
-renderer/editor — по всем 20 `ComponentTypeKey`. DOM picker не рендерит
-настоящие input/button/media
-внутри кнопки добавления, не делает network requests и не становится частью
-serializable registry. Выбор образца открывает настоящий editor в том же dialog,
-но пока только для локального draft из canonical defaults. Component
-не создаётся и не занимает позицию до явного «Сохранить компонент»; возврат к
-каталогу или закрытие ничего не записывает. Save создаёт обычный private
-Component через существующий application-service contract.
+| Type            | Учебное действие                        | Current boundary                              | NEXT evaluator role          |
+| --------------- | --------------------------------------- | --------------------------------------------- | ---------------------------- |
+| `free_response` | Написать короткий или развёрнутый ответ | Текст только в preview; review не сохраняется | Teacher rubric/manual review |
 
-`rich_text` schema version `1` принимает plain-text `title`, Markdown `content`
-или оба поля одновременно, но отклоняет payload, где оба значения пусты.
-Пустые поля не сохраняются; прежние payload `{ content, format }` остаются
-валидными. В editor эти поля подписаны ровно «Заголовок» и «Текст», без
-суффикса «(необязательно)»: необязательность задаёт общий contract, а не
-дублирующая подпись.
+CURRENT palette показывает 19 вариантов создания и исключает legacy
+`heading`. UI, service и renderer используют registry contracts. AI provider
+adapter выдаёт ограниченный structured draft, который повторно валидируется
+тем же registry/application contract; development MCP вызывает те же services.
+Это adapters, а не второй registry. Интерактивные ответы пока не сохраняются и
+не меняют учебный профиль.
 
-Authored-create contract содержит 19 типов и исключает `heading` одинаково в
-picker, REST `POST`, development MCP, AI provider/plan и deterministic
-assembler. Tracked data migration
-`20260813063716_unify_heading_rich_text_components.sql` переводит authored
-`heading` в title-only `rich_text` и объединяет только непосредственную пару
-`heading → rich_text`, когда совпадают visibility, `student_slide_id` и
-placement. Immutable publication revisions не переписываются. Migration не
-меняет physical DB schema и применена production после compatible web rollout и
-verified backup. Pre/postflight: `96 → 85` authored Components,
-`heading 17 → 0`, `rich_text 38 → 44`; итоговые формы — `11` combined,
-`6` title-only, `27` body-only, invalid `0`. `12` Slides остаются непустыми,
-positions плотными. Одна immutable publication revision сохранила прежние
-`9056` bytes/content hash и все `6` snapshot Components.
-Historical D1 cleanup source
-`dea92ca2c9af99fd5738e95fa9ca511aa10ca3da` был развёрнут до DB apply;
-production guest HTTP и полный local strict release gate были green.
-Authenticated production browser smoke для этого historical slice отдельно не
-заявлялся.
+Current raw Component payload может содержать correct-answer configuration.
+Поэтому существующий preview/read model нельзя считать learner-safe assessment
+delivery; этот serializer и server evaluator появляются отдельным slice.
 
-После создания teacher card остаётся renderer-only white surface с радиусом
-`12 px`, общим product border, clipped background и одной статической raised
-shadow. Hover/focus не меняет её геометрию или тень. Управление не имеет
-border/box-shadow и показывается в hover/focus overlay на общей белой подложке
-`rgba(255, 255, 255, 0.5)`, а Pencil открывает отдельный modal editor.
-Cancel/close не изменяют persisted payload/placement; существующий `PATCH`
-вызывается только по явному сохранению. Это presentation/editor orchestration,
-а не новый registry, API или storage contract.
+## NEXT: что обязательно описывает тип
 
-### Current production visual acceptance
+### Для каждого Component Definition
 
-Current production заменил прежнюю динамическую тень authored Component card на
-общий статический
-`--product-raised-surface-shadow: var(--product-raised-control-shadow)`. Белый
-12 px element surface получает
-`--product-surface-border: 1px solid oklch(0 0 0 / 0.1)` и
-`background-clip: padding-box`: полупрозрачная рамка смешивается с фоном под
-card, а не с белой заливкой. Surface не получает hover/pressed transform или
-shadow-transition и сохраняет одну base-тень
-`0 1px 6px 0px oklch(0% 0 0 / 0.05)` в rest, hover и focus-within. Focus-within
-добавляет отдельный outline, не меняя геометрию или тень; hover/focus по-прежнему
-раскрывает action overlay. Сам overlay и его 32 px icon-actions остаются
-transparent/borderless/shadowless, а `forced-colors` заменяет surface shadow
-системным контуром.
+- стабильный key и schema version;
+- author payload schema, defaults и migration strategy;
+- placement и доступные Lesson contexts;
+- editor и renderer capabilities;
+- teacher plan, Student Screen, preview и future Homework projections;
+- responsive/accessibility contract;
+- privacy/media/storage classification;
+- fixtures и contract tests.
 
-Base `.field-input`, включая select и textarea, использует общий surface border,
-clipped background и непрозрачную белую заливку. Однострочные
-`input.field-input` в Component editor дополнительно используют внешние `40 px`,
-внутренние `38 px` и
-статический `--product-entry-control-shadow`, равный
-`0 1px 6px 0px oklch(0% 0 0 / 0.05)`, canonical foreground/типографику,
-непрозрачный placeholder и отдельный 2 px focus halo. Hover не меняет shadow
-или геометрию. `textarea` и `select` сохраняют base boundary, но не получают
-single-line height или entry shadow. Checkbox/radio/file controls,
-preview/student content renderers, component-picker choice cards и
-`DialogShell` surface этим правилом не
-перекрашиваются и не получают static card shadow автоматически. Ordinary CTA и
-filter-trigger adoption относится к shared application controls, но не
-превращает Component overlay actions или picker cards в raised buttons. Это
-UI-only acceptance без registry, payload, API, schema, ordering, Slide или
-learner-projection изменений. Visual rollout входит в exact current application
-functional source `1d4e5deff83cbdc1b479b16e4220cf799327009f`.
+### Дополнительно для assessable activity
 
-Current production делает отдельное исключение для действия Student Screen.
-Вместо `Eye/EyeOff` оно использует тот же Lucide `MonitorPlay`, что и вкладка
-«Экран ученика», и является прямым `aria-pressed` toggle: неактивная кнопка
-скрыта вне hover/focus, а активная голубая кнопка размером `32 px` видна
-постоянно. При включении Component получает Slide ближайшего предыдущего
-learner-visible соседа, затем ближайшего следующего, иначе новый Slide;
-повторное нажатие снимает назначение. Состояние сохраняется существующей
-Student Screen mutation и переживает reload. Это не меняет registry, payload,
-physical schema или API shape.
-Exact functional source `288fac3d7ab909cab0e26bffb6a0c156f9e12d81`
-развёрнут Coolify deployment `jf5f0j9yp1cwkkf2880d65f4` (`id=945`); production
-guest HTTP postflight и matching running-container check прошли.
+- response modes и versioned response schema;
+- learner-safe delivery projection без answer key;
+- допустимые evaluator modes и их версии;
+- server-private evaluator-config-at-time или immutable issued definition
+  revision для воспроизводимости старой оценки;
+- practice/assessment/survey capability;
+- feedback, hints, retry и reveal capabilities;
+- какие at-time данные нужны для понятной истории;
+- evidence rule: claim, observable, interpretation, independence/support и
+  learner-state update gate;
+- allowlisted telemetry с purpose и retention;
+- offline/reload/idempotency behavior.
 
-### Почему `divider` не нужен
+Конкретная objective, вопрос и правильный ответ принадлежат Component Instance,
+а попытки/deadline/reveal конкретной выдачи — execution policy. Тип описывает
+возможности, но не зашивает один навык и один режим навсегда.
 
-Это наше product inference. В ShiDao порядок задаёт единый ordered list Lesson,
-а learner grouping — persisted Slides. Самостоятельный layout-only блок не несёт
-учебного содержания, занимает позицию и усложняет palette, renderer, AI
-и learner projection. Визуальный ритм должен решаться оформлением самих
-карточек/слайдов, а не контентом-заглушкой.
+## NEXT: ручной authoring UX
 
-### Later, не current
+Для обычного преподавателя contract отображается не как JSON, а как
+последовательная форма:
 
-| Возможность                           | Почему отложена                                                                                               |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Voice response                        | Нужны microphone permission UX, Storage lifecycle, format/size limits, RLS и ответ teacher review             |
-| Safe embed/Miro/Wordwall/LearningApps | Нужны allowlist, CSP, sandbox attributes, privacy contract и честная модель несохраняемых third-party results |
-| Image matching                        | Нужны asset ownership, signed/public learner projection и publication remap для нескольких изображений        |
-| Persisted answers/attempts/scoring    | Это отдельная learner activity model; её нельзя подменять local React state                                   |
+1. **Учебная цель** — выбрать или создать Course objective.
+2. **Режим** — практика, проверка или опрос.
+3. **Задание** — инструкция, вопрос, content/media.
+4. **Ответ** — варианты, правильный ответ или rubric.
+5. **Помощь** — hints и содержательный feedback.
+6. **Выполнение** — попытки и reveal только там, где они реально нужны.
+7. **Предпросмотр** — точная learner-safe поверхность.
+
+Advanced-поля скрываются до раскрытия. AI заполняет ту же форму и создаёт
+редактируемый draft; teacher может выполнить весь workflow вручную.
+
+## NEXT: план развития существующих engines
+
+### Foundation
+
+1. Добавить optional `activityFacet` в существующий registry, не создавая
+   второй каталог.
+2. Добавить Course-scoped objectives и один optional primary objective на
+   Component.
+3. Разделить author/evaluator payload и learner delivery payload.
+4. Ввести единый `ActivityFrame`: instruction, response area, submit/status,
+   feedback, hint/retry и accessible announcements.
+5. Добавить contract tests: no answer leak, keyboard/focus, responsive states,
+   idempotent submit и reload behavior.
+
+### Первый online engine: `choice_quiz`
+
+Он должен пройти полный путь:
+
+```text
+manual/AI authoring
+→ learner-safe delivery
+→ persisted attempt
+→ server evaluation
+→ feedback delivery
+→ compact history
+→ learning evidence
+```
+
+Только после этого shared deterministic engine доказывается на `fill_blanks`,
+а затем на matching/sequence/categorize/word-bank/word-builder.
+
+### Первый review engine: `free_response`
+
+Отдельный slice добавляет autosave, final submit, rubric version, teacher review,
+return for revision, superseding evaluation и privacy/retention raw response.
+Его нельзя незаметно включить в первый choice slice: это другой state machine.
+
+## NEXT: offline classroom observation
+
+Teacher observation не является визуальным learner Component type. Это runtime
+surface поверх существующих Lesson Components/objectives и LessonRun roster.
+Full Lesson navigator показывает и passive Components, но structured rating
+требует короткого подтверждённого observable criterion-at-time.
+
+Первый набор действий:
+
+- `самостоятельно`;
+- `с помощью`;
+- `пока не получилось`;
+- `не наблюдал`;
+- bulk draft + exceptions + teacher confirmation наблюдавшихся learners;
+- optional note;
+- push-to-talk proposal после устойчивого manual flow.
+
+Так offline и online evidence сходятся в профиле, не вынуждая учителя давать
+каждому ребёнку устройство.
+
+## NEXT recipes поверх общих primitives
+
+| Recipe                       | Зачем нужен                                    | Из чего собирается                                 |
+| ---------------------------- | ---------------------------------------------- | -------------------------------------------------- |
+| Worked example               | Показать ход решения новичку                   | content + stages + explanation                     |
+| Example completion           | Дать частично решённый пример                  | worked example + cloze/response                    |
+| Self-explanation             | Попросить объяснить шаг или выбор              | prompt + free response + rubric                    |
+| Error analysis               | Найти и исправить ошибку                       | scenario + choice/free response + feedback         |
+| Retrieval card               | Вспомнить без повторного просмотра             | prompt + response + delayed scheduling             |
+| Scenario application         | Применить правило в ситуации                   | content + choice/constructed response              |
+| Transfer challenge           | Проверить применение в новом контексте         | scenario + described transfer distance             |
+| Confidence calibration       | Сравнить уверенность до feedback с результатом | confidence survey + assessed response              |
+| Reflection / exit ticket     | Зафиксировать понимание и вопрос               | self-report не mastery; assessed response отдельно |
+| Interactive media checkpoint | Остановить media и спросить по смыслу          | video/audio + embedded activity orchestration      |
+
+Recipe не обязан иметь отдельный database type. Если он использует те же
+response/evaluation engines, его можно хранить как template/preset.
+
+Название `transfer challenge` и authored difficulty сами не усиливают evidence.
+Нужны сохранённый construct, описанная дистанция переноса и валидный evaluator.
+
+## LATER domain packs
+
+### Языки
+
+- dictation;
+- listening comprehension;
+- reference audio generation;
+- learner audio response;
+- dialogue/role-play;
+- pronunciation practice с teacher rubric;
+- specialized pronunciation scoring после benchmark.
+
+Reference TTS и learner speech evaluation являются разными services. Audio
+после teacher approval сохраняется versioned asset. Обычный ASR не считается
+полноценной оценкой произношения.
+
+### Математика и естественные науки
+
+- numeric/formula response;
+- guided solution;
+- graph/table interpretation;
+- units and significant figures;
+- simulation/lab observation;
+- code runner только в изолированном sandbox.
+
+### Проектное и социальное обучение
+
+- file/project submission;
+- rubric milestones;
+- peer/self review;
+- discussion/collaboration;
+- portfolio evidence.
+
+Эти packs добавляются после общих response/evaluation/review engines, а не
+раньше них.
+
+## Что не является Component
+
+- `learning_goal` — Course/Lesson metadata и objective presentation;
+- `hint_ladder` — support policy;
+- `gate` и `branch` — transparent orchestration policy;
+- `review_queue` — learner/teacher runtime surface;
+- `question_bank` — reusable content source;
+- `quiz assembler` — способ собрать issued activity;
+- `teacher observation` — LessonRun evidence producer;
+- `LearnerObjectiveState` — профильная projection.
+
+Эти понятия не должны занять позиции в Lesson и вернуть скрытый Step.
+
+## Внешние компоненты и embeds
+
+Miro, Wordwall, LearningApps и произвольный iframe не добавляются как быстрый
+способ расширить palette. До production нужны allowlist, CSP/sandbox,
+authorization, privacy, accessibility и честная маркировка того, какие ответы
+ShiDao действительно получает. Внешний completion нельзя автоматически считать
+learning evidence.
+
+## Чему учимся у других продуктов
+
+- [ProgressMe](https://help.progressme.ru/article/1233) показывает ценность
+  одного workflow для попыток, ручной проверки и занятия с преподавателем.
+- [Articulate Rise](https://www.articulatesupport.com/article/Rise-Lesson-and-Block-Types)
+  показывает, насколько простым может быть responsive authoring.
+- [H5P](https://h5p.org/documentation/developers/h5p-specification) показывает
+  пользу versioned schemas и отделения editor/runtime libraries.
+- [Open edX XBlock](https://docs.openedx.org/projects/xblock/en/latest/xblock.html)
+  разделяет definition, usage и user state.
+- [Khan Academy](https://support.khanacademy.org/hc/en-us/articles/360007253831-Using-self-paced-practice-and-Mastery-in-the-classroom)
+  не сводит mastery к одному последнему ответу.
+
+Мы берём проверенные идеи, но не копируем внутренние названия, payload или
+grade-centric иерархию сторонних систем.
 
 ## AI boundary
 
-AI Lesson planning может предлагать только создаваемые типы:
+CURRENT RouterAI planning создаёт только ограниченный allowlist типов и
+повторно валидирует provider output registry contracts перед Apply. Расширение
+allowlist выполняется по одному проверенному recipe/type и требует:
 
-```text
-rich_text
-callout
-single_choice_poll
-matching_game
-```
+- author schema и понятного manual editor;
+- provider schema/prompt;
+- preview и explicit teacher Apply;
+- learner-safe projection;
+- evaluator/evidence contract, если activity оценивается;
+- fault, accessibility и security regression tests.
 
-`rich_text` может содержать заголовок, основной текст или оба поля. Каждый
-provider payload повторно валидируется общими registry contracts до Apply.
-Новые 11 типов не попадают в AI allowlist без отдельного provider-schema,
-prompt, preview и fault-regression среза.
+AI не получает отдельный «умный компонент», который невозможно создать,
+исправить или проверить вручную.

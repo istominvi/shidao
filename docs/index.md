@@ -11,19 +11,25 @@
 3. [Текущее состояние и карта реализации](./project-state.md)
 4. [Roadmap](./roadmap.md)
 
-## Current: каноническая архитектура
+## Каноническая архитектура
+
+Документы этого раздела могут содержать согласованные NEXT/LATER решения, но
+обязаны явно отделять их от CURRENT.
 
 - [Глобальная спецификация: CURRENT/NEXT/LATER boundaries](./v2/SHIDAO_GLOBAL_REFACTOR_SPEC.md)
 - [Доменная модель](./domain-model.md)
 - [Lesson workflow model](./architecture/lesson-workflow-model.md)
+- [Learning Activity System: компоненты, evidence, профиль и адаптивность](./architecture/learning-activity-system.md)
 - [Learner identity and access model](./architecture/learner-identity-access-model.md)
+- [Communication Center](./architecture/communication-center.md)
+- [AI provider integration](./architecture/ai-provider-integration.md)
+- [Frontend style system](./architecture/frontend-style-system.md)
 - [Image delivery boundary](./architecture/image-delivery.md)
 - [Account avatar design and privacy contract](./product/account-avatars.md)
 - [Auth, domains и routing](./authorization-routing.md)
 - [Development Course Builder MCP](./v2/COURSE_BUILDER_MCP.md)
-- [Реализованный Teacher Course Builder milestone](./v2/TEACHER_COURSE_BUILDER_DEMO_MILESTONE.md)
 
-## Current: продуктовые контракты
+## Продуктовые контракты (CURRENT + NEXT)
 
 - [Демо-магазин учебных товаров](./product/store-demo.md)
 - [Курсы для педагогов и аттестация](./product/educator-courses-and-attestation.md)
@@ -42,15 +48,20 @@
 ## Future: продуктовая стратегия
 
 - [Продуктовая модель и стратегическое видение](./v2/SHIDAO_PRODUCT_MODEL_AND_VISION.md)
+- [План реализации Learning Activity System](./plans/learning-activity-system-implementation.md)
+- [Copy-paste prompt: начать LA-M1 очных наблюдений](./prompts/learning-activity-foundation.md)
 
-## Completed identity execution hand-off (historical)
+Future-документы описывают согласованное направление, но не доказывают наличие
+таблиц, API или UI. Точный статус каждого среза проверяется по project-state и
+current schema.
+
+## Historical delivery records
 
 - [Copy-paste prompt: завершить learner identity и observer ecosystem](./v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md)
+- [Первый Teacher Course Builder milestone](./v2/TEACHER_COURSE_BUILDER_DEMO_MILESTONE.md)
 
-Этот prompt сохраняет план и terminal condition, завершённые current M1–M6
-production identity release. Он не является current-state source of truth:
-реализованные schema/API/UI сверяются по project-state, identity architecture и
-current-schema snapshot.
+Эти файлы сохраняют завершённые execution/acceptance handoffs. Они не являются
+current-state source of truth и не должны использоваться как план новых работ.
 
 ## Архивная граница
 

@@ -3,7 +3,7 @@
 **Формат:** стратегическое видение и основа для презентации
 **Аудитория:** команда, партнёры, преподаватели, родители, потенциальные инвесторы
 **Версия:** 2.0
-**Актуально на:** 14 августа 2026 года
+**Актуально на:** 19 августа 2026 года
 **Статус:** целевая продуктовая модель; не является перечнем уже запущенных функций
 
 ## Как читать этот документ
@@ -20,6 +20,9 @@ process; он не является частью web deployment или внеш�
 deployed и repository scope, ограничения и implementation map зафиксированы в
 [`docs/project-state.md`](../project-state.md), а последовательность работ — в
 [`docs/roadmap.md`](../roadmap.md).
+Каноническая модель учебных активностей, очных наблюдений, evidence и
+адаптивности находится в
+[`docs/architecture/learning-activity-system.md`](../architecture/learning-activity-system.md).
 
 Current production contract завершает roleless Account/profile identity,
 recipient-bound claim/child activation, physical merge, archive/restore,
@@ -35,9 +38,11 @@ production также включает governed official educator
 publications: trusted-author capability, admin review exact revision,
 learner-safe read-only workspace, Account-scoped progress и аттестацию после
 `100%` уроков. Enrollment/consumption детских Course через LearnerProfile,
-live-проведение, richer Component metrics, persisted Homework, parsing/RAG,
-подписки, billing и внешний MCP/API остаются **later**. Настоящее время в
-стратегических разделах не заменяет implementation/deployment evidence.
+teacher observations, activity attempts/evidence, live-проведение, persisted
+Homework, parsing/RAG,
+подписки, billing и внешний MCP/API не реализованы. Их точный NEXT/LATER status
+находится в roadmap; настоящее время в стратегических разделах не заменяет
+implementation/deployment evidence.
 
 ---
 
@@ -583,6 +588,8 @@ lesson.
 
 - свои заметки;
 - план;
+- быстрые отметки `самостоятельно / с помощью / пока не получилось` по
+  каждому учащемуся;
 - подсказки AI;
 - текущий экран учащегося;
 - ответы;
@@ -606,9 +613,10 @@ persisted Homework можно будет:
 В текущем repository завершение LessonRun уже сохраняет посещаемость,
 teacher-comment и необходимость повторения в LearningRecord каждого ожидаемого
 учащегося. Эти записи переживают удаление Lesson, питают current real-record
-progress и дают AI ограниченный контекст предыдущих занятий. Автоматические
-метрики понимания, word-state producers и более глубокий progress analysis
-появятся позднее.
+progress и дают AI ограниченный контекст предыдущих занятий. Component-level
+teacher observations, Course objectives, typed activity evidence и derived
+objective state появятся отдельными slices рядом с LearningRecord, а не внутри
+его generic metrics.
 
 В target richer analysis преподаватель увидит:
 
@@ -625,7 +633,7 @@ progress и дают AI ограниченный контекст предыду
 Identity-часть этих сценариев уже реализована в production contract без
 Parent role: отдельный child Account login/PIN, recovery delegate, observer
 invite/read-only progress и revoke. Назначение/потребление Course ребёнком,
-Homework и AI-conducted lesson остаются later, поэтому полный сценарий ниже —
+Homework и AI-conducted lesson не реализованы, поэтому полный сценарий ниже —
 целевая продуктовая последовательность, а не текущий production smoke.
 
 ## Сценарий A. Родитель занимается сам
@@ -1048,20 +1056,27 @@ project-state.
    фильтрами, карточками/таблицей и client-state cart/checkout. Это UI-only demo:
    Product/Order/Inventory schema, API, persisted order, оплата и доставка не
    реализованы.
-4. Global System Assistant возвращает текст либо одно signed proposal из
-   закрытого Course/Lesson allowlist; mutation выполняется canonical service
-   только после явного подтверждения. Chat, proposal cache и idempotency пока
-   process-local и не являются durable action ledger.
+4. Persisted Assistant conversation внутри Communication Center возвращает
+   текст либо одно signed proposal из закрытого Course/Lesson allowlist;
+   mutation выполняется canonical service только после явного подтверждения.
+   Proposal cache и idempotency пока process-local и не являются durable action
+   ledger.
 
 ## Следующие продуктовые срезы
 
-1. Завершить ручной teacher authoring: upload из существующего Course,
+1. Добавить быстрые teacher observations во время очного LessonRun.
+2. Добавить Course objectives, Component alignment и rebuildable skill profile.
+3. Реализовать persisted common Homework authoring как отдельную Lesson surface.
+4. Создать learner authorization и teacher-controlled live delivery.
+5. Провести первый learner-safe `choice_quiz` через persisted attempt и server
+   evaluation.
+6. Добавить Homework issuance и `free_response` review поверх общего activity
+   runtime.
+7. Завершить ручной teacher authoring: upload из существующего Course,
    accessibility и UX polish.
-2. Добавить live-проведение поверх LessonRun, не создавая второй content Lesson.
-3. Реализовать persisted common Homework как отдельную Lesson surface.
-4. Добавить parsing статуса/текста загруженных источников; RAG — только после
+8. Добавить parsing статуса/текста загруженных источников; RAG — только после
    проверяемого extraction baseline.
-5. Для настоящего магазина отдельно спроектировать Product/Order/Inventory,
+9. Для настоящего магазина отдельно спроектировать Product/Order/Inventory,
    admin catalog, legal delivery и payment boundary; текущий demo не расширять
    скрытой persistence.
 
@@ -1072,7 +1087,8 @@ project-state.
   educator self-learning уже current;
 - live sync и AI-conducted lesson поверх LessonRun;
 - individual Homework assignments и immutable snapshots;
-- расширенные learning metrics/events, chat, notifications и vocabulary progress;
+- learner-safe activity attempts/evidence, objective state, deterministic
+  recommendations, chat/notifications и vocabulary progress;
 - subscriptions, billing, quota ledger и дополнительные AI-пакеты;
 - external MCP/API security layer;
 - школы/организации, shared ownership, marketplace, voice AI teacher и
@@ -1295,7 +1311,7 @@ repository отдельно от web deployment. Это рабочий persisted
   exact web/browser confirmation завершены и зафиксированы в project-state;
 - загрузка и parsing источников;
 - persisted Homework;
-- затем live-проведение и расширенные метрики учебного профиля.
+- очные observations, затем objectives/profile и live-проведение.
 
 ## Этап 2. Инструмент семьи
 
@@ -1657,9 +1673,9 @@ Lesson непосредственно владеет единым ordered Compon
 Current production contract уже добавляет account claim/merge,
 subject-controlled observer access, safe real-record progress и separate
 consented cross-provider AI; M1–M6, backups и DB/GoTrue evidence зафиксированы в
-project-state. Live runtime,
-Homework, reusable source library, richer Component metrics, AI для проведения
-и прозрачные usage limits остаются later. Canonical ID сам по себе не разрешает
+project-state. Teacher observations, objectives/activity evidence, live runtime,
+Homework, reusable source library, AI для проведения и прозрачные usage limits
+не реализованы; sequencing находится в roadmap. Canonical ID сам по себе не разрешает
 Course access, observer access или cross-provider history.
 
 Преподаватель использует ShiDao как профессиональный инструмент.

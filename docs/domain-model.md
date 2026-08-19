@@ -1,7 +1,7 @@
 # ShiDao V2 domain model
 
 **Статус:** current implemented domain
-**Актуально на:** 14 августа 2026 года
+**Актуально на:** 19 августа 2026 года
 
 ## Active product hierarchy
 
@@ -18,9 +18,9 @@ Account
 │   ├── children-only effective audience = unique(direct ∪ group members)
 │   ├── CourseAttachment → StoredFile → private Storage object
 │   ├── educator-only CourseAttestation → authored assessment definition
-│   └── Lesson 1..N
-│       ├── LessonComponent 1..N
-│       ├── StudentScreenSlide 1..N → component assignments
+│   └── Lesson 0..N
+│       ├── LessonComponent 0..N
+│       ├── StudentScreenSlide 0..N → component assignments
 │       └── children-only LessonRun 0..N
 │           └── LearningRecord 0..N → LearnerProfile
 │               └── recorded_by_account_id → Account
@@ -185,13 +185,16 @@ under concurrency is a documented next integrity hardening task.
   ordered Slides while preserving the one canonical component order. New
   components are teacher-only until explicitly assigned.
 - **Домашнее задание** is a separate Lesson surface and is not represented by a
-  component group. Persisted homework is a later slice.
+  component group. Persisted homework is not implemented; its sequencing lives
+  in `docs/roadmap.md`.
 - **Материалы курса** is a Course-scoped attachment collection, not a global
   reusable library. Lesson-вкладка «Материалы» показывает read-only проекцию
   этой же коллекции и не вводит lesson-owned attachment relation.
 
 The canonical details and invariants live in
 `docs/architecture/lesson-workflow-model.md`.
+The target execution/evidence model lives in
+`docs/architecture/learning-activity-system.md`; it is not current persistence.
 
 ## Component registry
 
@@ -223,12 +226,13 @@ file
 UI, application service and development MCP use the same Zod contracts. MCP
 JSON Schema is generated from those contracts.
 
-The current production manual picker is a 19-option presentation projection over
-this 20-key runtime registry. It omits standalone `heading`, while existing
-heading Components and the API/MCP/AI contracts remain supported. `rich_text`
-schema version `1` is extended backward-compatibly with an optional plain-text
-`title`; required Markdown `content` and old payloads without `title` remain
-unchanged. This does not change the physical JSONB schema or require a migration.
+The current production authored-create projection contains 19 types and omits
+standalone `heading` from the picker, REST create, development MCP, AI and the
+deterministic assembler. Existing heading Components remain supported for
+runtime read/render, modal edit/PATCH and immutable publication revisions.
+`rich_text` schema version `1` accepts `title`, `content` or both and rejects a
+payload where both are empty. This does not change the physical JSONB schema or
+require a migration.
 
 `divider` is not an authored component type. The media/link types added in this
 slice accept HTTPS URLs only. Interactive checks, including `free_response`,
@@ -239,9 +243,9 @@ The product comparison and rationale live in
 [`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
 
 The current RouterAI source contract validates generated Lesson content against
-the deliberately limited `heading`, `rich_text`, `callout`,
-`single_choice_poll` and `matching_game` subset of these same registry contracts before
-explicit Apply. Its provider-compatible flat transport schema is converted to a
+the deliberately limited `rich_text`, `callout`, `single_choice_poll` and
+`matching_game` subset of these same registry contracts before explicit Apply.
+Its provider-compatible flat transport schema is converted to a
 canonical typed plan and then validated again by registry payload contracts and
 `lessonAddComponentInputSchema`. It introduces no new domain entity, second
 registry, or physical schema.
@@ -257,8 +261,10 @@ finalized LearningRecords recorded by the current teacher for the effective
 learners across that teacher's courses. Names come from TeacherLearner, overlap
 between audience sources is deduplicated, and another teacher's observations
 are not included merely because the canonical LearnerProfile is the same.
-Absence is marked as absence, not interpreted as lack of understanding. Metrics
-beyond attendance/repeat/comments remain a later additive extension.
+Absence is marked as absence, not interpreted as lack of understanding.
+Component observations, activity evidence and derived objective state are not
+implemented; they remain a separate domain and do not extend attendance/repeat
+semantics.
 
 Registry definitions own keys/schemas/defaults/capabilities. The current
 payload editor is one switch over `ComponentTypeKey`; renderers use an
@@ -325,12 +331,16 @@ the staged Coolify rollout recorded in the deployment runbook are complete.
 
 ## Planned, not implemented
 
-The following remain later domains, not current tables or product capabilities:
+The following are not current tables or product capabilities; their sequencing
+lives in `docs/roadmap.md`:
 
 - persisted Homework;
 - live Student Screen synchronization/runtime cursor for an open LessonRun;
-- automatic component-produced learner metrics and richer progress models on
-  top of finalized LearningRecord;
+- component-level teacher observations during LessonRun;
+- Course objectives and Component alignment;
+- versioned activity execution/evaluation/evidence and derived
+  learner-objective state alongside LearningRecord; LearningRecord remains the
+  LessonRun attendance/teacher-outcome summary;
 - persistent AI quotas/usage ledger and AI change sets/undo;
 - parsing/RAG sources;
 - automatic merge/update of an already added Course when a newer catalog
@@ -341,7 +351,7 @@ The following remain later domains, not current tables or product capabilities:
   educator self-learning is Account-scoped and does not imply this access;
 - Product/Order/Inventory, persisted cart/checkout, payment and delivery;
   current `/store` is a client-state UI demo and adds no commerce domain tables;
-- chat/notifications and external MCP.
+- Realtime/push/email communication delivery and external MCP.
 
 Sequencing lives in `docs/roadmap.md`. Future domains must not add Step/root
 Step or make old School/Class/Methodology a parent of Course content.

@@ -17,20 +17,16 @@ cross-provider AI. Phased M1–M6 migrations, exact Coolify deploy и postflight
 завершены. Account-scoped самостоятельное прохождение approved educator
 publications с revision progress и аттестацией также является current
 production. Homework, enrollment/consumption детских Course через
-LearnerProfile и live Student Screen sync остаются later.
+LearnerProfile и live Student Screen sync не реализованы; их sequencing
+зафиксирован в roadmap.
 
-Historical deployed follow-up добавил global System Assistant в protected
-`(app)` layout. Base release `b7c6cfe`, exact conversational follow-up
-`246cf49` и quick-reply follow-up `69a74a7` развёрнуты; их backend
-contracts/routes/services сохранены; новая Lesson/Component schema для этого
-follow-up не потребовалась. Current source удаляет отдельный floating
-`SystemAssistant` и переносит тот же bounded conversation/action contract в
-единственный persisted `CommunicationCenter`. `AssistantPageContextProvider`
-остаётся только allowlisted page-context provider. После отдельного explicit
-Apply assistant может создать Course draft, пустую или наполненную Lesson,
-дополнить существующую Lesson либо удалить exact Lesson. Наполнение
-переиспользует canonical Lesson plan/preview/apply и не создаёт Step или второй
-Component order; удаление вызывает тот же history-preserving `deleteLesson`.
+Этот документ владеет authored hierarchy, Slides projection, Homework
+separation и compact LessonRun/LearningRecord boundary. Учебные цели, ответы,
+teacher observations, evidence, learner objective state и adaptive decisions
+описывает отдельный канонический
+[`Learning Activity System`](./learning-activity-system.md). Activity execution
+ортогонален authored hierarchy и не вставляет новую сущность между Lesson и
+Component.
 
 ## Product decision
 
@@ -48,10 +44,10 @@ Account
     │   └── LearnerGroup 0..N
     ├── effective audience → unique active LearnerProfile 0..N
     ├── course-wide attachments
-    └── Lesson 1..N
-        ├── ordered Components 1..N
+    └── Lesson 0..N
+        ├── ordered Components 0..N
         ├── Student Screen projection
-        │   └── ordered Slides 1..N → component references
+        │   └── ordered Slides 0..N → component references
         └── LessonRun 0..N
             └── LearningRecord 0..N → LearnerProfile + recorded-by Account
 
@@ -271,6 +267,13 @@ authored-create projection генерирует JSON Schema только для 
 Добавление типа компонента не требует новой таблицы и не создаёт отдельную
 React-страницу для конкретной Lesson.
 
+NEXT assessable definitions получают optional `activityFacet` в этом же
+registry: supported response/evaluator modes, learner-safe delivery и evidence
+rules. Passive content и survey не обязаны становиться Learning
+Activities. Отдельный canonical activity-type registry запрещён; полный target
+contract находится в
+[`learning-activity-system.md`](./learning-activity-system.md).
+
 Текущий production registry содержит 20 активных типов:
 
 ```text
@@ -304,6 +307,7 @@ content. `video`, `audio` и `external_link` принимают только HTT
 Voice recording, arbitrary third-party embed и image matching отложены до
 отдельных Storage/CSP/persistence контрактов. Матрица выбора описана в
 [`docs/product/course-component-catalog.md`](../product/course-component-catalog.md).
+Preview не является execution context и никогда не пишет learner history.
 
 Authored-create set содержит 19 типов и исключает отдельный `heading` не только
 из ручного picker, но и из REST `POST`, development MCP, AI planning и
@@ -1314,7 +1318,10 @@ attachment relation. Надёжное добавление новых файло
 Homework принадлежит выбранной Lesson, но не входит в `lesson.components`.
 Текущий deployed UI содержит честную заглушку редактора без fixture или
 localStorage. Persisted homework получит отдельные contracts, authorization и
-storage model без возврата групп/шагов в Lesson.
+ordered owner/items без возврата групп/шагов в Lesson. Он переиспользует
+activity/evaluator primitives единственного Component registry, но выданная
+работа получает immutable assignment snapshot и не исполняет mutable
+`lesson_component` напрямую.
 
 ## Application service and MCP
 
@@ -1341,6 +1348,10 @@ projection, LearnerGroup, mixed Course audience,
 schedule/reschedule/start/complete/cancel и Lesson/Course/Profile history.
 Mutations выполняются узкими authenticated RPC; MCP остаётся Course authoring
 adapter и не получает параллельный доступ к таблицам.
+
+Будущие responses/evaluations/evidence обслуживает отдельный activity
+application boundary. Он переиспользует registry contracts, но не превращает
+`CourseBuilderApplicationService` или MCP в универсальный learner runtime.
 
 Roleless identity, observer и learner-safe projections находятся в отдельном
 `src/modules/learner-identity/` service/repository. Teacher raw history по-
@@ -1535,6 +1546,11 @@ Current repository реализует appointment/completion history, но не 
 связан с открытым Run и текущим Student Screen Slide, не меняя authored
 hierarchy и не создавая Step entity.
 
+Presentation cursor отвечает только за то, что показывается. Ответы,
+evaluations и teacher observations хранятся отдельно по Learning Activity
+contract. Ни cursor, ни адаптивная рекомендация не меняют authored Component
+order или Slide membership.
+
 В live mode по умолчанию teacher управляет learner surface; свободная
 предыдущая/следующая навигация учащегося не включается автоматически. Review
 может разрешить свободное изучение learner-visible компонентов.
@@ -1580,8 +1596,12 @@ application services и MCP не импортируют demo fixtures; все н
 - persistent AI quota/ledger, billing и change sets/undo;
 - parsing/RAG загруженных файлов;
 - persisted homework editor;
+- component-level teacher observations во время открытого LessonRun;
 - live Student Screen sync, realtime presence и runtime cursor;
-- richer learner metrics без реального Component/runtime producer;
+- Course objectives, Component alignment, versioned activity attempts,
+  server-side evaluation, typed learning evidence, rebuildable objective state
+  и deterministic adaptation; `LearningRecord` не является их metrics/event
+  container;
 - enrollment/consumption детских Course через LearnerProfile и live Student
   Screen access; Account-scoped self-learning educator publications уже
   реализован;
@@ -1597,8 +1617,8 @@ Roleless Account bootstrap, invitation/claim, physical profile merge,
 self/observer history, real-record progress и consented cross-provider AI уже
 реализованы в current production и не меняют authored hierarchy Lesson. Phased
 release/postflight завершены. Enrollment/consumption детских Course через
-LearnerProfile и live Student Screen остаются later; educator self-learning
-является current production.
+LearnerProfile и live Student Screen не реализованы; их sequencing находится в
+roadmap. Educator self-learning является current production.
 
 ## Shipped acceptance baseline
 

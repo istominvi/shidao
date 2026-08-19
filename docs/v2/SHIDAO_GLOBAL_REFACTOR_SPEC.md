@@ -1,7 +1,7 @@
 # ShiDao V2 — актуальная глобальная спецификация
 
 **Статус:** нормативные границы текущей архитектуры и будущего развития
-**Актуально на:** 14 августа 2026 года
+**Актуально на:** 19 августа 2026 года
 **Repository/branch:** `istominvi/shidao`, `main`
 **Рабочее приложение:** `v2.shidao.ru`
 **Публичный домен:** `shidao.ru` — landing-only
@@ -23,11 +23,13 @@ project-state/current schema, она не реализована.
 Обязательные связанные документы:
 
 - [`docs/architecture/lesson-workflow-model.md`](../architecture/lesson-workflow-model.md)
+- [`docs/architecture/learning-activity-system.md`](../architecture/learning-activity-system.md)
 - [`docs/architecture/learner-identity-access-model.md`](../architecture/learner-identity-access-model.md)
 - [`docs/database/current-schema.md`](../database/current-schema.md)
 - [`docs/product/educator-courses-and-attestation.md`](../product/educator-courses-and-attestation.md)
 - [`docs/product/account-avatars.md`](../product/account-avatars.md)
 - [`docs/product/store-demo.md`](../product/store-demo.md)
+- [`docs/product/course-component-catalog.md`](../product/course-component-catalog.md)
 - [`docs/v2/COURSE_BUILDER_MCP.md`](./COURSE_BUILDER_MCP.md)
 - [`docs/operations/v2-deployment-runbook.md`](../operations/v2-deployment-runbook.md)
 - [`docs/operations/v1-recovery-runbook.md`](../operations/v1-recovery-runbook.md)
@@ -114,9 +116,9 @@ Auth User
         │       ├── PublicationAsset 0..N
         │       ├── EducatorRevisionReview 0..1
         │       └── PublicationAttestation 0..1
-        └── Lesson 1..N
-            ├── LessonComponent 1..N
-            ├── LessonStudentSlide 1..N
+        └── Lesson 0..N
+            ├── LessonComponent 0..N
+            ├── LessonStudentSlide 0..N
             └── LessonRun 0..N → LearningRecord 0..N
                 └── recorded-by Account
 
@@ -248,10 +250,12 @@ Components отсутствуют в learner response, а не скрывают�
 
 1. **План урока** — полный ordered Component list;
 2. **Экран ученика** — текущая Slide projection;
-3. **Домашнее задание** — отдельная поверхность.
+3. **Домашнее задание** — отдельная поверхность;
+4. **Материалы** — read-only projection Course-wide attachments;
+5. **История** — реальные LessonRun/LearningRecord.
 
-Homework сейчас является честной заглушкой. Materials находятся на Course
-header, а не четвёртой Lesson tab.
+Homework сейчас является честной заглушкой. Lesson Materials не создают
+lesson-owned attachments и показывают ту же Course collection.
 
 ## 11. Course materials
 
@@ -321,7 +325,15 @@ fixture.
 Future keys добавляются отдельными definition/editor/renderer/test changes без
 новой таблицы и без универсального абстрактного `game`.
 
+NEXT assessable definitions получают optional `activityFacet` в этом же
+registry. Passive content и survey не обязаны становиться Learning Activities;
+отдельный activity registry не создаётся. Execution/evidence contract находится
+в
+[`docs/architecture/learning-activity-system.md`](../architecture/learning-activity-system.md).
+
 ## 13. Application architecture
+
+Current Course authoring path:
 
 ```text
 UI / route handler / internal MCP
@@ -331,6 +343,10 @@ UI / route handler / internal MCP
 → Supabase Data/Storage API
 → RLS + explicit ownership boundaries
 ```
+
+Future learner responses, evaluations и evidence проходят через отдельный
+activity application service над теми же registry contracts. Они не делают
+Course Builder service универсальным runtime и не дают MCP direct table access.
 
 Запрещено:
 
@@ -455,7 +471,8 @@ NEXT улучшает существующий Course Builder, не меняя h
 
 CURRENT AI integration использует server-only OpenAI-compatible RouterAI adapter
 с default `google/gemini-2.5-flash-lite`, validated preview → explicit Apply и
-ephemeral global System Assistant с подтверждаемыми actions:
+persisted Assistant conversations внутри единого Communication Center с
+подтверждаемыми actions:
 
 - provider/model adapter находится вне domain contracts;
 - structured output повторно валидируется registry/application schemas;
@@ -479,19 +496,19 @@ postflight и проектирует durable change-set/action-ledger contract �
 Internal AI может переиспользовать tool definitions/contracts. Production web
 не обязан публиковать MCP transport.
 
-## 20. P1 Persisted Homework
+## 20. NEXT Homework: authoring first, issuance/runtime in LA-M6
 
 Homework принадлежит Lesson, но не `lesson.components` и не Student Screen
 Slide group.
 
-Первый slice может поддержать одно common Homework на Lesson. Individual
-override и assignment snapshot добавляются в отдельном persisted Homework /
-learner-consumption contract поверх уже существующей canonical identity.
+Первый authoring slice может поддержать одно common Homework на Lesson с
+собственным ordered owner/items и teacher preview, переиспользуя authoring
+primitives единственного registry. Learner projection, authorization, due,
+review, attempts и individual override добавляются в NEXT LA-M6 поверх learner
+runtime. Любая реально выданная работа получает immutable assignment snapshot;
+mutable `lesson_component` не исполняется как assignment напрямую.
 
-Решение о reuse Component registry фиксируется отдельным contract: Homework
-получает собственный ordered owner, authorization и learner projection.
-
-## 21. P1 Sources and parsing
+## 21. NEXT Sources and parsing
 
 NEXT source pipeline начинается поверх StoredFile:
 
@@ -530,14 +547,10 @@ OCR, broad web crawling, DRM и audio transcription — LATER.
   teacher raw history остаётся recorder-scoped.
 - Legacy role tables не участвуют в active identity/navigation contract.
 
-[`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](./LEARNER_IDENTITY_COMPLETION_PROMPT.md)
-теперь является историческим execution/acceptance contract с выполненным
-terminal condition, а не описанием NEXT schema.
-
 CURRENT вне identity completion: Account-scoped self-learning approved educator
 publication с revision progress и аттестацией. NEXT/LATER: enrollment и
 consumption детских Course через LearnerProfile, live Student Screen runtime и
-richer Component-produced learner metrics.
+отдельный Learning Activity execution/evidence contract.
 
 ## 23. CURRENT Group and mixed audience
 
@@ -552,7 +565,7 @@ richer Component-produced learner metrics.
   profiles.
 - Shared Course ownership/multiple teachers не входят в current target.
 
-## 24. CURRENT LessonRun; LATER live runtime
+## 24. CURRENT LessonRun; live runtime not implemented
 
 Lesson одновременно является editable content и точкой планирования. LessonRun
 хранит только отдельное проведение:
@@ -574,24 +587,39 @@ Lesson одновременно является editable content и точко�
 Открытый/завершённый Run имеет хотя бы одну LearningRecord; отменённый Run
 может иметь ноль, потому что cancellation удаляет draft rows.
 
-Live runtime остаётся LATER:
+Live runtime пока не реализован; его sequencing фиксируют roadmap и Learning
+Activity plan:
 
 - runtime cursor ориентирован на Student Screen Slide;
 - teacher управляет learner screen по умолчанию;
 - review может разрешить learner navigation;
 - runtime cursor не создаёт authored Step entity.
 
-## 25. Homework assignments
+Cursor отвечает только за presentation. Activity responses/evaluations и
+teacher observations хранятся отдельно и не меняют authored Component order
+или Slide membership.
 
-Target Homework поддерживает:
+## 25. NEXT Learning Activity foundation
 
-- common definition;
-- full learner override;
-- effective resolution `override → common → none`;
-- immutable assignment snapshot при выдаче;
-- изменение definition не переписывает issued work.
+Learning Activity execution ортогонален authored hierarchy. Не каждый Component
+является Activity; assessable types получают optional facet в существующем
+registry.
 
-## 26. CURRENT base history/progress; LATER richer learner metrics
+Порядок ближайших срезов:
+
+1. component-level teacher observations во время LessonRun без заявления
+   mastery;
+2. Course objectives и один optional primary objective на Component;
+3. rebuildable objective state и transparent recommendations;
+4. learner-safe runtime и один полный `choice_quiz`;
+5. Homework/free-response review, voice и adaptivity позднее.
+
+Подробная модель и поэтапный DoD находятся в
+[`docs/architecture/learning-activity-system.md`](../architecture/learning-activity-system.md)
+и
+[`docs/plans/learning-activity-system-implementation.md`](../plans/learning-activity-system-implementation.md).
+
+## 26. CURRENT base history/progress; NEXT activity evidence
 
 Learning history относится к canonical LearnerProfile и переживает удаление
 Lesson. `learning_record` хранит recorder Account, attendance, comment,
@@ -611,30 +639,25 @@ subject breakdown и сумму только известных actual durations
 unknown не превращаются в ноль. Subject erasure/reset уже реализован; отдельными
 решениями остаются Account/Auth deletion и legal retention.
 
-LATER `LearningRecord.metrics` либо отдельные learning events появляются только
-с первым реальным allowlisted Component/runtime producer и consumer. Пустой
-generic metrics JSON не добавляется.
+`LearningRecord` не получает generic metrics JSON и не становится event store.
+Teacher observations, versioned attempts/evaluations, typed evidence и derived
+learner-objective state являются отдельными logical layers. Конкретные table
+names утверждаются только вместе с milestone migration.
 
-Позднее поверх базовой записи могут появиться:
-
-```text
-learning_event
-learner_word_state
-learner_inference
-```
-
-Полный snapshot Lesson/Components не добавляется. Постоянные AI inferences,
-влияющие на персонализацию, должны иметь evidence/confidence и human
+Полный snapshot Lesson/Components не добавляется в LearningRecord. Это не
+запрещает compact prompt/response-at-time envelope или ссылку на immutable
+issued activity revision, необходимые для объяснимой старой оценки. Постоянные
+AI inferences остаются предложениями с evidence references и human
 confirmation.
 
-## 27. Chat and notifications
+## 27. CURRENT Communication Center
 
-Target course thread включает owner и текущую audience; Observer не входит в
-course chat автоматически. Membership history нужна для корректного доступа к
-старым/новым сообщениям.
-
-Notifications адресуются Account или LearnerProfile и строятся как отдельный
-domain, а не возвращение V1 communication tables.
+Current persisted Communication Center объединяет direct Account conversations,
+Course chat, typed system feed и Account-owned AI conversations. Course chat
+включает owner и linked Accounts текущей effective audience; Observer не входит
+автоматически. Push/email, attachments, moderation и Realtime delivery остаются
+later. Канонический contract:
+[`docs/architecture/communication-center.md`](../architecture/communication-center.md).
 
 ## 28. AI-native platform
 
@@ -710,29 +733,9 @@ learner_credential_recovery_delegate
 learner_identity_reconciliation
 ```
 
-Следующие имена остаются direction:
-
-```text
-lesson_run_runtime
-homework_definition
-homework_component
-learner_homework_assignment
-learning_event
-learner_word_state
-learner_inference
-chat_thread
-chat_message
-notification
-source_document
-source_chunk
-background_job
-ai_change_set
-ai_usage_ledger
-ai_quota_period
-audit_event
-```
-
-Конкретная table shape утверждается только в milestone contract/migration и
+Future Homework, live, Learning Activity, communication, source, background-job
+и AI-ledger table names намеренно не резервируются этим global spec. Physical
+naming утверждается после schema audit в contract конкретного vertical slice и
 после применения переносится в current-schema/project-state.
 
 # Cross-cutting requirements
@@ -808,6 +811,8 @@ learner_profile / teacher_learner
 learner_group / learner_group_member
 course_learner / course_learner_group
 lesson_run / learning_record
+communication_thread / communication_message / communication_read_state
+assistant_conversation / assistant_turn / system_notification
 learner_profile_share_code / learner_connection_request
 learner_claim_invitation
 learner_profile_merge / learner_profile_merge_conflict
@@ -846,12 +851,15 @@ DDL/ACL/RLS shape находится только в current schema snapshots.
 11. Course materials private/course-scoped, пока отдельная reuse model не
     утверждена.
 12. Homework и live runtime остаются отдельными domains.
-13. AI не получает SQL/service-role и использует typed application commands.
-14. External MCP не публикуется без полноценного security layer.
-15. V1 restore выполняется только по отдельной явной команде владельца.
-16. `Account` остаётся единственной login identity; global role switch не
+13. Activity execution/evidence ортогонален Lesson authoring: он не создаёт
+    Step, второй Component order, второй registry и не превращает
+    LearningRecord в event store.
+14. AI не получает SQL/service-role и использует typed application commands.
+15. External MCP не публикуется без полноценного security layer.
+16. V1 restore выполняется только по отдельной явной команде владельца.
+17. `Account` остаётся единственной login identity; global role switch не
     возвращается.
-17. Каждый `active | provisional` Account имеет ровно один linked
+18. Каждый `active | provisional` Account имеет ровно один linked
     LearnerProfile; teacher и observer access остаются отдельными explicit
     relations.
 

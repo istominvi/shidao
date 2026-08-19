@@ -153,11 +153,12 @@ authored-create set содержит 19 типов и не создаёт legacy
 production уже приведены к этой модели data migration, а immutable publication
 revision сохранена без изменений. UI, application service и development-only
 MCP используют общие Zod contracts; MCP не работает с таблицами напрямую и не
-опубликован как внешний endpoint. Server-only
-RouterAI preview/apply и global System Assistant с подтверждаемым mutation
-allowlist уже реализованы; parsing/RAG,
-persisted Homework, live sessions и LearnerProfile-scoped consumption детского
-Course пока отсутствуют. Account-scoped самостоятельное прохождение approved
+опубликован как внешний endpoint. Server-only RouterAI preview/apply и
+persisted Assistant conversations внутри единого Communication Center с
+подтверждаемым mutation allowlist уже реализованы; parsing/RAG,
+persisted Homework, teacher observations, learning objectives/activity
+evidence, live sessions и LearnerProfile-scoped consumption детского Course пока
+отсутствуют. Account-scoped самостоятельное прохождение approved
 educator Course, revision progress и аттестация уже являются current
 production.
 
@@ -169,13 +170,16 @@ production.
 - Roadmap: `docs/roadmap.md`
 - Auth и routing: `docs/authorization-routing.md`
 - Модель урока: `docs/architecture/lesson-workflow-model.md`
+- Учебные активности, evidence и адаптивность:
+  `docs/architecture/learning-activity-system.md`
 - Identity и доступ: `docs/architecture/learner-identity-access-model.md`
 - Аватары Account: `docs/product/account-avatars.md`
 - Курсы для педагогов и аттестация:
   `docs/product/educator-courses-and-attestation.md`
 - Каталог типов компонентов: `docs/product/course-component-catalog.md`
 - Демо-магазин: `docs/product/store-demo.md`
-- Реализованный первый milestone: `docs/v2/TEACHER_COURSE_BUILDER_DEMO_MILESTONE.md`
+- План Learning Activity System:
+  `docs/plans/learning-activity-system-implementation.md`
 - Development MCP: `docs/v2/COURSE_BUILDER_MCP.md`
 - Текущая схема БД: `docs/database/current-schema.md`, `supabase/schema/current-schema.sql`
 - Правила migrations: `docs/database/migration-guidelines.md`

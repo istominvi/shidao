@@ -10,8 +10,10 @@
 ## Принципы последовательности
 
 1. Каждый этап завершается рабочим vertical slice на реальных данных.
-2. Новая возможность переиспользует Course Builder service/contracts и
-   code-first registry, а не создаёт параллельную модель.
+2. Новая возможность переиспользует canonical contracts и code-first registry,
+   а не создаёт параллельную content model. Authoring остаётся в Course Builder
+   services; learner execution/evaluation получает отдельный application
+   boundary.
 3. Учитель может работать вручную без обязательного расхода AI tokens.
 4. AI не получает SQL или service-role credentials.
 5. Attachment не считается прочитанным до фактического parsing результата.
@@ -22,6 +24,8 @@
    обновляются в том же изменении.
 8. Нельзя расширять scope за счёт Auth, SMTP, JWT/API keys, базового Storage или
    recovery V1 без отдельного решения.
+9. LearningRecord остаётся compact LessonRun outcome; attempts, observations,
+   evidence и derived objective state не складываются в его generic JSON.
 
 ## Current source / next production — frontend structural cleanup
 
@@ -362,17 +366,13 @@
   production runtime
   получает API key из server-side secret environment и использует проверенный
   default `google/gemini-2.5-flash-lite`.
-- **Current deployed follow-up:** один global System Assistant смонтирован в
-  protected `(app)` layout вместо Course/Lesson header dialog. Он получает
-  allowlisted page context, читает bounded authorized проекции Account и
-  открытой страницы. Exact functional SHA `b7c6cfe` развёрнут в Coolify с двумя
-  базовыми подтверждаемыми командами: Course draft и пустая Lesson.
-  Conversational follow-up `246cf49` добавляет новую наполненную Lesson, дополнение
-  открытой Lesson и удаление exact Lesson через canonical services, signed
-  proposal и one-active confirmation state machine. Код и tests не меняют
-  schema; exact SHA развёрнут Coolify и прошёл running-image/HTTP/guest boundary
-  postflight. Base RouterAI no-write smoke зелёный; authenticated production
-  action postflight ещё не выполнен.
+- **Current deployed follow-up:** единый persisted Communication Center в
+  protected `(app)` layout заменил отдельный System Assistant launcher. Его AI
+  conversations получают allowlisted page context и могут вернуть максимум
+  одно signed proposal из Course/Lesson allowlist; mutation выполняет canonical
+  service только после явного подтверждения. Current production boundary и
+  postflight зафиксированы в `docs/architecture/communication-center.md` и
+  `docs/project-state.md`.
 - Browser-smoke переведён на актуальную AES-GCM app-session; строгий
   production-mode gate покрывает guest/auth redirects, Course → Lesson →
   backlink, computed visual contract и mobile overflow без обращения к
@@ -568,9 +568,6 @@ Definition of Done программы:
 - migrations, RLS/ACL actor matrix, Auth/browser regression, docs и production
   postflight зелёные.
 
-Полный execution/acceptance prompt:
-[`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](./v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md).
-
 ## P0.2: завершить базовый teacher authoring
 
 Цель — превратить рабочий технический редактор в уверенный ежедневный
@@ -703,8 +700,8 @@ view-sort, начиная с `position ASC`. В action-cell остаётся о�
 типов: добавлены video/audio, расширенный quiz, пропуски, bank
 слов, порядок, категории, свободный ответ, HTTPS-ссылка, сборка слова и
 словарь; layout-only `divider` исключён. Текущая самопроверка живёт только
-в preview state, а learner answer persistence/scoring остаются later. Продуктовый
-выбор и границы зафиксированы в
+в preview state; learner answer persistence/scoring не реализованы и
+последовательно входят в LA-M4/LA-M5. Продуктовый выбор и границы зафиксированы в
 [`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
 Current production palette больше не меняет размер между категориями: responsive
 panel ограничена viewport, а отдельный внутренний scroll сохраняет header и
@@ -1123,8 +1120,9 @@ Course только открывают этот же центр на нужно�
 
 **Next:** отдельными slices добавить durable action/job и token-usage ledger,
 quota reservation/settlement с distributed enforcement, reliable background
-completion producers, richer learner-safe metrics, Realtime/presence и
-push/email delivery. Текущий тестовый meter не используется как billing balance.
+completion producers, Learning Activity evidence/profile projections по
+отдельному P1/P3 contract, Realtime/presence и push/email delivery. Текущий
+тестовый meter не используется как billing balance.
 
 ## P0.4: reusable Course catalog
 
@@ -1295,22 +1293,63 @@ Definition of Done текущего demo:
 Полный контракт:
 [`docs/product/store-demo.md`](./product/store-demo.md).
 
-## P1.1: persisted Homework
+## P1.1: очные teacher observations
 
-Цель — заменить текущую заглушку отдельным Lesson-owned редактором.
+Первый Learning Activity vertical slice использует уже существующий LessonRun и
+roster, не ожидая детского learner runtime:
 
-- собственные Homework contracts/service/repository;
-- отдельный ordered list homework components или отдельный ограниченный
-  registry context — решение фиксируется до migration;
-- teacher preview и learner projection;
-- due/assignment model добавляется только вместе с LearnerProfile/audience;
+- scheduled Run сначала явно запускается; до `started_at` observation writes
+  запрещены;
+- teacher проходит по полному ordered Component list Lesson, не по Slides;
+- structured rating создаётся только после подтверждения короткого общего
+  observable criterion; passive Component без критерия остаётся навигацией;
+- для каждого learner доступны быстрые состояния `самостоятельно / с помощью /
+пока не получилось / не наблюдал`;
+- bulk «все самостоятельно» создаёт draft; teacher меняет exceptions и явно
+  подтверждает остальных действительно наблюдавшихся learners;
+- observations хранятся отдельным типизированным contract рядом с
+  LearningRecord, а не внутри него;
+- compact component position/label/type/criterion-at-time сохраняет понятную
+  историю без полного Lesson/Component snapshot;
+- completed observations read-only и recorder-scoped;
+- этот срез ещё не объявляет component-level отметку mastery.
+
+Полный LA-M1 scope и DoD:
+[`docs/plans/learning-activity-system-implementation.md`](./plans/learning-activity-system-implementation.md).
+
+## P1.2: Course objectives и activity foundation
+
+- плоские Course-scoped Learning Objectives;
+- одна optional primary objective на Component;
+- simple manual create/select/archive UX в Component editor;
+- optional `activityFacet` в существующем registry, без второго каталога;
+- разделение author/evaluator payload и learner-safe delivery contract;
+- новые teacher observations получают objective context;
+- старые component-only observations остаются историей и автоматически не
+  переосмысливаются.
+
+Следом появляются rebuildable objective state и прозрачные recommendations.
+Один score или completion не считается mastery.
+
+## P1.3: persisted Homework authoring
+
+Цель первого slice — заменить текущую заглушку отдельным Lesson-owned
+редактором. Learner assignment, выдача и attempts идут позже вместе с
+authorized learner runtime.
+
+- собственный Homework authoring contract/service/repository;
+- собственный ordered owner/items с reuse authoring primitives единственного
+  registry;
+- teacher editor и preview common Homework;
+- learner projection, immutable issuance, due/individual override, review и
+  attempts входят в более поздний LA-M6 вместе с authorized learner runtime;
 - Homework не смешивается с `lesson.components` и Student Screen Slides.
 
-Первый срез может сохранять одно общее Homework на Lesson без индивидуальных
-override. Overrides и immutable issued snapshots добавляются после появления
-новой audience-модели.
+Первый authoring slice может сохранять одно common Homework на Lesson без
+individual override. Mutable `lesson_component` не исполняется как выданная
+домашняя работа.
 
-## P1.2: Sources и parsing/RAG
+## P1.4: Sources и parsing/RAG
 
 Цель — сделать материалы реальными источниками AI.
 
@@ -1374,8 +1413,9 @@ claim/access slice. Заполненный `account_id` позволяет Accou
 собственную canonical identity row; Course, records и teacher-local data этим не
 открываются. Полный current/next/later boundary находится в
 [`docs/architecture/learner-identity-access-model.md`](./architecture/learner-identity-access-model.md).
-LearnerProfile-scoped consumption детского Course и live Student Screen
-остаются отдельным later slice и не входят в P0.Identity. Наличие linked
+LearnerProfile-scoped consumption детского Course и live Student Screen не
+реализованы, не входят в P0.Identity и последовательно рассматриваются в
+LA-M4/LA-M5. Наличие linked
 profile/observer grant/AI consent не создаёт Course enrollment. Current
 Account-scoped self-learning educator Course — отдельный уже реализованный flow
 и не выдаёт доступ к детскому Course.
@@ -1393,127 +1433,35 @@ Account-scoped self-learning educator Course — отдельный уже ре�
   ожидаемого ученика;
 - UI state выводится из timestamps, persisted status отсутствует.
 
-**Previously deployed follow-up (presentation superseded by PR #242):** Schedule UI проецирует те же
-LessonRun за выбранную локальную неделю или календарный месяц. Панель без
-внешней карточки повторяет demo-композицию: date navigator, «Неделя / Месяц» и
-«Таблица / Карточки». API/schema не меняются; System Assistant остаётся
-ограничен опорным выбранным днём. Coolify webhook deployment exact functional
-SHA `587bb21` завершён со статусом Success; authenticated production browser
-postflight этого follow-up ещё не выполнен.
-
-**Previously deployed presentation baseline (superseded):** page header использует подзаголовок «Здесь все
-назначенные уроки за выбранный период.» с общим для всех `AppPageHeader`
-computed-цветом `rgba(20, 20, 20, 0.5)` и короткий календарный Action
-«Назначить урок». Отдельный внешний «Неделя / Месяц» удалён: компактный
-right-aligned date control шириной 300 px на desktop показывает короткие
-русские даты без точки после сокращения месяца, открывает календарь с «День /
-Неделя / Месяц» и стрелками
-сдвигает выбранный целый период. Рядом остаётся icon-only «Таблица / Карточки».
-После controls непустая projection начинается сразу. Таблица сплошная белая,
-без внешней рамки и с element/table radius 12 px; её header и data-row имеют
-ровно 40 px. Header использует тот же белый фон, что data rows, а его нижний
-divider 1 px входит в высоту header и через `--product-table-divider-color`
-совпадает по цвету с разделителями между строками; weight равен 500 и текст
-светлее. Обычные header/data cells используют inline-padding 12 px;
-только последняя body action-cell получает inset 4 px вокруг единственного
-`MoreVertical` trigger размером 32 × 32 px и радиусом 8 px. В точной 40 px
-строке это даёт по 4 px сверху, справа и снизу; этот dense action намеренно
-меньше actual option `38 × 38 px` переключателя вида. Контентные по ширине
-`Дата / Время` прижаты слева,
-`Ученики / Статус` и действия — справа, а `Урок / Курс` делят свободную ширину.
-Все данные чёрные и выводятся в одну строку с ellipsis; дата имеет вид
-`Среда · 12 авг`, время — `12:00 · 60 мин`, scheduled state остаётся plain
-«Ожидается». Видимые data-заголовки переключают ascending/descending
-сортировку повторным кликом и публикуют направление через `aria-sort`.
-Строка назначенного урока показывает pointer при наведении. В
-последней колонке постоянное вертикальное троеточие ожидающего Run открывает
-«Начать урок / Изменить / Отменить», а active/completed Run получают
-соответствующие завершение или результаты; других action-кнопок в строке нет.
-Start/cancel
-переиспользуют существующие LessonRun mutations, cancel требует подтверждения,
-edit открывает dialog назначения сразу в режиме редактирования. Пункты
-portal-menu имеют 40 px, вертикальное
-центрирование и `.88rem/400`. Прозрачные Schedule, Students и обе Courses
-controls-панели используют всю ширину строки без горизонтального inset. Общие radius
-tokens задают 20 px для карточек и 12 px для controls/tables/menus; активные
-ProductTable surfaces Schedule/Students/Courses белые, имеют общий product
-border, clipped background и статическую raised-surface тень. Students и
-обе Courses tables используют 40 px header/data rows; owned Course сортируется
-через headers, Catalog сохраняет server-side cursor order. Students/Groups
-сортируются через headers, а их единый «Фильтр»
-объединяет status, group membership, конкретную группу и Account connection.
-Сохранённый Course → **Уроки** также использует прозрачную full-width
-search/create toolbar и белую 40 px `ProductTable` с тем же surface contract;
-шесть data
-headers сортируют только локальную projection с default `position ASC`.
-Последняя колонка имеет 4 px inset и один 32 px `MoreVertical` с двумя
-portal-actions: открыть Lesson и выполнить контекстное действие проведения.
-Authenticated top header и profile dropdown тоже стали сплошными белыми
-поверхностями без blur. Buttons/header controls используют единый raised
-`40 px / 12 px` contract. Base/desktop ordinary controls и segmented labels
-используют один canonical type `.88rem/400/1.2`; current-source / next
-production narrow/coarse сохраняет его без override, а fully opaque
-contrast-aware icons —
-`16 px / 2 px` со стандартным vector rendering,
-общим product border и base/hover/pressed states; menu items остаются
-borderless. Physical schema не
-меняется; Course API добавляет recoverable soft archive с published/open-Run
-guards. Refinement развёрнут exact merge commit
-`84ffefecda99d3b0a9da82bf1eaf8ce76d9c6ea1` (PR #242); running image и
-HTTP/CSRF/auth boundary postflight подтверждены.
-
-**Current production Schedule micro-polish:** подзаголовок теряет завершающую точку;
-одна стрелка направления отображается только в активной sortable-колонке.
-Трёхпунктовое меню ожидающего Run больше не разделяет «Изменить / Отменить»,
-а hover-подсветка пунктов использует радиус 8 px выбранной кнопки вида. Это
-UI-only follow-up без изменения LessonRun API, schema или migrations.
-
-**Current production header-motion follow-up:** прежние
-поясняющие Schedule/Students/Courses и другие page subtitles заменены точными
-метриками выбранной сущности либо полностью опущены. Lesson header всегда
-показывает counts Components/Slides/Runs вместо teacher-private comment;
-видимой остаётся одна частая кнопка проведения (или AI для educator Course),
-а AI/settings/delete собраны в keyboard-accessible vertical overflow. Переходы
-между primary sections и Course → Lesson/back получают зеркальный fade/slide,
-а вкладки сохраняют свой moving indicator. Primary header использует один
-локальный black active-pill: каждый click синхронно dispatch-ит route
-navigation, а `width/transform` параллельно анимируются через общие с
-`WorkspaceTabs` и `SegmentedControl` tokens
-`--product-selection-motion-duration: 360ms` и
-`--product-selection-motion-easing: cubic-bezier(0.22, 1, 0.36, 1)` без routing
-gate, named/native pill View Transition, второго
-чёрного слоя, серого ghost или snapshot-scale. Glyphs визуально имеют `#000`
-вне pill и `#fff` внутри. Rapid primary intent немедленно supersede-ит
-предыдущий pre-commit/pending route; stale response не может commit-ить старый
-URL, а cursor/link/focus остаются активными. Асинхронная route navigation и
-RSC/data load никогда не удерживаются внутри native
-`document.startViewTransition`: после ready commit применяется interruptible
-CSS entrance, а `app-page-header` остаётся единственным named element для
-синхронных native updates. Async metric-slot исключает промежуточный H1 без метрики, а
-content-driven header height заменяет прежние 200 px. Owner/published Course
-loading-card удалён. Нет новой motion dependency: используется browser View
-Transition API с безопасным fallback и полным reduced-motion bypass. Это
-UI-only slice без schema/API/migration.
-
-**Current production contract дополнительно:** verified actual duration,
-explicit shared individual comment, cursor-paginated self/observer history и
-real-record progress без speculative metrics.
+**Current presentation boundary:** Schedule day/week/month, table/card views,
+current product surfaces and learner-safe real-record progress are already
+implemented. Superseded visual specifications and rollout hashes belong to Git
+history and the deployment runbook, not to the forward roadmap.
 
 **Next — live:**
 
 - основной runtime cursor указывает на Student Screen Slide и не создаёт
-  authored Step; внутреннее состояние интерактивного Component при
-  необходимости хранится отдельно;
+  authored Step;
+- cursor отвечает только за presentation; responses/evaluations хранятся в
+  отдельном activity execution contract;
 - teacher управляет learner screen по умолчанию;
+- learner-safe serializer никогда не отдаёт answer key или teacher data;
+- свободная learner navigation не включается автоматически;
 - Realtime используется после явной authorization модели;
 - Realtime/presence и learner authorization проектируются поверх открытого
   LessonRun, а не через второй content-bearing LessonSession.
 
-## P3: richer learning history, communication delivery и product scale
+## P3: online activities, adaptive learning и product scale
 
-- Component/runtime-produced subject metrics и richer progress signals поверх
-  текущих finalized LearningRecord;
-- common/individual Homework assignment snapshots;
+- один полный `choice_quiz`: learner-safe delivery, persisted attempt,
+  server-side evaluation, compact at-time envelope, evidence и profile update;
+- затем shared deterministic engine для fill/matching/sequence/categorize и
+  отдельный manual-review flow для `free_response`;
+- history остаётся source of truth, а objective state — rebuildable projection
+  рядом с compact LearningRecord, не внутри него;
+- transparent rules и spaced review предшествуют statistical models;
+- reference audio, learner recording, teacher rubric и только затем
+  specialized pronunciation assessment;
 - communication follow-ups поверх current-source direct/Course/system/AI
   baseline: Realtime/presence, push/email, attachments, moderation и reliable
   background notification/AI workers;

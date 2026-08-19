@@ -535,10 +535,13 @@ publication хранит собственные revision progress и аттес�
 LearnerProfile enrollment и не расширяет Course audience.
 
 **Next / later, вне identity completion:** enrollment/consumption детских
-Course через LearnerProfile, live Student Screen, persisted Homework, richer
-Component-produced metrics, communication, billing and external MCP.
+Course через LearnerProfile, teacher observations, objectives/activity evidence,
+live Student Screen, persisted Homework, communication delivery enhancements,
+billing and external MCP.
 
 Lesson/Run authored invariants remain canonical in
 [`lesson-workflow-model.md`](./lesson-workflow-model.md). Provider transport and
 budgets remain canonical in
 [`ai-provider-integration.md`](./ai-provider-integration.md).
+Learning Activity execution/profile state remains canonical in
+[`learning-activity-system.md`](./learning-activity-system.md).

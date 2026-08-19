@@ -507,8 +507,7 @@ Identity, provenance и current access boundary зафиксированы в
 [`learner-identity-access-model.md`](./learner-identity-access-model.md).
 Current cross-provider flow допускает context только по отдельному
 course-scoped subject consent и через sanitized server projection; teacher API
-не получает foreign raw records. Historical execution contract находится в
-[`LEARNER_IDENTITY_COMPLETION_PROMPT.md`](../v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md).
+не получает foreign raw records.
 
 ## Не входит в текущий срез
 
@@ -522,7 +521,9 @@ course-scoped subject consent и через sanitized server projection; teacher
 - attachment parsing/OCR/RAG и citation provenance;
 - Homework generation;
 - learner-facing AI teacher, live lesson и Student Screen control;
-- automatic subject metrics beyond current attendance/repeat/comments;
+- teacher observations, Learning Activity evidence/objective state и adaptive
+  decisions beyond current attendance/repeat/comments; их target contract
+  находится в [`learning-activity-system.md`](./learning-activity-system.md);
 - persistent distributed quota, cost ledger, billing и subscriptions;
 - внешний remote MCP/API.
 
