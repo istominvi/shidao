@@ -6,8 +6,8 @@ type Props = { params: Promise<{ invitationId: string }> };
 export default async function IdentityInvitationPage({ params }: Props) {
   const { invitationId } = await params;
   return (
-    <main className="course-demo-shell teaching-hub-shell pb-12">
-      <TopNav demoStyle />
+    <main className="app-page-shell pb-12">
+      <TopNav layout="app" />
       <div className="container app-page-container">
         <InvitationAcceptWorkspace invitationId={invitationId} />
       </div>

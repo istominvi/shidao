@@ -17,7 +17,7 @@ import {
   type AccountEmailStatus,
 } from "@/components/account/account-settings-panel";
 import { AppPageHeader } from "@/components/app/page-header";
-import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
+import { useRegisterAssistantPageContext } from "@/components/communication/assistant-page-context";
 import { usePrimaryHeaderSummary } from "@/components/navigation/primary-header-summary-provider";
 import { useSessionView } from "@/components/use-session-view";
 import { Button } from "@/components/ui/button";
@@ -126,7 +126,7 @@ export function LearningProfileWorkspace({
     if (session.kind === "account") setHasPin(session.hasPin);
   }, [session]);
 
-  useSystemAssistantPageContext({
+  useRegisterAssistantPageContext({
     surface:
       surface === "observers"
         ? "observer_settings"

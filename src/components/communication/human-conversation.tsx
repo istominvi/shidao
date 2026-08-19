@@ -20,6 +20,7 @@ import type {
   CommunicationMessage,
   CommunicationThread,
 } from "@/modules/communication/domain";
+import { errorMessageFromUnknown } from "@/lib/error-message";
 
 export type HumanThreadSummary = Pick<
   CommunicationThread,
@@ -32,10 +33,6 @@ type PendingMessage = {
   createdAt: string;
   status: "sending" | "failed";
 };
-
-function errorMessage(caught: unknown, fallback: string) {
-  return caught instanceof Error ? caught.message : fallback;
-}
 
 export function HumanConversation({
   thread,
@@ -83,7 +80,10 @@ export function HumanConversation({
           return;
         }
         setLoadError(
-          errorMessage(caught, "Не удалось загрузить сообщения диалога."),
+          errorMessageFromUnknown(
+            caught,
+            "Не удалось загрузить сообщения диалога.",
+          ),
         );
       })
       .finally(() => {
@@ -187,7 +187,10 @@ export function HumanConversation({
       setNextCursor(page.nextCursor);
     } catch (caught) {
       setLoadError(
-        errorMessage(caught, "Не удалось загрузить предыдущие сообщения."),
+        errorMessageFromUnknown(
+          caught,
+          "Не удалось загрузить предыдущие сообщения.",
+        ),
       );
     } finally {
       setLoadingOlder(false);
@@ -226,7 +229,9 @@ export function HumanConversation({
           ? { ...current, status: "failed" }
           : current,
       );
-      setLoadError(errorMessage(caught, "Не удалось отправить сообщение."));
+      setLoadError(
+        errorMessageFromUnknown(caught, "Не удалось отправить сообщение."),
+      );
     } finally {
       window.requestAnimationFrame(() => composerRef.current?.focus());
     }

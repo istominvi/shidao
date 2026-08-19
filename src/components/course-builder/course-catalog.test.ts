@@ -445,11 +445,11 @@ test("course index keeps ergonomic mobile cards and one segmented geometry", () 
   );
   assert.match(
     globalStyles,
-    /\.course-demo-shell\s*\{[^}]*--course-demo-control-padding-inline: 0\.75rem;[^}]*--course-demo-control-font-size: 0\.88rem;[^}]*--course-demo-control-icon-size: var\(--product-control-icon-size\);/,
+    /:root\s*\{[^}]*--product-control-padding-inline: 0\.75rem;[^}]*--product-control-font-size: 0\.88rem;[^}]*--product-control-icon-size: 1rem;/,
   );
   assert.doesNotMatch(
     touchStyles,
-    /--product-touch-control-font-size|--product-control-icon-size|--course-demo-control-(?:padding-inline|font-size)|vector-effect:\s*non-scaling-stroke/,
+    /--product-touch-control-font-size|--product-control-icon-size|vector-effect:\s*non-scaling-stroke/,
   );
   assert.match(
     touchStyles,
@@ -457,7 +457,7 @@ test("course index keeps ergonomic mobile cards and one segmented geometry", () 
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*touch-action: manipulation;/,
+    /\.app-page-shell \.product-segmented-control-option\s*\{[^}]*touch-action: manipulation;/,
   );
   assert.match(
     globalStyles,
@@ -475,11 +475,11 @@ test("course index keeps ergonomic mobile cards and one segmented geometry", () 
   assert.doesNotMatch(touchStyles, /transform: scale\(/);
   assert.doesNotMatch(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*(?:height|min-height|width|min-width|gap|border|border-radius|background|padding|color|font-size|box-shadow|transform):/,
+    /\.app-page-shell \.product-segmented-control-option\s*\{[^}]*(?:height|min-height|width|min-width|gap|border|border-radius|background|padding|color|font-size|box-shadow|transform):/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control\[data-variant="text"\]\s*\{[^}]*max-width: 100%;[^}]*min-width: 0;[^}]*flex-shrink: 1;[^}]*--segmented-option-min-width: 0;[^}]*--segmented-option-flex: 1 1 0;/,
+    /\.app-page-shell \.product-segmented-control\[data-variant="text"\]\s*\{[^}]*max-width: 100%;[^}]*min-width: 0;[^}]*flex-shrink: 1;[^}]*--segmented-option-min-width: 0;[^}]*--segmented-option-flex: 1 1 0;/,
   );
   assert.match(
     touchStyles,

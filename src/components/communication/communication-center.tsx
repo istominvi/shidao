@@ -17,7 +17,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import { useSystemAssistant } from "@/components/assistant/system-assistant-provider";
+import { useAssistantPageContext } from "@/components/communication/assistant-page-context";
 import {
   AssistantConversationView,
   type AssistantConversationSummary,
@@ -54,6 +54,7 @@ import type {
   DirectMessageTarget,
   InboxItem,
 } from "@/modules/communication/domain";
+import { errorMessageFromUnknown } from "@/lib/error-message";
 
 const PANEL_ID = "communication-center-panel";
 const SYSTEM_CHANNEL_NOTE_ID = "communication-system-channel-note";
@@ -64,10 +65,6 @@ type AssistantDialog =
   | { type: "rename"; conversation: AssistantConversationSummary }
   | { type: "archive"; conversation: AssistantConversationSummary }
   | null;
-
-function errorMessage(caught: unknown, fallback: string) {
-  return caught instanceof Error ? caught.message : fallback;
-}
 
 function humanSummary(item: InboxItem): HumanThreadSummary | null {
   if (item.kind !== "direct" && item.kind !== "course") return null;
@@ -91,7 +88,7 @@ function assistantSummary(
   };
 }
 
-function assistantContext(page: ReturnType<typeof useSystemAssistant>["page"]) {
+function assistantContext(page: ReturnType<typeof useAssistantPageContext>) {
   if (page.courseId && page.lessonId) {
     return {
       kind: "lesson" as const,
@@ -284,7 +281,7 @@ function ConversationHeader({
 export function CommunicationCenter() {
   const { open, view, openInbox, close, setView, setLauncherElement } =
     useCommunicationCenter();
-  const { page } = useSystemAssistant();
+  const page = useAssistantPageContext();
   const mobile = useMobileViewport();
   const [mounted, setMounted] = useState(false);
   const [items, setItems] = useState<InboxItem[]>([]);
@@ -367,7 +364,9 @@ export function CommunicationCenter() {
         ) {
           return;
         }
-        setInboxError(errorMessage(caught, "Не удалось загрузить сообщения."));
+        setInboxError(
+          errorMessageFromUnknown(caught, "Не удалось загрузить сообщения."),
+        );
       } finally {
         if (sequence === refreshSequenceRef.current) {
           setLoading(false);
@@ -407,7 +406,9 @@ export function CommunicationCenter() {
       })
       .catch((caught: unknown) => {
         if (active) {
-          setTargetError(errorMessage(caught, "Не удалось открыть диалог."));
+          setTargetError(
+            errorMessageFromUnknown(caught, "Не удалось открыть диалог."),
+          );
         }
       })
       .finally(() => {
@@ -452,7 +453,7 @@ export function CommunicationCenter() {
       .catch((caught: unknown) => {
         if (active) {
           setTargetError(
-            errorMessage(caught, "Не удалось открыть этот диалог."),
+            errorMessageFromUnknown(caught, "Не удалось открыть этот диалог."),
           );
         }
       })
@@ -584,7 +585,9 @@ export function CommunicationCenter() {
       setTotalUnread(pageResult.totalUnread);
       setInboxError(null);
     } catch (caught) {
-      setInboxError(errorMessage(caught, "Не удалось загрузить ещё диалоги."));
+      setInboxError(
+        errorMessageFromUnknown(caught, "Не удалось загрузить ещё диалоги."),
+      );
     } finally {
       loadingMoreRef.current = false;
       setLoadingMore(false);
@@ -608,7 +611,9 @@ export function CommunicationCenter() {
       setAnnouncement("Новый диалог с ИИ создан.");
       void refreshInbox(true);
     } catch (caught) {
-      setTargetError(errorMessage(caught, "Не удалось создать диалог с ИИ."));
+      setTargetError(
+        errorMessageFromUnknown(caught, "Не удалось создать диалог с ИИ."),
+      );
     } finally {
       setNewBusy(false);
     }
@@ -671,7 +676,9 @@ export function CommunicationCenter() {
       setAssistantDialog(null);
       void refreshInbox(true);
     } catch (caught) {
-      setDialogError(errorMessage(caught, "Не удалось изменить диалог."));
+      setDialogError(
+        errorMessageFromUnknown(caught, "Не удалось изменить диалог."),
+      );
     } finally {
       setDialogBusy(false);
     }

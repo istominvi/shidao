@@ -8,6 +8,14 @@ import type {
   LearnerIdentityState,
 } from "@/modules/learner-identity/domain";
 
+const identityDateFormatter = new Intl.DateTimeFormat("ru-RU", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
 export function IdentityLoading({
   children = "Загружаем…",
 }: {
@@ -146,11 +154,5 @@ export function formatIdentityDate(value: string | null) {
   if (!value) return "—";
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+  return identityDateFormatter.format(date);
 }

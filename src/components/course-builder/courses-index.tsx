@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen, Library, type LucideIcon } from "lucide-react";
-import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
+import { useRegisterAssistantPageContext } from "@/components/communication/assistant-page-context";
 import { usePageTransition } from "@/components/navigation/page-transition-provider";
 import { CourseCatalogPanel } from "@/components/course-builder/course-catalog-panel";
 import { OwnedCoursesPanel } from "@/components/course-builder/owned-courses-panel";
@@ -41,7 +41,7 @@ export function CoursesIndex({
   const [catalogLearningAudience, setCatalogLearningAudience] =
     useState<CourseLearningAudience>(initialLearningAudience);
 
-  useSystemAssistantPageContext({
+  useRegisterAssistantPageContext({
     surface: "courses",
     view: `courses_${activeTab}`,
     courseId: null,

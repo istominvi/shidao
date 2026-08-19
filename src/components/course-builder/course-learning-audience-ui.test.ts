@@ -73,7 +73,7 @@ test("only authorized creators choose educator audience and persisted audience i
   assert.match(courseWorkspace, /course\.learningAudience/);
   assert.doesNotMatch(
     courseWorkspace,
-    /jsonRequest\([\s\S]*?"PATCH"[\s\S]*?learningAudience,/,
+    /courseBuilderJsonRequest\([\s\S]*?"PATCH"[\s\S]*?learningAudience,/,
   );
   assert.doesNotMatch(courseWorkspace, /ariaLabel="Направление обучения"/);
 });

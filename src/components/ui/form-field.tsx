@@ -36,18 +36,6 @@ export function FieldHint({ className, ...props }: FieldHintProps) {
   return <p className={classNames("form-field-hint", className)} {...props} />;
 }
 
-type FieldErrorProps = ComponentPropsWithoutRef<"p">;
-
-export function FieldError({ className, ...props }: FieldErrorProps) {
-  return (
-    <p
-      className={classNames("form-field-error", className)}
-      role="alert"
-      {...props}
-    />
-  );
-}
-
 type FieldControlProps = ComponentPropsWithoutRef<"div">;
 
 export function FieldControl({ className, ...props }: FieldControlProps) {

@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import type { CourseSummary } from "@/modules/course-builder/domain";
 import type { LearnerProfile } from "@/modules/lesson-runs/domain";
+import { errorMessageFromUnknown } from "@/lib/error-message";
 
 type LearnerCourseDialogProps = {
   learnerProfile: Pick<LearnerProfile, "id" | "displayName">;
@@ -24,12 +25,6 @@ type LearnerCourseDialogProps = {
   onAdded: (courseTitle: string) => void;
   disabled?: boolean;
 };
-
-function errorMessage(caught: unknown) {
-  return caught instanceof Error
-    ? caught.message
-    : "Не удалось добавить ученика в курс.";
-}
 
 export function LearnerCourseDialog({
   learnerProfile,
@@ -134,7 +129,9 @@ export function LearnerCourseDialog({
       setStatusMessage(`Ученик добавлен в курс «${selectedCourse.title}».`);
       onAdded(selectedCourse.title);
     } catch (caught) {
-      setError(errorMessage(caught));
+      setError(
+        errorMessageFromUnknown(caught, "Не удалось добавить ученика в курс."),
+      );
     } finally {
       setBusy(false);
     }

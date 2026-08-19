@@ -4,10 +4,7 @@ import { ROUTES } from "@/lib/auth";
 import type {
   SystemAssistantActionProposal,
   SystemAssistantActionResult,
-  SystemAssistantPageContext,
-  SystemAssistantReply,
 } from "@/modules/ai/system-assistant-contracts";
-import type { AiAssistantMessage } from "@/modules/ai/course-builder-contracts";
 
 type AssistantErrorPayload = {
   error?: string;
@@ -15,13 +12,13 @@ type AssistantErrorPayload = {
   loginRequired?: boolean;
 };
 
-export class SystemAssistantClientError extends Error {
+export class AssistantApiError extends Error {
   readonly status: number;
   readonly code: string | null;
 
   constructor(message: string, status: number, code?: string | null) {
     super(message);
-    this.name = "SystemAssistantClientError";
+    this.name = "AssistantApiError";
     this.status = status;
     this.code = code ?? null;
   }
@@ -42,7 +39,7 @@ async function assistantRequest<T>(path: string, body: unknown): Promise<T> {
       body: JSON.stringify(body),
     });
   } catch {
-    throw new SystemAssistantClientError(
+    throw new AssistantApiError(
       "Не удалось связаться с ассистентом. Проверьте соединение.",
       0,
       "network_error",
@@ -54,7 +51,7 @@ async function assistantRequest<T>(path: string, body: unknown): Promise<T> {
   if (!response.ok) {
     const error = payload as AssistantErrorPayload | null;
     if (error?.loginRequired) redirectToLogin();
-    throw new SystemAssistantClientError(
+    throw new AssistantApiError(
       error?.error ?? "Ассистент временно недоступен. Попробуйте ещё раз.",
       response.status,
       error?.code,
@@ -63,18 +60,7 @@ async function assistantRequest<T>(path: string, body: unknown): Promise<T> {
   return payload as T;
 }
 
-export async function sendSystemAssistantMessage(
-  page: SystemAssistantPageContext,
-  messages: AiAssistantMessage[],
-) {
-  const payload = await assistantRequest<{ result: SystemAssistantReply }>(
-    "/api/v2/assistant",
-    { page, messages },
-  );
-  return payload.result;
-}
-
-export async function applySystemAssistantAction(
+export async function applyAssistantAction(
   proposal: SystemAssistantActionProposal,
 ) {
   const payload = await assistantRequest<{

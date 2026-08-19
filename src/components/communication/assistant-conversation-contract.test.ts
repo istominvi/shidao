@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
-import { applySystemAssistantAction } from "./system-assistant-client";
+import { applyAssistantAction } from "./assistant-api-client";
 import type {
   SystemAssistantActionProposal,
   SystemAssistantActionResult,
@@ -53,7 +53,7 @@ test("assistant apply client sends the server-issued proposal signature unchange
   };
 
   try {
-    assert.deepEqual(await applySystemAssistantAction(proposal), result);
+    assert.deepEqual(await applyAssistantAction(proposal), result);
     assert.deepEqual(sentBody, {
       idempotencyKey: proposal.idempotencyKey,
       action: proposal.action,
@@ -148,7 +148,7 @@ test("exact confirmation or cancellation targets only the latest persisted propo
   const pending = between(
     conversation,
     "function latestPendingProposal(",
-    "function errorMessage(",
+    "function assistantPrompts(",
   );
   assert.match(
     pending,
@@ -239,7 +239,7 @@ test("Course workspace reloads and opens, refreshes, or leaves a deleted Lesson 
   const callback = between(
     workspace,
     "const handleAssistantActionApplied",
-    "useSystemAssistantPageContext(",
+    "useRegisterAssistantPageContext(",
   );
   const reload = callback.indexOf("const workspace = await reload()");
   const deleteBranch = callback.indexOf('result.type === "lesson.delete"');
@@ -251,10 +251,10 @@ test("Course workspace reloads and opens, refreshes, or leaves a deleted Lesson 
   assert.match(callback, /result\.lessonId/);
   assert.match(callback, /window\.history\.replaceState/);
   const registration = workspace.slice(
-    workspace.indexOf("useSystemAssistantPageContext("),
+    workspace.indexOf("useRegisterAssistantPageContext("),
     workspace.indexOf(
       "if (!course)",
-      workspace.indexOf("useSystemAssistantPageContext("),
+      workspace.indexOf("useRegisterAssistantPageContext("),
     ),
   );
   assert.match(

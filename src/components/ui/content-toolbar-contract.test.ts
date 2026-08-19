@@ -29,10 +29,7 @@ const courseWorkspace = readFileSync(
 );
 
 test("Schedule, Students, Courses, and Course Lessons toolbars are full-width", () => {
-  assert.match(
-    globalStyles,
-    /\.course-demo-shell\s*\{[^}]*--course-demo-content-inset: 0\.75rem;/,
-  );
+  assert.doesNotMatch(globalStyles, /--product-content-inset/);
   assert.match(
     globalStyles,
     /\.compact-page-toolbar\s*\{[^}]*width: 100%;[^}]*max-width: 100%;[^}]*min-width: 0;[^}]*background: transparent;[^}]*padding-block: 0;[^}]*padding-inline: 0;/,
@@ -91,7 +88,7 @@ test("Schedule, Students, Courses, and Course Lessons toolbars are full-width", 
   );
   assert.doesNotMatch(
     globalStyles,
-    /\.compact-page-toolbar\s*\{[^}]*padding-inline: var\(--course-demo-content-inset/,
+    /\.compact-page-toolbar\s*\{[^}]*padding-inline: var\(--product-content-inset/,
   );
 });
 

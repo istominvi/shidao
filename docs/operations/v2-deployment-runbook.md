@@ -1062,7 +1062,7 @@ ShiDao V2 application:
 - current-source product TopNav находится в normal document flow: computed
   position не равен `sticky` или `fixed`, а после вертикального scroll shell
   действительно уходит за верхнюю границу viewport вместе с content.
-  `.site-header-shell-demo` имеет exact `64 px` внешней высоты, `12 px`
+  `.site-header-shell-app` имеет exact `64 px` внешней высоты, `12 px`
   block-padding и общий inner container-row brand/navigation/actions-avatar
   exact высотой `40 px`; его top/bottom gaps равны `12 px`. Через
   `getBoundingClientRect()` проверить, что brand, navigation и actions/avatar
@@ -1093,7 +1093,7 @@ ShiDao V2 application:
   ellipsis;
   metric, когда она существует, получает один computed-цвет
   `oklch(0.19 0 0 / 0.6)` из canonical
-  `--app-page-header-description-color`;
+  `--app-page-header-metric-color`;
   Каждый `AppPageHeader` сохраняет backlink-row. На Course/Lesson настоящий
   backlink остаётся link/button: стрелка и normal/hover/focus имеют computed
   `rgb(20, 20, 20)`, стрелка не сжимается, а расстояние от верхней границы page
@@ -1381,7 +1381,7 @@ flow как permanent delete.
   `.product-btn` state-contract и сохранять одинаковые width/height во всех
   состояниях: внешний control остаётся `40 px`, внутренняя client-area —
   `38 px`, border не исчезает на hover, active или focus. Белый
-  Current-source `.site-header-shell-demo` имеет `64 px / 20 px`: на desktop
+  Current-source `.site-header-shell-app` имеет `64 px / 20 px`: на desktop
   `12 px` block-padding образует exact `40 px` inner container-row, а protected
   mobile сохраняет `48 px` inner row и burger target. В обеих плотностях зоны
   лежат на общей vertical centerline; shell имеет единственную computed shadow

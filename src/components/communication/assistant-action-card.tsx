@@ -39,6 +39,11 @@ const CANCEL_WORDS = new Set([
   "не нужно",
 ]);
 
+const scheduledAtFormatter = new Intl.DateTimeFormat("ru-RU", {
+  dateStyle: "long",
+  timeStyle: "short",
+});
+
 export function confirmationIntent(value: string) {
   const normalized = value
     .trim()
@@ -81,13 +86,7 @@ export function verifiedMessage(result: SystemAssistantActionResult) {
     case "lesson.delete":
       return `Готово: урок «${result.lessonTitle}» удалён из курса «${result.courseTitle}».`;
     case "lesson.schedule_run":
-      return `Готово: урок «${result.lessonTitle}» назначен на ${new Intl.DateTimeFormat(
-        "ru-RU",
-        {
-          dateStyle: "long",
-          timeStyle: "short",
-        },
-      ).format(new Date(result.scheduledAt))}.`;
+      return `Готово: урок «${result.lessonTitle}» назначен на ${scheduledAtFormatter.format(new Date(result.scheduledAt))}.`;
   }
 }
 
@@ -210,12 +209,7 @@ export function AssistantActionCard({
             <dt>
               {action.existingLessonRunId ? "Новое время" : "Дата и время"}
             </dt>
-            <dd>
-              {new Intl.DateTimeFormat("ru-RU", {
-                dateStyle: "long",
-                timeStyle: "short",
-              }).format(new Date(action.scheduledAt))}
-            </dd>
+            <dd>{scheduledAtFormatter.format(new Date(action.scheduledAt))}</dd>
           </div>
           <div>
             <dt>Продолжительность</dt>

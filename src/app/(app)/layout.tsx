@@ -1,6 +1,6 @@
 import type { Viewport } from "next";
 import { redirect } from "next/navigation";
-import { SystemAssistantProvider } from "@/components/assistant/system-assistant-provider";
+import { AssistantPageContextProvider } from "@/components/communication/assistant-page-context";
 import { CommunicationCenter } from "@/components/communication/communication-center";
 import { CommunicationCenterProvider } from "@/components/communication/communication-center-provider";
 import { PageTransitionProvider } from "@/components/navigation/page-transition-provider";
@@ -9,6 +9,8 @@ import { PersistentTopNav } from "@/components/top-nav";
 import { primaryHeaderSummaryOwnerKey } from "@/lib/navigation/primary-header-summary-owner";
 import { resolveAccessPolicy } from "@/lib/server/access-policy";
 import { resolveAppLayoutRedirect } from "@/lib/server/access-guards";
+import "../styles/communication-center.css";
+import "../styles/page-motion.css";
 
 export const viewport: Viewport = {
   themeColor: "#f5f1e8",
@@ -29,13 +31,13 @@ export default async function AppLayout({
 
   const accountKey =
     resolution.status === "account"
-      ? primaryHeaderSummaryOwnerKey(resolution.context.userId)
+      ? primaryHeaderSummaryOwnerKey(resolution.context.authUserId)
       : "unavailable";
 
   return (
     <PageTransitionProvider>
       <PrimaryHeaderSummaryProvider key={accountKey} accountKey={accountKey}>
-        <SystemAssistantProvider>
+        <AssistantPageContextProvider>
           <CommunicationCenterProvider>
             <div className="app-product-chrome">
               <PersistentTopNav />
@@ -43,7 +45,7 @@ export default async function AppLayout({
             </div>
             <CommunicationCenter />
           </CommunicationCenterProvider>
-        </SystemAssistantProvider>
+        </AssistantPageContextProvider>
       </PrimaryHeaderSummaryProvider>
     </PageTransitionProvider>
   );

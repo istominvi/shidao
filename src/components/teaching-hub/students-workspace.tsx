@@ -15,7 +15,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
-import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
+import { useRegisterAssistantPageContext } from "@/components/communication/assistant-page-context";
 import { useCommunicationCenterActions } from "@/components/communication/communication-center-provider";
 import { usePrimaryHeaderSummary } from "@/components/navigation/primary-header-summary-provider";
 import { ObservingWorkspace } from "@/components/learner-identity/observing-workspace";
@@ -75,6 +75,7 @@ import type {
   TeacherLearnerDirectoryItem,
 } from "@/modules/learner-identity/domain";
 import { ROUTES } from "@/lib/auth";
+import { errorMessageFromUnknown } from "@/lib/error-message";
 
 type DirectoryView = "learners" | "groups" | "observing";
 type DirectoryLayout = "table" | "cards";
@@ -85,10 +86,6 @@ const STUDENTS_DIRECTORY_TABS_ID = "students-directory";
 type StudentsWorkspaceProps = {
   initialView?: DirectoryView;
 };
-
-function errorMessage(caught: unknown, fallback: string) {
-  return caught instanceof Error ? caught.message : fallback;
-}
 
 function toLessonRunsProfile(
   item: TeacherLearnerDirectoryItem,
@@ -170,7 +167,7 @@ export function StudentsWorkspace({
     refresh: refreshPrimaryHeaderSummary,
   } = usePrimaryHeaderSummary();
 
-  useSystemAssistantPageContext({
+  useRegisterAssistantPageContext({
     surface: "students",
     view: `students_${view}`,
     courseId: null,
@@ -224,7 +221,10 @@ export function StudentsWorkspace({
       .catch((caught: unknown) => {
         if (!active) return;
         setLoadError(
-          errorMessage(caught, "Не удалось загрузить учеников и группы."),
+          errorMessageFromUnknown(
+            caught,
+            "Не удалось загрузить учеников и группы.",
+          ),
         );
       });
     return () => {
@@ -410,7 +410,9 @@ export function StudentsWorkspace({
       onSuccess();
       setStatusMessage(successMessage);
     } catch (caught) {
-      setMutationError(errorMessage(caught, "Не удалось сохранить изменение."));
+      setMutationError(
+        errorMessageFromUnknown(caught, "Не удалось сохранить изменение."),
+      );
     } finally {
       setBusyLabel(null);
     }
@@ -428,7 +430,10 @@ export function StudentsWorkspace({
       await reloadDirectory();
     } catch (caught) {
       setLoadError(
-        errorMessage(caught, "Не удалось загрузить учеников и группы."),
+        errorMessageFromUnknown(
+          caught,
+          "Не удалось загрузить учеников и группы.",
+        ),
       );
     }
   }

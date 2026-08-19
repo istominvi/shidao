@@ -24,7 +24,7 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 import { AppPageHeader } from "@/components/app/page-header";
-import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
+import { useRegisterAssistantPageContext } from "@/components/communication/assistant-page-context";
 import { useSessionView } from "@/components/use-session-view";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -209,7 +209,7 @@ export function StoreWorkspace({
   const [announcement, setAnnouncement] = useState("");
   const { state: session } = useSessionView();
 
-  useSystemAssistantPageContext({
+  useRegisterAssistantPageContext({
     surface: "other",
     courseId: null,
     lessonId: null,

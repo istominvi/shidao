@@ -10,7 +10,7 @@ export default async function NewCoursePage() {
     resolution.context.canAuthorEducatorCourses;
 
   return (
-    <main className="course-demo-shell pb-12">
+    <main className="app-page-shell pb-12">
       <div className="container app-page-container course-workspace-container pb-16">
         <AppPageHeader
           title="Новый курс"

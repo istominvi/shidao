@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
 **Статус:** current / next / later priorities после production identity release
-**Актуально на:** 18 августа 2026 года
+**Актуально на:** 19 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -37,13 +37,22 @@
 - **Current:** удалены только selectors/tokens/components с подтверждённым
   отсутствием production references; marketing reduced-motion override
   ограничен своей landing surface. Schema, API и Lesson workflow не меняются.
+- **Current:** production naming больше не наследует demo-era vocabulary:
+  каноничны `app-page-shell`, `app-top-nav`, `site-header-shell-app` и
+  `--product-*` tokens. Assistant page context принадлежит Communication
+  Center; misleading `(teacher-required)` / `(profile-required)` route groups
+  и повторные Account guards удалены без изменения URL/access policy.
+- **Current:** Communication Center/page-motion CSS загружается только в
+  protected app, Store CSS — только на `/store`. Общие file/checksum, JSON
+  request, error/surface helpers и module-level date formatters имеют одного
+  владельца; неиспользуемые UI abstractions удалены.
 - **Current verification:** `727/727` unit/contract, `28/28` strict
   production-mode browser scenarios, typecheck, lint, repository-wide format
   check и production build проходят.
-- **Next:** отдельным атомарным slice переименовать исторический
-  `course-demo-shell` в app shell, затем route-scope remaining global feature
-  CSS и устранить оставшиеся duplicate-property forks с independent browser
-  visual-parity gate на каждом шаге.
+- **Next:** канонизировать буквальную общую table geometry через существующий
+  `ProductTable`, вернуть portal geometry `ActionMenu` самому primitive и затем
+  route-scope remaining teaching/navigation/marketing CSS. Каждый slice имеет
+  independent browser visual-parity gate.
 - **Later:** включить automated CSS ownership/specificity/dead-token checks
   после разделения route boundaries; dynamic variants нельзя удалять только по
   статическому совпадению.

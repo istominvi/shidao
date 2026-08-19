@@ -265,7 +265,7 @@ test("login alias lookup is normalized and service-role only", async () => {
       }) as typeof fetch,
     });
     assert.deepEqual(alias, {
-      userId: "user-1",
+      authUserId: "user-1",
       authEmail: "internal@example.test",
     });
   });
@@ -275,7 +275,7 @@ test("PIN session mint consumes the one-time hash server-side and verifies ident
   await withSupabaseEnv(async () => {
     const requests: Array<{ url: string; body: unknown }> = [];
     const session = await mintSupabaseSessionForAccount(
-      { userId: "user-1", authEmail: "internal@example.test" },
+      { authUserId: "user-1", authEmail: "internal@example.test" },
       {
         fetcher: (async (input, init) => {
           const url = String(input);
@@ -316,7 +316,7 @@ test("PIN session mint fails before token exchange on generated-user mismatch", 
     let calls = 0;
     await assert.rejects(
       mintSupabaseSessionForAccount(
-        { userId: "user-1", authEmail: "internal@example.test" },
+        { authUserId: "user-1", authEmail: "internal@example.test" },
         {
           fetcher: (async () => {
             calls += 1;

@@ -6,11 +6,7 @@ import { requireSupabaseUserAccessToken } from "@/lib/server/supabase-user-sessi
 
 export type AccountContext = Awaited<
   ReturnType<typeof getCurrentAccountAuthContext>
-> & {
-  userId: string;
-  email: string | null;
-  fullName: string;
-};
+>;
 
 export type AccessResolution =
   | { status: "guest" }
@@ -42,12 +38,7 @@ export const resolveAccessPolicy = cache(
 
       return {
         status: "account",
-        context: {
-          ...account,
-          userId: session.uid,
-          email: session.email,
-          fullName: account.displayName,
-        },
+        context: account,
       };
     } catch (error) {
       const reason =

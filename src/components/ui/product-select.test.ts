@@ -79,7 +79,7 @@ test("ProductSelect uses the canonical button and dropdown visual tokens", () =>
   );
   assert.match(
     globalStyles,
-    /\.product-select-option\s*\{[^}]*min-height: var\(--product-row-height, 2\.5rem\);[^}]*border: 0;[^}]*border-radius: var\(--product-inner-control-radius, 0\.5rem\);[^}]*font-size: var\(--course-demo-control-font-size, 0\.88rem\);[^}]*font-weight: var\(--course-demo-control-font-weight, 400\);/,
+    /\.product-select-option\s*\{[^}]*min-height: var\(--product-row-height, 2\.5rem\);[^}]*border: 0;[^}]*border-radius: var\(--product-inner-control-radius, 0\.5rem\);[^}]*font-size: var\(--product-control-font-size, 0\.88rem\);[^}]*font-weight: var\(--product-control-font-weight, 400\);/,
   );
   assert.match(
     globalStyles,

@@ -51,7 +51,7 @@ test("standalone account fields adopt the canonical single-line input primitive"
     "src/components/account/account-settings-panel.tsx",
   );
   const security = source(
-    "src/app/(app)/(profile-required)/settings/security/security-settings-form.tsx",
+    "src/app/(app)/settings/security/security-settings-form.tsx",
   );
   const observers = source(
     "src/components/learner-identity/observers-settings-workspace.tsx",

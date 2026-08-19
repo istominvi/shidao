@@ -26,7 +26,7 @@ export type AccountAuthContext = {
 };
 
 export type AccountLoginAlias = {
-  userId: string;
+  authUserId: string;
   authEmail: string;
 };
 
@@ -298,7 +298,7 @@ function parseAlias(payload: unknown): AccountLoginAlias | null {
   ) {
     throw new Error("Account login alias response is invalid.");
   }
-  return { userId: row.auth_user_id, authEmail: row.auth_email };
+  return { authUserId: row.auth_user_id, authEmail: row.auth_email };
 }
 
 export async function getCurrentAccountAuthContext(
@@ -491,7 +491,7 @@ export async function mintSupabaseSessionForAccount(
   if (
     !generated?.tokenHash ||
     (generated.generatedUserId !== null &&
-      generated.generatedUserId !== alias.userId)
+      generated.generatedUserId !== alias.authUserId)
   ) {
     throw new Error("Supabase session link identity mismatch.");
   }
@@ -517,7 +517,7 @@ export async function mintSupabaseSessionForAccount(
   )) as SupabaseAuthSession | null;
   if (
     !verifyResponse.ok ||
-    session?.user?.id !== alias.userId ||
+    session?.user?.id !== alias.authUserId ||
     typeof session.access_token !== "string" ||
     typeof session.refresh_token !== "string"
   ) {

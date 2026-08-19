@@ -42,8 +42,8 @@ test("Account TopNav alone enables one measured desktop active pill", () => {
     /pathname\.startsWith\(`\$\{ROUTES\.courses\}\/`\)[\s\S]*?!pathname\.endsWith\("\/student-preview"\)/,
   );
   for (const pagePath of [
-    "src/app/(app)/(teacher-required)/schedule/page.tsx",
-    "src/app/(app)/(teacher-required)/students/page.tsx",
+    "src/app/(app)/schedule/page.tsx",
+    "src/app/(app)/students/page.tsx",
     "src/app/(app)/courses/page.tsx",
     "src/app/(app)/courses/new/page.tsx",
     "src/app/(app)/courses/[courseId]/page.tsx",

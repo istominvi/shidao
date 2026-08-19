@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
-import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
+import { useRegisterAssistantPageContext } from "@/components/communication/assistant-page-context";
 import { PageTransitionLink } from "@/components/navigation/page-transition-link";
 import { usePrimaryHeaderSummary } from "@/components/navigation/primary-header-summary-provider";
 import {
@@ -266,7 +266,7 @@ export function ScheduleWorkspace() {
     refresh: refreshPrimaryHeaderSummary,
   } = usePrimaryHeaderSummary();
 
-  useSystemAssistantPageContext({
+  useRegisterAssistantPageContext({
     surface: "schedule",
     courseId: null,
     lessonId: null,

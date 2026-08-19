@@ -16,7 +16,7 @@ export default async function StudentsPage({
         : "learners";
 
   return (
-    <main className="course-demo-shell teaching-hub-shell pb-12">
+    <main className="app-page-shell pb-12">
       <div className="container app-page-container space-y-6">
         <StudentsWorkspace initialView={initialView} />
       </div>

@@ -13,7 +13,7 @@ export default async function PublishedCoursePage({
     query.audience === "educators" ? "educators" : "children";
 
   return (
-    <main className="course-demo-shell pb-12">
+    <main className="app-page-shell pb-12">
       <PublishedCourseWorkspace
         publicationId={publicationId}
         catalogAudience={catalogAudience}

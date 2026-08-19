@@ -1,7 +1,7 @@
 # Frontend style system
 
 **Статус:** current source contract
-**Актуально на:** 18 августа 2026 года
+**Актуально на:** 19 августа 2026 года
 
 Этот документ фиксирует канонические правила структуры React DOM и CSS в
 ShiDao. Его цель — сохранять текущий внешний вид и доступность продукта без
@@ -14,6 +14,9 @@ ShiDao. Его цель — сохранять текущий внешний в�
   `src/app/globals.css` и `src/components/ui/`.
 - Feature styles находятся в `src/app/styles/`. Они не должны переопределять
   внутреннюю геометрию shared primitive через route, table или page class.
+- `communication-center.css` и `page-motion.css` загружаются из protected
+  `(app)` layout, а `store.css` — только из `/store`. Root не доставляет
+  feature CSS маршрутам, на которых соответствующий UI не существует.
 - React component владеет своей семантикой и минимально необходимой DOM
   структурой. Обёртка допустима только для layout, interaction, semantics или
   измерения, которые нельзя выразить существующим узлом.
@@ -36,6 +39,9 @@ ShiDao. Его цель — сохранять текущий внешний в�
    выполнить parent или существующий semantic child.
 5. Не добавляем пустые compatibility classes «на будущее». Переименование
    выполняется атомарным slice с обновлением consumers, styles и tests.
+6. Основная продуктовая поверхность использует `app-page-shell`; слово
+   `demo` зарезервировано за настоящим standalone `/demo` и явно
+   демонстрационными product boundaries.
 
 ## Правила CSS
 
@@ -95,6 +101,8 @@ ShiDao. Его цель — сохранять текущий внешний в�
   не используются: реальный DOM уже выражает это состояние.
 - H1 и intrinsic action rail остаются в одной title row и переносятся только
   при фактической нехватке ширины.
+- Supporting count/status называется `app-page-metric`; прежняя терминология
+  `description` не используется для элемента, который не является описанием.
 
 ### Communication Center assistant UI
 
@@ -104,7 +112,10 @@ ShiDao. Его цель — сохранять текущий внешний в�
   `src/components/communication/assistant-conversation.tsx` и
   `assistant-action-card.tsx`; соответствующие styles принадлежат
   `communication-center.css`.
-- `SystemAssistantProvider` сохраняется как allowlisted page-context boundary.
+- `AssistantPageContextProvider` является узкой allowlisted page-context
+  boundary и принадлежит Communication Center. Регистрация выполняется через
+  `useRegisterAssistantPageContext`, чтение — через
+  `useAssistantPageContext`; conversation state в provider не хранится.
   Старые floating launcher/panel component и stylesheet не являются current
   UI и удалены.
 
@@ -126,14 +137,20 @@ browser computed-style/geometry checks.
 
 ## Последовательность дальнейшей работы
 
-**Current:** выполнен первый cleanup slice shared primitives, page header,
-Communication Center assistant UI и подтверждённо мёртвых selectors/tokens.
-Внешняя геометрия и поведение остаются прежними.
+**Current:** завершены два cleanup slice. Shared primitives, page header и
+Communication Center очищены от compatibility DOM/CSS. Исторический
+`course-demo-*` production contract атомарно заменён на `app-page-shell` и
+канонические `--product-*` tokens без alias-слоя. Ложные filesystem boundaries
+`(teacher-required)` / `(profile-required)` удалены; все Account routes
+защищает один `(app)` layout. App-only Communication Center/page-motion и
+Store-only CSS доставляются только своим route boundaries. Exact helper,
+surface structure и date-formatter duplicates сведены к одному владельцу;
+неиспользуемые exports удалены. Внешняя геометрия и поведение не меняются.
 
-**Next:** атомарно переименовать исторический `course-demo-shell` в app-level
-shell contract; затем разделить remaining `globals.css`, teaching, store и
-marketing ownership по route boundaries и устранить оставшиеся подтверждённые
-duplicate-property forks. Каждый шаг проходит visual parity отдельно.
+**Next:** поднять буквальную общую геометрию Course/Schedule/Students tables в
+существующий `ProductTable`, перенести portal geometry `ActionMenu` из teaching
+styles к primitive и затем разделить remaining teaching/navigation/marketing
+ownership. Каждый шаг проходит independent browser visual-parity gate.
 
 **Later:** добавить автоматическую проверку запрещённых specificity patterns,
 неиспользуемых tokens/selectors и глобальных reduced-motion leaks после того,

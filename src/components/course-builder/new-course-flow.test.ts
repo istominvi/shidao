@@ -10,6 +10,10 @@ const formSource = readFileSync(
   "src/components/course-builder/new-course-form.tsx",
   "utf8",
 );
+const materialFileSource = readFileSync(
+  "src/components/course-builder/course-material-file.ts",
+  "utf8",
+);
 const coursesPageSource = readFileSync(
   "src/app/(app)/courses/page.tsx",
   "utf8",
@@ -64,7 +68,11 @@ test("new course form exposes audience-aware pre-persistence workspaces", () => 
     assert.match(formSource, new RegExp(`name="${field}"`));
   }
   assert.match(formSource, /type="file"[\s\S]*multiple/);
-  assert.match(formSource, /globalThis\.crypto\.subtle\.digest/);
+  assert.match(
+    materialFileSource,
+    /export async function calculateCourseFileSha256[\s\S]*globalThis\.crypto\.subtle\.digest/,
+  );
+  assert.match(formSource, /calculateCourseFileSha256\(normalizedFile\)/);
   assert.match(formSource, /useState<CourseWorkspaceSurface>\("about"\)/);
   assert.match(
     formSource,

@@ -66,9 +66,11 @@
   outline: none;
 }
 
-.course-demo-shell .store-product-card-surface {
+.app-page-shell .store-product-card-surface {
   height: 100%;
+  border: var(--product-surface-border);
   background: #fff;
+  background-clip: padding-box;
   box-shadow: var(--product-raised-surface-shadow);
   cursor: pointer;
 }
@@ -93,7 +95,7 @@
   aspect-ratio: 1;
   flex: 0 0 auto;
   overflow: hidden;
-  border-radius: var(--course-demo-element-radius, 0.75rem);
+  border-radius: var(--product-element-radius, 0.75rem);
   background: #f4f4f2;
 }
 
@@ -250,10 +252,6 @@
   flex: 0 0 auto;
 }
 
-.store-product-grid-compact .store-product-card-surface {
-  padding: 0.5rem;
-}
-
 .store-product-grid-compact .store-product-card-body {
   gap: 0.5rem;
   padding: 0.6rem 0.1rem 0.1rem;
@@ -288,7 +286,6 @@
 .store-product-grid-compact .store-product-add {
   width: 2.5rem;
   min-width: 2.5rem;
-  padding-inline: 0;
 }
 
 .store-product-grid-compact .store-product-add-label {
@@ -302,7 +299,7 @@
 
 ::view-transition-group(store-product-detail) {
   overflow: clip;
-  border-radius: var(--course-demo-card-radius, 1.25rem);
+  border-radius: var(--product-card-radius, 1.25rem);
   animation-duration: 400ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -465,10 +462,10 @@
   width: 2.5rem;
   height: 2.5rem;
   border: 0;
-  background: transparent;
+  background: #fff;
 }
 
-.course-demo-shell .store-empty-state {
+.app-page-shell .store-empty-state {
   margin-top: 1rem;
   background: #fff;
 }
@@ -909,6 +906,21 @@
 }
 
 @media (forced-colors: active) {
+  .store-product-card:focus-visible .store-product-card-surface,
+  .store-product-highlighted .store-product-card-surface {
+    outline: 1px solid Highlight;
+    outline-offset: -1px;
+    box-shadow: none;
+  }
+
+  .store-product-dialog .dialog-shell-close,
+  .store-product-dialog .dialog-shell-close:hover {
+    border: 1px solid ButtonText;
+    background: ButtonFace;
+    color: ButtonText;
+    box-shadow: none;
+  }
+
   .store-product-carousel-dots {
     background: Canvas;
   }

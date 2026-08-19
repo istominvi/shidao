@@ -71,7 +71,7 @@ test("Account navigation has no role switch client or teacher-only guard", () =>
   const landing = source("src/components/landing-page.tsx");
   const accountNav = source("src/lib/navigation/primary-nav.ts");
   const profileNav = source("src/lib/navigation/profile-nav.ts");
-  const teacherGroup = source("src/app/(app)/(teacher-required)/layout.tsx");
+  const appLayout = source("src/app/(app)/layout.tsx");
 
   assert.doesNotMatch(sessionMenu, /preferences\/profile|SegmentedControl/);
   const primaryNavIndices = ["Расписание", "Ученики", "Курсы", "Магазин"].map(
@@ -123,7 +123,7 @@ test("Account navigation has no role switch client or teacher-only guard", () =>
     /PROFILE_NAV_ITEMS|PROFILE_MENU_ICONS|profileTabHref\(item\.id\)|handleSignOut|signOutViaServer|refetchSession|actionLoading|actionError|LogOut|History|Settings|BadgeCheck|UsersRound|portalMenu|createPortal|menuPosition/,
   );
   assert.doesNotMatch(sessionMenu, /nav-user-trigger-name/);
-  assert.doesNotMatch(teacherGroup, /activeProfile|teacher/);
+  assert.doesNotMatch(appLayout, /activeProfile|teacher/);
 });
 
 test("sensitive Account flows use password-first recent reauthentication", () => {
@@ -166,7 +166,7 @@ test("public signup and recovery endpoints are rate limited", () => {
 
 test("security settings never render a new PIN as plain text", () => {
   const securityForm = source(
-    "src/app/(app)/(profile-required)/settings/security/security-settings-form.tsx",
+    "src/app/(app)/settings/security/security-settings-form.tsx",
   );
 
   assert.match(securityForm, /type="password"[\s\S]{0,240}value=\{newPin\}/);

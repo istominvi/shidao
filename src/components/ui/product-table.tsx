@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp } from "lucide-react";
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 import type { ProductTableSortDirection } from "@/components/ui/product-table-sort";
 import { classNames } from "@/lib/ui/classnames";
 
@@ -171,32 +171,11 @@ export function ProductTableActionCell({
   );
 }
 
-export function productTableActionLinkClassName(className?: string) {
-  return classNames(
-    "inline-flex items-center text-sm font-medium text-sky-700 underline underline-offset-2 transition-colors hover:text-sky-800",
-    className,
-  );
-}
-
 export function ProductTableTruncate({
   className,
   ...props
 }: ComponentPropsWithoutRef<"span">) {
   return (
     <span className={classNames("block truncate", className)} {...props} />
-  );
-}
-
-export function ProductTableEmptyState({
-  text,
-  className,
-}: {
-  text: ReactNode;
-  className?: string;
-}) {
-  return (
-    <p className={classNames("px-4 py-4 text-sm text-neutral-500", className)}>
-      {text}
-    </p>
   );
 }

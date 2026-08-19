@@ -227,7 +227,7 @@ test("persistent provider warms once, deduplicates requests, revalidates and pre
   );
   assert.match(
     layout,
-    /primaryHeaderSummaryOwnerKey\(resolution\.context\.userId\)/,
+    /primaryHeaderSummaryOwnerKey\(resolution\.context\.authUserId\)/,
   );
   assert.match(provider, /inFlightRef\.current/);
   assert.match(provider, /PRIMARY_HEADER_SUMMARY_TTL_MS/);

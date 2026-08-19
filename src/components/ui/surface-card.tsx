@@ -1,9 +1,7 @@
 import type { ElementType, ReactNode } from "react";
 import { classNames } from "@/lib/ui/classnames";
 
-type SurfaceCardProps = {
-  as?: ElementType;
-  className?: string;
+export type SurfaceCardContentProps = {
   headerClassName?: string;
   bodyClassName?: string;
   title?: ReactNode;
@@ -12,20 +10,18 @@ type SurfaceCardProps = {
   children?: ReactNode;
 };
 
-export function SurfaceCard({
-  as: Component = "section",
-  className,
+export function SurfaceCardContent({
   headerClassName,
   bodyClassName,
   title,
   description,
   actions,
   children,
-}: SurfaceCardProps) {
+}: SurfaceCardContentProps) {
   const hasHeader = Boolean(title || description || actions);
 
   return (
-    <Component className={classNames("surface-card", className)}>
+    <>
       {hasHeader ? (
         <div className={classNames("surface-card-header", headerClassName)}>
           <div className="min-w-0">
@@ -44,6 +40,23 @@ export function SurfaceCard({
           {children}
         </div>
       ) : null}
+    </>
+  );
+}
+
+type SurfaceCardProps = SurfaceCardContentProps & {
+  as?: ElementType;
+  className?: string;
+};
+
+export function SurfaceCard({
+  as: Component = "section",
+  className,
+  ...contentProps
+}: SurfaceCardProps) {
+  return (
+    <Component className={classNames("surface-card", className)}>
+      <SurfaceCardContent {...contentProps} />
     </Component>
   );
 }

@@ -104,7 +104,7 @@ export function AppPageHeader({
         </div>
         {hasMetric || usesAsyncMetric ? (
           <p
-            className="app-page-description app-page-metric"
+            className="app-page-metric"
             data-page-header-metric-placeholder={hasMetric ? undefined : ""}
             aria-busy={metricIsPending || undefined}
             aria-live={usesAsyncMetric ? "polite" : undefined}

@@ -92,6 +92,17 @@ export async function courseBuilderRequest<T>(
   return payload as T;
 }
 
+export function courseBuilderJsonRequest<T>(
+  path: string,
+  method: "POST" | "PATCH" | "DELETE",
+  body?: unknown,
+) {
+  return courseBuilderRequest<T>(path, {
+    method,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+}
+
 export async function loadOwnedCourses(): Promise<CourseSummary[]> {
   const payload = await courseBuilderRequest<{ courses: CourseSummary[] }>(
     "/api/v2/courses",

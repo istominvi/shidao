@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     const { identifier, secret } = parsed.data;
 
     let resolvedEmail = identifier;
-    let aliasUserId: string | null = null;
+    let aliasAuthUserId: string | null = null;
 
     stage = "resolve-identifier";
     if (!isEmail(identifier)) {
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
         return fail();
       }
       resolvedEmail = alias.authEmail;
-      aliasUserId = alias.userId;
+      aliasAuthUserId = alias.authUserId;
     }
 
     stage = "password-login";
@@ -73,21 +73,21 @@ export async function POST(req: NextRequest) {
 
     if (
       authSession?.user?.id &&
-      aliasUserId &&
-      authSession.user.id !== aliasUserId
+      aliasAuthUserId &&
+      authSession.user.id !== aliasAuthUserId
     ) {
       // Alias resolution and GoTrue must agree on the exact Account identity.
       return fail();
     }
 
-    if (!authSession && aliasUserId) {
+    if (!authSession && aliasAuthUserId) {
       stage = "account-pin-verify";
       const verifiedAlias = await verifyAccountPinCredential(
         identifier,
         secret,
       );
       if (
-        verifiedAlias?.userId !== aliasUserId ||
+        verifiedAlias?.authUserId !== aliasAuthUserId ||
         verifiedAlias.authEmail !== resolvedEmail
       ) {
         return fail();

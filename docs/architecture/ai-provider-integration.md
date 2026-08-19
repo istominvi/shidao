@@ -89,7 +89,7 @@ Current persisted assistant flow:
 
 ```text
 protected (app) layout
-→ SystemAssistantProvider (strict allowlisted page context only)
+→ AssistantPageContextProvider (strict allowlisted page context only)
 → one persisted CommunicationCenter + AssistantConversationView
 → POST /api/v2/assistant/conversations/{conversationId}/turns
 → communication orchestration + universal active/provisional Account gate
@@ -246,8 +246,9 @@ change history или автономный editor.
 
 ## Persisted Communication Center — current source boundary
 
-`src/app/(app)/layout.tsx` после Account guard сохраняет
-`SystemAssistantProvider` только как typed allowlisted page-context provider.
+`src/app/(app)/layout.tsx` после Account guard использует
+`AssistantPageContextProvider` только как typed allowlisted page-context
+provider.
 Он больше не рендерит отдельный assistant launcher или panel. В том же protected
 layout один раз монтируются `CommunicationCenterProvider` и единственный
 `CommunicationCenter`; public landing, Auth и standalone demo этот UI не
@@ -543,7 +544,8 @@ course-scoped subject consent и через sanitized server projection; teacher
 | Browser client                      | `src/components/course-builder/course-builder-client.ts`                                                            |
 | Course preview UI                   | `src/components/course-builder/ai-course-plan-dialog.tsx`                                                           |
 | Lesson preview UI                   | `src/components/course-builder/ai-lesson-plan-dialog.tsx`                                                           |
-| Allowlisted page-context provider   | `src/components/assistant/system-assistant-provider.tsx`, `src/app/(app)/layout.tsx`                                |
+| Allowlisted page-context provider   | `src/components/communication/assistant-page-context.tsx`, `src/app/(app)/layout.tsx`                               |
+| Assistant Apply browser client      | `src/components/communication/assistant-api-client.ts`                                                              |
 | Persisted assistant conversation UI | `src/components/communication/assistant-conversation.tsx`, `src/components/communication/assistant-action-card.tsx` |
 | Communication shell/styles          | `src/components/communication/communication-center.tsx`, `src/app/styles/communication-center.css`                  |
 

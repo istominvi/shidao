@@ -15,9 +15,9 @@ import {
   WandSparkles,
 } from "lucide-react";
 import { AppPageHeader } from "@/components/app/page-header";
-import { useSystemAssistantPageContext } from "@/components/assistant/system-assistant-provider";
+import { useRegisterAssistantPageContext } from "@/components/communication/assistant-page-context";
 import {
-  courseBuilderRequest,
+  courseBuilderJsonRequest,
   loadCourseWorkspace,
 } from "@/components/course-builder/course-builder-client";
 import { AiLessonPlanDialog } from "@/components/course-builder/ai-lesson-plan-dialog";
@@ -198,19 +198,6 @@ type RunMutation = (
   action: () => Promise<unknown>,
 ) => Promise<boolean>;
 
-function jsonRequest<T>(
-  path: string,
-  method: "POST" | "PATCH" | "DELETE",
-  body?: unknown,
-) {
-  return courseBuilderRequest<T>(path, {
-    method,
-    headers:
-      body === undefined ? undefined : { "Content-Type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-}
-
 function Field({
   label,
   children,
@@ -296,7 +283,7 @@ function CourseBasicsForm({
         void (async () => {
           setSaved(false);
           const saved = await runMutation("Сохраняем настройки курса…", () =>
-            jsonRequest(`/api/v2/courses/${course.id}`, "PATCH", {
+            courseBuilderJsonRequest(`/api/v2/courses/${course.id}`, "PATCH", {
               title,
               subject,
               goal,
@@ -512,7 +499,7 @@ function CourseLessonsPanel({
     let createdLessonId: string | null = null;
     setSubmissionFailed(false);
     const saved = await runMutation("Создаём пустой урок…", async () => {
-      const response = await jsonRequest<{ lesson: CourseLesson }>(
+      const response = await courseBuilderJsonRequest<{ lesson: CourseLesson }>(
         `/api/v2/courses/${courseId}/lessons`,
         "POST",
         { title, summary: "" },
@@ -1229,7 +1216,7 @@ export function CourseWorkspaceClient({
   );
   const educatorCourse = course?.learningAudience === "educators";
   const availableCourseTabs = courseWorkspaceTabs(educatorCourse === true);
-  useSystemAssistantPageContext(
+  useRegisterAssistantPageContext(
     course
       ? {
           surface: selectedLesson ? "lesson" : "course",

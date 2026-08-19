@@ -5,21 +5,15 @@ import {
   resolveAppLayoutRedirect,
   resolveAuthEntryRedirect,
   resolveOnboardingRedirect,
-  resolveProfileRequiredRedirect,
-  resolveTeacherRequiredRedirect,
 } from "../access-guards";
 
-test("all existing private route groups enforce only Account authentication", () => {
+test("the private app boundary enforces Account authentication", () => {
   for (const status of ["guest", "degraded"] as const) {
     assert.equal(resolveAppLayoutRedirect(status), ROUTES.login);
-    assert.equal(resolveProfileRequiredRedirect(status), ROUTES.login);
-    assert.equal(resolveTeacherRequiredRedirect({ status }), ROUTES.login);
     assert.equal(resolveOnboardingRedirect(status), ROUTES.login);
   }
 
   assert.equal(resolveAppLayoutRedirect("account"), null);
-  assert.equal(resolveProfileRequiredRedirect("account"), null);
-  assert.equal(resolveTeacherRequiredRedirect({ status: "account" }), null);
   assert.equal(resolveOnboardingRedirect("account"), null);
 });
 

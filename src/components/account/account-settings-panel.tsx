@@ -1,7 +1,7 @@
 "use client";
 
 import { type FormEvent, useMemo, useState } from "react";
-import { SecuritySettingsForm } from "@/app/(app)/(profile-required)/settings/security/security-settings-form";
+import { SecuritySettingsForm } from "@/app/(app)/settings/security/security-settings-form";
 import { AvatarSettingsForm } from "@/components/account/avatar-settings-form";
 import { ProfileSurface } from "@/components/profile/profile-surface";
 import profileStyles from "@/components/profile/profile-workspace.module.css";

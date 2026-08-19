@@ -20,7 +20,7 @@ test("all profile tabs use the same opaque 20px content-card contract", () => {
     "src/components/account/account-settings-panel.tsx",
   );
   const security = source(
-    "src/app/(app)/(profile-required)/settings/security/security-settings-form.tsx",
+    "src/app/(app)/settings/security/security-settings-form.tsx",
   );
   const progress = source(
     "src/components/learner-identity/progress-summary.tsx",

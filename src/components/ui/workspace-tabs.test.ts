@@ -84,7 +84,7 @@ test("workspace tabs keep their accessible visual contract and raise positive co
   );
   assert.match(
     styles,
-    /\.fade-chevron-control\s*\{[^}]*width: var\(--course-demo-control-height, 2\.5rem\);[^}]*height: var\(--course-demo-control-height, 2\.5rem\);[^}]*border: 0;[^}]*radial-gradient/,
+    /\.fade-chevron-control\s*\{[^}]*width: var\(--product-control-height, 2\.5rem\);[^}]*height: var\(--product-control-height, 2\.5rem\);[^}]*border: 0;[^}]*radial-gradient/,
   );
   assert.match(
     styles,
@@ -105,7 +105,12 @@ test("workspace tabs keep their accessible visual contract and raise positive co
   );
   assert.match(
     styles,
-    /\.workspace-tab\s*\{[^}]*border-radius: var\(--course-demo-control-radius, 0\.75rem\)[^}]*0 0;[^}]*color: var\(--product-secondary-foreground\);/,
+    /\.workspace-tab\s*\{[^}]*border-radius: var\(--product-control-radius, 0\.75rem\)[^}]*0 0;[^}]*color: var\(--product-secondary-foreground\);/,
+  );
+  assert.match(styles, /\.workspace-tab\s*\{[^}]*font-weight: 500;/);
+  assert.match(
+    styles,
+    /\.app-page-shell \.workspace-tab\s*\{[^}]*font-weight: var\(--product-control-font-weight\);/,
   );
   assert.match(component, /className="workspace-tabs-indicator"/);
   assert.match(component, /activeTab\.getBoundingClientRect\(\)/);

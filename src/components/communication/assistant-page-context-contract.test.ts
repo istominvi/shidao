@@ -10,13 +10,15 @@ async function source(relativePath: string) {
 }
 
 test("the communication center is mounted once inside the protected app layout only", async () => {
-  const [appLayout, rootLayout, center, provider, service] = await Promise.all([
-    source("src/app/(app)/layout.tsx"),
-    source("src/app/layout.tsx"),
-    source("src/components/communication/communication-center.tsx"),
-    source("src/components/assistant/system-assistant-provider.tsx"),
-    source("src/modules/ai/system-assistant-service.ts"),
-  ]);
+  const [appLayout, rootLayout, globals, center, provider, service] =
+    await Promise.all([
+      source("src/app/(app)/layout.tsx"),
+      source("src/app/layout.tsx"),
+      source("src/app/globals.css"),
+      source("src/components/communication/communication-center.tsx"),
+      source("src/components/communication/assistant-page-context.tsx"),
+      source("src/modules/ai/system-assistant-service.ts"),
+    ]);
 
   assert.equal(
     (appLayout.match(/<CommunicationCenter\s*\/>/g) ?? []).length,
@@ -27,8 +29,18 @@ test("the communication center is mounted once inside the protected app layout o
     1,
   );
   assert.doesNotMatch(appLayout, /<SystemAssistant\s*\/>/);
-  assert.equal((appLayout.match(/<SystemAssistantProvider>/g) ?? []).length, 1);
-  assert.doesNotMatch(rootLayout, /CommunicationCenter|SystemAssistant/);
+  assert.equal(
+    (appLayout.match(/<AssistantPageContextProvider>/g) ?? []).length,
+    1,
+  );
+  assert.match(appLayout, /styles\/communication-center\.css/);
+  assert.match(appLayout, /styles\/page-motion\.css/);
+  assert.doesNotMatch(globals, /communication-center\.css/);
+  assert.doesNotMatch(rootLayout, /page-motion\.css/);
+  assert.doesNotMatch(
+    rootLayout,
+    /CommunicationCenter|AssistantPageContextProvider|SystemAssistant/,
+  );
   assert.match(center, /createPortal\(/);
   assert.match(center, /role="dialog"/);
   assert.match(center, /aria-modal=\{mobile\}/);

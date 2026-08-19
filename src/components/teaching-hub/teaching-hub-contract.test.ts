@@ -3,19 +3,15 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const schedulePageSource = readFileSync(
-  "src/app/(app)/(teacher-required)/schedule/page.tsx",
+  "src/app/(app)/schedule/page.tsx",
   "utf8",
 );
 const studentsPageSource = readFileSync(
-  "src/app/(app)/(teacher-required)/students/page.tsx",
+  "src/app/(app)/students/page.tsx",
   "utf8",
 );
 const observingPageSource = readFileSync(
   "src/app/(app)/observing/page.tsx",
-  "utf8",
-);
-const teacherLayoutSource = readFileSync(
-  "src/app/(app)/(teacher-required)/layout.tsx",
   "utf8",
 );
 const appLayoutSource = readFileSync("src/app/(app)/layout.tsx", "utf8");
@@ -103,11 +99,11 @@ const courseAudienceRouteSource = readFileSync(
 
 const pageSources = `${schedulePageSource}\n${studentsPageSource}`;
 const workspaceSources = `${scheduleWorkspaceSource}\n${studentsWorkspaceSource}`;
-const combinedSources = `${pageSources}\n${teacherLayoutSource}\n${workspaceSources}`;
+const combinedSources = `${pageSources}\n${appLayoutSource}\n${workspaceSources}`;
 
-test("teaching hub pages share the demo shell and canonical page header", () => {
+test("teaching hub pages share the app page shell and canonical page header", () => {
   for (const source of [schedulePageSource, studentsPageSource]) {
-    assert.match(source, /course-demo-shell teaching-hub-shell/);
+    assert.match(source, /app-page-shell/);
     assert.doesNotMatch(source, /<TopNav|import \{ TopNav \}/);
     assert.doesNotMatch(source, /landing-noise/);
     assert.doesNotMatch(
@@ -159,7 +155,7 @@ test("teaching hub pages share the demo shell and canonical page header", () => 
   assert.match(studentsPageSource, /tab === "observing"/);
   assert.match(observingPageSource, /redirect\(`/);
   assert.match(observingPageSource, /ROUTES\.students}\?tab=observing/);
-  assert.match(teacherLayoutSource, /resolveTeacherRequiredRedirect/);
+  assert.match(appLayoutSource, /resolveAppLayoutRedirect/);
 });
 
 test("schedule projects persisted LessonRun appointments without a parallel event", () => {
@@ -262,7 +258,7 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     dateNavigatorRule,
-    /border:\s*var\(--product-surface-border\);[^}]*border-radius:\s*var\(--course-demo-control-radius\);[^}]*background:\s*var\(--product-surface-background\);[^}]*background-clip:\s*padding-box;[^}]*box-shadow:\s*var\(--product-entry-control-shadow\);/,
+    /border:\s*var\(--product-surface-border\);[^}]*border-radius:\s*var\(--product-control-radius\);[^}]*background:\s*var\(--product-surface-background\);[^}]*background-clip:\s*padding-box;[^}]*box-shadow:\s*var\(--product-entry-control-shadow\);/,
   );
   assert.doesNotMatch(dateNavigatorRule, /inset|box-shadow:[^;]*,/);
   assert.match(
@@ -385,7 +381,7 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-run-table thead th\s*\{[^}]*padding-inline:\s*var\(--course-demo-control-padding-inline, 0\.75rem\);/,
+    /\.teaching-run-table thead th\s*\{[^}]*padding-inline:\s*var\(--product-control-padding-inline, 0\.75rem\);/,
   );
   assert.match(
     teachingHubStyleSource,
@@ -409,7 +405,7 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-run-table tbody tr\s*\{[^}]*height:\s*var\(\s*--course-demo-table-row-height,/,
+    /\.teaching-run-table tbody tr\s*\{[^}]*height:\s*var\(\s*--product-row-height,/,
   );
   assert.match(
     teachingHubStyleSource,
@@ -417,7 +413,7 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-run-table tbody td\s*\{[^}]*height:\s*var\(\s*--course-demo-table-row-height,[^}]*padding-inline:\s*var\(--course-demo-control-padding-inline, 0\.75rem\);[^}]*padding-block:\s*0;[^}]*color:\s*#141414;[^}]*vertical-align:\s*middle;[^}]*white-space:\s*nowrap;/,
+    /\.teaching-run-table tbody td\s*\{[^}]*height:\s*var\(\s*--product-row-height,[^}]*padding-inline:\s*var\(--product-control-padding-inline, 0\.75rem\);[^}]*padding-block:\s*0;[^}]*color:\s*#141414;[^}]*vertical-align:\s*middle;[^}]*white-space:\s*nowrap;/,
   );
   assert.match(
     teachingHubStyleSource,
@@ -450,7 +446,7 @@ test("schedule keeps the compact date control and dense one-line table contract"
   assert.doesNotMatch(teachingHubStyleSource, /teaching-run-action-menu/);
   assert.match(
     teachingHubStyleSource,
-    /\.action-menu-panel-portal \.action-menu-item\s*\{[^}]*height:\s*var\(\s*--course-demo-table-row-height,[^}]*min-height:\s*var\(\s*--course-demo-table-row-height,[^}]*align-items:\s*center;[^}]*gap:\s*var\(--course-demo-control-padding-inline,[^}]*border-radius:\s*var\(--product-inner-control-radius, 0\.5rem\);[^}]*padding-inline:\s*var\(--course-demo-control-padding-inline,[^}]*color:\s*#141414;[^}]*font-size:\s*var\(--course-demo-control-font-size,[^}]*font-weight:\s*var\(--course-demo-control-font-weight,/,
+    /\.action-menu-panel-portal \.action-menu-item\s*\{[^}]*height:\s*var\(\s*--product-row-height,[^}]*min-height:\s*var\(\s*--product-row-height,[^}]*align-items:\s*center;[^}]*gap:\s*var\(--product-control-padding-inline,[^}]*border-radius:\s*var\(--product-inner-control-radius, 0\.5rem\);[^}]*padding-inline:\s*var\(--product-control-padding-inline,[^}]*color:\s*#141414;[^}]*font-size:\s*var\(--product-control-font-size,[^}]*font-weight:\s*var\(--product-control-font-weight,/,
   );
   assert.match(
     teachingHubStyleSource,
@@ -462,11 +458,11 @@ test("schedule keeps the compact date control and dense one-line table contract"
   );
   assert.match(
     teachingHubStyleSource,
-    /\.student-directory-table-wrap\s*\{[^}]*--course-demo-table-radius,[^}]*background:\s*#fff;/,
+    /\.student-directory-table-wrap\s*\{[^}]*--product-table-radius,[^}]*background:\s*#fff;/,
   );
   assert.match(
     navigationStyleSource,
-    /\.site-header-shell-demo\s*\{[^}]*background-color:\s*var\(--product-surface-background, #fff\);[^}]*background-image:\s*none;[^}]*opacity:\s*1;/,
+    /\.site-header-shell-app\s*\{[^}]*background-color:\s*var\(--product-surface-background, #fff\);[^}]*background-image:\s*none;[^}]*opacity:\s*1;/,
   );
   assert.match(
     globalStyleSource,
@@ -886,12 +882,13 @@ test("teaching hub inputs, membership control, and data surfaces use canonical t
   }
   assert.match(
     teachingHubStyleSource,
-    /\.course-demo-shell \.student-directory-card\s*\{[^}]*box-shadow: var\(--product-raised-surface-shadow\);/,
+    /\.app-page-shell \.student-directory-card\s*\{[^}]*box-shadow: var\(--product-raised-surface-shadow\);/,
   );
   assert.match(
     globalStyleSource,
-    /\.lesson-run-history-card,[\s\S]*?\.course-demo-shell \.student-directory-card,[\s\S]*?\.course-demo-shell \.store-product-card-surface\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background-clip: padding-box;/,
+    /\.lesson-run-history-card,\s*\.app-page-shell \.student-directory-card\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background-clip: padding-box;/,
   );
+  assert.doesNotMatch(globalStyleSource, /\.store-product-card-surface/);
 });
 
 test("narrow and coarse-touch teaching controls share the canonical 40px geometry", () => {
@@ -995,7 +992,7 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
 
   assert.doesNotMatch(
     touchStyles,
-    /--product-touch-control-font-size|--product-control-icon-size|--course-demo-control-(?:padding-inline|font-size)|vector-effect:\s*non-scaling-stroke/,
+    /--product-touch-control-font-size|--product-control-icon-size|vector-effect:\s*non-scaling-stroke/,
   );
   assert.match(
     touchStyles,
@@ -1003,7 +1000,7 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*touch-action: manipulation;/,
+    /\.app-page-shell \.product-segmented-control-option\s*\{[^}]*touch-action: manipulation;/,
   );
   assert.match(
     globalStyleSource,
@@ -1020,7 +1017,7 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
   );
   assert.match(
     teachingHubStyleSource,
-    /\.teaching-date-trigger\s*\{[^}]*font-size: var\(--course-demo-control-font-size\);[^}]*font-weight: var\(--course-demo-control-font-weight\);[^}]*line-height: var\(--course-demo-control-line-height\);/,
+    /\.teaching-date-trigger\s*\{[^}]*font-size: var\(--product-control-font-size\);[^}]*font-weight: var\(--product-control-font-weight\);[^}]*line-height: var\(--product-control-line-height\);/,
   );
   assert.doesNotMatch(
     globalStyleSource,
@@ -1029,11 +1026,11 @@ test("narrow and coarse-touch teaching controls share the canonical 40px geometr
   assert.doesNotMatch(touchStyles, /transform: scale\(/);
   assert.doesNotMatch(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control-option\s*\{[^}]*(?:height|min-height|width|min-width|gap|border|border-radius|background|padding|color|font-size|box-shadow|transform):/,
+    /\.app-page-shell \.product-segmented-control-option\s*\{[^}]*(?:height|min-height|width|min-width|gap|border|border-radius|background|padding|color|font-size|box-shadow|transform):/,
   );
   assert.match(
     touchStyles,
-    /\.course-demo-shell \.product-segmented-control\[data-variant="text"\]\s*\{[^}]*max-width: 100%;[^}]*min-width: 0;[^}]*flex-shrink: 1;[^}]*--segmented-option-min-width: 0;[^}]*--segmented-option-flex: 1 1 0;/,
+    /\.app-page-shell \.product-segmented-control\[data-variant="text"\]\s*\{[^}]*max-width: 100%;[^}]*min-width: 0;[^}]*flex-shrink: 1;[^}]*--segmented-option-min-width: 0;[^}]*--segmented-option-flex: 1 1 0;/,
   );
   assert.match(
     touchStyles,

@@ -21,9 +21,10 @@ function resolvePrimaryNavId(
   return state.kind === "account" ? "account" : null;
 }
 
-export function TopNav({ demoStyle = false }: { demoStyle?: boolean }) {
+export function TopNav({ layout = "default" }: { layout?: "default" | "app" }) {
   const pathname = usePathname();
   const { state, sessionResolved } = useSessionView();
+  const isAppLayout = layout === "app";
 
   const primaryNavId = resolvePrimaryNavId(state);
   const primaryNavConfig = primaryNavId
@@ -87,14 +88,14 @@ export function TopNav({ demoStyle = false }: { demoStyle?: boolean }) {
   return (
     <div
       className={
-        demoStyle
-          ? "container course-top-nav"
+        isAppLayout
+          ? "container app-top-nav"
           : "container relative z-50 pt-4 md:pt-5"
       }
     >
       <SiteHeader
         variant="product"
-        shellClassName={demoStyle ? "site-header-shell-demo" : undefined}
+        shellClassName={isAppLayout ? "site-header-shell-app" : undefined}
         brandHref={ROUTES.home}
         navAriaLabel={primaryNavConfig?.ariaLabel}
         navItems={navItems}
@@ -129,5 +130,5 @@ export function PersistentTopNav() {
     return null;
   }
 
-  return <TopNav demoStyle />;
+  return <TopNav layout="app" />;
 }

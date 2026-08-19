@@ -136,10 +136,11 @@ learner enrollment.
 /settings/observers               # compatibility redirect → /profile?tab=observers
 ```
 
-Guest/degraded session redirectится на `/login`. Folder names
-`(teacher-required)` и `(profile-required)` остаются только filesystem
-compatibility; их layouts проверяют Account session и не читают legacy
-Teacher/Parent/Student role.
+Guest/degraded session redirectится на `/login`. Все private страницы лежат
+непосредственно под единым `(app)` layout и проходят один Account session
+guard. Исторические filesystem groups `(teacher-required)` и
+`(profile-required)` удалены: они дублировали parent guard и ошибочно намекали
+на role/profile gating, которого в текущей roleless модели нет.
 
 Resource access остаётся relation/ownership-scoped:
 

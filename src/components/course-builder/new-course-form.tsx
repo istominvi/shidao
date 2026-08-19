@@ -16,6 +16,7 @@ import { Alert } from "@/components/ui/alert";
 import { AiCoursePlanDialog } from "@/components/course-builder/ai-course-plan-dialog";
 import {
   ACCEPTED_COURSE_FILE_TYPES,
+  calculateCourseFileSha256,
   formatCourseFileSize,
   resolveCourseFileMimeType,
   validateCourseMaterialFile,
@@ -53,6 +54,7 @@ import {
 } from "./course-builder-client";
 import type { AiCoursePlanPreview } from "@/modules/ai/course-builder-contracts";
 import type { CourseLearningAudience } from "@/modules/course-builder/learning-audience";
+import { errorMessageFromUnknown } from "@/lib/error-message";
 
 type SubmitIntent = "create" | "assemble" | "ai";
 type UploadStatus = "queued" | "hashing" | "uploading" | "ready" | "error";
@@ -72,12 +74,7 @@ type UploadProgress = {
   message: string;
 };
 
-const ACCEPTED_FILE_TYPES = ACCEPTED_COURSE_FILE_TYPES;
 const NEW_COURSE_WORKSPACE_TABS_ID = "new-course-workspace";
-
-function resolveMimeType(file: File): CourseAssetMimeType | null {
-  return resolveCourseFileMimeType(file);
-}
 
 function validateSelectedCourseFile({
   file,
@@ -91,29 +88,6 @@ function validateSelectedCourseFile({
     mimeType: validated.mimeType,
     normalizedFile: validated.file,
   };
-}
-
-function formatFileSize(sizeBytes: number) {
-  return formatCourseFileSize(sizeBytes);
-}
-
-function formatError(error: unknown) {
-  return error instanceof Error
-    ? error.message
-    : "Не удалось создать курс. Попробуйте ещё раз.";
-}
-
-export async function calculateFileSha256(file: File) {
-  if (!globalThis.crypto?.subtle) {
-    throw new Error("Этот браузер не поддерживает безопасную проверку файла.");
-  }
-  const digest = await globalThis.crypto.subtle.digest(
-    "SHA-256",
-    await file.arrayBuffer(),
-  );
-  return Array.from(new Uint8Array(digest), (byte) =>
-    byte.toString(16).padStart(2, "0"),
-  ).join("");
 }
 
 function readDraftInput(form: HTMLFormElement): CourseDraftInput {
@@ -208,7 +182,7 @@ export function NewCourseForm({
       status: "hashing",
       message: "Вычисляем контрольную сумму.",
     });
-    const checksumSha256 = await calculateFileSha256(normalizedFile);
+    const checksumSha256 = await calculateCourseFileSha256(normalizedFile);
     const attachmentInput = prepareCourseAttachmentInputSchema.parse({
       originalFilename: normalizedFile.name,
       mimeType,
@@ -300,7 +274,12 @@ export function NewCourseForm({
           message: "Не удалось прикрепить",
         });
       }
-      setErrorMessage(formatError(error));
+      setErrorMessage(
+        errorMessageFromUnknown(
+          error,
+          "Не удалось создать курс. Попробуйте ещё раз.",
+        ),
+      );
       setProgressMessage("");
     } finally {
       setIsSubmitting(false);
@@ -321,7 +300,12 @@ export function NewCourseForm({
         router.replace(href);
       }
     } catch (error) {
-      setErrorMessage(formatError(error));
+      setErrorMessage(
+        errorMessageFromUnknown(
+          error,
+          "Не удалось создать курс. Попробуйте ещё раз.",
+        ),
+      );
       setProgressMessage("");
       setAiPreview(null);
     } finally {
@@ -621,7 +605,7 @@ export function NewCourseForm({
               className="sr-only"
               type="file"
               multiple
-              accept={ACCEPTED_FILE_TYPES}
+              accept={ACCEPTED_COURSE_FILE_TYPES}
               disabled={isSubmitting}
               onChange={(event) => {
                 addFiles(event.currentTarget.files);
@@ -634,7 +618,8 @@ export function NewCourseForm({
             <ul className="mt-4 space-y-2" aria-label="Выбранные материалы">
               {selectedFiles.map(({ localId, file }) => {
                 const progress = uploadProgress[localId];
-                const isImage = resolveMimeType(file)?.startsWith("image/");
+                const isImage =
+                  resolveCourseFileMimeType(file)?.startsWith("image/");
                 const FileIcon = isImage ? FileImage : FileText;
                 return (
                   <li
@@ -657,7 +642,7 @@ export function NewCourseForm({
                               : "text-neutral-500"
                         }`}
                       >
-                        {formatFileSize(file.size)} ·{" "}
+                        {formatCourseFileSize(file.size)} ·{" "}
                         {uploadStatusLabel(progress)}
                       </p>
                     </div>

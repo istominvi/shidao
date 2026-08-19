@@ -202,7 +202,7 @@ test("communication center keeps one narrow flow, quiet initial focus and canoni
   );
   assert.match(
     css,
-    /\.communication-assistant-empty button\s*\{[\s\S]*?font-size: var\(--course-demo-control-font-size, 0\.88rem\);[\s\S]*?font-weight: var\(--course-demo-control-font-weight, 400\);/,
+    /\.communication-assistant-empty button\s*\{[\s\S]*?font-size: var\(--product-control-font-size, 0\.88rem\);[\s\S]*?font-weight: var\(--product-control-font-weight, 400\);/,
   );
 
   assert.match(
@@ -287,12 +287,12 @@ test("communication client uses only the canonical V2 API and atomic persisted A
 test("persisted AI proposals fail closed and reuse signed explicit apply", async () => {
   const [assistant, actionClient, actionUi, css] = await Promise.all([
     source("src/components/communication/assistant-conversation.tsx"),
-    source("src/components/assistant/system-assistant-client.ts"),
+    source("src/components/communication/assistant-api-client.ts"),
     source("src/components/communication/assistant-action-card.tsx"),
     source("src/app/styles/communication-center.css"),
   ]);
 
-  assert.match(assistant, /applySystemAssistantAction\(proposal\)/);
+  assert.match(assistant, /applyAssistantAction\(proposal\)/);
   assert.match(assistant, /confirmationIntent\(normalized\)/);
   assert.match(assistant, /liveProposalKey/);
   assert.match(assistant, /status: "stale" as const/);

@@ -20,6 +20,13 @@ const fullDateFormatter = new Intl.DateTimeFormat("ru-RU", {
   month: "short",
   year: "numeric",
 });
+const fullTimeFormatter = new Intl.DateTimeFormat("ru-RU", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
 
 function sameLocalDay(left: Date, right: Date) {
   return (
@@ -42,13 +49,7 @@ export function compactCommunicationTime(value: string, now = new Date()) {
 export function fullCommunicationTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+  return fullTimeFormatter.format(date);
 }
 
 export function communicationInitials(value: string) {

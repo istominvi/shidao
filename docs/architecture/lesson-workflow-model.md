@@ -4,7 +4,7 @@
 
 **Дата решения:** 5 августа 2026 года
 
-**Актуально на:** 18 августа 2026 года
+**Актуально на:** 19 августа 2026 года
 
 **Область:** Course Builder / Lesson / Components / Student Screen / audience / scheduling / learning history / course materials / homework
 
@@ -25,7 +25,7 @@ Historical deployed follow-up добавил global System Assistant в protecte
 contracts/routes/services сохранены; новая Lesson/Component schema для этого
 follow-up не потребовалась. Current source удаляет отдельный floating
 `SystemAssistant` и переносит тот же bounded conversation/action contract в
-единственный persisted `CommunicationCenter`. `SystemAssistantProvider`
+единственный persisted `CommunicationCenter`. `AssistantPageContextProvider`
 остаётся только allowlisted page-context provider. После отдельного explicit
 Apply assistant может создать Course draft, пустую или наполненную Lesson,
 дополнить существующую Lesson либо удалить exact Lesson. Наполнение
@@ -503,7 +503,7 @@ reload. Перестройка navigation, inline settings/audience и pre-persi
 
 Current UI не размещает отдельную кнопку assistant в Course или Lesson header.
 Единственный persisted `CommunicationCenter` смонтирован выше этих workspace в
-protected Account layout; `SystemAssistantProvider` только принимает typed
+protected Account layout; `AssistantPageContextProvider` только принимает typed
 allowlisted page context. Course workspace регистрирует `courseId` и optional
 selected `lessonId`, а fullscreen preview — текущую preview Lesson.
 Произвольный URL, DOM, search/hash и несохранённые поля Lesson в page context не
@@ -608,7 +608,7 @@ Visual contract Course routes не меняет эту навигационну�
 
 - page background — сплошной `#f5f1e8` без цветных marketing gradients;
 - current source / next production product header — на desktop normal-flow
-  demo shell без sticky/fixed positioning, а до `767 px` viewport-fixed shell у
+  app page shell без sticky/fixed positioning, а до `767 px` viewport-fixed shell у
   верхнего safe-area края. Прозрачный внешний слой резервирует в document flow
   safe-area, `64 px` белый shell и `12 px` нижний fade, не перехватывает касания
   и позволяет content проходить под header, растворяясь в бежевом фоне. Root
@@ -633,7 +633,7 @@ Visual contract Course routes не меняет эту навигационну�
   `/schedule`, authenticated `/profile`, Course и Lesson: системный H1 веса
   400 с максимумом 48 px на desktop и 32 px на mobile, optional metric
   canonical цвета `rgba(20, 20, 20, 0.5)` через
-  `--app-page-header-description-color`, всегда зарезервированную backlink-row
+  `--app-page-header-metric-color`, всегда зарезервированную backlink-row
   с optional интерактивным backlink и правую action-секцию. Supporting line
   существует только для числового/статусного измерения выбранной сущности;
   объяснение назначения страницы, инструкция, tagline или private teacher
@@ -1371,8 +1371,8 @@ Implementation map:
 - AI provider/contracts/service: `src/modules/ai/`;
 - AI routes: `src/app/api/v2/courses/[courseId]/ai-*/`, compatibility
   `assistant/` и deployed `src/app/api/v2/assistant/`;
-- allowlisted System Assistant page context:
-  `src/components/assistant/system-assistant-provider.tsx`,
+- allowlisted assistant page context:
+  `src/components/communication/assistant-page-context.tsx`,
   `src/app/(app)/layout.tsx`;
 - persisted assistant conversation/action UI:
   `src/components/communication/assistant-conversation.tsx`,
@@ -1445,7 +1445,7 @@ flow. Он может видеть ограниченный Course context и в
 header actions удалены из current deployed UI.
 
 Current source монтирует один persisted `CommunicationCenter` только в
-protected `(app)` layout. Сохранившийся `SystemAssistantProvider` не владеет
+protected `(app)` layout. `AssistantPageContextProvider` не владеет
 launcher, panel или conversation state: он передаёт Communication Center strict
 allowlisted surface и typed view текущей вкладки, Course/Lesson IDs при
 допустимости, локальную дату и UTC offset. DOM, произвольный URL/search/hash и

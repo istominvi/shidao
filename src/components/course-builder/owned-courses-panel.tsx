@@ -56,24 +56,28 @@ type OwnedCoursesPanelProps = {
   onOpenCatalog: () => void;
 };
 
+const updatedAtFormatter = new Intl.DateTimeFormat("ru-RU", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+const compactUpdatedAtFormatter = new Intl.DateTimeFormat("ru-RU", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+
 function formatUpdatedAt(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Дата обновления неизвестна";
-  return `Обновлён ${new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(date)}`;
+  return `Обновлён ${updatedAtFormatter.format(date)}`;
 }
 
 function formatCompactUpdatedAt(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Неизвестно";
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
+  return compactUpdatedAtFormatter.format(date);
 }
 
 function courseProgressLabel(course: CourseSummary) {

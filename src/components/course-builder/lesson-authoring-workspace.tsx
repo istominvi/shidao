@@ -40,7 +40,7 @@ import {
   CourseComponentRenderer,
   type SignedCourseComponentAssetMap,
 } from "@/components/course-builder/component-renderers";
-import { courseBuilderRequest } from "@/components/course-builder/course-builder-client";
+import { courseBuilderJsonRequest } from "@/components/course-builder/course-builder-client";
 import { getStudentScreenToggleInput } from "@/components/course-builder/student-slide-placement";
 import {
   LessonRunDialog,
@@ -126,19 +126,6 @@ const CATEGORY_ITEMS = [
   icon: typeof Type;
 }>;
 
-function jsonRequest<T>(
-  path: string,
-  method: "POST" | "PATCH" | "DELETE",
-  body?: unknown,
-) {
-  return courseBuilderRequest<T>(path, {
-    method,
-    headers:
-      body === undefined ? undefined : { "Content-Type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-}
-
 function assetMapFor(assets: CourseAsset[]) {
   return Object.fromEntries(
     assets.map((asset) => [
@@ -205,7 +192,7 @@ function ComponentEditorDialog({
           setSaveAttempted(true);
           let committed = false;
           const saved = await runMutation("Сохраняем компонент…", async () => {
-            await jsonRequest(
+            await courseBuilderJsonRequest(
               `/api/v2/components/${component.id}`,
               "PATCH",
               input,
@@ -266,7 +253,7 @@ function ComponentCard({
   async function toggleStudentScreen(releasePointerFocus: boolean) {
     if (!studentScreenToggleInput) return;
     const saved = await runMutation("Обновляем экран ученика…", () =>
-      jsonRequest(
+      courseBuilderJsonRequest(
         `/api/v2/components/${component.id}/student-screen`,
         "POST",
         studentScreenToggleInput,
@@ -313,7 +300,7 @@ function ComponentCard({
             title="Переместить выше"
             onClick={() =>
               void runMutation("Меняем порядок компонентов…", () =>
-                jsonRequest(
+                courseBuilderJsonRequest(
                   `/api/v2/components/${component.id}/reorder`,
                   "POST",
                   { toPosition: component.position - 1 },
@@ -331,7 +318,7 @@ function ComponentCard({
             title="Переместить ниже"
             onClick={() =>
               void runMutation("Меняем порядок компонентов…", () =>
-                jsonRequest(
+                courseBuilderJsonRequest(
                   `/api/v2/components/${component.id}/reorder`,
                   "POST",
                   { toPosition: component.position + 1 },
@@ -363,7 +350,10 @@ function ComponentCard({
               if (!window.confirm(`Удалить компонент «${definition.title}»?`))
                 return;
               void runMutation("Удаляем компонент…", () =>
-                jsonRequest(`/api/v2/components/${component.id}`, "DELETE"),
+                courseBuilderJsonRequest(
+                  `/api/v2/components/${component.id}`,
+                  "DELETE",
+                ),
               );
             }}
           >
@@ -486,7 +476,7 @@ function ComponentPickerDialog({
     const saved = await runMutation(
       `Добавляем «${selectedDefinition.title}»…`,
       async () => {
-        await jsonRequest<{ component: LessonComponent }>(
+        await courseBuilderJsonRequest<{ component: LessonComponent }>(
           `/api/v2/lessons/${lessonId}/components`,
           "POST",
           { typeKey: selectedTypeKey, ...input },
@@ -652,10 +642,14 @@ function LessonEditorDialog({
           if (!nextTitle || disabled) return;
           void (async () => {
             const saved = await runMutation("Сохраняем урок…", () =>
-              jsonRequest(`/api/v2/lessons/${lesson.id}`, "PATCH", {
-                title: nextTitle,
-                summary,
-              }),
+              courseBuilderJsonRequest(
+                `/api/v2/lessons/${lesson.id}`,
+                "PATCH",
+                {
+                  title: nextTitle,
+                  summary,
+                },
+              ),
             );
             if (saved) onClose();
           })();
@@ -991,7 +985,7 @@ export function LessonAuthoringWorkspace({
     }
     void (async () => {
       const deleted = await runMutation("Удаляем урок…", () =>
-        jsonRequest(`/api/v2/lessons/${lesson.id}`, "DELETE"),
+        courseBuilderJsonRequest(`/api/v2/lessons/${lesson.id}`, "DELETE"),
       );
       if (deleted) onBackToCourse();
     })();

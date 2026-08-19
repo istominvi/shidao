@@ -48,6 +48,12 @@ type CatalogPage = {
 
 type CourseCatalogView = "grid" | "table";
 
+const attestationCompletedAtFormatter = new Intl.DateTimeFormat("ru-RU", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
 function catalogAuthorLabel(course: CourseCatalogEntry) {
   return course.author.isShiDao
     ? `ShiDao · ${course.author.displayName}`
@@ -300,11 +306,7 @@ function CatalogCourseTable({
 function formatAttestationCompletedAt(value: string) {
   const completedAt = new Date(value);
   if (Number.isNaN(completedAt.getTime())) return value;
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(completedAt);
+  return attestationCompletedAtFormatter.format(completedAt);
 }
 
 export function CourseAttestationPanel({

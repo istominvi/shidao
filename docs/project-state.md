@@ -1,7 +1,7 @@
 # Текущее состояние ShiDao V2
 
 **Статус:** главный входной документ для разработки
-**Актуально на:** 18 августа 2026 года
+**Актуально на:** 19 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
 **Initial Communication Center functional application source:**
@@ -13,7 +13,36 @@ typecheck, lint, repository-wide format check и production build)
 **Исторический functional E2 baseline:**
 `22b486a7163453019d9720cb4fe0f36ed7c0228d`
 
-**Current source / next production — frontend structural cleanup:** первый
+**Current source / next production — frontend naming, ownership and delivery
+cleanup:** второй safe cleanup slice атомарно заменяет исторический
+`course-demo-shell` на семантический `app-page-shell`, а `--course-demo-*` — на
+единые `--product-*` tokens без compatibility aliases и self-references.
+Product header теперь выбирает `layout="app"`; его classes называются
+`app-top-nav` и `site-header-shell-app`. Supporting count/status в page header
+называется metric, а не description.
+
+После удаления отдельного floating assistant page-context boundary перенесена
+к владельцу Communication Center и называется `AssistantPageContextProvider`;
+browser Apply client также принадлежит `src/components/communication/`.
+Невидимые route groups `(teacher-required)` и `(profile-required)` удалены:
+Schedule, Students и compatibility Settings routes лежат непосредственно под
+единственным Account-guarded `(app)` layout, поэтому URL и access policy не
+изменились, а повторные access resolution/layout functions исчезли.
+
+`communication-center.css` и `page-motion.css` теперь доставляются только
+protected app, `store.css` — только `/store`; public/Auth/reference routes не
+строят для них CSSOM. Store cascade проверен по computed styles в обычном и
+forced-colors режимах. Текущий локальный production build выделяет app-only CSS в
+`24 133 B` (`4 788 B` gzip), а Store-only CSS — в `14 406 B` (`3 211 B` gzip):
+public/Auth routes не ссылаются ни на один из этих chunks, non-Store app routes
+не ссылаются на Store chunk. Дословные file/checksum, JSON request,
+error-message и SurfaceCard structure duplicates сведены к одному владельцу;
+date formatters кешируются на module level, подтверждённо неиспользуемые UI
+exports удалены.
+API, persisted contracts, schema, migrations и Lesson hierarchy не меняются.
+
+**Current source / next production — frontend structural cleanup (первый
+slice):** первый
 safe cleanup slice сохраняет внешний вид и interaction contracts, но убирает
 накопившиеся DOM/CSS compatibility layers. Shared `SegmentedControl` теперь
 использует один root class, `data-variant="icon|text"`, одну option class и
@@ -34,9 +63,7 @@ dashboard wrapper удалены; marketing reduced-motion reset огранич�
 surface и больше не протекает во всё приложение. API, persisted communication,
 schema, migrations и Lesson hierarchy не меняются. Канонические правила и
 следующие безопасные slices зафиксированы в
-`docs/architecture/frontend-style-system.md`; исторический
-`course-demo-shell` остаётся current compatibility name и будет переименован
-только отдельным атомарным visual-parity slice.
+`docs/architecture/frontend-style-system.md`.
 Source gate завершён: `727/727` unit/contract tests, `28/28` strict
 production-mode browser scenarios, typecheck, lint, repository-wide format
 check и production build проходят.
@@ -211,7 +238,7 @@ backlink-row остаётся выше только в content-column, а metric
 При реальной нехватке ширины intrinsic action rail переносится в отдельный ряд.
 На mobile до `767 px` тот же TopNav становится viewport-fixed: точная высота
 его safe-area + `64 px` shell + `12 px` fade заранее резервируется в
-`.course-demo-shell`, поэтому исходный content rhythm не прыгает. Внешний слой
+`.app-page-shell`, поэтому исходный content rhythm не прыгает. Внешний слой
 прозрачен и не перехватывает касания; отдельный pointer-transparent gradient
 начинается полностью прозрачным на `12 px` ниже белого shell и скрывает
 прокручиваемый content к его верхней границе. Белый shell сохраняет боковые
@@ -294,7 +321,7 @@ session projection, schema, migrations и Lesson hierarchy не меняются
 
 Follow-up превращает этот responsive слой из уменьшенной desktop-проекции в
 touch-first application layout. App `theme-color`, manifest, `html`, `body` и
-`.course-demo-shell` используют один непрозрачный `#f5f1e8`; app viewport
+`.app-page-shell` используют один непрозрачный `#f5f1e8`; app viewport
 включает `viewport-fit=cover`, shell покрывает минимум `100dvh`, а safe-area
 insets защищают верхнюю навигацию и нижний край. Поэтому iOS Safari окрашивает
 browser chrome и elastic overscroll в цвет приложения без отключения нативного
@@ -2134,8 +2161,8 @@ application service/contracts внутри authenticated web request.
 
 #### System Assistant — historical production baseline, superseded in current production
 
-- Historical baseline монтировал `SystemAssistantProvider` и один floating
-  `SystemAssistant` в
+- Historical baseline монтировал прежний `SystemAssistantProvider` и один
+  floating `SystemAssistant` в
   protected `src/app/(app)/layout.tsx`, а не в public landing/Auth/demo и не в
   Course/Lesson header. Кнопки прежнего course-scoped dialog из Course и Lesson
   удалены.
@@ -2208,8 +2235,10 @@ application service/contracts внутри authenticated web request.
   известный ordering debt.
 - Контракты/service/routes/UI и contract tests находятся в
   `src/modules/ai/system-assistant-*`, `src/app/api/v2/assistant/` и
-  `src/components/assistant/`. Base global widget release `b7c6cfe` и signed
-  conversational action follow-up `246cf49` развёрнуты. Для base release
+  `src/components/communication/` (`assistant-page-context.tsx`,
+  `assistant-api-client.ts`, persisted assistant conversation/action UI). Base
+  global widget release `b7c6cfe` и signed conversational action follow-up
+  `246cf49` развёрнуты. Для base release
   RouterAI no-write smoke с synthetic current Course пройден; для follow-up
   подтверждены exact running SHA/image и HTTP/guest boundary. Authenticated
   production Apply остаётся отдельным непройденным postflight и не
@@ -2531,58 +2560,58 @@ positions, а плотность поддерживают текущие service
 
 ## 7. Карта реализации
 
-| Область                              | Каноническое место                                                                                                                                                                                                                                                                  |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Course/Lesson contracts              | `src/modules/course-builder/contracts.ts`                                                                                                                                                                                                                                           |
-| Domain/read models                   | `src/modules/course-builder/domain.ts`                                                                                                                                                                                                                                              |
-| Application service                  | `src/modules/course-builder/service.ts`                                                                                                                                                                                                                                             |
-| Supabase repository                  | `src/modules/course-builder/repository.ts`                                                                                                                                                                                                                                          |
-| Storage adapter                      | `src/modules/course-builder/storage.ts`                                                                                                                                                                                                                                             |
-| Component registry                   | `src/modules/course-builder/registry/contracts.ts`                                                                                                                                                                                                                                  |
-| MCP tools/server                     | `src/modules/course-builder/mcp/`                                                                                                                                                                                                                                                   |
-| AI provider adapter                  | `src/modules/ai/routerai.ts`                                                                                                                                                                                                                                                        |
-| AI provider transport                | `src/modules/ai/lesson-provider-contracts.ts`                                                                                                                                                                                                                                       |
-| AI request/contracts                 | `src/modules/ai/course-builder-contracts.ts`                                                                                                                                                                                                                                        |
-| AI context/service                   | `src/modules/ai/course-context.ts`, `src/modules/ai/course-builder-service.ts`, `src/modules/ai/system-assistant-contracts.ts`, `src/modules/ai/system-assistant-service.ts`                                                                                                        |
-| AI API/error boundary                | `src/app/api/v2/courses/[courseId]/ai-*/`, compatibility `assistant/`, `src/app/api/v2/assistant/`, `src/modules/ai/server-context.ts`                                                                                                                                              |
-| AI UI                                | `src/components/course-builder/ai-course-plan-dialog.tsx`, `ai-lesson-plan-dialog.tsx`, `src/components/communication/assistant-conversation.tsx`, `assistant-action-card.tsx`, `src/components/assistant/system-assistant-provider.tsx`, `src/app/styles/communication-center.css` |
-| Frontend style contract              | `docs/architecture/frontend-style-system.md`, `src/components/ui/`, `src/app/globals.css`, `src/app/styles/`                                                                                                                                                                        |
-| LessonRun domain/contracts           | `src/modules/lesson-runs/domain.ts`, `contracts.ts`                                                                                                                                                                                                                                 |
-| LessonRun service/repository         | `src/modules/lesson-runs/service.ts`, `repository.ts`, `server-context.ts`                                                                                                                                                                                                          |
-| LessonRun API                        | `src/app/api/v2/lesson-runs/`, `learner-profiles/`, `learner-groups/`, Course/Lesson audience/history/runs routes                                                                                                                                                                   |
-| LessonRun UI                         | `src/components/lesson-runs/`                                                                                                                                                                                                                                                       |
-| Learner identity contracts/service   | `src/modules/learner-identity/`                                                                                                                                                                                                                                                     |
-| Learner identity UI/routes           | `src/app/(app)/profile/`, `src/components/profile/`, `src/components/learner-identity/`, `/profile`, `/students?tab=observing`, `/identity/invitations/*`; `/learning-profile`, `/settings/*` и `/observing` — compatibility redirects                                              |
-| Account profile/avatar UI            | `src/components/account/`, `src/components/account/avatar-settings-form.tsx`, `src/lib/navigation/profile-nav.ts`                                                                                                                                                                   |
-| Account avatar API/delivery          | `src/app/api/settings/profile/avatar/`, `src/lib/account-avatar.ts`, `src/lib/server/profile-avatar-delivery.ts`, `src/lib/server/profile-avatar-image.ts`, `src/lib/server/profile-avatar-storage.ts`, `src/lib/server/profile-avatar-reconciliation.ts`                           |
-| Cross-surface image delivery         | `next.config.ts`, `src/lib/__tests__/image-delivery-contract.test.ts`, `docs/architecture/image-delivery.md`                                                                                                                                                                        |
-| Learner identity access doc          | `docs/architecture/learner-identity-access-model.md`                                                                                                                                                                                                                                |
-| Consented AI safe history            | `src/modules/ai/shared-history.ts`, `course-context.ts`, `course-builder-service.ts`                                                                                                                                                                                                |
-| Historical identity execution prompt | `docs/v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md`                                                                                                                                                                                                                                     |
-| Course browser client                | `src/components/course-builder/course-builder-client.ts`                                                                                                                                                                                                                            |
-| Course publication domain/service    | `src/modules/course-publications/`                                                                                                                                                                                                                                                  |
-| Course attestation domain/API        | `src/modules/course-attestations/`, `src/app/api/v2/course-catalog/[publicationId]/attestation/`, `src/app/api/v2/courses/[courseId]/attestation/`, `src/app/api/v2/me/attestations/`                                                                                               |
-| Course consumption progress          | `src/modules/course-consumption/`, `src/app/api/v2/course-catalog/[publicationId]/progress/`                                                                                                                                                                                        |
-| Course catalog/publication API       | `src/app/api/v2/course-catalog/`, `src/app/api/v2/courses/[courseId]/publication/`, `duplicate/`                                                                                                                                                                                    |
-| Course catalog/owned UI              | `src/components/course-builder/courses-index.tsx`, `owned-courses-panel.tsx`, `course-catalog-panel.tsx`, `course-actions.tsx`, `src/components/ui/segmented-control.tsx`                                                                                                           |
-| Published Course workspace           | `src/app/(app)/courses/catalog/[publicationId]/`, `src/components/course-builder/published-course-workspace.tsx`, `published-course-progress-queue.ts`                                                                                                                              |
-| New Course flow                      | `src/components/course-builder/new-course-form.tsx`                                                                                                                                                                                                                                 |
-| Course workspace                     | `src/components/course-builder/course-workspace.tsx`                                                                                                                                                                                                                                |
-| Course/Lesson navigation             | `src/components/course-builder/course-workspace-navigation.ts`                                                                                                                                                                                                                      |
-| Workspace tabs/materials             | `src/components/ui/workspace-tabs.tsx`, `src/components/course-builder/course-materials-panel.tsx`, `src/components/course-builder/course-materials.ts`, `src/components/course-builder/course-material-file.ts`, `src/modules/course-builder/registry/stored-file-references.ts`   |
-| Lesson editor/Slides                 | `src/components/course-builder/lesson-authoring-workspace.tsx`                                                                                                                                                                                                                      |
-| Component picker/editors/renderers   | `src/components/course-builder/component-picker-preview.tsx`, `component-payload-editor.tsx`, `component-renderers.tsx`                                                                                                                                                             |
-| Fullscreen preview                   | `src/components/course-builder/student-screen-preview.tsx`                                                                                                                                                                                                                          |
-| Account Schedule                     | `src/app/(app)/(teacher-required)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`, `src/components/teaching-hub/schedule-date-picker.tsx`, `src/components/teaching-hub/schedule-period.ts`                                                                        |
-| Account Students                     | `src/app/(app)/(teacher-required)/students/`, `src/components/teaching-hub/students-workspace.tsx`, `src/components/teaching-hub/student-directory-table.tsx`                                                                                                                       |
-| Account Store demo                   | `src/app/(app)/store/`, `src/components/store/`, `src/app/styles/store.css`, `public/store/products/`, `docs/product/store-demo.md`                                                                                                                                                 |
-| Legacy-named Account route boundary  | `src/app/(app)/(teacher-required)/layout.tsx`, `src/lib/server/access-guards.ts`                                                                                                                                                                                                    |
-| V2 API routes                        | `src/app/api/v2/`                                                                                                                                                                                                                                                                   |
-| Standalone historical demo           | `src/app/demo/`, `public/og-demo-v2.png`                                                                                                                                                                                                                                            |
-| Host boundary                        | `src/middleware.ts`, `src/lib/deployment-access.ts`                                                                                                                                                                                                                                 |
-| Auth/session                         | `src/lib/auth.ts`, `src/lib/server/`                                                                                                                                                                                                                                                |
-| Current schema                       | `supabase/schema/current-schema.sql`                                                                                                                                                                                                                                                |
-| Forward history                      | `supabase/migrations/`                                                                                                                                                                                                                                                              |
+| Область                              | Каноническое место                                                                                                                                                                                                                                                                 |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Course/Lesson contracts              | `src/modules/course-builder/contracts.ts`                                                                                                                                                                                                                                          |
+| Domain/read models                   | `src/modules/course-builder/domain.ts`                                                                                                                                                                                                                                             |
+| Application service                  | `src/modules/course-builder/service.ts`                                                                                                                                                                                                                                            |
+| Supabase repository                  | `src/modules/course-builder/repository.ts`                                                                                                                                                                                                                                         |
+| Storage adapter                      | `src/modules/course-builder/storage.ts`                                                                                                                                                                                                                                            |
+| Component registry                   | `src/modules/course-builder/registry/contracts.ts`                                                                                                                                                                                                                                 |
+| MCP tools/server                     | `src/modules/course-builder/mcp/`                                                                                                                                                                                                                                                  |
+| AI provider adapter                  | `src/modules/ai/routerai.ts`                                                                                                                                                                                                                                                       |
+| AI provider transport                | `src/modules/ai/lesson-provider-contracts.ts`                                                                                                                                                                                                                                      |
+| AI request/contracts                 | `src/modules/ai/course-builder-contracts.ts`                                                                                                                                                                                                                                       |
+| AI context/service                   | `src/modules/ai/course-context.ts`, `src/modules/ai/course-builder-service.ts`, `src/modules/ai/system-assistant-contracts.ts`, `src/modules/ai/system-assistant-service.ts`                                                                                                       |
+| AI API/error boundary                | `src/app/api/v2/courses/[courseId]/ai-*/`, compatibility `assistant/`, `src/app/api/v2/assistant/`, `src/modules/ai/server-context.ts`                                                                                                                                             |
+| AI UI/browser boundary               | `src/components/course-builder/ai-course-plan-dialog.tsx`, `ai-lesson-plan-dialog.tsx`, `src/components/communication/assistant-conversation.tsx`, `assistant-action-card.tsx`, `assistant-page-context.tsx`, `assistant-api-client.ts`, `src/app/styles/communication-center.css` |
+| Frontend style contract              | `docs/architecture/frontend-style-system.md`, `src/components/ui/`, `src/app/globals.css`, `src/app/styles/`                                                                                                                                                                       |
+| LessonRun domain/contracts           | `src/modules/lesson-runs/domain.ts`, `contracts.ts`                                                                                                                                                                                                                                |
+| LessonRun service/repository         | `src/modules/lesson-runs/service.ts`, `repository.ts`, `server-context.ts`                                                                                                                                                                                                         |
+| LessonRun API                        | `src/app/api/v2/lesson-runs/`, `learner-profiles/`, `learner-groups/`, Course/Lesson audience/history/runs routes                                                                                                                                                                  |
+| LessonRun UI                         | `src/components/lesson-runs/`                                                                                                                                                                                                                                                      |
+| Learner identity contracts/service   | `src/modules/learner-identity/`                                                                                                                                                                                                                                                    |
+| Learner identity UI/routes           | `src/app/(app)/profile/`, `src/components/profile/`, `src/components/learner-identity/`, `/profile`, `/students?tab=observing`, `/identity/invitations/*`; `/learning-profile`, `/settings/*` и `/observing` — compatibility redirects                                             |
+| Account profile/avatar UI            | `src/components/account/`, `src/components/account/avatar-settings-form.tsx`, `src/lib/navigation/profile-nav.ts`                                                                                                                                                                  |
+| Account avatar API/delivery          | `src/app/api/settings/profile/avatar/`, `src/lib/account-avatar.ts`, `src/lib/server/profile-avatar-delivery.ts`, `src/lib/server/profile-avatar-image.ts`, `src/lib/server/profile-avatar-storage.ts`, `src/lib/server/profile-avatar-reconciliation.ts`                          |
+| Cross-surface image delivery         | `next.config.ts`, `src/lib/__tests__/image-delivery-contract.test.ts`, `docs/architecture/image-delivery.md`                                                                                                                                                                       |
+| Learner identity access doc          | `docs/architecture/learner-identity-access-model.md`                                                                                                                                                                                                                               |
+| Consented AI safe history            | `src/modules/ai/shared-history.ts`, `course-context.ts`, `course-builder-service.ts`                                                                                                                                                                                               |
+| Historical identity execution prompt | `docs/v2/LEARNER_IDENTITY_COMPLETION_PROMPT.md`                                                                                                                                                                                                                                    |
+| Course browser client                | `src/components/course-builder/course-builder-client.ts`                                                                                                                                                                                                                           |
+| Course publication domain/service    | `src/modules/course-publications/`                                                                                                                                                                                                                                                 |
+| Course attestation domain/API        | `src/modules/course-attestations/`, `src/app/api/v2/course-catalog/[publicationId]/attestation/`, `src/app/api/v2/courses/[courseId]/attestation/`, `src/app/api/v2/me/attestations/`                                                                                              |
+| Course consumption progress          | `src/modules/course-consumption/`, `src/app/api/v2/course-catalog/[publicationId]/progress/`                                                                                                                                                                                       |
+| Course catalog/publication API       | `src/app/api/v2/course-catalog/`, `src/app/api/v2/courses/[courseId]/publication/`, `duplicate/`                                                                                                                                                                                   |
+| Course catalog/owned UI              | `src/components/course-builder/courses-index.tsx`, `owned-courses-panel.tsx`, `course-catalog-panel.tsx`, `course-actions.tsx`, `src/components/ui/segmented-control.tsx`                                                                                                          |
+| Published Course workspace           | `src/app/(app)/courses/catalog/[publicationId]/`, `src/components/course-builder/published-course-workspace.tsx`, `published-course-progress-queue.ts`                                                                                                                             |
+| New Course flow                      | `src/components/course-builder/new-course-form.tsx`                                                                                                                                                                                                                                |
+| Course workspace                     | `src/components/course-builder/course-workspace.tsx`                                                                                                                                                                                                                               |
+| Course/Lesson navigation             | `src/components/course-builder/course-workspace-navigation.ts`                                                                                                                                                                                                                     |
+| Workspace tabs/materials             | `src/components/ui/workspace-tabs.tsx`, `src/components/course-builder/course-materials-panel.tsx`, `src/components/course-builder/course-materials.ts`, `src/components/course-builder/course-material-file.ts`, `src/modules/course-builder/registry/stored-file-references.ts`  |
+| Lesson editor/Slides                 | `src/components/course-builder/lesson-authoring-workspace.tsx`                                                                                                                                                                                                                     |
+| Component picker/editors/renderers   | `src/components/course-builder/component-picker-preview.tsx`, `component-payload-editor.tsx`, `component-renderers.tsx`                                                                                                                                                            |
+| Fullscreen preview                   | `src/components/course-builder/student-screen-preview.tsx`                                                                                                                                                                                                                         |
+| Account Schedule                     | `src/app/(app)/schedule/`, `src/components/teaching-hub/schedule-workspace.tsx`, `src/components/teaching-hub/schedule-date-picker.tsx`, `src/components/teaching-hub/schedule-period.ts`                                                                                          |
+| Account Students                     | `src/app/(app)/students/`, `src/components/teaching-hub/students-workspace.tsx`, `src/components/teaching-hub/student-directory-table.tsx`                                                                                                                                         |
+| Account Store demo                   | `src/app/(app)/store/`, `src/components/store/`, `src/app/styles/store.css`, `public/store/products/`, `docs/product/store-demo.md`                                                                                                                                                |
+| Account route boundary               | `src/app/(app)/layout.tsx`, `src/lib/server/access-policy.ts`, `src/lib/server/access-guards.ts`                                                                                                                                                                                   |
+| V2 API routes                        | `src/app/api/v2/`                                                                                                                                                                                                                                                                  |
+| Standalone historical demo           | `src/app/demo/`, `public/og-demo-v2.png`                                                                                                                                                                                                                                           |
+| Host boundary                        | `src/middleware.ts`, `src/lib/deployment-access.ts`                                                                                                                                                                                                                                |
+| Auth/session                         | `src/lib/auth.ts`, `src/lib/server/`                                                                                                                                                                                                                                               |
+| Current schema                       | `supabase/schema/current-schema.sql`                                                                                                                                                                                                                                               |
+| Forward history                      | `supabase/migrations/`                                                                                                                                                                                                                                                             |
 
 ## 8. Активные пользовательские маршруты
 

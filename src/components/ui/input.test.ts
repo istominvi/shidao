@@ -31,7 +31,7 @@ test("single-line product inputs use one static raised typography contract", () 
   );
   assert.match(
     globalStyles,
-    /\.course-demo-shell\s*\{[^}]*--product-entry-control-foreground: var\(--course-demo-control-foreground\);[^}]*--product-entry-control-font-size: var\(--course-demo-control-font-size\);[^}]*--product-entry-control-font-weight: var\(--course-demo-control-font-weight\);[^}]*--product-entry-control-line-height: var\(--course-demo-control-line-height\);/,
+    /\.app-page-shell\s*\{[^}]*--product-entry-control-foreground: var\(--product-control-foreground\);[^}]*--product-entry-control-font-size: var\(--product-control-font-size\);[^}]*--product-entry-control-font-weight: var\(--product-control-font-weight\);[^}]*--product-entry-control-line-height: var\(--product-control-line-height\);/,
   );
   assert.match(
     globalStyles,
@@ -203,18 +203,15 @@ test("narrow and coarse-touch editable controls prevent iOS focus zoom without d
   );
   assert.doesNotMatch(
     touchStyles,
-    /--product-touch-control-font-size|--product-control-icon-size|--course-demo-control-(?:padding-inline|font-size)|vector-effect:\s*non-scaling-stroke/,
+    /--product-touch-control-font-size|--product-control-icon-size|vector-effect:\s*non-scaling-stroke/,
     "product control typography and icons must not fork from desktop on touch",
   );
   assert.doesNotMatch(
     touchStyles,
-    /\.course-demo-shell[^{]*\{[^}]*font-size:/,
+    /\.app-page-shell[^{]*\{[^}]*font-size:/,
     "ordinary product controls must inherit desktop typography",
   );
-  assert.doesNotMatch(
-    touchStyles,
-    /--(?:course-demo|product)-control-height:\s*(?:3rem|48px)/,
-  );
+  assert.doesNotMatch(touchStyles, /--product-control-height:\s*(?:3rem|48px)/);
 
   assert.match(appLayoutSource, /viewportFit: "cover"/);
   assert.doesNotMatch(

@@ -2,8 +2,6 @@
 @import "./styles/navigation.css";
 @import "./styles/marketing.css";
 @import "./styles/teaching-hub.css";
-@import "./styles/communication-center.css";
-@import "./styles/store.css";
 
 :root {
   --product-app-background: #f5f1e8;
@@ -13,7 +11,13 @@
   --product-row-height: 2.5rem;
   --product-control-height: 2.5rem;
   --product-control-radius: var(--product-element-radius);
+  --product-control-padding-inline: 0.75rem;
+  --product-control-font-size: 0.88rem;
+  --product-control-font-weight: 400;
+  --product-control-line-height: 1.2;
+  --product-control-foreground: #141414;
   --product-control-icon-size: 1rem;
+  --product-table-radius: var(--product-element-radius);
   --product-table-divider-color: #ececef;
   --product-table-body-color: #141414;
   --product-table-body-font-size: 0.88rem;
@@ -97,8 +101,8 @@ body {
     sans-serif;
 }
 
-html:has(.course-demo-shell),
-body:has(.course-demo-shell) {
+html:has(.app-page-shell),
+body:has(.app-page-shell) {
   background: var(--product-app-background);
 }
 
@@ -112,24 +116,11 @@ a {
   margin-inline: auto;
 }
 
-.course-demo-shell {
-  --course-demo-element-radius: var(--product-element-radius);
-  --course-demo-card-radius: var(--product-card-radius);
-  --course-demo-table-radius: var(--course-demo-element-radius);
-  --course-demo-table-row-height: var(--product-row-height);
-  --course-demo-control-height: var(--product-control-height);
-  --course-demo-control-radius: var(--product-control-radius);
-  --course-demo-control-padding-inline: 0.75rem;
-  --course-demo-content-inset: 0.75rem;
-  --course-demo-control-font-size: 0.88rem;
-  --course-demo-control-font-weight: 400;
-  --course-demo-control-line-height: 1.2;
-  --course-demo-control-foreground: #141414;
-  --course-demo-control-icon-size: var(--product-control-icon-size);
-  --product-entry-control-foreground: var(--course-demo-control-foreground);
-  --product-entry-control-font-size: var(--course-demo-control-font-size);
-  --product-entry-control-font-weight: var(--course-demo-control-font-weight);
-  --product-entry-control-line-height: var(--course-demo-control-line-height);
+.app-page-shell {
+  --product-entry-control-foreground: var(--product-control-foreground);
+  --product-entry-control-font-size: var(--product-control-font-size);
+  --product-entry-control-font-weight: var(--product-control-font-weight);
+  --product-entry-control-line-height: var(--product-control-line-height);
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: clip;
@@ -145,7 +136,7 @@ a {
     sans-serif;
 }
 
-.course-demo-shell .container {
+.app-page-shell .container {
   width: min(1240px, calc(100% - 2rem));
 }
 
@@ -256,9 +247,9 @@ a {
   --app-page-header-chip-text-size: 0.875rem;
   --app-page-header-title-size: clamp(1.9rem, 3vw, 2.35rem);
   --app-page-header-title-line-height: 1.08;
-  --app-page-header-description-size: var(--app-page-header-chip-text-size);
-  --app-page-header-description-line-height: 1.6;
-  --app-page-header-description-color: var(--product-secondary-foreground);
+  --app-page-header-metric-size: var(--app-page-header-chip-text-size);
+  --app-page-header-metric-line-height: 1.6;
+  --app-page-header-metric-color: var(--product-secondary-foreground);
 
   margin: 0;
   display: flex;
@@ -371,13 +362,13 @@ a {
   color: #111827;
 }
 
-.app-page-description {
+.app-page-metric {
   margin: 0;
   max-width: none;
   width: 100%;
-  font-size: var(--app-page-header-description-size);
-  line-height: var(--app-page-header-description-line-height);
-  color: var(--app-page-header-description-color);
+  font-size: var(--app-page-header-metric-size);
+  line-height: var(--app-page-header-metric-line-height);
+  color: var(--app-page-header-metric-color);
 }
 
 .app-page-metric[data-page-header-metric-placeholder] {
@@ -385,22 +376,22 @@ a {
   overflow: hidden;
 }
 
-.course-demo-shell .app-page-header {
+.app-page-shell .app-page-header {
   --app-page-header-padding-block: 20px;
   --app-page-header-padding-inline: 12px;
   --app-page-header-title-size: clamp(2rem, 3.8vw, 3rem);
   --app-page-header-title-line-height: 0.96;
-  --app-page-header-description-size: 0.9rem;
-  --app-page-header-description-line-height: 1.55;
+  --app-page-header-metric-size: 0.9rem;
+  --app-page-header-metric-line-height: 1.55;
   scroll-margin-top: 6.25rem;
 }
 
-.course-demo-shell .app-page-header > .app-page-header-content,
-.course-demo-shell .app-page-header .app-page-meta {
+.app-page-shell .app-page-header > .app-page-header-content,
+.app-page-shell .app-page-header .app-page-meta {
   min-width: 0;
 }
 
-.course-demo-shell .app-page-title-row > .app-page-actions {
+.app-page-shell .app-page-title-row > .app-page-actions {
   width: max-content;
   max-width: 100%;
   flex: 0 0 auto;
@@ -408,37 +399,37 @@ a {
   margin-inline-start: auto;
 }
 
-.course-demo-shell .app-page-back-slot,
-.course-demo-shell .app-page-back-link {
+.app-page-shell .app-page-back-slot,
+.app-page-shell .app-page-back-link {
   min-width: 0;
   color: #141414;
-  font-size: var(--course-demo-control-font-size);
-  font-weight: var(--course-demo-control-font-weight);
-  line-height: var(--course-demo-control-line-height);
+  font-size: var(--product-control-font-size);
+  font-weight: var(--product-control-font-weight);
+  line-height: var(--product-control-line-height);
 }
 
-.course-demo-shell .app-page-title {
+.app-page-shell .app-page-title {
   min-width: min(10rem, 100%);
   overflow-wrap: anywhere;
 }
 
-.course-demo-shell .app-page-description {
+.app-page-shell .app-page-metric {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.course-demo-shell .app-page-back-link:hover,
-.course-demo-shell .app-page-back-link:focus-visible {
+.app-page-shell .app-page-back-link:hover,
+.app-page-shell .app-page-back-link:focus-visible {
   color: #141414;
 }
 
-.course-demo-shell .app-page-title {
+.app-page-shell .app-page-title {
   color: #141414;
   font-weight: 400;
   letter-spacing: -0.055em;
 }
 
-.course-demo-shell .app-page-description {
+.app-page-shell .app-page-metric {
   max-width: 44rem;
 }
 
@@ -536,8 +527,8 @@ a {
 
 .fade-chevron-control {
   display: grid;
-  width: var(--course-demo-control-height, 2.5rem);
-  height: var(--course-demo-control-height, 2.5rem);
+  width: var(--product-control-height, 2.5rem);
+  height: var(--product-control-height, 2.5rem);
   place-items: center;
   border: 0;
   border-radius: 999px;
@@ -629,25 +620,29 @@ a {
 .workspace-tab {
   position: relative;
   display: inline-flex;
-  height: var(--course-demo-control-height, 2.5rem);
-  min-height: var(--course-demo-control-height, 2.5rem);
+  height: var(--product-control-height, 2.5rem);
+  min-height: var(--product-control-height, 2.5rem);
   flex: 0 0 auto;
   align-items: center;
   gap: 0.38rem;
   border: 0;
-  border-radius: var(--course-demo-control-radius, 0.75rem)
-    var(--course-demo-control-radius, 0.75rem) 0 0;
+  border-radius: var(--product-control-radius, 0.75rem)
+    var(--product-control-radius, 0.75rem) 0 0;
   background: transparent;
-  padding: 0.55rem var(--course-demo-control-padding-inline, 0.75rem);
+  padding: 0.55rem var(--product-control-padding-inline, 0.75rem);
   color: var(--product-secondary-foreground);
   font-family: inherit;
-  font-size: var(--course-demo-control-font-size, 0.88rem);
-  font-weight: var(--course-demo-control-font-weight, 500);
-  line-height: var(--course-demo-control-line-height, 1.2);
+  font-size: var(--product-control-font-size, 0.88rem);
+  font-weight: 500;
+  line-height: var(--product-control-line-height, 1.2);
   cursor: pointer;
   transition:
     color 180ms ease,
     background-color 180ms ease;
+}
+
+.app-page-shell .workspace-tab {
+  font-weight: var(--product-control-font-weight);
 }
 
 .workspace-tab:hover {
@@ -700,10 +695,7 @@ a {
 
 .workspace-surface {
   border: var(--product-surface-border);
-  border-radius: var(
-    --course-demo-card-radius,
-    var(--product-card-radius, 1.25rem)
-  );
+  border-radius: var(--product-card-radius, 1.25rem);
   background: var(--product-surface-background);
   padding: 0.75rem;
   box-shadow:
@@ -929,7 +921,7 @@ a {
 }
 
 @media (max-width: 640px) {
-  .course-demo-shell .app-page-header {
+  .app-page-shell .app-page-header {
     --app-page-header-padding-block: 16px;
     --app-page-header-padding-inline: 8px;
   }
@@ -948,11 +940,11 @@ a {
 }
 
 @media (max-width: 580px) {
-  .course-demo-shell .container {
+  .app-page-shell .container {
     width: min(1240px, calc(100% - 1rem));
   }
 
-  .course-demo-shell .app-page-header {
+  .app-page-shell .app-page-header {
     --app-page-header-title-size: 2rem;
   }
 }
@@ -1004,11 +996,8 @@ a {
   border: var(--product-surface-border);
 }
 
-.course-demo-shell .surface-card {
-  border-radius: var(
-    --course-demo-card-radius,
-    var(--product-card-radius, 1.25rem)
-  );
+.app-page-shell .surface-card {
+  border-radius: var(--product-card-radius, 1.25rem);
   background-color: var(--product-surface-background);
   padding: 0.75rem;
 }
@@ -1018,14 +1007,14 @@ a {
   background-clip: padding-box;
 }
 
-.course-demo-shell .product-table-wrap {
+.app-page-shell .product-table-wrap {
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
   min-width: 0;
   overflow-x: auto;
   border-radius: var(
-    --course-demo-table-radius,
+    --product-table-radius,
     var(--product-element-radius, 0.75rem)
   );
   background-color: #fff;
@@ -1033,36 +1022,35 @@ a {
 }
 
 .lesson-run-history-card,
-.course-demo-shell .student-directory-card,
-.course-demo-shell .store-product-card-surface {
+.app-page-shell .student-directory-card {
   border: var(--product-surface-border);
   background-clip: padding-box;
 }
 
-.course-demo-shell .product-table-wrap:focus-visible {
+.app-page-shell .product-table-wrap:focus-visible {
   outline: 2px solid rgba(20, 20, 20, 0.34);
   outline-offset: 2px;
   box-shadow: var(--product-raised-surface-shadow);
 }
 
-.course-demo-shell .product-table {
+.app-page-shell .product-table {
   background: #fff;
 }
 
-.course-demo-shell .product-table thead {
+.app-page-shell .product-table thead {
   background: #fff;
 }
 
-.course-demo-shell .product-table tbody tr {
+.app-page-shell .product-table tbody tr {
   border-color: var(--product-table-divider-color, #ececef);
 }
 
-.course-demo-shell
+.app-page-shell
   .product-table
   tbody
   > tr
   > :is(td, th):not(.product-table-action-cell),
-.course-demo-shell
+.app-page-shell
   .product-table
   tbody
   > tr
@@ -1186,10 +1174,7 @@ a {
 
 .course-index-table thead tr,
 .course-index-table thead th {
-  height: var(
-    --course-demo-table-row-height,
-    var(--course-demo-control-height, var(--product-row-height, 2.5rem))
-  );
+  height: var(--product-row-height, 2.5rem);
 }
 
 .course-index-table thead {
@@ -1201,7 +1186,7 @@ a {
   overflow: hidden;
   border-bottom: 1px solid var(--product-table-divider-color, #ececef);
   padding-block: 0;
-  padding-inline: var(--course-demo-control-padding-inline, 0.75rem);
+  padding-inline: var(--product-control-padding-inline, 0.75rem);
   color: #8b8e97;
   font-weight: 500;
   text-overflow: ellipsis;
@@ -1213,10 +1198,7 @@ a {
 }
 
 .course-index-table tbody tr {
-  height: var(
-    --course-demo-table-row-height,
-    var(--course-demo-control-height, var(--product-row-height, 2.5rem))
-  );
+  height: var(--product-row-height, 2.5rem);
   border-color: var(--product-table-divider-color, #ececef);
   background: #fff;
   color: #141414;
@@ -1229,15 +1211,12 @@ a {
 
 .course-index-table tbody td {
   box-sizing: border-box;
-  height: var(
-    --course-demo-table-row-height,
-    var(--course-demo-control-height, var(--product-row-height, 2.5rem))
-  );
+  height: var(--product-row-height, 2.5rem);
   overflow: hidden;
   padding-block: 0;
-  padding-inline: var(--course-demo-control-padding-inline, 0.75rem);
+  padding-inline: var(--product-control-padding-inline, 0.75rem);
   color: #141414;
-  font-size: var(--course-demo-control-font-size, 0.88rem);
+  font-size: var(--product-control-font-size, 0.88rem);
   font-weight: 400;
   vertical-align: middle;
   white-space: nowrap;
@@ -1339,11 +1318,11 @@ a {
   opacity: 1;
 }
 
-.course-demo-shell .course-index-error {
+.app-page-shell .course-index-error {
   background: rgba(255, 241, 242, 0.9);
 }
 
-.course-demo-shell .course-index-status {
+.app-page-shell .course-index-status {
   background: var(--product-surface-background);
 }
 
@@ -1407,11 +1386,8 @@ a {
   box-shadow: 0 24px 72px rgba(15, 23, 42, 0.28);
 }
 
-.course-demo-shell .dialog-shell-panel {
-  border-radius: var(
-    --course-demo-card-radius,
-    var(--product-card-radius, 1.25rem)
-  );
+.app-page-shell .dialog-shell-panel {
+  border-radius: var(--product-card-radius, 1.25rem);
 }
 
 .dialog-shell-header {
@@ -1504,15 +1480,15 @@ a {
   gap: 0.5rem;
   border: 0;
   border-radius: var(
-    --course-demo-control-radius,
+    --product-control-radius,
     var(--product-element-radius, 0.75rem)
   );
   background: #f5f5f5;
   padding-inline: 0.75rem;
   color: #404040;
-  font-size: var(--course-demo-control-font-size, 0.88rem);
-  font-weight: var(--course-demo-control-font-weight, 400);
-  line-height: var(--course-demo-control-line-height, 1.2);
+  font-size: var(--product-control-font-size, 0.88rem);
+  font-weight: var(--product-control-font-weight, 400);
+  line-height: var(--product-control-line-height, 1.2);
   cursor: pointer;
   transition:
     background-color 180ms ease,
@@ -1549,15 +1525,12 @@ a {
   align-self: start;
   gap: 0.65rem;
   border: 1px solid #e5e7eb;
-  border-radius: var(
-    --course-demo-element-radius,
-    var(--product-element-radius, 0.75rem)
-  );
+  border-radius: var(--product-element-radius, 0.75rem);
   background: #fff;
   padding: 0.9rem;
   color: inherit;
-  font-size: var(--course-demo-control-font-size, 0.88rem);
-  font-weight: var(--course-demo-control-font-weight, 400);
+  font-size: var(--product-control-font-size, 0.88rem);
+  font-weight: var(--product-control-font-weight, 400);
   line-height: 1.35;
   text-align: left;
   transition:
@@ -1716,13 +1689,6 @@ a {
   line-height: 1.35;
 }
 
-.form-field-error {
-  margin: 0;
-  color: #be123c;
-  font-size: 0.75rem;
-  line-height: 1.35;
-}
-
 .product-hero-card {
   position: relative;
   overflow: hidden;
@@ -1815,8 +1781,8 @@ input.field-input::placeholder {
   opacity: 1;
 }
 
-.course-demo-shell .field-input {
-  border-radius: var(--course-demo-control-radius);
+.app-page-shell .field-input {
+  border-radius: var(--product-control-radius);
 }
 
 .field-input:focus {
@@ -1894,8 +1860,8 @@ input.field-input:focus {
     background-color 180ms ease;
 }
 
-.course-demo-shell .product-control {
-  border-radius: var(--course-demo-control-radius);
+.app-page-shell .product-control {
+  border-radius: var(--product-control-radius);
 }
 
 .product-control:focus-visible {
@@ -1964,8 +1930,8 @@ input.product-control-search::placeholder {
   pointer-events: none;
 }
 
-.course-demo-shell .product-search-icon {
-  color: var(--course-demo-control-foreground);
+.app-page-shell .product-search-icon {
+  color: var(--product-control-foreground);
   opacity: 1;
 }
 
@@ -2021,17 +1987,17 @@ input.product-control-search::placeholder {
 }
 
 .product-btn.compact-toolbar-reset {
-  width: var(--course-demo-control-height, 2.5rem);
-  min-width: var(--course-demo-control-height, 2.5rem);
-  flex: 0 0 var(--course-demo-control-height, 2.5rem);
+  width: var(--product-control-height, 2.5rem);
+  min-width: var(--product-control-height, 2.5rem);
+  flex: 0 0 var(--product-control-height, 2.5rem);
   border: var(--product-surface-border);
-  border-radius: var(--course-demo-control-radius, 0.75rem);
+  border-radius: var(--product-control-radius, 0.75rem);
   background: #fff;
   background-clip: padding-box;
   padding: 0;
 }
 
-.course-demo-shell .compact-toolbar-rail [role="group"] button svg {
+.app-page-shell .compact-toolbar-rail [role="group"] button svg {
   color: currentColor;
   opacity: 1;
 }
@@ -2242,18 +2208,18 @@ input.product-control-search::placeholder {
     background-color var(--product-raised-control-transition);
 }
 
-.course-demo-shell .product-btn {
+.app-page-shell .product-btn {
   gap: 0.42rem;
-  border-radius: var(--course-demo-control-radius);
+  border-radius: var(--product-control-radius);
   background-color: #fff;
-  padding-inline: var(--course-demo-control-padding-inline);
-  color: var(--course-demo-control-foreground);
-  font-size: var(--course-demo-control-font-size);
-  font-weight: var(--course-demo-control-font-weight);
-  line-height: var(--course-demo-control-line-height);
+  padding-inline: var(--product-control-padding-inline);
+  color: var(--product-control-foreground);
+  font-size: var(--product-control-font-size);
+  font-weight: var(--product-control-font-weight);
+  line-height: var(--product-control-line-height);
 }
 
-.course-demo-shell
+.app-page-shell
   :is(
     .product-btn,
     .teaching-date-navigator,
@@ -2263,9 +2229,9 @@ input.product-control-search::placeholder {
     .fade-chevron-control
   )
   svg.lucide {
-  width: var(--course-demo-control-icon-size);
-  height: var(--course-demo-control-icon-size);
-  flex: 0 0 var(--course-demo-control-icon-size);
+  width: var(--product-control-icon-size);
+  height: var(--product-control-icon-size);
+  flex: 0 0 var(--product-control-icon-size);
   color: currentColor;
   opacity: 1;
 }
@@ -2300,9 +2266,9 @@ input.product-control-search::placeholder {
   background-color: #fff;
 }
 
-.course-demo-shell .product-btn-primary {
+.app-page-shell .product-btn-primary {
   background-color: #fff;
-  color: var(--course-demo-control-foreground);
+  color: var(--product-control-foreground);
 }
 
 .product-btn-secondary {
@@ -2310,9 +2276,9 @@ input.product-control-search::placeholder {
   color: #171717;
 }
 
-.course-demo-shell .product-btn-secondary {
+.app-page-shell .product-btn-secondary {
   background-color: #fff;
-  color: var(--course-demo-control-foreground);
+  color: var(--product-control-foreground);
 }
 
 .product-btn-secondary:hover:not(:disabled) {
@@ -2324,14 +2290,14 @@ input.product-control-search::placeholder {
   color: #171717;
 }
 
-.course-demo-shell .product-btn-ghost {
+.app-page-shell .product-btn-ghost {
   background-color: #fff;
-  color: var(--course-demo-control-foreground);
+  color: var(--product-control-foreground);
 }
 
-.course-demo-shell .product-btn.compact-toolbar-reset {
+.app-page-shell .product-btn.compact-toolbar-reset {
   background-color: #fff;
-  color: var(--course-demo-control-foreground);
+  color: var(--product-control-foreground);
 }
 
 .product-btn.product-btn-danger {
@@ -2409,12 +2375,12 @@ input.product-control-search::placeholder {
   border: 0;
   border-radius: var(--product-inner-control-radius, 0.5rem);
   background: transparent;
-  padding-inline: var(--course-demo-control-padding-inline, 0.75rem);
-  color: var(--course-demo-control-foreground, #141414);
+  padding-inline: var(--product-control-padding-inline, 0.75rem);
+  color: var(--product-control-foreground, #141414);
   font-family: inherit;
-  font-size: var(--course-demo-control-font-size, 0.88rem);
-  font-weight: var(--course-demo-control-font-weight, 400);
-  line-height: var(--course-demo-control-line-height, 1.2);
+  font-size: var(--product-control-font-size, 0.88rem);
+  font-weight: var(--product-control-font-weight, 400);
+  line-height: var(--product-control-line-height, 1.2);
   text-align: left;
   cursor: pointer;
 }
@@ -2513,10 +2479,7 @@ input.product-control-search::placeholder {
 .lesson-component-card {
   position: relative;
   border: var(--product-surface-border);
-  border-radius: var(
-    --course-demo-element-radius,
-    var(--product-element-radius, 0.75rem)
-  );
+  border-radius: var(--product-element-radius, 0.75rem);
   background: #fff;
   background-clip: padding-box;
   overflow: visible;
@@ -2542,7 +2505,7 @@ input.product-control-search::placeholder {
   justify-content: flex-end;
   gap: var(--product-inner-control-inset);
   border: 0;
-  border-radius: var(--course-demo-control-radius, 0.75rem);
+  border-radius: var(--product-control-radius, 0.75rem);
   background: rgba(255, 255, 255, 0.5);
   padding: var(--product-inner-control-inset);
   box-shadow: none;
@@ -2672,7 +2635,7 @@ input.product-control-search::placeholder {
 
 .lesson-component-card-content {
   min-width: 0;
-  padding: var(--course-demo-content-inset, 0.75rem);
+  padding: 0.75rem;
 }
 
 .component-payload-editor {
@@ -2681,8 +2644,8 @@ input.product-control-search::placeholder {
   border-top: 1px solid var(--product-table-divider-color);
   padding-top: 1rem;
   color: #141414;
-  font-size: var(--course-demo-control-font-size, 0.88rem);
-  font-weight: var(--course-demo-control-font-weight, 400);
+  font-size: var(--product-control-font-size, 0.88rem);
+  font-weight: var(--product-control-font-weight, 400);
   line-height: 1.4;
 }
 
@@ -2694,20 +2657,20 @@ input.product-control-search::placeholder {
 .component-payload-editor .field-label {
   margin-bottom: 0.4rem;
   color: #141414;
-  font-size: var(--course-demo-control-font-size, 0.88rem);
-  font-weight: var(--course-demo-control-font-weight, 400);
-  line-height: var(--course-demo-control-line-height, 1.2);
+  font-size: var(--product-control-font-size, 0.88rem);
+  font-weight: var(--product-control-font-weight, 400);
+  line-height: var(--product-control-line-height, 1.2);
 }
 
 .component-payload-editor .field-input {
-  min-height: var(--course-demo-control-height, 2.5rem);
-  height: var(--course-demo-control-height, 2.5rem);
-  border-radius: var(--course-demo-control-radius, 0.75rem);
-  padding: 0 var(--course-demo-control-padding-inline, 0.75rem);
+  min-height: var(--product-control-height, 2.5rem);
+  height: var(--product-control-height, 2.5rem);
+  border-radius: var(--product-control-radius, 0.75rem);
+  padding: 0 var(--product-control-padding-inline, 0.75rem);
   color: #141414;
-  font-size: var(--course-demo-control-font-size, 0.88rem);
-  font-weight: var(--course-demo-control-font-weight, 400);
-  line-height: var(--course-demo-control-line-height, 1.2);
+  font-size: var(--product-control-font-size, 0.88rem);
+  font-weight: var(--product-control-font-weight, 400);
+  line-height: var(--product-control-line-height, 1.2);
 }
 
 .component-payload-editor .component-editor-textarea {
@@ -2726,8 +2689,8 @@ input.product-control-search::placeholder {
 
 .component-editor-checkbox {
   color: #141414;
-  font-size: var(--course-demo-control-font-size, 0.88rem);
-  font-weight: var(--course-demo-control-font-weight, 400);
+  font-size: var(--product-control-font-size, 0.88rem);
+  font-weight: var(--product-control-font-weight, 400);
   line-height: 1.4;
 }
 
@@ -2755,10 +2718,7 @@ input.product-control-search::placeholder {
 
 .lesson-plan-filter-empty {
   border: 1px dashed #d4d4d4;
-  border-radius: var(
-    --course-demo-element-radius,
-    var(--product-element-radius, 0.75rem)
-  );
+  border-radius: var(--product-element-radius, 0.75rem);
   background: rgba(255, 255, 255, 0.7);
   padding: 3.5rem 1.5rem;
   color: #a3a3a3;
@@ -2873,8 +2833,8 @@ input.product-control-search::placeholder {
 }
 
 .product-btn.action-menu-trigger {
-  width: var(--course-demo-control-height, 2.5rem);
-  min-width: var(--course-demo-control-height, 2.5rem);
+  width: var(--product-control-height, 2.5rem);
+  min-width: var(--product-control-height, 2.5rem);
   padding-inline: 0;
 }
 
@@ -2926,24 +2886,18 @@ input.product-control-search::placeholder {
 .action-menu-item {
   display: flex;
   width: 100%;
-  min-height: var(
-    --course-demo-control-height,
-    var(--product-row-height, 2.5rem)
-  );
+  min-height: var(--product-control-height, var(--product-row-height, 2.5rem));
   align-items: center;
   gap: 0.5rem;
   border: 0;
-  border-radius: calc(
-    var(--course-demo-element-radius, var(--product-element-radius, 0.75rem)) -
-      0.25rem
-  );
+  border-radius: calc(var(--product-element-radius, 0.75rem) - 0.25rem);
   background: transparent;
-  padding: 0 var(--course-demo-control-padding-inline, 0.75rem);
-  color: var(--course-demo-control-foreground, #141414);
+  padding: 0 var(--product-control-padding-inline, 0.75rem);
+  color: var(--product-control-foreground, #141414);
   font-family: inherit;
-  font-size: var(--course-demo-control-font-size, 0.88rem);
-  font-weight: var(--course-demo-control-font-weight, 400);
-  line-height: var(--course-demo-control-line-height, 1.2);
+  font-size: var(--product-control-font-size, 0.88rem);
+  font-weight: var(--product-control-font-weight, 400);
+  line-height: var(--product-control-line-height, 1.2);
   text-align: left;
   cursor: pointer;
 }
@@ -3054,19 +3008,17 @@ input.product-control-search::placeholder {
 
   .surface-card,
   .surface-card:not(.border),
-  .course-demo-shell .product-table-wrap,
+  .app-page-shell .product-table-wrap,
   .lesson-component-card,
   .lesson-run-history-card,
-  .course-demo-shell .student-directory-card {
+  .app-page-shell .student-directory-card {
     border-color: CanvasText;
     outline: 1px solid CanvasText;
     outline-offset: -1px;
     box-shadow: none;
   }
 
-  .store-product-card:focus-visible .store-product-card-surface,
-  .store-product-highlighted .store-product-card-surface,
-  .course-demo-shell .product-table-wrap:focus-visible,
+  .app-page-shell .product-table-wrap:focus-visible,
   .lesson-component-card:focus-within {
     outline-color: Highlight;
   }
@@ -3296,10 +3248,7 @@ input.product-control-search::placeholder {
 
 .published-course-progress {
   border: 1px solid rgba(20, 20, 20, 0.08);
-  border-radius: var(
-    --course-demo-card-radius,
-    var(--product-card-radius, 1.25rem)
-  );
+  border-radius: var(--product-card-radius, 1.25rem);
   background: var(--product-surface-background);
   padding: 1rem;
   box-shadow:
@@ -3384,10 +3333,7 @@ input.product-control-search::placeholder {
   align-items: center;
   gap: 0.85rem;
   border: 1px solid rgba(20, 20, 20, 0.09);
-  border-radius: var(
-    --course-demo-element-radius,
-    var(--product-element-radius, 0.95rem)
-  );
+  border-radius: var(--product-element-radius, 0.95rem);
   background: var(--product-surface-background);
   padding: 0.85rem 0.95rem;
   color: #27272a;
@@ -3497,10 +3443,7 @@ input.product-control-search::placeholder {
   align-content: start;
   margin-top: 1rem;
   border: 1px solid rgba(20, 20, 20, 0.08);
-  border-radius: var(
-    --course-demo-card-radius,
-    var(--product-card-radius, 1.25rem)
-  );
+  border-radius: var(--product-card-radius, 1.25rem);
   background: var(--product-surface-background);
   padding: clamp(1rem, 3vw, 2rem);
   box-shadow: 0 20px 52px rgba(23, 26, 32, 0.06);
@@ -3646,11 +3589,11 @@ input.product-control-search::placeholder {
     touch-action: manipulation;
   }
 
-  .course-demo-shell .product-segmented-control-option {
+  .app-page-shell .product-segmented-control-option {
     touch-action: manipulation;
   }
 
-  .course-demo-shell .product-segmented-control[data-variant="text"] {
+  .app-page-shell .product-segmented-control[data-variant="text"] {
     max-width: 100%;
     min-width: 0;
     flex-shrink: 1;
@@ -3658,7 +3601,7 @@ input.product-control-search::placeholder {
     --segmented-option-flex: 1 1 0;
   }
 
-  .course-demo-shell
+  .app-page-shell
     .product-segmented-control[data-variant="text"]
     > .product-segmented-control-option
     > .product-segmented-control-option-label {
@@ -3669,50 +3612,48 @@ input.product-control-search::placeholder {
 }
 
 @media (max-width: 767px) {
-  .course-demo-shell {
+  .app-page-shell {
     padding-bottom: max(3rem, calc(1.5rem + env(safe-area-inset-bottom, 0px)));
   }
 
-  .course-demo-shell .container:not(.course-top-nav) {
+  .app-page-shell .container:not(.app-top-nav) {
     width: auto;
     margin-left: max(0.75rem, env(safe-area-inset-left, 0px));
     margin-right: max(0.75rem, env(safe-area-inset-right, 0px));
   }
 
-  .course-demo-shell .course-top-nav {
+  .app-page-shell .app-top-nav {
     width: 100%;
     margin-inline: 0;
   }
 
-  .course-demo-shell .app-page-header {
+  .app-page-shell .app-page-header {
     --app-page-header-padding-block: 1.25rem;
     --app-page-header-padding-inline: 0px;
     --app-page-header-title-size: 2rem;
   }
 
-  .course-demo-shell .compact-page-toolbar,
-  .course-demo-shell .compact-toolbar-rail {
+  .app-page-shell .compact-page-toolbar,
+  .app-page-shell .compact-toolbar-rail {
     gap: 0.75rem;
   }
 
-  .course-demo-shell .compact-toolbar-rail {
+  .app-page-shell .compact-toolbar-rail {
     justify-content: space-between;
   }
 
-  .course-demo-shell .course-catalog-audience-control,
-  .course-demo-shell
-    .course-catalog-audience-control
-    .product-segmented-control {
+  .app-page-shell .course-catalog-audience-control,
+  .app-page-shell .course-catalog-audience-control .product-segmented-control {
     width: 100%;
   }
 
-  .course-demo-shell .surface-card {
+  .app-page-shell .surface-card {
     border-radius: 1rem;
     background-color: #fff;
     padding: 1rem;
   }
 
-  .course-demo-shell .product-table-wrap {
+  .app-page-shell .product-table-wrap {
     overscroll-behavior-inline: contain;
     -webkit-overflow-scrolling: touch;
   }

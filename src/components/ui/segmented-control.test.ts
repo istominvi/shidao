@@ -114,7 +114,7 @@ test("segmented CSS expresses variants and selection without modifier classes", 
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-segmented-control\[data-variant="text"\]\s*\{[^}]*--segmented-option-min-width: 0;[^}]*--segmented-option-flex: 1 1 0;/,
+    /\.app-page-shell \.product-segmented-control\[data-variant="text"\]\s*\{[^}]*--segmented-option-min-width: 0;[^}]*--segmented-option-flex: 1 1 0;/,
   );
   assert.match(
     styles,

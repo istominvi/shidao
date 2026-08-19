@@ -8,7 +8,7 @@ export default async function CourseWorkspacePage({
   const { courseId } = await params;
 
   return (
-    <main className="course-demo-shell pb-12">
+    <main className="app-page-shell pb-12">
       <CourseWorkspaceClient key={courseId} courseId={courseId} />
     </main>
   );

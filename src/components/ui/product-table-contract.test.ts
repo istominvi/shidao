@@ -39,7 +39,7 @@ test("product tables use the element radius instead of the card radius", () => {
   );
   assert.match(
     styles,
-    /\.product-table-wrap\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background-clip: padding-box;[^}]*\}[\s\S]*?\.course-demo-shell \.product-table-wrap\s*\{[^}]*overflow-x: auto;[^}]*--course-demo-table-radius,[^}]*--product-element-radius,[^}]*background-color: #fff;/,
+    /\.product-table-wrap\s*\{[^}]*border: var\(--product-surface-border\);[^}]*background-clip: padding-box;[^}]*\}[\s\S]*?\.app-page-shell \.product-table-wrap\s*\{[^}]*overflow-x: auto;[^}]*--product-table-radius,[^}]*--product-element-radius,[^}]*background-color: #fff;/,
   );
   assert.match(
     styles,
@@ -47,11 +47,11 @@ test("product tables use the element radius instead of the card radius", () => {
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-table-wrap\s*\{[^}]*box-shadow: var\(--product-raised-surface-shadow\);/,
+    /\.app-page-shell \.product-table-wrap\s*\{[^}]*box-shadow: var\(--product-raised-surface-shadow\);/,
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-table-wrap:focus-visible\s*\{[^}]*outline: 2px solid rgba\(20, 20, 20, 0\.34\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-raised-surface-shadow\);/,
+    /\.app-page-shell \.product-table-wrap:focus-visible\s*\{[^}]*outline: 2px solid rgba\(20, 20, 20, 0\.34\);[^}]*outline-offset: 2px;[^}]*box-shadow: var\(--product-raised-surface-shadow\);/,
   );
   assert.match(productTableSource, /"product-table min-w-full table-fixed/);
   assert.match(
@@ -61,11 +61,11 @@ test("product tables use the element radius instead of the card radius", () => {
   assert.doesNotMatch(productTableSource, /bg-neutral-50/);
   assert.match(
     styles,
-    /\.course-demo-shell \.product-table thead\s*\{[^}]*background: #fff;/,
+    /\.app-page-shell \.product-table thead\s*\{[^}]*background: #fff;/,
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.product-table tbody tr\s*\{[^}]*border-color: var\(--product-table-divider-color, #ececef\);/,
+    /\.app-page-shell \.product-table tbody tr\s*\{[^}]*border-color: var\(--product-table-divider-color, #ececef\);/,
   );
   assert.match(
     styles,
@@ -73,7 +73,7 @@ test("product tables use the element radius instead of the card radius", () => {
   );
   assert.match(
     styles,
-    /\.course-demo-shell[\s\S]*?\.product-table[\s\S]*?tbody[\s\S]*?> tr[\s\S]*?> :is\(td, th\):not\(\.product-table-action-cell\)[\s\S]*?color: var\(--product-table-body-color, #141414\);[\s\S]*?font-size: var\(--product-table-body-font-size, 0\.88rem\);[\s\S]*?font-weight: var\(--product-table-body-font-weight, 400\);[\s\S]*?line-height: var\(--product-table-body-line-height, 1\.3\);/,
+    /\.app-page-shell[\s\S]*?\.product-table[\s\S]*?tbody[\s\S]*?> tr[\s\S]*?> :is\(td, th\):not\(\.product-table-action-cell\)[\s\S]*?color: var\(--product-table-body-color, #141414\);[\s\S]*?font-size: var\(--product-table-body-font-size, 0\.88rem\);[\s\S]*?font-weight: var\(--product-table-body-font-weight, 400\);[\s\S]*?line-height: var\(--product-table-body-line-height, 1\.3\);/,
   );
   assert.match(
     productTableSource,
@@ -100,7 +100,7 @@ test("product tables use the element radius instead of the card radius", () => {
 
   assert.match(
     styles,
-    /\.surface-card\s*\{[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-surface-shadow\);[\s\S]*?\.surface-card:not\(\.border\)\s*\{[^}]*border: var\(--product-surface-border\);[\s\S]*?\.course-demo-shell \.surface-card\s*\{[^}]*--course-demo-card-radius,[^}]*--product-card-radius,[^}]*background-color: var\(--product-surface-background\);/,
+    /\.surface-card\s*\{[^}]*background: var\(--product-surface-background\);[^}]*background-clip: padding-box;[^}]*box-shadow: var\(--product-raised-surface-shadow\);[\s\S]*?\.surface-card:not\(\.border\)\s*\{[^}]*border: var\(--product-surface-border\);[\s\S]*?\.app-page-shell \.surface-card\s*\{[^}]*border-radius: var\(--product-card-radius, 1\.25rem\);[^}]*background-color: var\(--product-surface-background\);/,
   );
   assert.match(
     styles,
@@ -112,7 +112,7 @@ test("product tables use the element radius instead of the card radius", () => {
   );
   assert.match(
     styles,
-    /@media \(forced-colors: active\)\s*\{[\s\S]*?\.surface-card,\s*\.surface-card:not\(\.border\),\s*\.course-demo-shell \.product-table-wrap,[\s\S]*?border-color: CanvasText;/,
+    /@media \(forced-colors: active\)\s*\{[\s\S]*?\.surface-card,\s*\.surface-card:not\(\.border\),\s*\.app-page-shell \.product-table-wrap,[\s\S]*?border-color: CanvasText;/,
   );
   assert.doesNotMatch(styles, /\.product-raised-surface\b/);
   assert.doesNotMatch(
@@ -132,7 +132,7 @@ test("action menus share canonical element geometry without card styling", () =>
   );
   assert.match(
     styles,
-    /\.action-menu-item\s*\{[^}]*--course-demo-control-height,[^}]*--product-row-height,[^}]*align-items: center;[^}]*gap: 0\.5rem;[^}]*border: 0;[^}]*font-weight: var\(--course-demo-control-font-weight, 400\);/,
+    /\.action-menu-item\s*\{[^}]*--product-control-height,[^}]*--product-row-height,[^}]*align-items: center;[^}]*gap: 0\.5rem;[^}]*border: 0;[^}]*font-weight: var\(--product-control-font-weight, 400\);/,
   );
   assert.doesNotMatch(
     /\.action-menu-panel\s*\{[^}]*\}/.exec(styles)?.[0] ?? "",
@@ -160,19 +160,19 @@ test("Course index and Course Lessons tables use the dense Schedule geometry", (
   );
   assert.match(
     styles,
-    /\.course-index-table thead tr,[\s\S]*?\.course-index-table thead th\s*\{[^}]*height: var\(\s*--course-demo-table-row-height,/,
+    /\.course-index-table thead tr,[\s\S]*?\.course-index-table thead th\s*\{[^}]*height: var\(\s*--product-row-height,/,
   );
   assert.match(
     styles,
-    /\.course-index-table thead th\s*\{[^}]*border-bottom: 1px solid var\(--product-table-divider-color, #ececef\);[^}]*padding-block: 0;[^}]*padding-inline: var\(--course-demo-control-padding-inline, 0\.75rem\);[^}]*font-weight: 500;[^}]*white-space: nowrap;/,
+    /\.course-index-table thead th\s*\{[^}]*border-bottom: 1px solid var\(--product-table-divider-color, #ececef\);[^}]*padding-block: 0;[^}]*padding-inline: var\(--product-control-padding-inline, 0\.75rem\);[^}]*font-weight: 500;[^}]*white-space: nowrap;/,
   );
   assert.match(
     styles,
-    /\.course-index-table tbody tr\s*\{[^}]*height: var\(\s*--course-demo-table-row-height,[^}]*border-color: var\(--product-table-divider-color, #ececef\);[^}]*background: #fff;[^}]*color: #141414;/,
+    /\.course-index-table tbody tr\s*\{[^}]*height: var\(\s*--product-row-height,[^}]*border-color: var\(--product-table-divider-color, #ececef\);[^}]*background: #fff;[^}]*color: #141414;/,
   );
   assert.match(
     styles,
-    /\.course-index-table tbody td\s*\{[^}]*height: var\(\s*--course-demo-table-row-height,[^}]*padding-block: 0;[^}]*padding-inline: var\(--course-demo-control-padding-inline, 0\.75rem\);[^}]*color: #141414;[^}]*vertical-align: middle;[^}]*white-space: nowrap;/,
+    /\.course-index-table tbody td\s*\{[^}]*height: var\(\s*--product-row-height,[^}]*padding-block: 0;[^}]*padding-inline: var\(--product-control-padding-inline, 0\.75rem\);[^}]*color: #141414;[^}]*vertical-align: middle;[^}]*white-space: nowrap;/,
   );
   assert.match(
     styles,

@@ -11,12 +11,7 @@ import { fullCommunicationTime } from "@/components/communication/communication-
 import { usePageVisible } from "@/components/communication/use-page-visible";
 import { Button } from "@/components/ui/button";
 import type { SystemNotification } from "@/modules/communication/domain";
-
-function errorMessage(caught: unknown) {
-  return caught instanceof Error
-    ? caught.message
-    : "Не удалось загрузить уведомления.";
-}
+import { errorMessageFromUnknown } from "@/lib/error-message";
 
 export function SystemConversation({
   refreshKey,
@@ -48,7 +43,14 @@ export function SystemConversation({
         setNextCursor(page.nextCursor);
       })
       .catch((caught: unknown) => {
-        if (active) setError(errorMessage(caught));
+        if (active) {
+          setError(
+            errorMessageFromUnknown(
+              caught,
+              "Не удалось загрузить уведомления.",
+            ),
+          );
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -80,7 +82,9 @@ export function SystemConversation({
       });
       setNextCursor(page.nextCursor);
     } catch (caught) {
-      setError(errorMessage(caught));
+      setError(
+        errorMessageFromUnknown(caught, "Не удалось загрузить уведомления."),
+      );
     } finally {
       setLoadingOlder(false);
     }

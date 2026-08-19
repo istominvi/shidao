@@ -16,10 +16,10 @@ import {
   type AssistantActionState,
 } from "@/components/communication/assistant-action-card";
 import {
-  applySystemAssistantAction,
-  SystemAssistantClientError,
-} from "@/components/assistant/system-assistant-client";
-import { useSystemAssistant } from "@/components/assistant/system-assistant-provider";
+  applyAssistantAction,
+  AssistantApiError,
+} from "@/components/communication/assistant-api-client";
+import { useAssistantPageContext } from "@/components/communication/assistant-page-context";
 import {
   loadAssistantMonthlyQuota,
   loadAssistantTurns,
@@ -39,6 +39,7 @@ import type {
   AssistantTurn,
 } from "@/modules/communication/domain";
 import type { PersistedAssistantReplyPayload } from "@/modules/communication/output-contracts";
+import { errorMessageFromUnknown } from "@/lib/error-message";
 
 type PendingTurn = {
   clientTurnId: string;
@@ -106,10 +107,6 @@ function latestPendingProposal(
   return null;
 }
 
-function errorMessage(caught: unknown, fallback: string) {
-  return caught instanceof Error ? caught.message : fallback;
-}
-
 function assistantPrompts(conversation: AssistantConversationSummary) {
   if (conversation.contextLessonId) {
     return [
@@ -158,7 +155,7 @@ export function AssistantConversationView({
   onActivity: () => void;
   onAnnouncement: (message: string) => void;
 }) {
-  const { page } = useSystemAssistant();
+  const page = useAssistantPageContext();
   const [turns, setTurns] = useState<AssistantTurn[]>([]);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -229,7 +226,12 @@ export function AssistantConversationView({
       })
       .catch((caught: unknown) => {
         if (active) {
-          setError(errorMessage(caught, "Не удалось загрузить диалог с ИИ."));
+          setError(
+            errorMessageFromUnknown(
+              caught,
+              "Не удалось загрузить диалог с ИИ.",
+            ),
+          );
         }
       })
       .finally(() => {
@@ -292,7 +294,12 @@ export function AssistantConversationView({
       });
       setNextCursor(payload.turns.nextCursor);
     } catch (caught) {
-      setError(errorMessage(caught, "Не удалось загрузить предыдущие ответы."));
+      setError(
+        errorMessageFromUnknown(
+          caught,
+          "Не удалось загрузить предыдущие ответы.",
+        ),
+      );
     } finally {
       setLoadingOlder(false);
     }
@@ -317,7 +324,7 @@ export function AssistantConversationView({
     }));
     setError(null);
     try {
-      const result = await applySystemAssistantAction(proposal);
+      const result = await applyAssistantAction(proposal);
       setActionStates((current) => ({
         ...current,
         [key]: { status: "applied", result },
@@ -332,9 +339,12 @@ export function AssistantConversationView({
       }
       onActivity();
     } catch (caught) {
-      const message = errorMessage(caught, "Не удалось применить действие.");
+      const message = errorMessageFromUnknown(
+        caught,
+        "Не удалось применить действие.",
+      );
       const terminal =
-        caught instanceof SystemAssistantClientError &&
+        caught instanceof AssistantApiError &&
         [
           "ai_action_proposal_invalid",
           "ai_action_stale",
@@ -425,7 +435,9 @@ export function AssistantConversationView({
           ? { ...current, status: "failed" }
           : current,
       );
-      setError(errorMessage(caught, "Не удалось получить ответ ИИ."));
+      setError(
+        errorMessageFromUnknown(caught, "Не удалось получить ответ ИИ."),
+      );
     } finally {
       window.requestAnimationFrame(() => composerRef.current?.focus());
     }

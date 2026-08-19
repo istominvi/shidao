@@ -21,9 +21,9 @@ export async function readSessionViewServer(): Promise<SessionView> {
         kind: "account",
         authenticated: true,
         hasPin: ctx.hasPin,
-        fullName: ctx.fullName,
-        email: ctx.email,
-        initials: toInitials(ctx.fullName, ctx.email),
+        fullName: ctx.displayName,
+        email: ctx.verifiedEmail,
+        initials: toInitials(ctx.displayName, ctx.verifiedEmail),
         locale: ctx.locale,
         timezone: ctx.timezone,
         avatar: {

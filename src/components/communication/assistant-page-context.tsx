@@ -15,7 +15,7 @@ import type {
   SystemAssistantPageContext,
 } from "@/modules/ai/system-assistant-contracts";
 
-export type RegisteredSystemAssistantContext = Pick<
+export type RegisteredAssistantPageContext = Pick<
   SystemAssistantPageContext,
   "surface" | "courseId" | "lessonId"
 > & {
@@ -30,21 +30,24 @@ export type RegisteredSystemAssistantContext = Pick<
 type Registration = {
   id: symbol;
   pathname: string;
-  context: RegisteredSystemAssistantContext;
+  context: RegisteredAssistantPageContext;
 };
 
-type SystemAssistantContextValue = {
-  page: RegisteredSystemAssistantContext;
+type AssistantPageContextValue = {
+  page: RegisteredAssistantPageContext;
   register: (
     pathname: string,
-    context: RegisteredSystemAssistantContext,
+    context: RegisteredAssistantPageContext,
   ) => () => void;
 };
 
-const SystemAssistantContext =
-  createContext<SystemAssistantContextValue | null>(null);
+const AssistantPageContext = createContext<AssistantPageContextValue | null>(
+  null,
+);
 
-function fallbackContext(pathname: string): RegisteredSystemAssistantContext {
+function defaultAssistantPageContext(
+  pathname: string,
+): RegisteredAssistantPageContext {
   if (pathname === "/schedule") {
     return {
       surface: "schedule",
@@ -128,12 +131,16 @@ function fallbackContext(pathname: string): RegisteredSystemAssistantContext {
   };
 }
 
-export function SystemAssistantProvider({ children }: { children: ReactNode }) {
+export function AssistantPageContextProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const pathname = usePathname();
   const [registration, setRegistration] = useState<Registration | null>(null);
   const register = useCallback(
-    (nextPathname: string, context: RegisteredSystemAssistantContext) => {
-      const id = Symbol("system-assistant-page");
+    (nextPathname: string, context: RegisteredAssistantPageContext) => {
+      const id = Symbol("assistant-page-context");
       setRegistration({ id, pathname: nextPathname, context });
       return () => {
         setRegistration((current) => (current?.id === id ? null : current));
@@ -144,31 +151,35 @@ export function SystemAssistantProvider({ children }: { children: ReactNode }) {
   const page =
     registration?.pathname === pathname
       ? registration.context
-      : fallbackContext(pathname);
+      : defaultAssistantPageContext(pathname);
   const value = useMemo(() => ({ page, register }), [page, register]);
 
   return (
-    <SystemAssistantContext.Provider value={value}>
+    <AssistantPageContext.Provider value={value}>
       {children}
-    </SystemAssistantContext.Provider>
+    </AssistantPageContext.Provider>
   );
 }
 
-export function useSystemAssistant() {
-  const value = useContext(SystemAssistantContext);
+function useAssistantPageContextValue() {
+  const value = useContext(AssistantPageContext);
   if (!value) {
     throw new Error(
-      "useSystemAssistant must be used inside SystemAssistantProvider.",
+      "Assistant page context must be used inside AssistantPageContextProvider.",
     );
   }
   return value;
 }
 
-export function useSystemAssistantPageContext(
-  context: RegisteredSystemAssistantContext | null,
+export function useAssistantPageContext() {
+  return useAssistantPageContextValue().page;
+}
+
+export function useRegisterAssistantPageContext(
+  context: RegisteredAssistantPageContext | null,
 ) {
   const pathname = usePathname();
-  const { register } = useSystemAssistant();
+  const { register } = useAssistantPageContextValue();
   const surface = context?.surface;
   const courseId = context?.courseId;
   const lessonId = context?.lessonId;

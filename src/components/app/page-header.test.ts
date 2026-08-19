@@ -159,10 +159,7 @@ test("active V2 pages share one page header contract without visual modifiers", 
     /<header[^>]*aria-busy=/,
     "Metric loading must not make the known title and actions busy",
   );
-  assert.match(
-    header,
-    /className="app-page-description app-page-metric"[\s\S]*?aria-busy=/,
-  );
+  assert.match(header, /className="app-page-metric"[\s\S]*?aria-busy=/);
   assert.match(header, /aria-live=\{usesAsyncMetric \? "polite" : undefined\}/);
   assert.doesNotMatch(header, /className\?: string/);
   assert.doesNotMatch(header, /eyebrow/i);
@@ -222,11 +219,11 @@ test("active V2 pages share one page header contract without visual modifiers", 
   );
   assert.match(
     styles,
-    /\.app-page-header\s*\{[^}]*--app-page-header-description-color: var\(--product-secondary-foreground\);/,
+    /\.app-page-header\s*\{[^}]*--app-page-header-metric-color: var\(--product-secondary-foreground\);/,
   );
   assert.match(
     styles,
-    /\.app-page-description\s*\{[^}]*color: var\(--app-page-header-description-color\);/,
+    /\.app-page-metric\s*\{[^}]*color: var\(--app-page-header-metric-color\);/,
   );
   assert.match(
     styles,
@@ -234,7 +231,7 @@ test("active V2 pages share one page header contract without visual modifiers", 
   );
   assert.doesNotMatch(
     styles,
-    /\.course-demo-shell \.app-page-description\s*\{[^}]*color:/,
+    /\.app-page-shell \.app-page-metric\s*\{[^}]*color:/,
     "Product routes must inherit the canonical AppPageHeader subtitle color",
   );
   assert.match(
@@ -247,16 +244,16 @@ test("active V2 pages share one page header contract without visual modifiers", 
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.app-page-title-row > \.app-page-actions\s*\{[^}]*width: max-content;[^}]*max-width: 100%;[^}]*flex: 0 0 auto;[^}]*align-self: flex-end;[^}]*margin-inline-start: auto;/,
+    /\.app-page-shell \.app-page-title-row > \.app-page-actions\s*\{[^}]*width: max-content;[^}]*max-width: 100%;[^}]*flex: 0 0 auto;[^}]*align-self: flex-end;[^}]*margin-inline-start: auto;/,
   );
-  assert.match(styles, /\.course-demo-shell\s*\{[^}]*overflow-x: clip;/);
+  assert.match(styles, /\.app-page-shell\s*\{[^}]*overflow-x: clip;/);
   assert.match(
     styles,
     /\.app-page-title\s*\{[^}]*width: auto;[^}]*max-width: none;[^}]*min-width: min\(10rem, 100%\);[^}]*flex: 1 1 0;/,
   );
   assert.doesNotMatch(
     styles,
-    /\.course-demo-shell \.app-page-header-with-actions\s*> \.app-page-actions/,
+    /\.app-page-shell \.app-page-header-with-actions\s*> \.app-page-actions/,
     "The reserved backlink stack must not own the action alignment",
   );
   assert.doesNotMatch(
@@ -274,7 +271,7 @@ test("active V2 pages share one page header contract without visual modifiers", 
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.app-page-back-slot,\s*\.course-demo-shell \.app-page-back-link\s*\{[^}]*font-size: var\(--course-demo-control-font-size\);[^}]*line-height: var\(--course-demo-control-line-height\);/,
+    /\.app-page-shell \.app-page-back-slot,\s*\.app-page-shell \.app-page-back-link\s*\{[^}]*font-size: var\(--product-control-font-size\);[^}]*line-height: var\(--product-control-line-height\);/,
   );
   assert.match(
     styles,
@@ -292,12 +289,12 @@ test("active V2 pages share one page header contract without visual modifiers", 
   );
   assert.match(
     styles,
-    /\.course-demo-shell \.app-page-title\s*\{[^}]*min-width: min\(10rem, 100%\);[^}]*overflow-wrap: anywhere;/,
+    /\.app-page-shell \.app-page-title\s*\{[^}]*min-width: min\(10rem, 100%\);[^}]*overflow-wrap: anywhere;/,
   );
   assert.doesNotMatch(styles, /\.app-page-title\s*\{[^}]*24ch/);
   assert.match(
     styles,
-    /\.course-demo-shell \.app-page-description\s*\{[^}]*min-width: 0;[^}]*overflow-wrap: anywhere;/,
+    /\.app-page-shell \.app-page-metric\s*\{[^}]*min-width: 0;[^}]*overflow-wrap: anywhere;/,
   );
   assert.doesNotMatch(
     styles,
@@ -305,7 +302,7 @@ test("active V2 pages share one page header contract without visual modifiers", 
   );
   assert.doesNotMatch(
     styles,
-    /\.course-demo-shell \.app-page-actions \.product-btn\s*\{[^}]*flex:\s*1;/,
+    /\.app-page-shell \.app-page-actions \.product-btn\s*\{[^}]*flex:\s*1;/,
     "Product page actions must keep their intrinsic width on narrow screens",
   );
 

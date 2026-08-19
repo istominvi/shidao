@@ -6030,9 +6030,9 @@ test("browser smoke: primary navigation shares selection motion while route navi
       .waitFor();
 
     const headerGeometry = await runtime.page.evaluate(() => {
-      const topNav = document.querySelector<HTMLElement>(".course-top-nav");
+      const topNav = document.querySelector<HTMLElement>(".app-top-nav");
       const shell = document.querySelector<HTMLElement>(
-        ".site-header-shell-demo",
+        ".site-header-shell-app",
       );
       const row = shell?.querySelector<HTMLElement>(
         ":scope > .site-header-content-row",
@@ -7567,7 +7567,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       });
 
     const scheduleContract = await runtime.page.evaluate(() => {
-      const shell = document.querySelector<HTMLElement>(".course-demo-shell");
+      const shell = document.querySelector<HTMLElement>(".app-page-shell");
       const pageHeader =
         document.querySelector<HTMLElement>(".app-page-header");
       const pageHeaderContent = pageHeader?.querySelector<HTMLElement>(
@@ -7579,8 +7579,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const title = titleRow?.querySelector<HTMLElement>(
         ":scope > .app-page-title",
       );
-      const description = pageHeaderContent?.querySelector<HTMLElement>(
-        ":scope > .app-page-description",
+      const metric = pageHeaderContent?.querySelector<HTMLElement>(
+        ":scope > .app-page-metric",
       );
       const headerActions = titleRow?.querySelector<HTMLElement>(
         ":scope > .app-page-actions",
@@ -7622,7 +7622,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         ".product-segmented-control-indicator",
       );
       const siteHeader = document.querySelector<HTMLElement>(
-        ".site-header-shell-demo",
+        ".site-header-shell-app",
       );
       const headerPrimaryButton = headerActions?.querySelector<HTMLElement>(
         ".product-btn-primary",
@@ -7634,7 +7634,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       );
       const navPillElements = Array.from(
         document.querySelectorAll<HTMLAnchorElement>(
-          ".site-header-shell-demo .site-header-nav-pill",
+          ".site-header-shell-app .site-header-nav-pill",
         ),
       );
       const navLinks = navPillElements.map((link) => ({
@@ -7657,7 +7657,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !pageHeaderContent ||
         !titleRow ||
         !title ||
-        !description ||
+        !metric ||
         !headerActions ||
         !toolbar ||
         !toolbarActions ||
@@ -7685,7 +7685,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const pageHeaderStyle = getComputedStyle(pageHeader);
       const pageHeaderContentStyle = getComputedStyle(pageHeaderContent);
       const titleStyle = getComputedStyle(title);
-      const descriptionStyle = getComputedStyle(description);
+      const metricStyle = getComputedStyle(metric);
       const toolbarStyle = getComputedStyle(toolbar);
       const dateNavigatorStyle = getComputedStyle(dateNavigator);
       const dateTriggerStyle = getComputedStyle(dateTriggerControl);
@@ -7695,7 +7695,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const pageHeaderContentRect = pageHeaderContent.getBoundingClientRect();
       const titleRowRect = titleRow.getBoundingClientRect();
       const titleRect = title.getBoundingClientRect();
-      const descriptionRect = description.getBoundingClientRect();
+      const metricRect = metric.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
       const headerActionContentRect =
         headerActions.firstElementChild?.getBoundingClientRect();
@@ -7768,9 +7768,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
             headerPrimaryButton.getBoundingClientRect().bottom -
               titleRect.bottom,
           ),
-          metricBelowTitleRow: descriptionRect.top >= titleRowRect.bottom - 0.5,
+          metricBelowTitleRow: metricRect.top >= titleRowRect.bottom - 0.5,
           metricGapDelta: Math.abs(
-            descriptionRect.top -
+            metricRect.top -
               titleRowRect.bottom -
               Number.parseFloat(pageHeaderContentStyle.rowGap),
           ),
@@ -7781,11 +7781,11 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           titleFontWeight: titleStyle.fontWeight,
           titleLineHeight: titleStyle.lineHeight,
           titleLetterSpacing: titleStyle.letterSpacing,
-          descriptionFontSize: descriptionStyle.fontSize,
-          descriptionLineHeight: descriptionStyle.lineHeight,
-          descriptionColor: descriptionStyle.color,
+          metricFontSize: metricStyle.fontSize,
+          metricLineHeight: metricStyle.lineHeight,
+          metricColor: metricStyle.color,
         },
-        headerDescription: description.textContent?.trim() ?? "",
+        headerMetric: metric.textContent?.trim() ?? "",
         headerActions: headerActions.textContent?.trim() ?? "",
         headerActionIconClass:
           headerActions.querySelector("svg")?.getAttribute("class") ?? "",
@@ -7992,10 +7992,10 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     assert.ok(scheduleContract.headerLayout.metricGapDelta < 0.5);
     assert.equal(scheduleContract.headerSignature.titleFontWeight, "400");
     assert.equal(
-      scheduleContract.headerSignature.descriptionColor,
+      scheduleContract.headerSignature.metricColor,
       E2E_MUTED_FOREGROUND,
     );
-    assert.equal(scheduleContract.headerDescription, "Авг 2026 · занятий: 0");
+    assert.equal(scheduleContract.headerMetric, "Авг 2026 · занятий: 0");
     assert.equal(scheduleContract.headerActions, "Назначить урок");
     assert.match(scheduleContract.headerActionIconClass, /calendar-plus/);
     assert.deepEqual(scheduleContract.headerPrimaryControl, {
@@ -9798,8 +9798,8 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const title = titleRow?.querySelector<HTMLElement>(
         ":scope > .app-page-title",
       );
-      const description = pageHeaderContent?.querySelector<HTMLElement>(
-        ":scope > .app-page-description",
+      const metric = pageHeaderContent?.querySelector<HTMLElement>(
+        ":scope > .app-page-metric",
       );
       const activeTab = document.querySelector<HTMLElement>(
         ".workspace-tab-active",
@@ -9864,7 +9864,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
         !pageHeaderContent ||
         !titleRow ||
         !title ||
-        !description ||
+        !metric ||
         !activeTab ||
         !inactiveTab ||
         !inactiveTabIcon ||
@@ -9892,7 +9892,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const pageHeaderStyle = getComputedStyle(pageHeader);
       const pageHeaderContentStyle = getComputedStyle(pageHeaderContent);
       const titleStyle = getComputedStyle(title);
-      const descriptionStyle = getComputedStyle(description);
+      const metricStyle = getComputedStyle(metric);
       const tabsStyle = getComputedStyle(tabs);
       const tabStyle = getComputedStyle(activeTab);
       const inactiveTabStyle = getComputedStyle(inactiveTab);
@@ -9906,7 +9906,7 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
       const pageHeaderRect = pageHeader.getBoundingClientRect();
       const titleRowRect = titleRow.getBoundingClientRect();
       const titleRect = title.getBoundingClientRect();
-      const descriptionRect = description.getBoundingClientRect();
+      const metricRect = metric.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
       const tabsScrollRect = tabsScroll.getBoundingClientRect();
       const tabsRect = tabs.getBoundingClientRect();
@@ -9954,9 +9954,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           actionControlBottomDelta: Math.abs(
             headerAction.getBoundingClientRect().bottom - titleRect.bottom,
           ),
-          metricBelowTitleRow: descriptionRect.top >= titleRowRect.bottom - 0.5,
+          metricBelowTitleRow: metricRect.top >= titleRowRect.bottom - 0.5,
           metricGapDelta: Math.abs(
-            descriptionRect.top -
+            metricRect.top -
               titleRowRect.bottom -
               Number.parseFloat(pageHeaderContentStyle.rowGap),
           ),
@@ -9967,9 +9967,9 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
           titleFontWeight: titleStyle.fontWeight,
           titleLineHeight: titleStyle.lineHeight,
           titleLetterSpacing: titleStyle.letterSpacing,
-          descriptionFontSize: descriptionStyle.fontSize,
-          descriptionLineHeight: descriptionStyle.lineHeight,
-          descriptionColor: descriptionStyle.color,
+          metricFontSize: metricStyle.fontSize,
+          metricLineHeight: metricStyle.lineHeight,
+          metricColor: metricStyle.color,
         },
         tabSignature: {
           height: tabStyle.height,
@@ -11312,8 +11312,8 @@ test("browser smoke: self profile exposes only learner-safe history and controls
       const title = titleRow?.querySelector<HTMLElement>(
         ":scope > .app-page-title",
       );
-      const description = content?.querySelector<HTMLElement>(
-        ":scope > .app-page-description",
+      const metric = content?.querySelector<HTMLElement>(
+        ":scope > .app-page-metric",
       );
       const actions = titleRow?.querySelector<HTMLElement>(
         ":scope > .app-page-actions",
@@ -11324,7 +11324,7 @@ test("browser smoke: self profile exposes only learner-safe history and controls
         !content ||
         !titleRow ||
         !title ||
-        !description ||
+        !metric ||
         !actions ||
         !action
       ) {
@@ -11337,7 +11337,7 @@ test("browser smoke: self profile exposes only learner-safe history and controls
       const headerRect = header.getBoundingClientRect();
       const titleRowRect = titleRow.getBoundingClientRect();
       const titleRect = title.getBoundingClientRect();
-      const descriptionRect = description.getBoundingClientRect();
+      const metricRect = metric.getBoundingClientRect();
       const actionsRect = actions.getBoundingClientRect();
       const actionRect = action.getBoundingClientRect();
       return {
@@ -11365,9 +11365,9 @@ test("browser smoke: self profile exposes only learner-safe history and controls
           actions.parentElement === titleRow &&
           actionsRect.top < titleRect.bottom &&
           actionsRect.bottom > titleRect.top,
-        metricBelowTitleRow: descriptionRect.top >= titleRowRect.bottom - 0.5,
+        metricBelowTitleRow: metricRect.top >= titleRowRect.bottom - 0.5,
         metricGapDelta: Math.abs(
-          descriptionRect.top -
+          metricRect.top -
             titleRowRect.bottom -
             Number.parseFloat(contentStyle.rowGap),
         ),
@@ -11830,9 +11830,9 @@ test("browser smoke: observer settings accepts an incoming request and revokes o
       .waitFor();
     assert.deepEqual(
       await runtime.page.evaluate(() => {
-        const shell = document.querySelector<HTMLElement>(".course-demo-shell");
+        const shell = document.querySelector<HTMLElement>(".app-page-shell");
         const header = document.querySelector<HTMLElement>(
-          ".site-header-shell-demo",
+          ".site-header-shell-app",
         );
         const userTrigger =
           header?.querySelector<HTMLElement>(".nav-profile-link");
@@ -12697,7 +12697,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
     assert.deepEqual(
       await runtime.page.evaluate(() => {
         const header = document.querySelector<HTMLElement>(
-          ".site-header-shell-demo",
+          ".site-header-shell-app",
         );
         const trigger = document.querySelector<HTMLElement>(
           ".nav-account-menu-trigger",
@@ -12790,7 +12790,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         'button[aria-pressed="false"]',
       );
       const siteHeader = document.querySelector<HTMLElement>(
-        ".site-header-shell-demo",
+        ".site-header-shell-app",
       );
       const primaryAction = document.querySelector<HTMLElement>(
         ".app-page-header .app-page-actions > .product-btn",
@@ -13549,7 +13549,7 @@ test("browser smoke: mobile Account menu exposes main sections and Profile", asy
         ".nav-account-menu-trigger",
       );
       const header = document.querySelector<HTMLElement>(
-        ".site-header-shell-demo",
+        ".site-header-shell-app",
       );
       const burger = trigger?.querySelector<SVGElement>(".nav-main-menu-icon");
       const avatar = trigger?.querySelector<HTMLElement>(
@@ -14743,8 +14743,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     });
     await courseLink.waitFor();
     const coursesVisual = await runtime.page.evaluate(() => {
-      const shell = document.querySelector<HTMLElement>(".course-demo-shell");
-      const topNav = document.querySelector<HTMLElement>(".course-top-nav");
+      const shell = document.querySelector<HTMLElement>(".app-page-shell");
+      const topNav = document.querySelector<HTMLElement>(".app-top-nav");
       const pageHeader =
         document.querySelector<HTMLElement>(".app-page-header");
       const pageHeaderContent = pageHeader?.querySelector<HTMLElement>(
@@ -14757,13 +14757,13 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         ":scope > .app-page-title-row",
       );
       const header = document.querySelector<HTMLElement>(
-        ".site-header-shell-demo",
+        ".site-header-shell-app",
       );
       const title = titleRow?.querySelector<HTMLElement>(
         ":scope > .app-page-title",
       );
-      const description = pageHeaderContent?.querySelector<HTMLElement>(
-        ":scope > .app-page-description",
+      const metric = pageHeaderContent?.querySelector<HTMLElement>(
+        ":scope > .app-page-metric",
       );
       const headerActions = titleRow?.querySelector<HTMLElement>(
         ":scope > .app-page-actions",
@@ -14772,10 +14772,10 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         ".product-btn-primary",
       );
       const navPill = document.querySelector<HTMLElement>(
-        ".site-header-shell-demo .site-header-nav-pill",
+        ".site-header-shell-app .site-header-nav-pill",
       );
       const userTrigger = document.querySelector<HTMLElement>(
-        ".site-header-shell-demo .nav-profile-link",
+        ".site-header-shell-app .nav-profile-link",
       );
       const toolbar = document.querySelector<HTMLElement>(
         ".course-index-toolbar",
@@ -14860,7 +14860,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         titleFontFamily: titleStyle.fontFamily,
         titleFontSize: titleStyle.fontSize,
         titleFontWeight: titleStyle.fontWeight,
-        hasDescription: Boolean(description),
+        hasMetric: Boolean(metric),
         pageHeaderLayout: {
           minHeight: pageHeaderStyle.minHeight,
           height: pageHeaderRect.height,
@@ -14951,7 +14951,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     assert.equal(coursesVisual.titleFontFamily, coursesVisual.bodyFontFamily);
     assert.equal(coursesVisual.titleFontSize, "48px");
     assert.equal(coursesVisual.titleFontWeight, "400");
-    assert.equal(coursesVisual.hasDescription, false);
+    assert.equal(coursesVisual.hasMetric, false);
     assert.ok(
       ["auto", "0px"].includes(coursesVisual.pageHeaderLayout.minHeight),
     );
@@ -15018,7 +15018,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     ]);
 
     const topNavScrollContract = await runtime.page.evaluate(async () => {
-      const topNav = document.querySelector<HTMLElement>(".course-top-nav");
+      const topNav = document.querySelector<HTMLElement>(".app-top-nav");
       if (!topNav) throw new Error("Product TopNav is missing");
 
       const spacer = document.createElement("div");
@@ -15785,8 +15785,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const title = titleRow?.querySelector<HTMLElement>(
         ":scope > .app-page-title",
       );
-      const description = pageHeaderContent?.querySelector<HTMLElement>(
-        ":scope > .app-page-description",
+      const metric = pageHeaderContent?.querySelector<HTMLElement>(
+        ":scope > .app-page-metric",
       );
       const tab = document.querySelector<HTMLElement>(".workspace-tab-active");
       const inactiveTab = document.querySelector<HTMLElement>(
@@ -15809,7 +15809,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         ".app-page-back-link-label",
       );
       const siteHeader = document.querySelector<HTMLElement>(
-        ".site-header-shell-demo",
+        ".site-header-shell-app",
       );
 
       if (
@@ -15818,7 +15818,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         !backSlot ||
         !titleRow ||
         !title ||
-        !description ||
+        !metric ||
         !tab ||
         !inactiveTab ||
         !tabs ||
@@ -15835,7 +15835,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           ["backSlot", backSlot],
           ["titleRow", titleRow],
           ["title", title],
-          ["description", description],
+          ["metric", metric],
           ["tab", tab],
           ["inactiveTab", inactiveTab],
           ["tabs", tabs],
@@ -15855,7 +15855,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const headerStyle = getComputedStyle(pageHeader);
       const pageHeaderContentStyle = getComputedStyle(pageHeaderContent);
       const titleStyle = getComputedStyle(title);
-      const descriptionStyle = getComputedStyle(description);
+      const metricStyle = getComputedStyle(metric);
       const tabsStyle = getComputedStyle(tabs);
       const tabStyle = getComputedStyle(tab);
       const inactiveTabStyle = getComputedStyle(inactiveTab);
@@ -15869,7 +15869,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const pageHeaderContentRect = pageHeaderContent.getBoundingClientRect();
       const titleRowRect = titleRow.getBoundingClientRect();
       const titleRect = title.getBoundingClientRect();
-      const descriptionRect = description.getBoundingClientRect();
+      const metricRect = metric.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
       const backLinkRect = backLink.getBoundingClientRect();
       const siteHeaderRect = siteHeader.getBoundingClientRect();
@@ -15923,9 +15923,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           actionControlBottomDeltas: actionControlRects.map((rect) =>
             Math.abs(rect.bottom - titleRect.bottom),
           ),
-          metricBelowTitleRow: descriptionRect.top >= titleRowRect.bottom - 0.5,
+          metricBelowTitleRow: metricRect.top >= titleRowRect.bottom - 0.5,
           metricGapDelta: Math.abs(
-            descriptionRect.top -
+            metricRect.top -
               titleRowRect.bottom -
               Number.parseFloat(pageHeaderContentStyle.rowGap),
           ),
@@ -15943,9 +15943,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           titleFontWeight: titleStyle.fontWeight,
           titleLineHeight: titleStyle.lineHeight,
           titleLetterSpacing: titleStyle.letterSpacing,
-          descriptionFontSize: descriptionStyle.fontSize,
-          descriptionLineHeight: descriptionStyle.lineHeight,
-          descriptionColor: descriptionStyle.color,
+          metricFontSize: metricStyle.fontSize,
+          metricLineHeight: metricStyle.lineHeight,
+          metricColor: metricStyle.color,
         },
         tabSignature: {
           height: tabStyle.height,
@@ -16413,7 +16413,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       );
     });
     const lessonVisual = await runtime.page.evaluate(() => {
-      const shell = document.querySelector<HTMLElement>(".course-demo-shell");
+      const shell = document.querySelector<HTMLElement>(".app-page-shell");
       const pageHeader =
         document.querySelector<HTMLElement>(".app-page-header");
       const pageHeaderContent = pageHeader?.querySelector<HTMLElement>(
@@ -16425,8 +16425,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const title = titleRow?.querySelector<HTMLElement>(
         ":scope > .app-page-title",
       );
-      const description = pageHeaderContent?.querySelector<HTMLElement>(
-        ":scope > .app-page-description",
+      const metric = pageHeaderContent?.querySelector<HTMLElement>(
+        ":scope > .app-page-metric",
       );
       const headerActions = titleRow?.querySelector<HTMLElement>(
         ":scope > .app-page-actions",
@@ -16453,7 +16453,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         !pageHeaderContent ||
         !titleRow ||
         !title ||
-        !description ||
+        !metric ||
         !headerActions ||
         !tab ||
         !inactiveTab ||
@@ -16469,7 +16469,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const pageHeaderStyle = getComputedStyle(pageHeader);
       const pageHeaderContentStyle = getComputedStyle(pageHeaderContent);
       const titleStyle = getComputedStyle(title);
-      const descriptionStyle = getComputedStyle(description);
+      const metricStyle = getComputedStyle(metric);
       const tabsStyle = getComputedStyle(tabs);
       const tabStyle = getComputedStyle(tab);
       const inactiveTabStyle = getComputedStyle(inactiveTab);
@@ -16480,7 +16480,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const pageHeaderRect = pageHeader.getBoundingClientRect();
       const titleRowRect = titleRow.getBoundingClientRect();
       const titleRect = title.getBoundingClientRect();
-      const descriptionRect = description.getBoundingClientRect();
+      const metricRect = metric.getBoundingClientRect();
       const headerActionsRect = headerActions.getBoundingClientRect();
       const primaryActionRect = primaryAction.getBoundingClientRect();
       const overflowActionRect = overflowAction.getBoundingClientRect();
@@ -16504,9 +16504,9 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
             Math.abs(primaryActionRect.bottom - titleRect.bottom),
             Math.abs(overflowActionRect.bottom - titleRect.bottom),
           ],
-          metricBelowTitleRow: descriptionRect.top >= titleRowRect.bottom - 0.5,
+          metricBelowTitleRow: metricRect.top >= titleRowRect.bottom - 0.5,
           metricGapDelta: Math.abs(
-            descriptionRect.top -
+            metricRect.top -
               titleRowRect.bottom -
               Number.parseFloat(pageHeaderContentStyle.rowGap),
           ),
@@ -16517,11 +16517,11 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           titleFontWeight: titleStyle.fontWeight,
           titleLineHeight: titleStyle.lineHeight,
           titleLetterSpacing: titleStyle.letterSpacing,
-          descriptionFontSize: descriptionStyle.fontSize,
-          descriptionLineHeight: descriptionStyle.lineHeight,
-          descriptionColor: descriptionStyle.color,
+          metricFontSize: metricStyle.fontSize,
+          metricLineHeight: metricStyle.lineHeight,
+          metricColor: metricStyle.color,
         },
-        metric: description.textContent?.trim() ?? "",
+        metric: metric.textContent?.trim() ?? "",
         actionButtonCount:
           headerActions.querySelectorAll<HTMLButtonElement>(".product-btn")
             .length,
@@ -16760,8 +16760,8 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       const title = titleRow?.querySelector<HTMLElement>(
         ":scope > .app-page-title",
       );
-      const description = pageHeaderContent?.querySelector<HTMLElement>(
-        ":scope > .app-page-description",
+      const metric = pageHeaderContent?.querySelector<HTMLElement>(
+        ":scope > .app-page-metric",
       );
       const backLabel = pageHeader?.querySelector<HTMLElement>(
         ".app-page-back-link-label",
@@ -16781,7 +16781,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         !backSlot ||
         !titleRow ||
         !title ||
-        !description ||
+        !metric ||
         !backLabel ||
         !backLink ||
         !backIcon ||
@@ -16791,22 +16791,22 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       }
 
       const originalTitle = title.textContent;
-      const originalDescription = description.textContent;
+      const originalMetric = metric.textContent;
       const originalBackLabel = backLabel.textContent;
       title.textContent = `Урок ${"БезПробелов".repeat(30)}`;
-      description.textContent = "ОписаниеБезПробелов".repeat(35);
+      metric.textContent = "ОписаниеБезПробелов".repeat(35);
       backLabel.textContent = "КурсБезПробелов".repeat(25);
 
       const headerStyle = getComputedStyle(pageHeader);
       const pageHeaderContentStyle = getComputedStyle(pageHeaderContent);
       const titleStyle = getComputedStyle(title);
-      const descriptionStyle = getComputedStyle(description);
+      const metricStyle = getComputedStyle(metric);
       const backLabelStyle = getComputedStyle(backLabel);
       const pageHeaderRect = pageHeader.getBoundingClientRect();
       const pageHeaderContentRect = pageHeaderContent.getBoundingClientRect();
       const titleRowRect = titleRow.getBoundingClientRect();
       const titleRect = title.getBoundingClientRect();
-      const descriptionRect = description.getBoundingClientRect();
+      const metricRect = metric.getBoundingClientRect();
       const backLinkRect = backLink.getBoundingClientRect();
       const backLabelRect = backLabel.getBoundingClientRect();
       const actionsRect = actions.getBoundingClientRect();
@@ -16841,14 +16841,14 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
           actionsRect.top < titleRect.bottom &&
           actionsRect.bottom > titleRect.top,
         titleActionBottomDelta: Math.abs(actionsRect.bottom - titleRect.bottom),
-        metricBelowTitleRow: descriptionRect.top >= titleRowRect.bottom - 0.5,
+        metricBelowTitleRow: metricRect.top >= titleRowRect.bottom - 0.5,
         metricGapDelta: Math.abs(
-          descriptionRect.top -
+          metricRect.top -
             titleRowRect.bottom -
             Number.parseFloat(pageHeaderContentStyle.rowGap),
         ),
         titleWrap: titleStyle.overflowWrap,
-        descriptionWrap: descriptionStyle.overflowWrap,
+        metricWrap: metricStyle.overflowWrap,
         backLabelWrap: backLabelStyle.overflowWrap,
         backLabelOverflow: backLabelStyle.overflow,
         backLabelTextOverflow: backLabelStyle.textOverflow,
@@ -16865,7 +16865,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       };
 
       title.textContent = originalTitle;
-      description.textContent = originalDescription;
+      metric.textContent = originalMetric;
       backLabel.textContent = originalBackLabel;
       return contract;
     });
@@ -16880,7 +16880,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         actionsShareTitleRow: narrowLessonHeader.actionsShareTitleRow,
         metricBelowTitleRow: narrowLessonHeader.metricBelowTitleRow,
         titleWrap: narrowLessonHeader.titleWrap,
-        descriptionWrap: narrowLessonHeader.descriptionWrap,
+        metricWrap: narrowLessonHeader.metricWrap,
         backLabelWrap: narrowLessonHeader.backLabelWrap,
         backLabelOverflow: narrowLessonHeader.backLabelOverflow,
         backLabelTextOverflow: narrowLessonHeader.backLabelTextOverflow,
@@ -16900,7 +16900,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
         actionsShareTitleRow: true,
         metricBelowTitleRow: true,
         titleWrap: "anywhere",
-        descriptionWrap: "anywhere",
+        metricWrap: "anywhere",
         backLabelWrap: "normal",
         backLabelOverflow: "hidden",
         backLabelTextOverflow: "ellipsis",
@@ -18114,8 +18114,8 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const viewportMeta = document.querySelector<HTMLMetaElement>(
         'meta[name="viewport"]',
       );
-      const shell = document.querySelector<HTMLElement>(".course-demo-shell");
-      const topNav = document.querySelector<HTMLElement>(".course-top-nav");
+      const shell = document.querySelector<HTMLElement>(".app-page-shell");
+      const topNav = document.querySelector<HTMLElement>(".app-top-nav");
       const pageHeader =
         document.querySelector<HTMLElement>(".app-page-header");
       const pageHeaderContent = pageHeader?.querySelector<HTMLElement>(
@@ -18485,7 +18485,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         ".app-page-header .app-page-actions > *",
       );
       const header = document.querySelector<HTMLElement>(
-        ".site-header-shell-demo",
+        ".site-header-shell-app",
       );
       const tableSurface = document.querySelector<HTMLElement>(
         ".courses-index-shell .course-index-table-wrap",
@@ -18824,9 +18824,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const panel = document.querySelector<HTMLElement>(
         ".communication-center-panel",
       );
-      const topNav = document.querySelector<HTMLElement>(".course-top-nav");
+      const topNav = document.querySelector<HTMLElement>(".app-top-nav");
       const headerShell = topNav?.querySelector<HTMLElement>(
-        ".site-header-shell-demo",
+        ".site-header-shell-app",
       );
       if (!layer || !panel || !topNav || !headerShell) {
         throw new Error("Portrait modal layering contract is missing");
@@ -18848,7 +18848,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
           Math.abs(panelRect.right - window.innerWidth) < 0.5 &&
           Math.abs(panelRect.bottom - window.innerHeight) < 0.5,
         hitInsidePanel: hit?.closest(".communication-center-panel") === panel,
-        hitInsideHeader: Boolean(hit?.closest(".course-top-nav")),
+        hitInsideHeader: Boolean(hit?.closest(".app-top-nav")),
       };
     });
     assert.deepEqual(portraitMessagesLayering, {
@@ -18873,13 +18873,13 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       await runtime.page.setViewportSize(viewport);
       const mobileFixedTopNav = await runtime.page.evaluate(async () => {
         const pageShell =
-          document.querySelector<HTMLElement>(".course-demo-shell");
-        const topNav = document.querySelector<HTMLElement>(".course-top-nav");
+          document.querySelector<HTMLElement>(".app-page-shell");
+        const topNav = document.querySelector<HTMLElement>(".app-top-nav");
         const siteHeader = topNav?.querySelector<HTMLElement>(
           ":scope > .site-header",
         );
         const headerShell = siteHeader?.querySelector<HTMLElement>(
-          ".site-header-shell-demo",
+          ".site-header-shell-app",
         );
         const brand =
           headerShell?.querySelector<HTMLElement>(".site-header-brand");
@@ -19212,7 +19212,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
 
       const mobileCourseVisualContract = await runtime.page.evaluate(() => {
         const header = document.querySelector<HTMLElement>(
-          ".site-header-shell-demo",
+          ".site-header-shell-app",
         );
         const primaryAction = document.querySelector<HTMLElement>(
           ".app-page-header .app-page-actions > .product-btn",
@@ -20024,7 +20024,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
           component.querySelectorAll<HTMLInputElement>('input[type="text"]'),
         ).map((input) => ({
           fontSize: getComputedStyle(input).fontSize,
-          insideCourseDemoShell: Boolean(input.closest(".course-demo-shell")),
+          insideAppPageShell: Boolean(input.closest(".app-page-shell")),
           hasProductEditableClass: input.matches(
             ".product-control, .field-input",
           ),
@@ -20033,12 +20033,12 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
     assert.deepEqual(authoredExerciseInputContract, [
       {
         fontSize: "16px",
-        insideCourseDemoShell: true,
+        insideAppPageShell: true,
         hasProductEditableClass: false,
       },
       {
         fontSize: "16px",
-        insideCourseDemoShell: true,
+        insideAppPageShell: true,
         hasProductEditableClass: false,
       },
     ]);
@@ -20130,8 +20130,8 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const title = titleRow?.querySelector<HTMLElement>(
         ":scope > .app-page-title",
       );
-      const description = pageHeaderContent?.querySelector<HTMLElement>(
-        ":scope > .app-page-description",
+      const metric = pageHeaderContent?.querySelector<HTMLElement>(
+        ":scope > .app-page-metric",
       );
       const backLink = backSlot?.querySelector<HTMLElement>(
         ":scope > .app-page-back-link",
@@ -20146,7 +20146,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         ":scope > .app-page-actions",
       );
       const header = document.querySelector<HTMLElement>(
-        ".site-header-shell-demo",
+        ".site-header-shell-app",
       );
       const tabStrip = document.querySelector<HTMLElement>(
         ".workspace-tabs-scroll",
@@ -20162,7 +20162,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
         !backSlot ||
         !titleRow ||
         !title ||
-        !description ||
+        !metric ||
         !backLink ||
         !backIcon ||
         !backLabel ||
@@ -20187,7 +20187,7 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
       const pageHeaderRect = pageHeader.getBoundingClientRect();
       const titleRowRect = titleRow.getBoundingClientRect();
       const titleRect = title.getBoundingClientRect();
-      const descriptionRect = description.getBoundingClientRect();
+      const metricRect = metric.getBoundingClientRect();
       const headerRect = header.getBoundingClientRect();
       const backLinkRect = backLink.getBoundingClientRect();
       const backLabelRect = backLabel.getBoundingClientRect();
@@ -20230,9 +20230,9 @@ test("browser smoke: mobile Course and Lesson keep the demo rhythm without page 
               titleRect.bottom -
               Number.parseFloat(titleRowStyle.rowGap),
           ),
-          metricBelowActions: descriptionRect.top >= actionsRect.bottom - 0.5,
+          metricBelowActions: metricRect.top >= actionsRect.bottom - 0.5,
           metricGapDelta: Math.abs(
-            descriptionRect.top -
+            metricRect.top -
               titleRowRect.bottom -
               Number.parseFloat(pageHeaderContentStyle.rowGap),
           ),

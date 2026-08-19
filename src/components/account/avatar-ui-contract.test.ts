@@ -153,7 +153,7 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
   );
   const baseNavigationStyles = navigationCss.slice(0, mobileNavigationStart);
   const mobileTriggerIconStyles =
-    /\.site-header-shell-demo \.nav-mobile-action-icon\s*\{[^}]*\}/.exec(
+    /\.site-header-shell-app \.nav-mobile-action-icon\s*\{[^}]*\}/.exec(
       navigationCss,
     )?.[0] ?? "";
   const baseMenuItemStyles =
@@ -190,11 +190,11 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
       .map((match) => match[0])
       .find((rule) => /box-shadow: none;/.test(rule)) ?? "";
   const mobileBrandStyles =
-    /@media \(max-width: 767px\)[\s\S]*?\.site-header-shell-demo\s+\.site-header-brand\s*\{[^}]*\}/.exec(
+    /@media \(max-width: 767px\)[\s\S]*?\.site-header-shell-app\s+\.site-header-brand\s*\{[^}]*\}/.exec(
       navigationCss,
     )?.[0] ?? "";
   const demoHeaderStyles =
-    /\.site-header-shell-demo\s*\{[^}]*\}/.exec(navigationCss)?.[0] ?? "";
+    /\.site-header-shell-app\s*\{[^}]*\}/.exec(navigationCss)?.[0] ?? "";
 
   assert.match(mobileTriggerStyles, /width: (?:3rem|48px);/);
   assert.match(mobileTriggerStyles, /height: (?:3rem|48px);/);
@@ -210,15 +210,15 @@ test("protected mobile navigation shows the Account avatar; desktop avatar links
   );
   assert.match(
     mobileTriggerIconStyles,
-    /width: var\(--course-demo-control-icon-size, 1rem\);/,
+    /width: var\(--product-control-icon-size, 1rem\);/,
   );
   assert.match(
     mobileTriggerIconStyles,
-    /height: var\(--course-demo-control-icon-size, 1rem\);/,
+    /height: var\(--product-control-icon-size, 1rem\);/,
   );
   assert.match(
     mobileTriggerIconStyles,
-    /flex: 0 0 var\(--course-demo-control-icon-size, 1rem\);/,
+    /flex: 0 0 var\(--product-control-icon-size, 1rem\);/,
   );
   assert.doesNotMatch(
     `${navigationCss}\n${globalStyles}`,

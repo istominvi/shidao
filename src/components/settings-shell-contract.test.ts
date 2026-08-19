@@ -17,7 +17,7 @@ test("profile, observers, and account settings share one product workspace", () 
     "src/components/account/account-settings-panel.tsx",
   );
   const security = source(
-    "src/app/(app)/(profile-required)/settings/security/security-settings-form.tsx",
+    "src/app/(app)/settings/security/security-settings-form.tsx",
   );
   const observers = source(
     "src/components/learner-identity/observers-settings-workspace.tsx",
@@ -61,7 +61,7 @@ test("account settings actions and one-line fields use shared primitives", () =>
     "src/components/account/account-settings-panel.tsx",
   );
   const security = source(
-    "src/app/(app)/(profile-required)/settings/security/security-settings-form.tsx",
+    "src/app/(app)/settings/security/security-settings-form.tsx",
   );
   const observers = source(
     "src/components/learner-identity/observers-settings-workspace.tsx",
@@ -94,12 +94,8 @@ test("account settings actions and one-line fields use shared primitives", () =>
 
 test("legacy settings URLs redirect into the canonical profile tabs", () => {
   const learningProfile = source("src/app/(app)/learning-profile/page.tsx");
-  const profile = source(
-    "src/app/(app)/(profile-required)/settings/profile/page.tsx",
-  );
-  const security = source(
-    "src/app/(app)/(profile-required)/settings/security/page.tsx",
-  );
+  const profile = source("src/app/(app)/settings/profile/page.tsx");
+  const security = source("src/app/(app)/settings/security/page.tsx");
   const observers = source("src/app/(app)/settings/observers/page.tsx");
   const root = source("src/app/(app)/settings/page.tsx");
 
