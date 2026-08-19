@@ -12,7 +12,7 @@ import {
   type FormEvent,
 } from "react";
 import { AvatarImage } from "@/components/account/avatar-image";
-import { StatusMessage } from "@/components/product-shell";
+import { Alert } from "@/components/ui/alert";
 import { useSessionView } from "@/components/use-session-view";
 import { Button } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
@@ -320,10 +320,8 @@ export function AvatarSettingsForm() {
 
       {!dialog && (error || success) ? (
         <div className="mt-4" aria-live="polite" aria-atomic="true">
-          {error ? <StatusMessage kind="error">{error}</StatusMessage> : null}
-          {success ? (
-            <StatusMessage kind="success">{success}</StatusMessage>
-          ) : null}
+          {error ? <Alert tone="error">{error}</Alert> : null}
+          {success ? <Alert tone="success">{success}</Alert> : null}
         </div>
       ) : null}
 
@@ -419,7 +417,7 @@ export function AvatarSettingsForm() {
 
             {error ? (
               <div className="mt-4" aria-live="polite">
-                <StatusMessage kind="error">{error}</StatusMessage>
+                <Alert tone="error">{error}</Alert>
               </div>
             ) : null}
 
@@ -479,7 +477,7 @@ export function AvatarSettingsForm() {
 
             {error ? (
               <div className="mt-4" aria-live="polite">
-                <StatusMessage kind="error">{error}</StatusMessage>
+                <Alert tone="error">{error}</Alert>
               </div>
             ) : null}
 

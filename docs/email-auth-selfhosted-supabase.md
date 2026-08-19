@@ -43,6 +43,13 @@
 создаёт Parent/Teacher profile, не выбирает роль и не является post-login role
 gate.
 
+Текущая presentation boundary не меняет этот flow: login, signup, check-email,
+recovery и reset используют один `AuthPage` внутри `(auth)` layout, а
+`/onboarding` — обычную protected app page. Формы переиспользуют общие product
+controls и accessible alerts; email callback остаётся self-contained relay с
+тем же restrictive CSP. Визуальный слой не меняет Auth API, safe redirects,
+anti-enumeration, session cookies, SMTP или GoTrue configuration.
+
 ### Зоны ответственности
 
 - **ShiDao (Next.js):** signup/login/onboarding/Courses, encrypted app session

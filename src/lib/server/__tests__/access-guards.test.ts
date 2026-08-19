@@ -4,17 +4,14 @@ import { ROUTES } from "../../auth";
 import {
   resolveAppLayoutRedirect,
   resolveAuthEntryRedirect,
-  resolveOnboardingRedirect,
 } from "../access-guards";
 
 test("the private app boundary enforces Account authentication", () => {
   for (const status of ["guest", "degraded"] as const) {
     assert.equal(resolveAppLayoutRedirect(status), ROUTES.login);
-    assert.equal(resolveOnboardingRedirect(status), ROUTES.login);
   }
 
   assert.equal(resolveAppLayoutRedirect("account"), null);
-  assert.equal(resolveOnboardingRedirect("account"), null);
 });
 
 test("auth entry routes redirect a resolved Account to courses", () => {

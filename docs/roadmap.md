@@ -25,6 +25,19 @@
 
 ## Current source / next production — frontend structural cleanup
 
+- **Current:** весь Account entry contour (`/login`, `/join`, check-email,
+  recovery, reset и onboarding) приведён к одной плоской product design system.
+  Public Auth владеет route-scoped `auth.css` и общим `AuthPage`; onboarding
+  использует existing app chrome. Legacy `ProductShell`, glass hero/form,
+  raw Auth fields и misleading `.auth-checkbox` удалены. Auth/session/API/SMTP
+  и schema contracts не менялись.
+- **Current:** feedback использует accessible `Alert`, поля — shared
+  `FormField`/`Input`, checkbox — shared `Checkbox`, а единственный сильный
+  submit — явный `Button` variant `inverse`. Source и production-browser gates
+  защищают desktop/mobile geometry, focus, forced colors и reduced motion.
+- **Current verification:** `742/742` unit/API/contract tests и `29/29` strict
+  production-mode browser scenarios проходят вместе с typecheck, lint и
+  repository-wide format check; Auth scenario проверяет 1280 и 320 px.
 - **Current:** shared `SegmentedControl` выражает visual variant через
   `data-variant`, selection через `aria-pressed` и имеет одну option class;
   измеряемый indicator, exact geometry и accessibility contracts сохранены.

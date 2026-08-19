@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import type {
   CourseAsset,
   LessonComponent,
@@ -400,9 +401,7 @@ function PayloadFields({
             />
           </Field>
           <label className="flex items-center gap-2 component-editor-checkbox">
-            <input
-              type="checkbox"
-              className="auth-checkbox"
+            <Checkbox
               checked={booleanValue(payload.showTranscriptByDefault)}
               onChange={(event) =>
                 onChange({
@@ -460,9 +459,7 @@ function PayloadFields({
             </select>
           </Field>
           <label className="flex items-center gap-2 component-editor-checkbox">
-            <input
-              type="checkbox"
-              className="auth-checkbox"
+            <Checkbox
               checked={booleanValue(payload.autoplay)}
               onChange={(event) =>
                 onChange({ ...payload, autoplay: event.target.checked })
@@ -507,9 +504,7 @@ function PayloadFields({
             />
           </Field>
           <label className="flex items-center gap-2 component-editor-checkbox">
-            <input
-              type="checkbox"
-              className="auth-checkbox"
+            <Checkbox
               checked={booleanValue(payload.showResults, true)}
               onChange={(event) =>
                 onChange({ ...payload, showResults: event.target.checked })
@@ -563,9 +558,7 @@ function PayloadFields({
             />
           </Field>
           <label className="flex items-center gap-2 component-editor-checkbox">
-            <input
-              type="checkbox"
-              className="auth-checkbox"
+            <Checkbox
               checked={booleanValue(payload.shuffle, true)}
               onChange={(event) =>
                 onChange({ ...payload, shuffle: event.target.checked })
@@ -619,9 +612,7 @@ function PayloadFields({
           </Field>
           <div className="grid gap-3 md:grid-cols-2">
             <label className="flex items-center gap-2 component-editor-checkbox">
-              <input
-                type="checkbox"
-                className="auth-checkbox"
+              <Checkbox
                 checked={booleanValue(payload.allowMultiple)}
                 onChange={(event) => {
                   const allowMultiple = event.target.checked;
@@ -645,9 +636,7 @@ function PayloadFields({
               Разрешить несколько ответов
             </label>
             <label className="flex items-center gap-2 component-editor-checkbox">
-              <input
-                type="checkbox"
-                className="auth-checkbox"
+              <Checkbox
                 checked={booleanValue(payload.shuffle, true)}
                 onChange={(event) =>
                   onChange({ ...payload, shuffle: event.target.checked })
@@ -790,9 +779,7 @@ function PayloadFields({
             </Field>
           </div>
           <label className="flex items-center gap-2 component-editor-checkbox">
-            <input
-              type="checkbox"
-              className="auth-checkbox"
+            <Checkbox
               checked={booleanValue(payload.shuffle, true)}
               onChange={(event) =>
                 onChange({ ...payload, shuffle: event.target.checked })
@@ -848,9 +835,7 @@ function PayloadFields({
             />
           </Field>
           <label className="flex items-center gap-2 component-editor-checkbox">
-            <input
-              type="checkbox"
-              className="auth-checkbox"
+            <Checkbox
               checked={booleanValue(payload.shuffle, true)}
               onChange={(event) =>
                 onChange({ ...payload, shuffle: event.target.checked })
@@ -942,9 +927,7 @@ function PayloadFields({
             </Field>
           </div>
           <label className="flex items-center gap-2 component-editor-checkbox">
-            <input
-              type="checkbox"
-              className="auth-checkbox"
+            <Checkbox
               checked={booleanValue(payload.shuffle, true)}
               onChange={(event) =>
                 onChange({ ...payload, shuffle: event.target.checked })
@@ -1071,9 +1054,7 @@ function PayloadFields({
             />
           </Field>
           <label className="flex items-center gap-2 component-editor-checkbox">
-            <input
-              type="checkbox"
-              className="auth-checkbox"
+            <Checkbox
               checked={booleanValue(payload.openInNewTab, true)}
               onChange={(event) =>
                 onChange({
@@ -1119,9 +1100,7 @@ function PayloadFields({
             />
           </Field>
           <label className="flex items-center gap-2 component-editor-checkbox">
-            <input
-              type="checkbox"
-              className="auth-checkbox"
+            <Checkbox
               checked={booleanValue(payload.shuffle, true)}
               onChange={(event) =>
                 onChange({ ...payload, shuffle: event.target.checked })
@@ -1371,9 +1350,7 @@ function PlacementFields({
       typeKey === "word_builder" ||
       typeKey === "vocabulary_list" ? (
         <label className="flex items-center gap-2 self-end pb-3 component-editor-checkbox">
-          <input
-            type="checkbox"
-            className="auth-checkbox"
+          <Checkbox
             checked={booleanValue(placement.compact)}
             onChange={(event) =>
               onChange({ ...placement, compact: event.target.checked })

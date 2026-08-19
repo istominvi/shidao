@@ -13,6 +13,30 @@ typecheck, lint, repository-wide format check и production build)
 **Исторический functional E2 baseline:**
 `22b486a7163453019d9720cb4fe0f36ed7c0228d`
 
+**Current source / next production — единый Auth и registration entry UI:**
+`/login`, `/join`, `/join/check-email`, `/forgot-password` и
+`/reset-password` теперь используют один route-owned `AuthPage` contract и
+`src/app/styles/auth.css`. Auth layout владеет общей product chrome с
+`TopNav layout="app"`, а каждая страница рендерит ровно один
+`main.app-page-shell`, один H1, одну белую canonical surface и общие
+`FormField` / `Input` / `Button` / `Alert`. Старые marketing noise, glass hero,
+`primary-form-card`, raw recovery inputs и `Suspense fallback={null}` из Auth
+удалены. Email fragment relay остаётся self-contained под прежним строгим CSP,
+но его короткое loading-представление теперь использует ту же плоскую тёплую
+систему и учитывает reduced motion / forced colors.
+
+Завершающий registration contour `/onboarding` больше не создаёт собственный
+header и не повторяет Account guard родительского `(app)` layout. Он использует
+общий persistent product header, `AppPageHeader`, `SurfaceCard` и те же form /
+alert primitives. Misleading `.auth-checkbox` атомарно заменён общим
+`Checkbox` / `.product-checkbox`, а сильный основной CTA выражается shared
+`Button` variant `inverse`. Удалён оставшийся `ProductShell` и его legacy hero /
+form CSS. Signup, login/PIN, safe `next`, anti-enumerating recovery, reset
+session, callback, API, cookies, SMTP, schema и migrations не менялись.
+Source gate завершён: `742/742` unit/API/contract tests, `29/29` strict
+production-mode browser scenarios (включая все пять Auth screens на 1280 и
+320 px), typecheck, lint и repository-wide format check проходят.
+
 **Current source / next production — frontend naming, ownership and delivery
 cleanup:** второй safe cleanup slice атомарно заменяет исторический
 `course-demo-shell` на семантический `app-page-shell`, а `--course-demo-*` — на

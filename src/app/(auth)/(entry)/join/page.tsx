@@ -1,15 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
-import { ProductShell, StatusMessage } from "@/components/product-shell";
+import { type FormEvent, useState } from "react";
+import { AuthLink, AuthPage } from "@/components/auth/auth-page";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   FieldControl,
   FieldLabel,
   FormField,
 } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { ROUTES } from "@/lib/auth";
 import { afterLogin } from "@/lib/auth-redirects";
 
 export default function JoinPage() {
@@ -95,128 +98,118 @@ export default function JoinPage() {
   }
 
   return (
-    <ProductShell contentClassName="mt-10">
-      <div className="mx-auto w-full max-w-[500px]">
-        <div className="surface-card">
-          <h1 className="surface-card-title text-2xl text-black">
-            Создать аккаунт
-          </h1>
-          <p className="surface-card-description mt-2 text-black">
-            Зарегистрируйте взрослый аккаунт. После регистрации вы перейдёте к
-            подтверждению email или сразу ко входу.
-          </p>
+    <AuthPage
+      title="Создать аккаунт"
+      description="Один аккаунт открывает курсы, уроки и работу с учащимися — без выбора роли при регистрации."
+      footer={
+        <p>
+          Уже есть аккаунт? <AuthLink href={ROUTES.login}>Войти</AuthLink>
+        </p>
+      }
+    >
+      <form className="auth-form" onSubmit={onSubmit}>
+        <FormField>
+          <FieldLabel htmlFor="join-name">Имя</FieldLabel>
+          <FieldControl>
+            <Input
+              id="join-name"
+              name="name"
+              type="text"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              className="w-full"
+              placeholder="Как к вам обращаться"
+              autoComplete="name"
+              maxLength={160}
+              required
+            />
+          </FieldControl>
+        </FormField>
 
-          <form className="mt-5 space-y-4" onSubmit={onSubmit}>
-            <FormField>
-              <FieldLabel htmlFor="join-name" className="text-black">
-                Имя
-              </FieldLabel>
-              <FieldControl>
-                <Input
-                  id="join-name"
-                  name="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full"
-                  placeholder="Как к вам обращаться"
-                  autoComplete="name"
-                  maxLength={160}
-                  required
-                />
-              </FieldControl>
-            </FormField>
-            <FormField>
-              <FieldLabel htmlFor="join-email" className="text-black">
-                Email
-              </FieldLabel>
-              <FieldControl>
-                <Input
-                  id="join-email"
-                  name="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full"
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  maxLength={254}
-                  required
-                />
-              </FieldControl>
-            </FormField>
-            <FormField>
-              <FieldLabel htmlFor="join-password" className="text-black">
-                Пароль
-              </FieldLabel>
-              <FieldControl>
-                <Input
-                  id="join-password"
-                  name="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full"
-                  placeholder="Минимум 8 символов"
-                  autoComplete="new-password"
-                  minLength={8}
-                  maxLength={256}
-                  required
-                />
-              </FieldControl>
-            </FormField>
-            <FormField>
-              <FieldLabel
-                htmlFor="join-confirm-password"
-                className="text-black"
-              >
-                Подтверждение пароля
-              </FieldLabel>
-              <FieldControl>
-                <Input
-                  id="join-confirm-password"
-                  name="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full"
-                  autoComplete="new-password"
-                  minLength={8}
-                  maxLength={256}
-                  required
-                />
-              </FieldControl>
-            </FormField>
+        <FormField>
+          <FieldLabel htmlFor="join-email">Email</FieldLabel>
+          <FieldControl>
+            <Input
+              id="join-email"
+              name="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="w-full"
+              placeholder="you@example.com"
+              autoComplete="email"
+              maxLength={254}
+              required
+            />
+          </FieldControl>
+        </FormField>
 
-            <FormField>
-              <FieldLabel
-                htmlFor="join-agree"
-                className="surface-card-description mt-0 flex cursor-pointer items-start gap-2 font-normal text-black"
-              >
-                <input
-                  id="join-agree"
-                  type="checkbox"
-                  checked={agreed}
-                  onChange={(e) => setAgreed(e.target.checked)}
-                  className="auth-checkbox mt-0.5"
-                />
-                <span>
-                  Я согласен(а) с условиями использования и политикой
-                  конфиденциальности.
-                </span>
-              </FieldLabel>
-            </FormField>
+        <FormField>
+          <FieldLabel htmlFor="join-password">Пароль</FieldLabel>
+          <FieldControl>
+            <Input
+              id="join-password"
+              name="password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full"
+              placeholder="Минимум 8 символов"
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={256}
+              required
+            />
+          </FieldControl>
+        </FormField>
 
-            {error && <StatusMessage kind="error">{error}</StatusMessage>}
+        <FormField>
+          <FieldLabel htmlFor="join-confirm-password">
+            Подтверждение пароля
+          </FieldLabel>
+          <FieldControl>
+            <Input
+              id="join-confirm-password"
+              name="confirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              className="w-full"
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={256}
+              required
+            />
+          </FieldControl>
+        </FormField>
 
-            <div className="flex justify-center">
-              <Button disabled={loading} className="px-8" type="submit">
-                {loading ? "Создаём аккаунт…" : "Создать аккаунт"}
-              </Button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </ProductShell>
+        <FormField>
+          <FieldLabel htmlFor="join-agree" className="auth-consent-label">
+            <Checkbox
+              id="join-agree"
+              name="agreed"
+              checked={agreed}
+              onChange={(event) => setAgreed(event.target.checked)}
+              required
+            />
+            <span>
+              Я согласен(а) с условиями использования и политикой
+              конфиденциальности.
+            </span>
+          </FieldLabel>
+        </FormField>
+
+        {error ? <Alert tone="error">{error}</Alert> : null}
+
+        <Button
+          variant="inverse"
+          disabled={loading}
+          className="auth-submit"
+          type="submit"
+        >
+          {loading ? "Создаём аккаунт…" : "Создать аккаунт"}
+        </Button>
+      </form>
+    </AuthPage>
   );
 }

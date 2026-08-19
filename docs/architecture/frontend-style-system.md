@@ -17,6 +17,9 @@ ShiDao. Его цель — сохранять текущий внешний в�
 - `communication-center.css` и `page-motion.css` загружаются из protected
   `(app)` layout, а `store.css` — только из `/store`. Root не доставляет
   feature CSS маршрутам, на которых соответствующий UI не существует.
+- Public Auth routes загружают `auth.css` только из `(auth)` layout; onboarding
+  владеет отдельным `onboarding.css` внутри protected app. Marketing noise,
+  hero и glass-card selectors не являются Auth или onboarding dependencies.
 - React component владеет своей семантикой и минимально необходимой DOM
   структурой. Обёртка допустима только для layout, interaction, semantics или
   измерения, которые нельзя выразить существующим узлом.
@@ -104,6 +107,23 @@ ShiDao. Его цель — сохранять текущий внешний в�
 - Supporting count/status называется `app-page-metric`; прежняя терминология
   `description` не используется для элемента, который не является описанием.
 
+### AuthPage и Account entry
+
+- `(auth)` layout владеет `app-product-chrome` и единственным
+  `TopNav layout="app"`; header находится перед page `main`, а не внутри него.
+- Каждый login/signup/recovery/reset/check-email screen использует один
+  `main.app-page-shell.auth-page-shell`, одну `auth-card` и ровно один H1.
+  Route не повторяет width, padding, surface color или radius utility classes.
+- Auth form использует `FormField`, `FieldLabel`, `Input`, `Checkbox`, `Button`
+  и `Alert`. Ошибка получает `role="alert"`, success/info — `role="status"`.
+- Основной submit выбирает shared `Button` variant `inverse`; обычный primary
+  product button не переопределяется контекстным Auth selector.
+- Account onboarding не является Auth shell: он остаётся protected app page и
+  использует persistent header, `AppPageHeader` и `SurfaceCard`.
+- Auth CSS не содержит gradient, blur, decorative pseudo-elements или landing
+  noise. Mobile entry flow не центрируется по вертикали: длинная регистрация
+  скроллится естественно и сохраняет safe-area/header inset.
+
 ### Communication Center assistant UI
 
 - Единственная current assistant surface находится внутри persisted
@@ -137,7 +157,7 @@ browser computed-style/geometry checks.
 
 ## Последовательность дальнейшей работы
 
-**Current:** завершены два cleanup slice. Shared primitives, page header и
+**Current:** завершены три cleanup slice. Shared primitives, page header и
 Communication Center очищены от compatibility DOM/CSS. Исторический
 `course-demo-*` production contract атомарно заменён на `app-page-shell` и
 канонические `--product-*` tokens без alias-слоя. Ложные filesystem boundaries
@@ -146,6 +166,8 @@ Communication Center очищены от compatibility DOM/CSS. Историче
 Store-only CSS доставляются только своим route boundaries. Exact helper,
 surface structure и date-formatter duplicates сведены к одному владельцу;
 неиспользуемые exports удалены. Внешняя геометрия и поведение не меняются.
+Account entry UI также сведён к одному route-owned Auth contract; onboarding
+вернулся в protected app chrome, а legacy ProductShell/glass form layer удалён.
 
 **Next:** поднять буквальную общую геометрию Course/Schedule/Students tables в
 существующий `ProductTable`, перенести portal geometry `ActionMenu` из teaching

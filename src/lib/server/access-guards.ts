@@ -10,7 +10,3 @@ export function resolveAuthEntryRedirect(
 ) {
   return resolution.status === "account" ? ROUTES.courses : null;
 }
-
-export function resolveOnboardingRedirect(status: AccessResolution["status"]) {
-  return resolveAppLayoutRedirect(status);
-}

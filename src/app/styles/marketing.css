@@ -311,15 +311,6 @@
 }
 
 @media (min-width: 900px) {
-  .product-hero-card {
-    padding: 1.8rem;
-  }
-
-  .primary-form-card {
-    border-radius: 1.55rem;
-    padding: 1.25rem;
-  }
-
   .premium-hero-grid {
     grid-template-columns: 1.06fr 0.94fr;
     align-items: stretch;

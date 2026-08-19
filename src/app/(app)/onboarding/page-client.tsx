@@ -2,13 +2,12 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  PageHero,
-  ProductShell,
-  StatusMessage,
-} from "@/components/product-shell";
+import { AppPageHeader } from "@/components/app/page-header";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { FormField, FieldLabel } from "@/components/ui/form-field";
 import { Input, Select } from "@/components/ui/input";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { useSessionView } from "@/components/use-session-view";
 import { ROUTES } from "@/lib/auth";
 
@@ -72,59 +71,71 @@ export function OnboardingPageClient() {
   }
 
   return (
-    <ProductShell contentClassName="max-w-3xl">
-      <PageHero
-        eyebrow="Настройка аккаунта"
-        title="Расскажите немного о себе"
-        description="Эти общие настройки не ограничивают возможности: любой аккаунт может создавать курсы, работать с учениками, учиться и наблюдать прогресс."
-      />
+    <main className="app-page-shell onboarding-page-shell pb-12">
+      <div className="container app-page-container onboarding-page-container">
+        <AppPageHeader title="Настройка аккаунта" />
 
-      <form
-        onSubmit={submit}
-        className="primary-form-card mt-5 space-y-4 md:p-5"
-      >
-        <label className="block">
-          <span className="mb-2 block text-sm font-medium">Имя</span>
-          <Input
-            value={displayName}
-            onChange={(event) => setDisplayName(event.target.value)}
-            required
-            maxLength={160}
-            autoComplete="name"
-          />
-        </label>
+        <div className="onboarding-workspace">
+          <SurfaceCard
+            as="section"
+            className="onboarding-profile-card"
+            title="Расскажите немного о себе"
+            description="Эти общие настройки не ограничивают возможности: любой аккаунт может создавать курсы, работать с учащимися, учиться и наблюдать прогресс."
+          >
+            <form onSubmit={submit} className="onboarding-form">
+              <FormField>
+                <FieldLabel htmlFor="onboarding-display-name">Имя</FieldLabel>
+                <Input
+                  id="onboarding-display-name"
+                  name="displayName"
+                  value={displayName}
+                  onChange={(event) => setDisplayName(event.target.value)}
+                  required
+                  maxLength={160}
+                  autoComplete="name"
+                />
+              </FormField>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="block">
-            <span className="mb-2 block text-sm font-medium">Язык</span>
-            <Select
-              value={locale}
-              onChange={(event) => setLocale(event.target.value)}
-            >
-              <option value="ru">Русский</option>
-            </Select>
-          </label>
-          <label className="block">
-            <span className="mb-2 block text-sm font-medium">Часовой пояс</span>
-            <Select
-              value={timezone}
-              onChange={(event) => setTimezone(event.target.value)}
-            >
-              {TIMEZONE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </Select>
-          </label>
+              <div className="onboarding-form-grid">
+                <FormField>
+                  <FieldLabel htmlFor="onboarding-locale">Язык</FieldLabel>
+                  <Select
+                    id="onboarding-locale"
+                    name="locale"
+                    value={locale}
+                    onChange={(event) => setLocale(event.target.value)}
+                  >
+                    <option value="ru">Русский</option>
+                  </Select>
+                </FormField>
+                <FormField>
+                  <FieldLabel htmlFor="onboarding-timezone">
+                    Часовой пояс
+                  </FieldLabel>
+                  <Select
+                    id="onboarding-timezone"
+                    name="timezone"
+                    value={timezone}
+                    onChange={(event) => setTimezone(event.target.value)}
+                  >
+                    {TIMEZONE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </Select>
+                </FormField>
+              </div>
+
+              {error ? <Alert tone="error">{error}</Alert> : null}
+
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? "Сохраняем…" : "Сохранить и продолжить"}
+              </Button>
+            </form>
+          </SurfaceCard>
         </div>
-
-        {error ? <StatusMessage kind="error">{error}</StatusMessage> : null}
-
-        <Button type="submit" disabled={loading} className="w-full">
-          {loading ? "Сохраняем…" : "Сохранить и продолжить"}
-        </Button>
-      </form>
-    </ProductShell>
+      </div>
+    </main>
   );
 }

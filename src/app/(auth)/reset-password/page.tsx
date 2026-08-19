@@ -1,21 +1,34 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
-import {
-  PageHero,
-  ProductShell,
-  StatusMessage,
-} from "@/components/product-shell";
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import { AuthPage } from "@/components/auth/auth-page";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import {
+  FieldControl,
+  FieldLabel,
+  FormField,
+} from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(
+    () => () => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+      }
+    },
+    [],
+  );
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -36,14 +49,13 @@ export default function ResetPasswordPage() {
       if (!response.ok) {
         throw new Error(payload?.error ?? "Не удалось обновить пароль.");
       }
-
-      setSuccess("Пароль обновлён. Перенаправляем на страницу входа…");
       const redirectTo = payload?.redirectTo;
       if (!redirectTo) {
         throw new Error("Сервер не вернул маршрут после обновления пароля.");
       }
 
-      setTimeout(() => {
+      setSuccess("Пароль обновлён. Перенаправляем на страницу входа…");
+      redirectTimerRef.current = setTimeout(() => {
         router.replace(redirectTo);
       }, 700);
     } catch (submitError) {
@@ -58,47 +70,62 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <ProductShell>
-      <PageHero
-        eyebrow="Новый пароль"
-        title="Создайте новый пароль"
-        description="После подтверждения письма восстановления вы можете установить новый пароль для взрослого аккаунта Shidao."
-      />
+    <AuthPage
+      title="Создать новый пароль"
+      description="Введите новый пароль для взрослого аккаунта Shidao после подтверждения письма восстановления."
+    >
+      <form className="auth-form" onSubmit={onSubmit}>
+        <FormField>
+          <FieldLabel htmlFor="reset-password">Новый пароль</FieldLabel>
+          <FieldControl>
+            <Input
+              id="reset-password"
+              name="password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full"
+              placeholder="Минимум 8 символов"
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={256}
+              required
+            />
+          </FieldControl>
+        </FormField>
 
-      <div className="mx-auto mt-4 w-full max-w-xl">
-        <div className="primary-form-card">
-          <h2 className="text-2xl font-black tracking-tight">Новый пароль</h2>
-          <form className="mt-5 space-y-4" onSubmit={onSubmit}>
-            <label className="block">
-              <span className="field-label">Новый пароль</span>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="field-input"
-                placeholder="Минимум 8 символов"
-              />
-            </label>
+        <FormField>
+          <FieldLabel htmlFor="reset-confirm-password">
+            Подтверждение пароля
+          </FieldLabel>
+          <FieldControl>
+            <Input
+              id="reset-confirm-password"
+              name="confirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              className="w-full"
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={256}
+              required
+            />
+          </FieldControl>
+        </FormField>
 
-            <label className="block">
-              <span className="field-label">Подтверждение пароля</span>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="field-input"
-              />
-            </label>
+        {error ? <Alert tone="error">{error}</Alert> : null}
+        {success ? <Alert tone="success">{success}</Alert> : null}
 
-            {error && <StatusMessage kind="error">{error}</StatusMessage>}
-            {success && <StatusMessage kind="success">{success}</StatusMessage>}
-
-            <Button disabled={loading} className="w-full" type="submit">
-              {loading ? "Сохраняем…" : "Сохранить новый пароль"}
-            </Button>
-          </form>
-        </div>
-      </div>
-    </ProductShell>
+        <Button
+          variant="inverse"
+          disabled={loading || success !== null}
+          className="auth-submit"
+          type="submit"
+        >
+          {loading ? "Сохраняем…" : "Сохранить новый пароль"}
+        </Button>
+      </form>
+    </AuthPage>
   );
 }

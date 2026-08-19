@@ -1,0 +1,35 @@
+.onboarding-page-container {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.onboarding-workspace {
+  width: min(100%, 44rem);
+  margin-inline: auto;
+}
+
+.app-page-shell .onboarding-profile-card {
+  padding: 1.25rem;
+}
+
+.onboarding-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.onboarding-form-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .onboarding-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .app-page-shell .onboarding-profile-card {
+    padding: 1rem;
+  }
+}

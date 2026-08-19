@@ -90,6 +90,14 @@ History API до network work и никогда не отправляется с
 Signup/login/recovery используют тот же self-hosted Supabase Auth/SMTP. Auth,
 SMTP, JWT/API keys и base Storage config этот release не меняет.
 
+Все пять видимых public Auth screens принадлежат одному `(auth)` layout: общий
+product header расположен перед `main`, а page content использует один
+`AuthPage` и route-scoped stylesheet. Это presentation contract, а не новая
+access boundary: server guard по-прежнему применяется только к entry routes
+login/join; check-email, recovery и reset остаются доступны своим текущим
+flows. `/auth/confirm` сохраняет server verify/redirect и минимальный
+self-contained fragment relay под restrictive CSP.
+
 ## Login and Account entry
 
 Обычный email login и existing learner login/PIN сходятся к одному roleless

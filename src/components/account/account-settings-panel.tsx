@@ -5,7 +5,7 @@ import { SecuritySettingsForm } from "@/app/(app)/settings/security/security-set
 import { AvatarSettingsForm } from "@/components/account/avatar-settings-form";
 import { ProfileSurface } from "@/components/profile/profile-surface";
 import profileStyles from "@/components/profile/profile-workspace.module.css";
-import { StatusMessage } from "@/components/product-shell";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -93,9 +93,7 @@ export function AccountSettingsPanel({
         description="Смена email завершится только после подтверждения нового адреса."
       >
         {queryStatus ? (
-          <StatusMessage kind={queryStatus.kind}>
-            {queryStatus.text}
-          </StatusMessage>
+          <Alert tone={queryStatus.kind}>{queryStatus.text}</Alert>
         ) : null}
 
         <form onSubmit={onEmailSubmit} className="mt-4 space-y-4">
@@ -120,12 +118,8 @@ export function AccountSettingsPanel({
             />
           </label>
 
-          {emailError ? (
-            <StatusMessage kind="error">{emailError}</StatusMessage>
-          ) : null}
-          {emailSuccess ? (
-            <StatusMessage kind="success">{emailSuccess}</StatusMessage>
-          ) : null}
+          {emailError ? <Alert tone="error">{emailError}</Alert> : null}
+          {emailSuccess ? <Alert tone="success">{emailSuccess}</Alert> : null}
 
           <Button type="submit" disabled={emailLoading}>
             {emailLoading ? "Отправляем…" : "Запросить смену email"}

@@ -1,13 +1,15 @@
 "use client";
 
-import Link from "next/link";
-import { FormEvent, useState } from "react";
-import {
-  PageHero,
-  ProductShell,
-  StatusMessage,
-} from "@/components/product-shell";
+import { type FormEvent, useState } from "react";
+import { AuthPage } from "@/components/auth/auth-page";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import {
+  FieldControl,
+  FieldLabel,
+  FormField,
+} from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/lib/auth";
 
 export default function ForgotPasswordPage() {
@@ -53,54 +55,52 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <ProductShell>
-      <PageHero
-        eyebrow="Восстановление доступа"
-        title="Забыли пароль или PIN?"
-        description="Для аккаунта с email отправим ссылку сброса. Доступ к отдельному аккаунту учащегося без email восстанавливает назначенный при активации доверенный взрослый."
-      />
+    <AuthPage
+      title="Восстановить доступ"
+      description="Для аккаунта с email отправим безопасную ссылку для создания нового пароля."
+      backLink={{ href: ROUTES.login, label: "Ко входу" }}
+    >
+      <form className="auth-form" onSubmit={onSubmit}>
+        <FormField>
+          <FieldLabel htmlFor="recovery-email">Email</FieldLabel>
+          <FieldControl>
+            <Input
+              id="recovery-email"
+              name="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="w-full"
+              placeholder="you@example.com"
+              autoComplete="email"
+              maxLength={254}
+              required
+            />
+          </FieldControl>
+        </FormField>
 
-      <div className="mx-auto mt-4 w-full max-w-xl">
-        <div className="primary-form-card">
-          <h2 className="text-2xl font-black tracking-tight">Сброс пароля</h2>
-          <form className="mt-5 space-y-4" onSubmit={onSubmit}>
-            <label className="block">
-              <span className="field-label">Email</span>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="field-input"
-                placeholder="you@example.com"
-              />
-            </label>
+        {error ? <Alert tone="error">{error}</Alert> : null}
+        {success ? <Alert tone="success">{success}</Alert> : null}
 
-            {error && <StatusMessage kind="error">{error}</StatusMessage>}
-            {success && <StatusMessage kind="success">{success}</StatusMessage>}
+        <Button
+          variant="inverse"
+          disabled={loading}
+          className="auth-submit"
+          type="submit"
+        >
+          {loading ? "Отправляем…" : "Отправить письмо"}
+        </Button>
+      </form>
 
-            <Button disabled={loading} className="w-full" type="submit">
-              {loading ? "Отправляем…" : "Отправить письмо"}
-            </Button>
-          </form>
-
-          <p className="mt-5 text-sm text-neutral-600">
-            Если учащийся входит по отдельному логину и PIN без собственного
-            email, попросите доверенного взрослого открыть «Настройки →
-            Безопасность → Доступ учащегося». ShiDao не показывает, существует
-            ли введённый логин или email.
-          </p>
-
-          <p className="mt-3 text-sm text-neutral-600">
-            Вспомнили пароль?{" "}
-            <Link
-              href={ROUTES.login}
-              className="font-semibold underline decoration-black/25 underline-offset-2"
-            >
-              Вернуться ко входу
-            </Link>
-          </p>
-        </div>
-      </div>
-    </ProductShell>
+      <Alert
+        tone="neutral"
+        title="Если учащийся входит по логину и PIN"
+        className="auth-support-note"
+      >
+        Доступ восстанавливает доверенный взрослый в разделе «Настройки →
+        Безопасность → Доступ учащегося». ShiDao не сообщает, существует ли
+        введённый логин или email.
+      </Alert>
+    </AuthPage>
   );
 }

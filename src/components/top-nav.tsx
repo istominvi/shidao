@@ -112,7 +112,8 @@ export function shouldRenderPersistentProductTopNav(pathname: string) {
     pathname === ROUTES.students ||
     pathname === ROUTES.courses ||
     pathname === ROUTES.store ||
-    pathname === ROUTES.profile
+    pathname === ROUTES.profile ||
+    pathname === ROUTES.onboarding
   ) {
     return true;
   }

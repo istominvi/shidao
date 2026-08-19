@@ -4214,6 +4214,266 @@ test("browser smoke: guest opens / and sees guest header CTA", async (t) => {
   }
 });
 
+test("browser smoke: guest Auth pages share the canonical product surface on desktop and mobile", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  const routes = [
+    { href: "/login", editableCount: 2 },
+    { href: "/join", editableCount: 4 },
+    {
+      href: "/join/check-email?email=test%40example.com",
+      editableCount: 0,
+    },
+    { href: "/forgot-password", editableCount: 1 },
+    { href: "/reset-password", editableCount: 2 },
+  ] as const;
+
+  for (const viewport of [
+    { width: 1280, height: 900, mobile: false },
+    { width: 320, height: 900, mobile: true },
+  ] as const) {
+    const runtime = await openPage({
+      viewport,
+      mobile: viewport.mobile,
+    });
+
+    try {
+      for (const route of routes) {
+        await runtime.page.goto(route.href, { waitUntil: "networkidle" });
+        await runtime.page.locator(".auth-card").waitFor();
+
+        const contract = await runtime.page.evaluate(() => {
+          const chrome = document.querySelector<HTMLElement>(
+            ".auth-product-chrome",
+          );
+          const main = document.querySelector<HTMLElement>("main");
+          const header = document.querySelector<HTMLElement>(
+            ".site-header-shell-app",
+          );
+          const card = document.querySelector<HTMLElement>(".auth-card");
+          const heading = document.querySelector<HTMLElement>("h1");
+
+          if (!chrome || !main || !header || !card || !heading) {
+            throw new Error("Canonical Auth page structure is missing");
+          }
+
+          const viewportWidth = document.documentElement.clientWidth;
+          const viewportHeight = document.documentElement.clientHeight;
+          const headerRect = header.getBoundingClientRect();
+          const cardRect = card.getBoundingClientRect();
+          const headingRect = heading.getBoundingClientRect();
+          const cardStyle = getComputedStyle(card);
+
+          const insideViewport = (rect: DOMRect) =>
+            rect.left >= -0.5 &&
+            rect.right <= viewportWidth + 0.5 &&
+            rect.top >= -0.5 &&
+            rect.bottom <= viewportHeight + 0.5;
+          const horizontallyInsideViewport = (rect: DOMRect) =>
+            rect.left >= -0.5 && rect.right <= viewportWidth + 0.5;
+
+          return {
+            mainCount: document.querySelectorAll("main").length,
+            headingCount: document.querySelectorAll("h1").length,
+            appHeaderCount: document.querySelectorAll(".site-header-shell-app")
+              .length,
+            authCardCount: document.querySelectorAll(".auth-card").length,
+            viewportWidth,
+            documentScrollWidth: document.documentElement.scrollWidth,
+            bodyScrollWidth: document.body.scrollWidth,
+            background: {
+              html: getComputedStyle(document.documentElement).backgroundColor,
+              body: getComputedStyle(document.body).backgroundColor,
+              main: getComputedStyle(main).backgroundColor,
+            },
+            card: {
+              surface: {
+                backgroundColor: cardStyle.backgroundColor,
+                backgroundImage: cardStyle.backgroundImage,
+                opacity: cardStyle.opacity,
+                backdropFilter: cardStyle.backdropFilter,
+              },
+              borderTopWidth: cardStyle.borderTopWidth,
+              borderTopStyle: cardStyle.borderTopStyle,
+              borderTopColor: cardStyle.borderTopColor,
+              borderRadius: cardStyle.borderRadius,
+              backgroundClip: cardStyle.backgroundClip,
+              boxShadow: cardStyle.boxShadow,
+              horizontallyInsideViewport: horizontallyInsideViewport(cardRect),
+              topIsVisible:
+                cardRect.top >= -0.5 && cardRect.top < viewportHeight,
+            },
+            headerInsideViewport: insideViewport(headerRect),
+            headerClearsHeading: headerRect.bottom <= headingRect.top + 0.5,
+          };
+        });
+
+        const label = `${route.href} at ${viewport.width}px`;
+        assert.deepEqual(
+          {
+            main: contract.mainCount,
+            h1: contract.headingCount,
+            appHeader: contract.appHeaderCount,
+            authCard: contract.authCardCount,
+          },
+          { main: 1, h1: 1, appHeader: 1, authCard: 1 },
+          `${label}: one semantic Auth page structure`,
+        );
+        assert.equal(contract.viewportWidth, viewport.width, `${label}: width`);
+        assert.equal(
+          contract.documentScrollWidth,
+          contract.viewportWidth,
+          `${label}: document has no horizontal overflow`,
+        );
+        assert.ok(
+          contract.bodyScrollWidth <= contract.viewportWidth,
+          `${label}: body has no horizontal overflow`,
+        );
+        assert.deepEqual(
+          contract.background,
+          {
+            html: "rgb(245, 241, 232)",
+            body: "rgb(245, 241, 232)",
+            main: "rgb(245, 241, 232)",
+          },
+          `${label}: flat product background`,
+        );
+        assertOpaqueWhiteSurface(contract.card.surface, `${label} Auth card`);
+        assert.deepEqual(
+          {
+            borderTopWidth: contract.card.borderTopWidth,
+            borderTopStyle: contract.card.borderTopStyle,
+            borderTopColor: contract.card.borderTopColor,
+            borderRadius: contract.card.borderRadius,
+            backgroundClip: contract.card.backgroundClip,
+            boxShadow: contract.card.boxShadow,
+          },
+          {
+            borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+            borderTopStyle: "solid",
+            borderTopColor: E2E_PRODUCT_SURFACE_BORDER_COLOR,
+            borderRadius: viewport.mobile ? "16px" : "20px",
+            backgroundClip: E2E_PRODUCT_SURFACE_BACKGROUND_CLIP,
+            boxShadow: E2E_RAISED_SURFACE_SHADOW,
+          },
+          `${label}: canonical responsive card surface`,
+        );
+        assert.equal(
+          contract.card.horizontallyInsideViewport,
+          true,
+          `${label}: Auth card has no horizontal overflow`,
+        );
+        assert.equal(
+          contract.card.topIsVisible,
+          true,
+          `${label}: Auth card starts visibly and remains vertically scrollable`,
+        );
+        assert.equal(
+          contract.headerInsideViewport,
+          true,
+          `${label}: app header stays inside the viewport`,
+        );
+        assert.equal(
+          contract.headerClearsHeading,
+          true,
+          `${label}: app header does not overlap the page heading`,
+        );
+
+        if (viewport.mobile) {
+          const editableContract = await readMobileEditableContract(
+            runtime.page,
+          );
+          assert.equal(
+            editableContract.controls.length,
+            route.editableCount,
+            `${label}: expected visible editable controls`,
+          );
+          assertMobileEditableContract(
+            editableContract,
+            viewport.width,
+            `${label} Auth form`,
+          );
+        }
+      }
+
+      await runtime.page.goto("/login", { waitUntil: "networkidle" });
+
+      let reducedMotionSupported = true;
+      try {
+        await runtime.page.emulateMedia({ reducedMotion: "reduce" });
+      } catch {
+        reducedMotionSupported = false;
+      }
+      if (reducedMotionSupported) {
+        const reducedMotion = await runtime.page.evaluate(() => {
+          const parseDurations = (value: string) =>
+            value.split(",").map((duration) => {
+              const normalized = duration.trim();
+              return normalized.endsWith("ms")
+                ? Number.parseFloat(normalized) / 1000
+                : Number.parseFloat(normalized);
+            });
+          const targets = Array.from(
+            document.querySelectorAll<HTMLElement>(
+              ".auth-card, .auth-card input, .auth-card button, .auth-card a",
+            ),
+          );
+
+          return {
+            mediaMatches: matchMedia("(prefers-reduced-motion: reduce)")
+              .matches,
+            durations: targets.flatMap((target) => {
+              const style = getComputedStyle(target);
+              return [
+                ...parseDurations(style.animationDuration),
+                ...parseDurations(style.transitionDuration),
+              ];
+            }),
+          };
+        });
+        assert.equal(reducedMotion.mediaMatches, true);
+        assert.ok(
+          reducedMotion.durations.every((duration) => duration <= 0.00001),
+          `${viewport.width}px Auth surface must stop visible motion when reduced motion is requested: ${JSON.stringify(reducedMotion.durations)}`,
+        );
+        await runtime.page.emulateMedia({ reducedMotion: "no-preference" });
+      }
+
+      let forcedColorsSupported = true;
+      try {
+        await runtime.page.emulateMedia({ forcedColors: "active" });
+      } catch {
+        forcedColorsSupported = false;
+      }
+      if (forcedColorsSupported) {
+        const forcedColors = await runtime.page
+          .locator(".auth-card")
+          .evaluate((element) => {
+            const style = getComputedStyle(element);
+            return {
+              mediaMatches: matchMedia("(forced-colors: active)").matches,
+              borderTopWidth: style.borderTopWidth,
+              borderTopStyle: style.borderTopStyle,
+              boxShadow: style.boxShadow,
+            };
+          });
+        assert.deepEqual(forcedColors, {
+          mediaMatches: true,
+          borderTopWidth: E2E_PRODUCT_SURFACE_BORDER_WIDTH,
+          borderTopStyle: "solid",
+          boxShadow: "none",
+        });
+        await runtime.page.emulateMedia({ forcedColors: "none" });
+      }
+    } finally {
+      await runtime.close();
+    }
+  }
+});
+
 test("browser smoke: restored standalone demo navigates across its local views", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);

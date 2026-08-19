@@ -35,10 +35,30 @@ function fragmentRelayResponse() {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="referrer" content="no-referrer">
+    <meta name="theme-color" content="#f5f1e8">
     <title>Подтверждаем вход — ShiDao</title>
+    <style>
+      :root { color-scheme: light; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; color: #141414; background: #f5f1e8; }
+      * { box-sizing: border-box; }
+      body { min-height: 100vh; min-height: 100dvh; margin: 0; display: grid; place-items: center; padding: 1rem; background: #f5f1e8; }
+      main { width: min(100%, 30rem); border: 1px solid rgba(20, 20, 20, .1); border-radius: 1.25rem; background: #fff; padding: 2rem; box-shadow: 0 1px 6px rgba(0, 0, 0, .05); text-align: center; }
+      .brand { margin: 0 0 1.5rem; font-size: .875rem; font-weight: 700; }
+      .indicator { width: 2rem; height: 2rem; margin: 0 auto 1rem; display: block; border: 2px solid rgba(20, 20, 20, .14); border-top-color: #141414; border-radius: 50%; animation: relay-spin .8s linear infinite; }
+      h1 { margin: 0; font-size: 1.75rem; font-weight: 400; letter-spacing: -.045em; line-height: 1.08; }
+      p:last-child { margin: .65rem 0 0; color: #525a68; font-size: .875rem; line-height: 1.5; }
+      @keyframes relay-spin { to { transform: rotate(360deg); } }
+      @media (max-width: 479px) { main { border-radius: 1rem; padding: 1.25rem; } }
+      @media (prefers-reduced-motion: reduce) { .indicator { animation: none; } }
+      @media (forced-colors: active) { main { border-color: CanvasText; box-shadow: none; } .indicator { border-color: CanvasText; border-top-color: Highlight; } }
+    </style>
   </head>
   <body>
-    <main aria-live="polite"><p>Подтверждаем безопасный вход…</p></main>
+    <main aria-live="polite">
+      <p class="brand">Shidao</p>
+      <span class="indicator" aria-hidden="true"></span>
+      <h1>Подтверждаем вход</h1>
+      <p>Проверяем безопасную ссылку и готовим рабочее пространство…</p>
+    </main>
     <script>
       (async function () {
         var fragment = new URLSearchParams(window.location.hash.slice(1));

@@ -85,10 +85,15 @@ html {
 }
 
 body {
+  --document-background: radial-gradient(
+    circle at top left,
+    #fefefe 0%,
+    #efeff2 100%
+  );
   margin: 0;
   min-height: 100vh;
   min-height: 100dvh;
-  background: radial-gradient(circle at top left, #fefefe 0%, #efeff2 100%);
+  background: var(--document-background);
   color: var(--foreground);
   font-family:
     ui-sans-serif,
@@ -101,9 +106,8 @@ body {
     sans-serif;
 }
 
-html:has(.app-page-shell),
 body:has(.app-page-shell) {
-  background: var(--product-app-background);
+  --document-background: var(--product-app-background);
 }
 
 a {
@@ -1689,59 +1693,6 @@ a {
   line-height: 1.35;
 }
 
-.product-hero-card {
-  position: relative;
-  overflow: hidden;
-  border-radius: 1.7rem;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  background: linear-gradient(
-    130deg,
-    rgba(255, 255, 255, 0.88),
-    rgba(255, 255, 255, 0.75)
-  );
-  padding: 1.25rem;
-  box-shadow: 0 24px 72px rgba(17, 24, 39, 0.08);
-  backdrop-filter: blur(10px);
-}
-
-.product-hero-card::before,
-.product-hero-card::after {
-  content: "";
-  position: absolute;
-  border-radius: 999px;
-  filter: blur(42px);
-  pointer-events: none;
-}
-
-.product-hero-card::before {
-  right: -5rem;
-  top: -4.5rem;
-  height: 9.5rem;
-  width: 9.5rem;
-  background: rgba(112, 183, 255, 0.36);
-}
-
-.product-hero-card::after {
-  left: -4.5rem;
-  bottom: -5rem;
-  height: 10.5rem;
-  width: 10.5rem;
-  background: rgba(255, 182, 232, 0.3);
-}
-
-.primary-form-card {
-  border: 1px solid rgba(20, 20, 20, 0.1);
-  border-radius: 1.4rem;
-  padding: 1rem;
-  box-shadow:
-    0 16px 36px rgba(20, 20, 20, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.82);
-}
-
-.primary-form-card {
-  background: rgba(255, 255, 255, 0.92);
-}
-
 .field-label {
   margin-bottom: 0.45rem;
   display: block;
@@ -1798,7 +1749,7 @@ input.field-input:focus {
   box-shadow: var(--product-entry-control-shadow);
 }
 
-.auth-checkbox {
+.product-checkbox {
   position: relative;
   appearance: none;
   display: inline-grid;
@@ -1812,11 +1763,11 @@ input.field-input:focus {
   cursor: pointer;
 }
 
-.auth-checkbox:hover {
+.product-checkbox:hover:not(:disabled) {
   border-color: rgba(20, 20, 20, 0.22);
 }
 
-.auth-checkbox::before {
+.product-checkbox::before {
   content: "";
   width: 0.6rem;
   height: 0.35rem;
@@ -1828,19 +1779,24 @@ input.field-input:focus {
   transition: transform 120ms ease;
 }
 
-.auth-checkbox:checked {
+.product-checkbox:checked {
   background: #141414;
   border-color: #141414;
 }
 
-.auth-checkbox:checked::before {
+.product-checkbox:checked::before {
   transform: rotate(-45deg) scale(1);
 }
 
-.auth-checkbox:focus-visible {
+.product-checkbox:focus-visible {
   outline: none;
   border-color: rgba(20, 20, 20, 0.32);
   box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.08);
+}
+
+.product-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
 }
 
 .product-control {
@@ -2311,6 +2267,34 @@ input.product-control-search::placeholder {
 
 .product-btn-ghost:hover:not(:disabled) {
   background-color: #fff;
+}
+
+.product-btn.product-btn-inverse {
+  border-color: #171717;
+  background-color: #171717;
+  color: #fff;
+}
+
+.app-page-shell .product-btn.product-btn-inverse {
+  border-color: var(--product-control-foreground);
+  background-color: var(--product-control-foreground);
+  color: #fff;
+}
+
+.product-btn.product-btn-inverse:hover:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
+  border-color: #262626;
+  background-color: #262626;
+  color: #fff;
+}
+
+.product-btn.product-btn-inverse:active:not(:disabled):not(
+    [aria-disabled="true"]
+  ) {
+  border-color: #0a0a0a;
+  background-color: #0a0a0a;
+  color: #fff;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -2787,6 +2771,10 @@ input.product-control-search::placeholder {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .product-checkbox::before {
+    transition: none;
+  }
+
   .product-btn.product-btn,
   .product-btn.product-btn:hover:not(:disabled),
   .product-btn.product-btn:active:not(:disabled) {
@@ -2811,6 +2799,24 @@ input.product-control-search::placeholder {
 }
 
 @media (forced-colors: active) {
+  .product-checkbox {
+    appearance: auto;
+    border: 1px solid ButtonText;
+    background: Canvas;
+    color: ButtonText;
+    forced-color-adjust: auto;
+  }
+
+  .product-checkbox::before {
+    display: none;
+  }
+
+  .product-checkbox:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+
   .lesson-component-card-actions .product-btn:focus-visible {
     outline-color: Highlight;
   }
@@ -2962,6 +2968,7 @@ input.product-control-search::placeholder {
     background: ButtonFace;
     color: ButtonText;
     box-shadow: none;
+    forced-color-adjust: auto;
     transform: none;
   }
 

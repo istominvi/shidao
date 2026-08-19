@@ -387,7 +387,11 @@ test("course routes use the flat app background and unified visual controls", ()
   );
   assert.match(
     styles,
-    /html:has\(\.app-page-shell\),\s*body:has\(\.app-page-shell\)\s*\{[^}]*background: var\(--product-app-background\);/,
+    /body:has\(\.app-page-shell\)\s*\{[^}]*--document-background: var\(--product-app-background\);/,
+  );
+  assert.match(
+    styles,
+    /body\s*\{[^}]*background: var\(--document-background\);/,
   );
   assert.match(
     courseShellStyles,

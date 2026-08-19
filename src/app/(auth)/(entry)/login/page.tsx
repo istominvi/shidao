@@ -1,148 +1,53 @@
-"use client";
-
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useMemo, useState } from "react";
-import { ProductShell, StatusMessage } from "@/components/product-shell";
-import { Button } from "@/components/ui/button";
-import {
-  FieldControl,
-  FieldLabel,
-  FormField,
-} from "@/components/ui/form-field";
-import { Input } from "@/components/ui/input";
-import { useSessionView } from "@/components/use-session-view";
-import { loginWithIdentifier } from "@/lib/auth-flow";
+import { AuthLink, AuthPage } from "@/components/auth/auth-page";
+import { LoginForm } from "@/components/auth/login-form";
 import { ROUTES } from "@/lib/auth";
-import { resolveClientPostLoginRoute } from "@/lib/auth-redirects";
 
-function LoginPageContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { refetchSession } = useSessionView();
-  const [identifier, setIdentifier] = useState("");
-  const [secret, setSecret] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+type LoginSearchParams = {
+  confirmed?: string | string[];
+  next?: string | string[];
+  passwordReset?: string | string[];
+  registered?: string | string[];
+};
 
-  const successHint = useMemo(() => {
-    if (searchParams.get("registered") === "1") {
-      return "Аккаунт создан. Теперь войдите с email и паролем.";
-    }
-    if (searchParams.get("confirmed") === "1") {
-      return "Email подтверждён. Теперь выполните вход.";
-    }
-    if (searchParams.get("passwordReset") === "1") {
-      return "Пароль обновлён. Войдите с новым паролем.";
-    }
-    return null;
-  }, [searchParams]);
-
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
-    setError(null);
-
-    if (!identifier.trim() || !secret.trim()) {
-      setError("Заполните оба поля для входа.");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const route = await loginWithIdentifier(identifier, secret);
-      await refetchSession();
-      router.push(resolveClientPostLoginRoute(route, searchParams.get("next")));
-      router.refresh();
-    } catch (submitError) {
-      setError(
-        submitError instanceof Error
-          ? submitError.message
-          : "Не удалось выполнить вход.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <ProductShell contentClassName="mt-10">
-      <div className="mx-auto w-full max-w-[500px]">
-        <div className="surface-card">
-          <h1 className="surface-card-title text-2xl text-black">Войти</h1>
-          <p className="surface-card-description mt-2 text-black">
-            Введите email или логин и свой пароль или PIN-код.
-          </p>
-
-          {successHint && (
-            <div className="mt-4">
-              <StatusMessage kind="success">{successHint}</StatusMessage>
-            </div>
-          )}
-
-          <form className="mt-5 space-y-4" onSubmit={onSubmit}>
-            <FormField>
-              <FieldLabel htmlFor="login-identifier" className="text-black">
-                Email или логин
-              </FieldLabel>
-              <FieldControl>
-                <Input
-                  id="login-identifier"
-                  name="identifier"
-                  type="text"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="Например, name@example.com или learner-login"
-                  className="w-full"
-                  autoComplete="username"
-                  required
-                />
-              </FieldControl>
-            </FormField>
-            <FormField>
-              <div className="flex items-center justify-between gap-3">
-                <FieldLabel htmlFor="login-secret" className="text-black">
-                  Пароль или PIN-код
-                </FieldLabel>
-                <Link
-                  href={ROUTES.forgotPassword}
-                  className="text-sm font-medium text-neutral-500 underline decoration-neutral-400/50 underline-offset-2 hover:text-neutral-600"
-                >
-                  Забыли пароль или PIN?
-                </Link>
-              </div>
-              <FieldControl>
-                <Input
-                  id="login-secret"
-                  name="secret"
-                  type="password"
-                  value={secret}
-                  onChange={(e) => setSecret(e.target.value)}
-                  placeholder="Введите пароль или PIN"
-                  className="w-full"
-                  autoComplete="current-password"
-                  required
-                />
-              </FieldControl>
-            </FormField>
-
-            {error && <StatusMessage kind="error">{error}</StatusMessage>}
-
-            <div className="flex justify-center">
-              <Button disabled={loading} className="px-8" type="submit">
-                {loading ? "Входим…" : "Войти"}
-              </Button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </ProductShell>
-  );
+function first(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }
 
-export default function LoginPage() {
+function resolveSuccessHint(params: LoginSearchParams) {
+  if (first(params.registered) === "1") {
+    return "Аккаунт создан. Теперь войдите с email и паролем.";
+  }
+  if (first(params.confirmed) === "1") {
+    return "Email подтверждён. Теперь выполните вход.";
+  }
+  if (first(params.passwordReset) === "1") {
+    return "Пароль обновлён. Войдите с новым паролем.";
+  }
+  return undefined;
+}
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<LoginSearchParams>;
+}) {
+  const params = await searchParams;
+
   return (
-    <Suspense fallback={null}>
-      <LoginPageContent />
-    </Suspense>
+    <AuthPage
+      title="Войти в Shidao"
+      description="Используйте email и пароль либо отдельный логин учащегося и PIN-код."
+      footer={
+        <p>
+          Ещё нет аккаунта?{" "}
+          <AuthLink href={ROUTES.join}>Создать аккаунт</AuthLink>
+        </p>
+      }
+    >
+      <LoginForm
+        requestedRoute={first(params.next)}
+        successHint={resolveSuccessHint(params)}
+      />
+    </AuthPage>
   );
 }

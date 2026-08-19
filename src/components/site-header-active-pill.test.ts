@@ -28,6 +28,7 @@ test("Account TopNav alone enables one measured desktop active pill", () => {
     "courses",
     "store",
     "profile",
+    "onboarding",
   ]) {
     assert.match(topNav, new RegExp(`pathname === ROUTES\\.${routeName}`));
   }
@@ -50,6 +51,7 @@ test("Account TopNav alone enables one measured desktop active pill", () => {
     "src/app/(app)/courses/catalog/[publicationId]/page.tsx",
     "src/app/(app)/store/page.tsx",
     "src/app/(app)/profile/page.tsx",
+    "src/app/(app)/onboarding/page.tsx",
   ]) {
     assert.doesNotMatch(source(pagePath), /<TopNav|import \{ TopNav \}/);
   }

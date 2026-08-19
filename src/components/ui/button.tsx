@@ -1,7 +1,7 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { classNames } from "@/lib/ui/classnames";
 
-type ProductButtonVariant = "primary" | "secondary" | "ghost";
+type ProductButtonVariant = "primary" | "secondary" | "ghost" | "inverse";
 
 type ProductButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ProductButtonVariant;

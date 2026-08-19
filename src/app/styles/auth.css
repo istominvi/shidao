@@ -1,0 +1,213 @@
+.auth-product-chrome {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--product-app-background);
+}
+
+.auth-page-shell {
+  display: block;
+}
+
+.auth-page-container {
+  --auth-page-inline-start: max(1rem, env(safe-area-inset-left, 0px));
+  --auth-page-inline-end: max(1rem, env(safe-area-inset-right, 0px));
+  width: 100%;
+  max-width: calc(
+    30rem + var(--auth-page-inline-start) + var(--auth-page-inline-end)
+  );
+  margin-inline: auto;
+  padding-inline: var(--auth-page-inline-start) var(--auth-page-inline-end);
+  padding-block: clamp(2rem, 6vh, 4.5rem)
+    max(3rem, calc(2rem + env(safe-area-inset-bottom, 0px)));
+}
+
+.auth-card {
+  width: 100%;
+  border: var(--product-surface-border);
+  border-radius: var(--product-card-radius);
+  background: var(--product-surface-background);
+  background-clip: padding-box;
+  padding: 2rem;
+  box-shadow: var(--product-raised-surface-shadow);
+}
+
+.auth-back-link {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  color: var(--product-secondary-foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.auth-back-link:hover,
+.auth-back-link:focus-visible,
+.auth-link:hover,
+.auth-link:focus-visible {
+  color: var(--foreground);
+  text-decoration-color: currentColor;
+}
+
+.auth-back-link:focus-visible,
+.auth-link:focus-visible {
+  border-radius: 0.25rem;
+  outline: 2px solid var(--product-control-focus-halo);
+  outline-offset: 3px;
+}
+
+.auth-card-header {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.auth-card-title {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 2rem;
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.auth-card-description {
+  max-width: 42ch;
+  margin: 0;
+  color: var(--product-secondary-foreground);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.auth-card-content {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.auth-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.auth-field-label-row {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.auth-field-label-row .form-field-label {
+  flex: 0 0 auto;
+}
+
+.auth-link {
+  color: var(--product-secondary-foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-decoration: underline;
+  text-decoration-color: rgba(20, 20, 20, 0.24);
+  text-underline-offset: 0.18em;
+}
+
+.auth-submit {
+  width: 100%;
+}
+
+.auth-consent-label {
+  display: flex;
+  cursor: pointer;
+  align-items: flex-start;
+  gap: 0.65rem;
+  color: var(--product-secondary-foreground);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.auth-consent-label .product-checkbox {
+  margin-top: 0.05rem;
+}
+
+.auth-card-footer {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: var(--product-surface-border);
+  color: var(--product-secondary-foreground);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.auth-card-footer > :first-child {
+  margin-top: 0;
+}
+
+.auth-card-footer > :last-child {
+  margin-bottom: 0;
+}
+
+.auth-support-note {
+  margin-top: 0;
+}
+
+@media (max-width: 767px) {
+  .auth-page-container {
+    --auth-page-inline-start: max(0.75rem, env(safe-area-inset-left, 0px));
+    --auth-page-inline-end: max(0.75rem, env(safe-area-inset-right, 0px));
+    padding-block: 1.5rem
+      max(2rem, calc(1.25rem + env(safe-area-inset-bottom, 0px)));
+  }
+
+  .auth-card {
+    border-radius: 1rem;
+    padding: 1.25rem;
+  }
+
+  .auth-card-title {
+    font-size: 1.75rem;
+  }
+
+  .auth-field-label-row {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 359px) {
+  .auth-field-label-row {
+    display: grid;
+    gap: 0.35rem;
+  }
+}
+
+@media (forced-colors: active) {
+  .auth-card {
+    border-color: CanvasText;
+    box-shadow: none;
+  }
+
+  .auth-back-link,
+  .auth-link {
+    color: LinkText;
+    text-decoration-color: LinkText;
+  }
+
+  .auth-back-link:focus-visible,
+  .auth-link:focus-visible {
+    outline-color: Highlight;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-page-shell *,
+  .auth-page-shell *::before,
+  .auth-page-shell *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

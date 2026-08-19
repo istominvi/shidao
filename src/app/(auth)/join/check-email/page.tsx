@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ProductShell } from "@/components/product-shell";
+import { AuthPage } from "@/components/auth/auth-page";
+import { Alert } from "@/components/ui/alert";
 import { productButtonClassName } from "@/components/ui/button";
 import { ROUTES } from "@/lib/auth";
 import { afterLogin } from "@/lib/auth-redirects";
@@ -16,29 +17,29 @@ export default async function JoinCheckEmailPage({
   });
 
   return (
-    <ProductShell contentClassName="mt-10">
-      <div className="mx-auto w-full max-w-[500px]">
-        <div className="surface-card">
-          <h1 className="surface-card-title text-2xl text-black">
-            Проверьте почту перед первым входом
-          </h1>
-          <p className="surface-card-description mt-2 text-black">
-            Мы отправили письмо с подтверждением на{" "}
-            <span className="font-semibold">{params.email ?? "ваш email"}</span>
-            . Если письмо не видно, проверьте папки «Спам» и «Промоакции». После
-            подтверждения вернитесь к входу.
-          </p>
+    <AuthPage
+      title="Проверьте почту"
+      description={
+        <>
+          Мы отправили письмо с подтверждением на{" "}
+          <strong>{params.email ?? "ваш email"}</strong>. Подтвердите адрес
+          перед первым входом.
+        </>
+      }
+    >
+      <div className="auth-form">
+        <Alert tone="neutral" title="Письма пока нет?">
+          Проверьте папки «Спам» и «Промоакции». После подтверждения вернитесь
+          ко входу.
+        </Alert>
 
-          <div className="mt-6 flex justify-center">
-            <Link
-              href={`${ROUTES.login}?${loginSearch.toString()}`}
-              className={productButtonClassName("primary", "px-8")}
-            >
-              Перейти ко входу
-            </Link>
-          </div>
-        </div>
+        <Link
+          href={`${ROUTES.login}?${loginSearch.toString()}`}
+          className={productButtonClassName("inverse", "auth-submit")}
+        >
+          Перейти ко входу
+        </Link>
       </div>
-    </ProductShell>
+    </AuthPage>
   );
 }
