@@ -19,6 +19,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { useRegisterAssistantPageContext } from "@/components/communication/assistant-page-context";
 import { PageTransitionLink } from "@/components/navigation/page-transition-link";
+import { usePageTransition } from "@/components/navigation/page-transition-provider";
 import { usePrimaryHeaderSummary } from "@/components/navigation/primary-header-summary-provider";
 import {
   cancelLessonRun,
@@ -59,7 +60,7 @@ import {
 } from "@/components/ui/product-table";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SurfaceCard } from "@/components/ui/surface-card";
-import { ROUTES, toCourseRoute } from "@/lib/auth";
+import { ROUTES, toCourseRoute, toLessonRunRoute } from "@/lib/auth";
 import type { LessonRun } from "@/modules/lesson-runs/domain";
 
 const tableDateFormatter = new Intl.DateTimeFormat("ru-RU", {
@@ -174,7 +175,7 @@ function ScheduleRunStatus({ run }: { run: LessonRun }) {
 }
 
 function runActionLabel(run: LessonRun) {
-  if (lessonRunState(run) === "active") return "Завершить";
+  if (lessonRunState(run) === "active") return "Продолжить";
   if (lessonRunState(run) === "completed") return "Результаты";
   return "Открыть";
 }
@@ -246,6 +247,7 @@ function CompletedRunDialog({
 }
 
 export function ScheduleWorkspace() {
+  const pageTransition = usePageTransition();
   const [runs, setRuns] = useState<LessonRun[] | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [period, setPeriod] = useState<SchedulePeriod>("week");
@@ -352,11 +354,28 @@ export function ScheduleWorkspace() {
     setSelectedRunMode("default");
   }, []);
 
-  const startRun = useCallback(
-    (runId: string) => {
-      void runMutation("Начинаем урок…", () => startLessonRun(runId));
+  const openRunWorkspace = useCallback(
+    (run: LessonRun) => {
+      const href = toLessonRunRoute(run.courseId, run.id);
+      if (pageTransition) {
+        pageTransition.navigate(href, { direction: "forward" });
+        return;
+      }
+      window.location.assign(href);
     },
-    [runMutation],
+    [pageTransition],
+  );
+
+  const startRun = useCallback(
+    (run: LessonRun) => {
+      void (async () => {
+        const started = await runMutation("Начинаем урок…", () =>
+          startLessonRun(run.id),
+        );
+        if (started) openRunWorkspace(run);
+      })();
+    },
+    [openRunWorkspace, runMutation],
   );
 
   const cancelRun = useCallback(
@@ -624,10 +643,10 @@ export function ScheduleWorkspace() {
                           ? [
                               {
                                 id: "complete",
-                                label: "Завершить урок",
+                                label: "Продолжить проведение",
                                 icon: CircleCheck,
                                 disabled: Boolean(busyLabel),
-                                onSelect: () => openRun(run.id),
+                                onSelect: () => openRunWorkspace(run),
                               },
                               {
                                 id: "cancel",
@@ -644,7 +663,7 @@ export function ScheduleWorkspace() {
                                 label: "Начать урок",
                                 icon: Play,
                                 disabled: Boolean(busyLabel),
-                                onSelect: () => startRun(run.id),
+                                onSelect: () => startRun(run),
                               },
                               {
                                 id: "edit",
@@ -759,7 +778,11 @@ export function ScheduleWorkspace() {
                     <ScheduleRunActions
                       run={run}
                       disabled={Boolean(busyLabel)}
-                      onOpen={() => setSelectedRunId(run.id)}
+                      onOpen={() =>
+                        lessonRunState(run) === "active"
+                          ? openRunWorkspace(run)
+                          : setSelectedRunId(run.id)
+                      }
                     />
                   </SurfaceCard>
                 );
@@ -783,6 +806,9 @@ export function ScheduleWorkspace() {
           mutationError={error}
           runMutation={runMutation}
           initialMode={selectedRunMode}
+          onStarted={(lessonRunId) =>
+            openRunWorkspace({ ...selectedRun, id: lessonRunId })
+          }
           onClose={closeRun}
         />
       ) : null}

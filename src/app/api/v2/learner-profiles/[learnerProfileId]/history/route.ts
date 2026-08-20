@@ -5,6 +5,7 @@ import {
   learnerIdentityApiError,
 } from "@/modules/learner-identity/server-context";
 import { getLessonRunsContext } from "@/modules/lesson-runs/server-context";
+import { createLearningActivitiesServiceForActor } from "@/modules/learning-activities/server-context";
 
 export const runtime = "nodejs";
 
@@ -27,10 +28,17 @@ export async function GET(_request: Request, { params }: RouteContext) {
   }
   try {
     const { actor, service } = await getLessonRunsContext();
+    const records = await service.listLearnerHistory(
+      actor,
+      resolvedLearnerProfileId,
+    );
     return NextResponse.json({
-      records: await service.listLearnerHistory(
+      records,
+      observations: await createLearningActivitiesServiceForActor(
         actor,
-        resolvedLearnerProfileId,
+      ).listHistoryObservations(
+        actor,
+        records.map((record) => record.id),
       ),
     });
   } catch (error) {

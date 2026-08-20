@@ -46,7 +46,11 @@ import {
   LessonRunDialog,
   LessonRunStatusButton,
 } from "@/components/lesson-runs/lesson-run-dialog";
-import { completedLessonRunCount } from "@/components/lesson-runs/lesson-run-format";
+import {
+  completedLessonRunCount,
+  lessonRunState,
+  openLessonRun,
+} from "@/components/lesson-runs/lesson-run-format";
 import { RunHistoryList } from "@/components/lesson-runs/run-history-list";
 import { Button, productButtonClassName } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
@@ -63,6 +67,7 @@ import type {
   LessonComponent,
 } from "@/modules/course-builder/domain";
 import type { LearnerProfile, LessonRun } from "@/modules/lesson-runs/domain";
+import type { LessonComponentObservation } from "@/modules/learning-activities";
 import {
   creatableComponentDefinitions,
   getComponentDefinition,
@@ -87,7 +92,9 @@ type LessonAuthoringWorkspaceProps = {
   mutationError: string | null;
   runMutation: CourseBuilderMutationRunner;
   onScheduleSummaryChanged?: () => void;
+  onOpenRun: (lessonRunId: string) => void;
   runs: LessonRun[];
+  observations: LessonComponentObservation[];
   learners: LearnerProfile[];
 };
 
@@ -917,13 +924,16 @@ function HomeworkSurface({ lesson }: { lesson: CourseLesson }) {
 function LessonHistorySurface({
   lesson,
   runs,
+  observations,
 }: {
   lesson: CourseLesson;
   runs: LessonRun[];
+  observations: LessonComponentObservation[];
 }) {
   return (
     <RunHistoryList
       runs={runs.filter((run) => Boolean(run.endedAt))}
+      observations={observations}
       emptyTitle={`Урок ${lesson.position} ещё не проводился`}
       emptyDescription="Назначьте дату урока. После завершения здесь сохранятся отчёт преподавателя, посещаемость и индивидуальные результаты."
     />
@@ -941,7 +951,9 @@ export function LessonAuthoringWorkspace({
   mutationError,
   runMutation,
   onScheduleSummaryChanged,
+  onOpenRun,
   runs,
+  observations,
   learners,
 }: LessonAuthoringWorkspaceProps) {
   const teachingEnabled = course.learningAudience === "children";
@@ -1022,7 +1034,14 @@ export function LessonAuthoringWorkspace({
                 <LessonRunStatusButton
                   runs={runs}
                   disabled={disabled}
-                  onClick={() => setLessonRunDialogOpen(true)}
+                  onClick={() => {
+                    const currentRun = openLessonRun(runs);
+                    if (currentRun && lessonRunState(currentRun) === "active") {
+                      onOpenRun(currentRun.id);
+                      return;
+                    }
+                    setLessonRunDialogOpen(true);
+                  }}
                   variant="primary"
                 />
               ) : (
@@ -1158,7 +1177,11 @@ export function LessonAuthoringWorkspace({
               <CourseMaterialsPanel course={course} context="lesson" />
             ) : null}
             {active && item.value === "history" ? (
-              <LessonHistorySurface lesson={lesson} runs={runs} />
+              <LessonHistorySurface
+                lesson={lesson}
+                runs={runs}
+                observations={observations}
+              />
             ) : null}
           </div>
         );
@@ -1183,6 +1206,7 @@ export function LessonAuthoringWorkspace({
           mutationError={mutationError}
           runMutation={runMutation}
           onScheduleSummaryChanged={onScheduleSummaryChanged}
+          onStarted={onOpenRun}
           onClose={() => setLessonRunDialogOpen(false)}
         />
       ) : null}

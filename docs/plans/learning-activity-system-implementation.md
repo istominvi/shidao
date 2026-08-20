@@ -1,7 +1,7 @@
 # План реализации Learning Activity System
 
-**Статус:** LA-M0 CURRENT; LA-M1–LA-M6 NEXT; LA-M7–LA-M9 LATER
-**Актуально на:** 19 августа 2026 года
+**Статус:** LA-M0–LA-M1 CURRENT SOURCE; LA-M2–LA-M6 NEXT; LA-M7–LA-M9 LATER
+**Актуально на:** 20 августа 2026 года
 **Архитектура:**
 [`learning-activity-system.md`](../architecture/learning-activity-system.md)
 
@@ -38,7 +38,25 @@
 
 Schema и runtime в LA-M0 не меняются.
 
-## LA-M1 — очное проведение и быстрые наблюдения (**NEXT**)
+## LA-M1 — очное проведение и быстрые наблюдения (**CURRENT SOURCE**)
+
+**Статус:** реализован как законченный source vertical slice. Production DB
+apply, dependent Coolify exact SHA и production postflight не следуют из этого
+документа и считаются завершёнными только по фактическому execution evidence.
+
+Текущий implementation map:
+
+- typed domain/contracts/repository/service:
+  `src/modules/learning-activities/`;
+- authenticated application adapter:
+  `GET|PUT /api/v2/lesson-runs/[lessonRunId]/observations`;
+- focused teacher workspace:
+  `/courses/[courseId]/runs/[lessonRunId]` и
+  `src/components/learning-activities/`;
+- recorder-owned Lesson/Course/Learner history расширена отдельной observation
+  projection; learner/observer safe projection не расширялась;
+- additive forward contract:
+  `20260819142602_learning_activity_foundation.sql`.
 
 ### Цель
 
@@ -166,6 +184,15 @@ history в этот slice не входят.
 - identity merge/erasure and learner-safe projection regressions;
 - Course/Lesson/Slides/publication/LearningRecord regressions;
 - format, `git diff --check`, typecheck, targeted tests и build.
+
+Изолированный DB workflow запускается через
+`scripts/db-learning-activity-tests.sh` только на базе с точным именем
+`shidao_learning_activity_test`; script fail closed при другом database/schema
+identity и завершает fixture transaction через `ROLLBACK`. Concurrent
+save-versus-completion проверяется отдельным
+`scripts/db-learning-activity-concurrency-tests.sh`: реальные sessions
+доказывают оба lock order исхода, а не имитируют race последовательными
+statements одной transaction.
 
 ## LA-M2 — Course objectives и Component alignment (**NEXT**)
 

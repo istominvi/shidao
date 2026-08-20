@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
 **Статус:** current / next / later priorities после production identity release
-**Актуально на:** 19 августа 2026 года
+**Актуально на:** 20 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -1293,10 +1293,12 @@ Definition of Done текущего demo:
 Полный контракт:
 [`docs/product/store-demo.md`](./product/store-demo.md).
 
-## P1.1: очные teacher observations
+## P1.1: очные teacher observations (**CURRENT SOURCE**)
 
 Первый Learning Activity vertical slice использует уже существующий LessonRun и
-roster, не ожидая детского learner runtime:
+roster, не ожидая детского learner runtime. LA-M1 реализован в current source
+как additive DB-first slice; этот статус сам по себе не является production
+execution record:
 
 - scheduled Run сначала явно запускается; до `started_at` observation writes
   запрещены;
@@ -1312,12 +1314,17 @@ roster, не ожидая детского learner runtime:
 - compact component position/label/type/criterion-at-time сохраняет понятную
   историю без полного Lesson/Component snapshot;
 - completed observations read-only и recorder-scoped;
+- teacher-owned Lesson/Course/Learner history показывает observations
+  отдельно от learner/observer safe projections; private note остаётся
+  teacher-only;
+- completion требует явно исправить absent learner с observation и не
+  выводит attendance, repeat или report из rating;
 - этот срез ещё не объявляет component-level отметку mastery.
 
 Полный LA-M1 scope и DoD:
 [`docs/plans/learning-activity-system-implementation.md`](./plans/learning-activity-system-implementation.md).
 
-## P1.2: Course objectives и activity foundation
+## P1.2: Course objectives и activity foundation (**NEXT**)
 
 - плоские Course-scoped Learning Objectives;
 - одна optional primary objective на Component;
@@ -1328,8 +1335,9 @@ roster, не ожидая детского learner runtime:
 - старые component-only observations остаются историей и автоматически не
   переосмысливаются.
 
-Следом появляются rebuildable objective state и прозрачные recommendations.
-Один score или completion не считается mastery.
+Это следующий, ещё не реализованный slice. Rebuildable objective state и
+прозрачные recommendations идут после objective alignment; один score или
+completion не считается mastery.
 
 ## P1.3: persisted Homework authoring
 

@@ -237,6 +237,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and to_regclass('public.course_learner_group') is not null
          and to_regclass('public.lesson_run') is not null
          and to_regclass('public.learning_record') is not null
+         and to_regclass('public.lesson_component_observation') is not null
          and to_regclass('public.account_login_alias') is not null
          and to_regclass('public.account_security') is not null
          and to_regclass('public.account_preference') is not null
@@ -900,6 +901,15 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          ) is not null
          and to_regprocedure(
            'public.complete_lesson_run_v2(uuid,jsonb,text,timestamptz,integer)'
+         ) is not null
+         and to_regprocedure(
+           'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)'
+         ) is not null
+         and to_regprocedure(
+           'public.delete_draft_observations_for_lesson_component()'
+         ) is not null
+         and to_regprocedure(
+           'public.delete_lesson_component(uuid)'
          ) is not null
          and to_regprocedure(
            'public.replace_course_audience(uuid,uuid[],uuid[])'
@@ -1603,6 +1613,308 @@ SHIDAO_SCHEMA_SIGNATURE="$({
              'public.complete_lesson_run_v2(uuid,jsonb,text,timestamptz,integer)'
            )
          ) like '%started_at_is_actual%'
+         and pg_get_functiondef(
+           to_regprocedure(
+             'public.complete_lesson_run_v2(uuid,jsonb,text,timestamptz,integer)'
+           )
+         ) like '%lesson_run_absent_learner_has_observation%'
+         and pg_get_functiondef(
+           to_regprocedure(
+             'public.complete_lesson_run_v2(uuid,jsonb,text,timestamptz,integer)'
+           )
+         ) like '%lesson_component_observation%'
+         and position(
+           'for update of component'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.complete_lesson_run_v2(uuid,jsonb,text,timestamptz,integer)'
+           )))
+         ) > position(
+           'for update of lesson'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.complete_lesson_run_v2(uuid,jsonb,text,timestamptz,integer)'
+           )))
+         )
+         and position(
+           'for update of run'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.complete_lesson_run_v2(uuid,jsonb,text,timestamptz,integer)'
+           )))
+         ) > position(
+           'for update of component'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.complete_lesson_run_v2(uuid,jsonb,text,timestamptz,integer)'
+           )))
+         )
+         and position(
+           'for update of record'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.complete_lesson_run_v2(uuid,jsonb,text,timestamptz,integer)'
+           )))
+         ) > position(
+           'for update of run'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.complete_lesson_run_v2(uuid,jsonb,text,timestamptz,integer)'
+           )))
+         )
+         and exists (
+           select 1
+           from pg_class as relation
+           where relation.oid = 'public.lesson_component_observation'::regclass
+             and relation.relrowsecurity
+         )
+         and exists (
+           select 1
+           from pg_policies as policy
+           where policy.schemaname = 'public'
+             and policy.tablename = 'lesson_component_observation'
+             and policy.policyname =
+               'lesson_component_observation_recorder_select'
+             and policy.cmd = 'SELECT'
+             and policy.roles = array['authenticated'::name]
+             and policy.qual like '%current_account_id()%'
+         )
+         and has_table_privilege(
+           'authenticated',
+           'public.lesson_component_observation',
+           'SELECT'
+         )
+         and not exists (
+           select 1
+           from unnest(array['anon', 'authenticated']) as actor(role_name)
+           cross join unnest(array[
+             'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'
+           ]) as checked(privilege_name)
+           where has_table_privilege(
+             actor.role_name,
+             'public.lesson_component_observation',
+             checked.privilege_name
+           )
+         )
+         and not has_table_privilege(
+           'anon',
+           'public.lesson_component_observation',
+           'SELECT'
+         )
+         and not exists (
+           select 1
+           from pg_class as relation
+           cross join lateral aclexplode(
+             coalesce(
+               relation.relacl,
+               acldefault('r', relation.relowner)
+             )
+           ) as acl_entry
+           where relation.oid =
+               'public.lesson_component_observation'::regclass
+             and acl_entry.grantee = 0
+         )
+         and exists (
+           select 1
+           from pg_proc as procedure
+           where procedure.oid = to_regprocedure(
+             'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)'
+           )
+             and procedure.prosecdef
+             and procedure.proretset
+             and procedure.proconfig @> array['search_path=\"\"']
+             and not exists (
+               select 1
+               from aclexplode(
+                 coalesce(
+                   procedure.proacl,
+                   acldefault('f', procedure.proowner)
+                 )
+               ) as acl_entry
+               where acl_entry.grantee = 0
+                 and acl_entry.privilege_type = 'EXECUTE'
+             )
+         )
+         and has_function_privilege(
+           'authenticated',
+           'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)',
+           'EXECUTE'
+         )
+         and not exists (
+           select 1
+           from unnest(array['anon', 'service_role']) as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)',
+             'EXECUTE'
+           )
+         )
+         and exists (
+           select 1
+           from pg_constraint
+           where conrelid =
+               'public.lesson_component_observation'::regclass
+             and conname =
+               'lesson_component_observation_record_recorder_fkey'
+             and contype = 'f'
+             and confdeltype = 'c'
+             and convalidated
+         )
+         and exists (
+           select 1
+           from pg_constraint
+           where conrelid =
+               'public.lesson_component_observation'::regclass
+             and conname =
+               'lesson_component_observation_live_component_fkey'
+             and contype = 'f'
+             and confdeltype = 'n'
+             and convalidated
+         )
+         and exists (
+           select 1
+           from pg_proc as procedure
+           where procedure.oid = to_regprocedure(
+             'public.delete_draft_observations_for_lesson_component()'
+           )
+             and procedure.prosecdef
+             and procedure.proconfig @> array['search_path=\"\"']
+             and position(
+               'delete from public.lesson_component_observation'
+               in lower(pg_get_functiondef(procedure.oid))
+             ) > 0
+             and position(
+               'record.occurred_at is null'
+               in lower(pg_get_functiondef(procedure.oid))
+             ) > 0
+             and position(
+               'observation.lesson_component_id = old.id'
+               in lower(pg_get_functiondef(procedure.oid))
+             ) > 0
+             and not exists (
+               select 1
+               from aclexplode(
+                 coalesce(
+                   procedure.proacl,
+                   acldefault('f', procedure.proowner)
+                 )
+               ) as acl_entry
+               where acl_entry.grantee = 0
+                 and acl_entry.privilege_type = 'EXECUTE'
+             )
+         )
+         and has_function_privilege(
+           'postgres',
+           'public.delete_draft_observations_for_lesson_component()',
+           'EXECUTE'
+         )
+         and not exists (
+           select 1
+           from unnest(array['anon', 'authenticated', 'service_role'])
+             as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             'public.delete_draft_observations_for_lesson_component()',
+             'EXECUTE'
+           )
+         )
+         and exists (
+           select 1
+           from pg_trigger as trigger
+           where trigger.tgrelid = 'public.lesson_component'::regclass
+             and trigger.tgname =
+               'trg_lesson_component_delete_draft_observations'
+             and not trigger.tgisinternal
+             and trigger.tgenabled = 'O'
+             and trigger.tgtype = 11
+             and trigger.tgfoid = to_regprocedure(
+               'public.delete_draft_observations_for_lesson_component()'
+             )
+         )
+         and position(
+           'for update of lesson'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_component(uuid)'::regprocedure
+           ))
+         ) > 0
+         and position(
+           'for update of component'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_component(uuid)'::regprocedure
+           ))
+         ) > position(
+           'for update of lesson'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_component(uuid)'::regprocedure
+           ))
+         )
+         and position(
+           'for update of run'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_component(uuid)'::regprocedure
+           ))
+         ) > position(
+           'for update of component'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_component(uuid)'::regprocedure
+           ))
+         )
+         and position(
+           'for update of record'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_component(uuid)'::regprocedure
+           ))
+         ) > position(
+           'for update of run'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_component(uuid)'::regprocedure
+           ))
+         )
+         and position(
+           'for update of component'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_with_history(uuid)'::regprocedure
+           ))
+         ) > position(
+           'for update of lesson'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_with_history(uuid)'::regprocedure
+           ))
+         )
+         and position(
+           'for update of run'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_with_history(uuid)'::regprocedure
+           ))
+         ) > position(
+           'for update of component'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_with_history(uuid)'::regprocedure
+           ))
+         )
+         and position(
+           'for update of record'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_with_history(uuid)'::regprocedure
+           ))
+         ) > position(
+           'for update of run'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_with_history(uuid)'::regprocedure
+           ))
+         )
+         and position(
+           'set lesson_run_id = null,'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_with_history(uuid)'::regprocedure
+           ))
+         ) > 0
+         and position(
+           'source_lesson_id = null'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_with_history(uuid)'::regprocedure
+           ))
+         ) > 0
+         and position(
+           'record.occurred_at is not null'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_with_history(uuid)'::regprocedure
+           ))
+         ) > 0
          and pg_get_function_result(
            'public.create_learner_profile_with_groups(text,uuid[])'::regprocedure
          ) like '%teacher_learner%'
@@ -1868,6 +2180,14 @@ for required in \
   "avatar_updated_at timestamp with time zone" \
   "CREATE TABLE public.lesson_run" \
   "CREATE TABLE public.learning_record" \
+  "CREATE TABLE public.lesson_component_observation" \
+  "learning_record_id_recorded_by_unique" \
+  "lesson_component_observation_record_source_unique" \
+  "lesson_component_observation_record_recorder_fkey" \
+  "lesson_component_observation_live_component_fkey" \
+  "CREATE INDEX lesson_component_observation_live_component_idx" \
+  "CREATE INDEX lesson_component_observation_recorder_observed_idx" \
+  "CREATE TRIGGER trg_lesson_component_observation_updated_at" \
   "CREATE TABLE public.teacher_learner" \
   "CREATE TABLE public.learner_group" \
   "CREATE TABLE public.learner_group_member" \
@@ -1940,7 +2260,15 @@ for required in \
   "CREATE FUNCTION public.build_cross_provider_learner_context" \
   "CREATE FUNCTION public.schedule_lesson_run" \
   "CREATE FUNCTION public.complete_lesson_run_v2" \
+  "CREATE FUNCTION public.save_lesson_component_observations" \
+  "CREATE POLICY lesson_component_observation_recorder_select" \
+  "CREATE FUNCTION public.delete_draft_observations_for_lesson_component" \
+  "CREATE TRIGGER trg_lesson_component_delete_draft_observations" \
+  "CREATE FUNCTION public.delete_lesson_component" \
   "CREATE FUNCTION public.delete_lesson_with_history" \
+  "lesson_run_absent_learner_has_observation" \
+  "set lesson_run_id = null," \
+  "source_lesson_id = null" \
   "CREATE FUNCTION public.archive_course" \
   "CREATE FUNCTION public.guard_course_archive_invariants" \
   "CREATE FUNCTION public.guard_course_publication_active_source" \

@@ -7,7 +7,12 @@ import {
   isSafeRelativePath,
   isSettingsRoute,
 } from "../routes";
-import { ROUTES, toCourseRoute, toCourseStudentPreviewRoute } from "../auth";
+import {
+  ROUTES,
+  toCourseRoute,
+  toCourseStudentPreviewRoute,
+  toLessonRunRoute,
+} from "../auth";
 import {
   PROFILE_NAV_ITEMS,
   profileCompatibilityHref,
@@ -63,6 +68,10 @@ test("course route helpers encode ids and share one workspace route", () => {
   assert.equal(
     toCourseStudentPreviewRoute("course/id"),
     "/courses/course%2Fid/student-preview",
+  );
+  assert.equal(
+    toLessonRunRoute("course/id", "run/id"),
+    "/courses/course%2Fid/runs/run%2Fid",
   );
 });
 

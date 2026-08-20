@@ -249,6 +249,12 @@ export function createLessonRunsService(
             "lesson_run_participants_changed",
           );
         }
+        if (/lesson_run_absent_learner_has_observation/.test(error.message)) {
+          throw new CourseBuilderConflictError(
+            "У отсутствующего ученика остались наблюдения. Исправьте посещаемость или очистите наблюдения.",
+            "lesson_run_absent_learner_has_observation",
+          );
+        }
         if (/lesson_run_(?:not_open|already_completed)/.test(error.message)) {
           throw new CourseBuilderConflictError(
             "Занятие уже завершено или отменено.",
@@ -434,6 +440,10 @@ export function createLessonRunsService(
       return repository.listSchedule(accountId, input.from, input.to);
     },
 
+    async getRun(actor: CourseBuilderActor, lessonRunId: string) {
+      return requireOwnedRun(actor, lessonRunId);
+    },
+
     async listLessonHistory(actor: CourseBuilderActor, lessonId: string) {
       const { accountId, lesson } = await requireOwnedLesson(actor, lessonId);
       return repository.listLessonHistory(accountId, lesson.id, {
@@ -573,7 +583,7 @@ export function createLessonRunsService(
     async startRun(actor: CourseBuilderActor, lessonRunId: string) {
       const current = await requireOwnedRun(actor, lessonRunId);
       assertRunIsOpen(current);
-      if (current.startedAt) return current;
+      if (current.startedAt && current.startedAtIsActual) return current;
       return runMutation(() => repository.startRun(current.id));
     },
 

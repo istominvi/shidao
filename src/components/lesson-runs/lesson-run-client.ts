@@ -8,6 +8,7 @@ import type {
   LearnerProfile,
   LessonRun,
 } from "@/modules/lesson-runs/domain";
+import type { LessonComponentObservation } from "@/modules/learning-activities";
 
 function encoded(value: string) {
   return encodeURIComponent(value);
@@ -195,30 +196,36 @@ export async function completeLessonRun(
   return payload.run;
 }
 
-async function loadRuns(path: string) {
-  const payload = await courseBuilderRequest<{ runs: LessonRun[] }>(path, {
+async function loadRunHistory(path: string) {
+  return courseBuilderRequest<{
+    runs: LessonRun[];
+    observations: LessonComponentObservation[];
+  }>(path, {
     cache: "no-store",
   });
-  return payload.runs;
 }
 
 export function loadLessonHistory(lessonId: string) {
-  return loadRuns(`/api/v2/lessons/${encoded(lessonId)}/history`);
+  return loadRunHistory(`/api/v2/lessons/${encoded(lessonId)}/history`);
 }
 
 export function loadCourseHistory(courseId: string) {
-  return loadRuns(`/api/v2/courses/${encoded(courseId)}/history`);
+  return loadRunHistory(`/api/v2/courses/${encoded(courseId)}/history`);
 }
 
 export async function loadLearnerHistory(learnerProfileId: string) {
-  const payload = await courseBuilderRequest<{ records: LearningRecord[] }>(
-    `/api/v2/learner-profiles/${encoded(learnerProfileId)}/history`,
-    { cache: "no-store" },
-  );
-  return payload.records;
+  return courseBuilderRequest<{
+    records: LearningRecord[];
+    observations: LessonComponentObservation[];
+  }>(`/api/v2/learner-profiles/${encoded(learnerProfileId)}/history`, {
+    cache: "no-store",
+  });
 }
 
 export function loadSchedule(from: string, to: string) {
   const query = new URLSearchParams({ from, to });
-  return loadRuns(`/api/v2/lesson-runs?${query.toString()}`);
+  return courseBuilderRequest<{ runs: LessonRun[] }>(
+    `/api/v2/lesson-runs?${query.toString()}`,
+    { cache: "no-store" },
+  ).then((payload) => payload.runs);
 }

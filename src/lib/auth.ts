@@ -84,3 +84,7 @@ export function toCourseRoute(courseId: string) {
 export function toCourseStudentPreviewRoute(courseId: string) {
   return `${toCourseRoute(courseId)}/student-preview`;
 }
+
+export function toLessonRunRoute(courseId: string, lessonRunId: string) {
+  return `${toCourseRoute(courseId)}/runs/${encodeURIComponent(lessonRunId)}`;
+}

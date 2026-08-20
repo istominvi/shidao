@@ -1,7 +1,7 @@
 # Текущее состояние ShiDao V2
 
 **Статус:** главный входной документ для разработки
-**Актуально на:** 19 августа 2026 года
+**Актуально на:** 20 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
 **Initial Communication Center functional application source:**
@@ -1357,6 +1357,7 @@ Account
         │   └── ordered Slides 0..N → ссылки на Components
         └── LessonRun 0..N
             └── LearningRecord 0..N → LearnerProfile + recorded-by Account
+                └── LessonComponentObservation 0..N → source Component-at-time
 
 Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 ```
@@ -1381,6 +1382,11 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   записи и ограничивает teacher raw history. Subject/observer читают отдельную
   finalized safe projection с explicit shared comments. Отдельных
   participant/snapshot/status tables нет.
+- LA-M1 хранит component-level teacher observations отдельно от
+  `learning_record`: одна текущая отметка на expected learner + source
+  Component, compact position/type/label/criterion-at-time, rating, entry method,
+  private note и recorder. Отсутствие строки означает «не наблюдал»;
+  полного Component/Lesson snapshot нет.
 - LearnerProfile — canonical learning identity без teacher owner. Каждый
   active/provisional Account имеет ровно один linked profile как deferred DB
   invariant; offline profiles сохраняют `account_id IS NULL` до explicit claim.
@@ -1397,7 +1403,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 Полные Lesson/Run invariants зафиксированы в
 [`docs/architecture/lesson-workflow-model.md`](./architecture/lesson-workflow-model.md),
-канонический target contract учебных активностей (LA-M0) — в
+канонический contract учебных активностей и current source LA-M1 — в
 [`docs/architecture/learning-activity-system.md`](./architecture/learning-activity-system.md),
 а identity/access boundary — в
 [`docs/architecture/learner-identity-access-model.md`](./architecture/learner-identity-access-model.md).
@@ -1939,6 +1945,42 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - Новый Component всегда создаётся `staff_only` и не показывается ученику,
   пока преподаватель явно не назначит его на Slide.
 
+### Проведение и teacher observations — current source LA-M1
+
+Этот раздел фиксирует реализованный source contract. Он не является записью о
+production DB apply, Coolify exact SHA или production postflight; такие факты
+фиксируются только после фактического DB-first rollout.
+
+- Existing schedule/Course/Lesson entry points запускают scheduled Run через
+  канонический `start_lesson_run` либо открывают focused workspace уже
+  идущего Run. Observation mutation требует `started_at` и
+  `started_at_is_actual = true`; scheduled, completed и cancelled Runs закрыты
+  для записи.
+- `/courses/[courseId]/runs/[lessonRunId]` показывает полный authored
+  `lesson_component.position` order, включая passive Components. Slides и
+  второй runtime order в проведении не используются.
+- Structured rating доступен только после explicit confirmation короткого
+  observable criterion. Для expected learner доступны
+  `independent | with_support | not_yet`; возврат в «не наблюдал»
+  удаляет draft observation открытого Run.
+- «Все самостоятельно» сначала создаёт только UI draft. Teacher меняет
+  exceptions и явно подтверждает оставшихся; только после этого RPC
+  сохраняет `entry_method = bulk_confirmed`. Direct changes autosave показывают
+  pending/saved/error/retry state и переживают reload.
+- Completion dialog показывает deterministic observation summary и не
+  выводит из отметок attendance, `needs_repeat` или teacher report. DB guard
+  отклоняет completion, если learner отмечен absent, но у него есть
+  observation.
+- После completion observations read-only и доступны в recorder-owned
+  Lesson/Course/Learner history. Compact at-time context остаётся понятным
+  после удаления live Component/Lesson; private note не добавлена в
+  learner/observer safe projections.
+- React не обращается к observation table напрямую. Authenticated
+  `GET|PUT /api/v2/lesson-runs/[lessonRunId]/observations` — adapter над
+  `src/modules/learning-activities/`; mutation идёт через один audited batch RPC.
+- LA-M1 является историей component-level observation, а не Course
+  objective, evidence/mastery, learner attempt или adaptive decision.
+
 ### Экран ученика
 
 - В current production кнопка «Экран ученика» использует ту же иконку `MonitorPlay`,
@@ -2297,7 +2339,6 @@ History-aware context развёрнут в release `9393080`; production provid
   educator Course описан отдельно и не является LessonRun/live flow;
 - live Student Screen sync, realtime presence и teacher-controlled runtime
   cursor поверх открытого LessonRun;
-- component-level teacher observations во время LessonRun;
 - Course learning objectives и Component alignment;
 - versioned learner activity attempts, server-side evaluation, typed evidence,
   rebuildable learner-objective state и adaptive recommendations;
@@ -2396,6 +2437,7 @@ course_learner
 course_learner_group
 lesson_run
 learning_record
+lesson_component_observation
 account_login_alias
 account_security
 account_preference
@@ -2433,6 +2475,13 @@ snapshot отсутствуют. `learning_record` дополнительно х
 comment timestamp, actual duration at time и superseded merge provenance.
 Recorder immutable; subject reset использует explicit erasure workflow вместо
 случайного cascade.
+
+Current source `lesson_component_observation` — отдельный LA-M1 contract поверх
+draft/final lifecycle родительского LearningRecord. Composite FK физически связывает
+recorder с record; cancel cascade удаляет drafts, а nullable live Component FK
+`ON DELETE SET NULL` сохраняет finalized at-time history. Raw browser writes
+запрещены; recorder читает свои rows, а mutation выполняет narrow
+`save_lesson_component_observations`.
 
 Current Communication Center читает bounded finalized history и сохраняет
 несколько AI conversations/turns/read cursors; human threads/messages и system
@@ -2613,6 +2662,8 @@ positions, а плотность поддерживают текущие service
 | LessonRun service/repository       | `src/modules/lesson-runs/service.ts`, `repository.ts`, `server-context.ts`                                                                                                                                                                                                         |
 | LessonRun API                      | `src/app/api/v2/lesson-runs/`, `learner-profiles/`, `learner-groups/`, Course/Lesson audience/history/runs routes                                                                                                                                                                  |
 | LessonRun UI                       | `src/components/lesson-runs/`                                                                                                                                                                                                                                                      |
+| Learning Activity module           | `src/modules/learning-activities/`                                                                                                                                                                                                                                                 |
+| Observation API/UI                 | `src/app/api/v2/lesson-runs/[lessonRunId]/observations/`, `src/app/(app)/courses/[courseId]/runs/[lessonRunId]/`, `src/components/learning-activities/`                                                                                                                            |
 | Learner identity contracts/service | `src/modules/learner-identity/`                                                                                                                                                                                                                                                    |
 | Learner identity UI/routes         | `src/app/(app)/profile/`, `src/components/profile/`, `src/components/learner-identity/`, `/profile`, `/students?tab=observing`, `/identity/invitations/*`; `/learning-profile`, `/settings/*` и `/observing` — compatibility redirects                                             |
 | Account profile/avatar UI          | `src/components/account/`, `src/components/account/avatar-settings-form.tsx`, `src/lib/navigation/profile-nav.ts`                                                                                                                                                                  |
@@ -2664,6 +2715,7 @@ positions, а плотность поддерживают текущие service
 /courses
 /courses/new
 /courses/[courseId]
+/courses/[courseId]/runs/[lessonRunId] # teacher-owned LA-M1 workspace
 /courses/catalog/[publicationId]     # отдельный published learning workspace
 /courses/[courseId]/student-preview
 /profile
@@ -2676,11 +2728,12 @@ positions, а плотность поддерживают текущие service
 ```
 
 V2 API находится под `/api/v2/` и включает `learner-profiles`, Course
-`audience|history`, Lesson `runs|history` и `lesson-runs` schedule/lifecycle
-routes. Canonical learner slice сохраняет эти URL и product RPC names, меняя их
-backing projection на `teacher_learner`. Все используют per-request actor,
-application service и user JWT/RLS; старые dashboard/methodology/group/
-scheduled-lesson routes не поддерживаются как compatibility URL.
+`audience|history`, Lesson `runs|history`, `lesson-runs` schedule/lifecycle и
+teacher-only `lesson-runs/[lessonRunId]/observations` routes. Canonical learner
+slice сохраняет эти URL и product RPC names, меняя их backing projection на
+`teacher_learner`. Все используют per-request actor, application service и user
+JWT/RLS; старые dashboard/methodology/group/scheduled-lesson routes не
+поддерживаются как compatibility URL.
 
 Current identity API добавляет namespaces `me/learning-profile`,
 `learner-directory`, `learner-connections`, `identity-invitations`,

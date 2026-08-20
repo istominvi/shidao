@@ -42,7 +42,7 @@ export function lessonRunState(
 ): LessonRunState {
   if (run.cancelledAt) return "cancelled";
   if (run.endedAt) return "completed";
-  if (run.startedAt) return "active";
+  if (run.startedAt && run.startedAtIsActual !== false) return "active";
   return new Date(run.scheduledAt).getTime() <= now.getTime()
     ? "attention"
     : "scheduled";

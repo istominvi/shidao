@@ -30,6 +30,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import type { LearningRecord, LessonRun } from "@/modules/lesson-runs/domain";
+import type { LessonComponentObservation } from "@/modules/learning-activities";
 
 export type LessonRunMutationRunner = (
   label: string,
@@ -158,6 +159,8 @@ export function LessonRunDialog({
   mutationError,
   runMutation,
   onScheduleSummaryChanged,
+  onStarted,
+  observations = [],
   initialMode = "default",
   onClose,
 }: {
@@ -168,6 +171,8 @@ export function LessonRunDialog({
   mutationError?: string | null;
   runMutation: LessonRunMutationRunner;
   onScheduleSummaryChanged?: () => void;
+  onStarted?: (lessonRunId: string) => void;
+  observations?: LessonComponentObservation[];
   initialMode?: "default" | "edit";
   onClose: () => void;
 }) {
@@ -220,6 +225,17 @@ export function LessonRunDialog({
   }, [run]);
 
   const activeRecords = run?.records ?? [];
+  const observationCountByRecordId = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const observation of observations) {
+      counts.set(
+        observation.learningRecordId,
+        (counts.get(observation.learningRecordId) ?? 0) + 1,
+      );
+    }
+    return counts;
+  }, [observations]);
+  const observedLearnerCount = observationCountByRecordId.size;
   const completionMode =
     runState === "active" || (runState === "attention" && !editingAttention);
   const completionReady =
@@ -227,7 +243,13 @@ export function LessonRunDialog({
     activeRecords.every((record) => {
       const draft =
         completion[record.learnerProfileId] ?? completionDraftFor(record);
-      return draft.wasPresent !== null;
+      return (
+        draft.wasPresent !== null &&
+        !(
+          draft.wasPresent === false &&
+          observationCountByRecordId.has(record.id)
+        )
+      );
     });
   const hasUnsavedCompletionDraft =
     teacherReport !== (run?.teacherReport ?? "") ||
@@ -311,14 +333,25 @@ export function LessonRunDialog({
     const saved = await runDialogMutation("Начинаем урок…", () =>
       startLessonRun(run.id),
     );
-    if (saved) onClose();
+    if (saved) {
+      onStarted?.(run.id);
+      onClose();
+    }
   }
 
   async function cancel() {
     if (!run) return;
-    const warning = hasUnsavedCompletionDraft
-      ? "Отменить проведение? Введённый отчёт и индивидуальные отметки будут потеряны."
-      : "Отменить это проведение урока?";
+    const consequences = [
+      observations.length > 0
+        ? `Сохранённые наблюдения (${observations.length}) будут удалены вместе с черновыми учебными записями.`
+        : null,
+      hasUnsavedCompletionDraft
+        ? "Введённый отчёт и индивидуальные итоговые отметки будут потеряны."
+        : null,
+    ].filter((message): message is string => Boolean(message));
+    const warning = `Отменить это проведение урока?${
+      consequences.length > 0 ? ` ${consequences.join(" ")}` : ""
+    }`;
     if (!window.confirm(warning)) return;
     const saved = await runDialogMutation("Отменяем проведение…", () =>
       cancelLessonRun(run.id),
@@ -396,6 +429,21 @@ export function LessonRunDialog({
             </span>
           </div>
 
+          {observations.length > 0 ? (
+            <section
+              className="lesson-run-observation-completion-summary"
+              aria-label="Сводка наблюдений перед завершением"
+            >
+              <strong>Наблюдения перед завершением</strong>
+              <p>
+                Сохранено {observations.length} отметок для{" "}
+                {observedLearnerCount} из {activeRecords.length} учеников. Они
+                не меняют посещаемость, рекомендацию повторения или общий отчёт
+                автоматически.
+              </p>
+            </section>
+          ) : null}
+
           <label className="block">
             <span className="field-label">Как прошёл урок</span>
             <textarea
@@ -437,6 +485,8 @@ export function LessonRunDialog({
               const draft =
                 completion[record.learnerProfileId] ??
                 completionDraftFor(record);
+              const observationCount =
+                observationCountByRecordId.get(record.id) ?? 0;
               return (
                 <div
                   key={record.learnerProfileId}
@@ -501,6 +551,13 @@ export function LessonRunDialog({
                       Нужно повторить
                     </label>
                   </div>
+                  {draft.wasPresent === false && observationCount > 0 ? (
+                    <p className="app-alert app-alert-error" role="alert">
+                      Для ученика сохранено наблюдений: {observationCount}.
+                      Отметьте присутствие или закройте это окно и явно очистите
+                      наблюдения в проведении.
+                    </p>
+                  ) : null}
                   <label>
                     <span className="sr-only">
                       Комментарий об ученике {record.learnerDisplayName}
@@ -555,7 +612,8 @@ export function LessonRunDialog({
 
           {!completionReady ? (
             <p className="lesson-run-completion-hint" role="status">
-              Отметьте «Был» или «Не был» для каждого ученика.
+              Отметьте «Был» или «Не был» для каждого ученика. Отсутствие нельзя
+              сохранить, пока у ученика есть наблюдения этого проведения.
             </p>
           ) : null}
 

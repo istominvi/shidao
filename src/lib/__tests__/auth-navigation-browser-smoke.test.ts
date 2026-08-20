@@ -704,6 +704,39 @@ type E2ECompletionPayload = {
   p_records: E2ECompletionRecordInput[];
 };
 
+type E2EObservationRating = "independent" | "with_support" | "not_yet";
+
+type E2EObservationRpcPayload = {
+  p_lesson_run_id: string;
+  p_lesson_component_id: string;
+  p_component_label_at_time: string;
+  p_observable_criterion_at_time: string | null;
+  p_entry_method: "direct" | "bulk_confirmed";
+  p_observations: Array<{
+    learningRecordId: string;
+    rating: E2EObservationRating | null;
+    privateNote: string | null;
+  }>;
+};
+
+type E2ELessonComponentObservationRow = {
+  id: string;
+  learning_record_id: string;
+  lesson_component_id: string | null;
+  source_lesson_component_id_at_time: string;
+  component_position_at_time: number;
+  component_type_key_at_time: string;
+  component_label_at_time: string;
+  observable_criterion_at_time: string;
+  rating: E2EObservationRating;
+  entry_method: "direct" | "bulk_confirmed";
+  private_note: string | null;
+  observed_at: string;
+  recorded_by_account_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
 const E2E_LEARNING_RECORD_ROWS: E2ELearningRecordRow[] = [
   {
     id: "77777777-7777-4777-8777-777777777771",
@@ -790,6 +823,11 @@ const E2E_COMPLETION_RECORD_IDS = [
   ],
 ] as const;
 
+const E2E_OBSERVATION_IDS = [
+  "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaae1",
+  "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaae2",
+] as const;
+
 let e2eCompletionPhase: 0 | 1 | 2 | null = null;
 let e2eScheduleFixtureVisible = false;
 let e2eScheduleFixtureRunCount: 1 | 2 = 1;
@@ -799,11 +837,63 @@ let e2eSecondCourseArchived = false;
 let e2eSecondLessonVisible = false;
 const e2eCompletionPayloads: E2ECompletionPayload[] = [];
 const e2eCompletedLearningRecordRows: E2ELearningRecordRow[] = [];
+let e2eObservationFixtureEnabled = false;
+const e2eObservationRpcPayloads: E2EObservationRpcPayload[] = [];
+const e2eObservationRows: E2ELessonComponentObservationRow[] = [];
 
 function resetE2eCompletionFlow() {
   e2eCompletionPhase = 0;
   e2eCompletionPayloads.length = 0;
   e2eCompletedLearningRecordRows.length = 0;
+}
+
+function resetE2eObservationFlow() {
+  e2eObservationRpcPayloads.length = 0;
+  e2eObservationRows.length = 0;
+}
+
+function applyE2eObservationPayload(payload: E2EObservationRpcPayload) {
+  e2eObservationRpcPayloads.push(payload);
+  const observedAt = "2026-08-07T07:20:00.000Z";
+
+  for (const submitted of payload.p_observations) {
+    const existingIndex = e2eObservationRows.findIndex(
+      (row) =>
+        row.learning_record_id === submitted.learningRecordId &&
+        row.source_lesson_component_id_at_time ===
+          payload.p_lesson_component_id,
+    );
+    if (submitted.rating === null) {
+      if (existingIndex >= 0) e2eObservationRows.splice(existingIndex, 1);
+      continue;
+    }
+
+    const recordIndex = E2E_COMPLETION_RECORD_IDS[0].findIndex(
+      (learningRecordId) => learningRecordId === submitted.learningRecordId,
+    );
+    assert.ok(recordIndex >= 0, "observation fixture record must be expected");
+    const existing = e2eObservationRows[existingIndex];
+    const row: E2ELessonComponentObservationRow = {
+      id: existing?.id ?? E2E_OBSERVATION_IDS[recordIndex]!,
+      learning_record_id: submitted.learningRecordId,
+      lesson_component_id: payload.p_lesson_component_id,
+      source_lesson_component_id_at_time: payload.p_lesson_component_id,
+      component_position_at_time: 1,
+      component_type_key_at_time: "file",
+      component_label_at_time: payload.p_component_label_at_time,
+      observable_criterion_at_time:
+        payload.p_observable_criterion_at_time ?? "",
+      rating: submitted.rating,
+      entry_method: payload.p_entry_method,
+      private_note: submitted.privateNote,
+      observed_at: observedAt,
+      recorded_by_account_id: E2E_ACCOUNT_ID,
+      created_at: existing?.created_at ?? observedAt,
+      updated_at: observedAt,
+    };
+    if (existingIndex >= 0) e2eObservationRows[existingIndex] = row;
+    else e2eObservationRows.push(row);
+  }
 }
 
 function e2eCompletionRunRow(
@@ -2875,6 +2965,58 @@ async function handleMockSupabase(
   }
 
   if (
+    requestUrl.pathname === "/rest/v1/rpc/save_lesson_component_observations" &&
+    request.method === "POST"
+  ) {
+    const payload = (await readJsonBody(
+      request,
+    )) as unknown as E2EObservationRpcPayload;
+    if (
+      !e2eObservationFixtureEnabled ||
+      payload.p_lesson_run_id !== E2E_COMPLETION_PRIVATE_RUN_ID ||
+      payload.p_lesson_component_id !== E2E_COMPONENT_ID ||
+      !Array.isArray(payload.p_observations)
+    ) {
+      json(response, 409, { message: "observation fixture is not active" });
+      return;
+    }
+    applyE2eObservationPayload(payload);
+    response.writeHead(204);
+    response.end();
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/lesson_component_observation") {
+    const requestedRecordIds = readInFilter(requestUrl, "learning_record_id");
+    const matchingRows = (
+      e2eObservationFixtureEnabled ? e2eObservationRows : []
+    ).filter(
+      (row) =>
+        !requestedRecordIds ||
+        requestedRecordIds.includes(row.learning_record_id),
+    );
+    const requestedRange =
+      typeof request.headers.range === "string"
+        ? /^(\d+)-(\d+)$/.exec(request.headers.range)
+        : null;
+    const rangeStart = Number(requestedRange?.[1] ?? 0);
+    const rangeEnd = Number(
+      requestedRange?.[2] ?? Math.max(0, matchingRows.length - 1),
+    );
+    const page = matchingRows.slice(rangeStart, rangeEnd + 1);
+    response.writeHead(200, {
+      "Content-Type": "application/json",
+      "Content-Range":
+        matchingRows.length === 0
+          ? "*/0"
+          : `${rangeStart}-${rangeStart + page.length - 1}/${matchingRows.length}`,
+      "Range-Unit": "items",
+    });
+    response.end(JSON.stringify(page));
+    return;
+  }
+
+  if (
     requestUrl.pathname === "/rest/v1/rpc/complete_lesson_run_v2" &&
     request.method === "POST"
   ) {
@@ -2896,6 +3038,29 @@ async function handleMockSupabase(
     ) {
       json(response, 400, { message: "unexpected completion payload" });
       return;
+    }
+
+    if (e2eObservationFixtureEnabled) {
+      const expectedRecords = e2eExpectedCompletionRecords();
+      const absentLearnerHasObservation = payload.p_records.some((result) => {
+        if (result.wasPresent) return false;
+        const learningRecord = expectedRecords.find(
+          (record) => record.learner_profile_id === result.learnerProfileId,
+        );
+        return Boolean(
+          learningRecord &&
+          e2eObservationRows.some(
+            (observation) =>
+              observation.learning_record_id === learningRecord.id,
+          ),
+        );
+      });
+      if (absentLearnerHasObservation) {
+        json(response, 409, {
+          message: "lesson_run_absent_learner_has_observation",
+        });
+        return;
+      }
     }
 
     e2eCompletionPayloads.push(payload);
@@ -12525,6 +12690,291 @@ test("browser smoke: mixed Course audience deduplicates direct and grouped learn
   }
 });
 
+test("browser smoke: LA-M1 bulk observations persist, guard absence, and freeze on completion", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  resetE2eCompletionFlow();
+  resetE2eObservationFlow();
+  e2eScheduleFixtureVisible = false;
+  e2eObservationFixtureEnabled = true;
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+  const runPath = `/courses/${E2E_COURSE_ID}/runs/${E2E_COMPLETION_PRIVATE_RUN_ID}`;
+  const learnerRow = (displayName: string) =>
+    runtime.page
+      .getByRole("heading", { name: displayName, exact: true, level: 3 })
+      .locator("..")
+      .locator("..")
+      .locator("..");
+
+  try {
+    await runtime.page.goto(runPath, { waitUntil: "networkidle" });
+    await runtime.page
+      .getByRole("heading", {
+        name: E2E_LESSON_TITLE,
+        exact: true,
+        level: 1,
+      })
+      .waitFor();
+
+    const criterion = runtime.page.getByLabel("Наблюдаемый критерий");
+    assert.match(await criterion.inputValue(), /наблюдаемое действие/i);
+    const selfIndependent = learnerRow("E2E Adult").getByRole("radio", {
+      name: "Сам",
+      exact: true,
+    });
+    assert.equal(
+      await selfIndependent.isEnabled(),
+      false,
+      "rating stays locked before explicit criterion confirmation",
+    );
+
+    await runtime.page
+      .getByRole("button", { name: "Подтвердить", exact: true })
+      .click();
+    assert.equal(await selfIndependent.isEnabled(), true);
+    await runtime.page
+      .getByRole("button", { name: "Все самостоятельно", exact: true })
+      .click();
+    assert.equal(
+      e2eObservationRpcPayloads.length,
+      0,
+      "bulk action itself must remain a local draft",
+    );
+
+    await learnerRow("Борис Волков")
+      .getByRole("radio", { name: "Пока не получилось", exact: true })
+      .check();
+    assert.equal(
+      e2eObservationRpcPayloads.length,
+      0,
+      "bulk exceptions must remain local until confirmation",
+    );
+
+    const saved = runtime.page.waitForResponse((response) =>
+      response
+        .url()
+        .includes(
+          `/api/v2/lesson-runs/${E2E_COMPLETION_PRIVATE_RUN_ID}/observations`,
+        ),
+    );
+    await runtime.page
+      .getByRole("button", {
+        name: /^Подтвердить 2 отмет/,
+      })
+      .click();
+    assert.equal((await saved).status(), 200);
+    await learnerRow("E2E Adult")
+      .getByText("Сохранено", { exact: true })
+      .waitFor();
+
+    assert.equal(e2eObservationRpcPayloads.length, 1);
+    assert.deepEqual(
+      {
+        lessonRunId: e2eObservationRpcPayloads[0]?.p_lesson_run_id,
+        lessonComponentId: e2eObservationRpcPayloads[0]?.p_lesson_component_id,
+        criterion: e2eObservationRpcPayloads[0]?.p_observable_criterion_at_time,
+        entryMethod: e2eObservationRpcPayloads[0]?.p_entry_method,
+        observations: [...(e2eObservationRpcPayloads[0]?.p_observations ?? [])]
+          .sort((left, right) =>
+            left.learningRecordId.localeCompare(right.learningRecordId),
+          )
+          .map(({ learningRecordId, rating, privateNote }) => ({
+            learningRecordId,
+            rating,
+            privateNote,
+          })),
+      },
+      {
+        lessonRunId: E2E_COMPLETION_PRIVATE_RUN_ID,
+        lessonComponentId: E2E_COMPONENT_ID,
+        criterion: await criterion.inputValue(),
+        entryMethod: "bulk_confirmed",
+        observations: [
+          {
+            learningRecordId: E2E_COMPLETION_RECORD_IDS[0][0],
+            rating: "independent",
+            privateNote: null,
+          },
+          {
+            learningRecordId: E2E_COMPLETION_RECORD_IDS[0][1],
+            rating: "not_yet",
+            privateNote: null,
+          },
+        ],
+      },
+    );
+
+    await runtime.page.goto(runPath, { waitUntil: "networkidle" });
+    await runtime.page
+      .getByRole("heading", {
+        name: E2E_LESSON_TITLE,
+        exact: true,
+        level: 1,
+      })
+      .waitFor();
+    assert.equal(
+      e2eObservationRpcPayloads.length,
+      1,
+      "reload must read persisted observations without another write",
+    );
+    assert.equal(
+      await learnerRow("E2E Adult")
+        .getByRole("radio", { name: "Сам", exact: true })
+        .evaluate((element) => (element as HTMLInputElement).checked),
+      true,
+    );
+    assert.equal(
+      await learnerRow("Борис Волков")
+        .getByRole("radio", {
+          name: "Пока не получилось",
+          exact: true,
+        })
+        .evaluate((element) => (element as HTMLInputElement).checked),
+      true,
+    );
+    await runtime.page.getByText(/2 из 2 наблюдались/).waitFor();
+
+    const selfNote = learnerRow("E2E Adult").getByLabel("Личная заметка");
+    await selfNote.fill("Уверенно объясняет выбор формы.");
+    const blurredNoteSaved = runtime.page.waitForResponse((response) =>
+      response
+        .url()
+        .includes(
+          `/api/v2/lesson-runs/${E2E_COMPLETION_PRIVATE_RUN_ID}/observations`,
+        ),
+    );
+    await selfNote.evaluate((element) =>
+      (element as HTMLTextAreaElement).blur(),
+    );
+    assert.equal((await blurredNoteSaved).status(), 200);
+    assert.equal(e2eObservationRpcPayloads.length, 2);
+    assert.deepEqual(e2eObservationRpcPayloads[1]?.p_observations, [
+      {
+        learningRecordId: E2E_COMPLETION_RECORD_IDS[0][0],
+        rating: "independent",
+        privateNote: "Уверенно объясняет выбор формы.",
+      },
+    ]);
+
+    await runtime.page.goto(runPath, { waitUntil: "networkidle" });
+    await runtime.page
+      .getByRole("heading", {
+        name: E2E_LESSON_TITLE,
+        exact: true,
+        level: 1,
+      })
+      .waitFor();
+    assert.equal(
+      e2eObservationRpcPayloads.length,
+      2,
+      "blur must persist the note before reload without another write",
+    );
+    assert.equal(
+      await learnerRow("E2E Adult").getByLabel("Личная заметка").inputValue(),
+      "Уверенно объясняет выбор формы.",
+    );
+
+    await learnerRow("E2E Adult")
+      .getByLabel("Личная заметка")
+      .fill("Уточнённая заметка перед завершением.");
+    const completionNoteSaved = runtime.page.waitForResponse((response) =>
+      response
+        .url()
+        .includes(
+          `/api/v2/lesson-runs/${E2E_COMPLETION_PRIVATE_RUN_ID}/observations`,
+        ),
+    );
+
+    await runtime.page
+      .getByRole("button", { name: "Завершить урок", exact: true })
+      .click();
+    assert.equal((await completionNoteSaved).status(), 200);
+    const completionDialog = runtime.page.getByRole("dialog", {
+      name: "Завершить урок",
+      exact: true,
+    });
+    await completionDialog.waitFor();
+    assert.equal(e2eObservationRpcPayloads.length, 3);
+    assert.deepEqual(e2eObservationRpcPayloads[2]?.p_observations, [
+      {
+        learningRecordId: E2E_COMPLETION_RECORD_IDS[0][0],
+        rating: "independent",
+        privateNote: "Уточнённая заметка перед завершением.",
+      },
+    ]);
+    await completionDialog
+      .getByLabel("Как прошёл урок")
+      .fill("LA-M1 browser regression");
+    await completionDialog
+      .getByRole("group", {
+        name: "Посещаемость: E2E Adult",
+        exact: true,
+      })
+      .getByRole("radio", { name: "Был на уроке", exact: true })
+      .check();
+    const borisAttendance = completionDialog.getByRole("group", {
+      name: "Посещаемость: Борис Волков",
+      exact: true,
+    });
+    await borisAttendance
+      .getByRole("radio", { name: "Не был на уроке", exact: true })
+      .check();
+    const submitCompletion = completionDialog.getByRole("button", {
+      name: "Завершить и сохранить",
+      exact: true,
+    });
+    assert.equal(await submitCompletion.isEnabled(), false);
+    await completionDialog
+      .getByText(/Для ученика сохранено наблюдений: 1/)
+      .waitFor();
+    assert.equal(e2eCompletionPhase, 0);
+    assert.equal(e2eCompletionPayloads.length, 0);
+
+    await borisAttendance
+      .getByRole("radio", { name: "Был на уроке", exact: true })
+      .check();
+    assert.equal(await submitCompletion.isEnabled(), true);
+    await submitCompletion.click();
+    await completionDialog.waitFor({ state: "hidden", timeout: 10_000 });
+    assert.equal(e2eCompletionPhase, 1);
+    assert.equal(e2eCompletionPayloads.length, 1);
+
+    await runtime.page
+      .getByText("Проведение завершено — история доступна только для чтения", {
+        exact: true,
+      })
+      .waitFor();
+    assert.equal(
+      await runtime.page
+        .getByRole("button", { name: "Все самостоятельно", exact: true })
+        .count(),
+      0,
+    );
+    assert.equal(
+      await learnerRow("E2E Adult")
+        .getByRole("radio", { name: "Сам", exact: true })
+        .isEnabled(),
+      false,
+    );
+    assert.equal(
+      await runtime.page
+        .getByRole("button", { name: "Завершить урок", exact: true })
+        .count(),
+      0,
+    );
+  } finally {
+    e2eObservationFixtureEnabled = false;
+    resetE2eObservationFlow();
+    e2eCompletionPhase = null;
+    e2eCompletionPayloads.length = 0;
+    e2eCompletedLearningRecordRows.length = 0;
+    await runtime.close();
+  }
+});
+
 test("browser smoke: completion UI keeps private comments teacher-only and publishes explicit comments", async (t) => {
   if (browserSmokeUnavailableReason) {
     t.skip(browserSmokeUnavailableReason);
@@ -12542,6 +12992,9 @@ test("browser smoke: completion UI keeps private comments teacher-only and publi
     observedComment: string;
     publishObserved: boolean;
   }) {
+    await runtime.page.goto(`/courses/${E2E_COURSE_ID}`, {
+      waitUntil: "networkidle",
+    });
     const runLessonRow = runtime.page.locator(
       `[aria-label="Таблица уроков курса"] tbody tr:has-text("${E2E_LESSON_TITLE}")`,
     );
@@ -12553,9 +13006,19 @@ test("browser smoke: completion UI keeps private comments teacher-only and publi
       .click();
     await runtime.page
       .getByRole("menuitem", {
-        name: "Завершить урок",
+        name: "Продолжить проведение",
         exact: true,
       })
+      .click();
+    await runtime.page
+      .getByRole("heading", {
+        name: E2E_LESSON_TITLE,
+        exact: true,
+        level: 1,
+      })
+      .waitFor();
+    await runtime.page
+      .getByRole("button", { name: "Завершить урок", exact: true })
       .click();
     const dialog = runtime.page.getByRole("dialog", {
       name: "Завершить урок",
@@ -12604,6 +13067,12 @@ test("browser smoke: completion UI keeps private comments teacher-only and publi
       );
       assert.fail(alert);
     }
+    await runtime.page.goto(`/courses/${E2E_COURSE_ID}`, {
+      waitUntil: "networkidle",
+    });
+    await runtime.page
+      .getByRole("heading", { name: E2E_COURSE_TITLE, exact: true, level: 1 })
+      .waitFor();
   }
 
   try {

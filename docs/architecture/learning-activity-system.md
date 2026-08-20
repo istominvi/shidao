@@ -1,7 +1,7 @@
 # Learning Activity System
 
 **Статус:** каноническое архитектурное решение; CURRENT / NEXT / LATER
-**Актуально на:** 19 августа 2026 года
+**Актуально на:** 20 августа 2026 года
 **Область:** Course components, учебные цели, ответы, наблюдения, evidence,
 учебный профиль, адаптивность, offline/live и языковые активности
 
@@ -94,7 +94,7 @@ structured observation учитель сначала подтверждает к
 
 ## CURRENT: что уже существует
 
-В текущем production:
+В подтверждённом production baseline и current source:
 
 - Course напрямую владеет Lessons, а Lesson — одним ordered списком Components;
 - Student Screen Slides являются только learner-facing presentation projection;
@@ -110,7 +110,17 @@ structured observation учитель сначала подтверждает к
 - LessonRun и compact LearningRecord уже сохраняют факт занятия, посещаемость,
   teacher comment и рекомендацию повторения;
 - learner-safe history/progress уже отделены от teacher-private raw history;
+- current source LA-M1 добавляет recorder-owned component-level observations
+  открытого фактически started LessonRun, focused teacher workspace и
+  read-only Lesson/Course/Learner history;
+- observation хранится отдельной строкой на LearningRecord + source Component
+  и не расширяет compact LearningRecord, learner-safe history или Component
+  payload;
 - persisted Homework и детский learner runtime ещё не реализованы.
+
+Здесь `current source` означает реализованный repository contract, а не
+утверждение о production DB apply, Coolify exact SHA или production
+postflight. Эти факты подтверждаются отдельно по deployment runbook.
 
 Поэтому ни локально правильный ответ в preview, ни просмотр видео сейчас не
 изменяют учебный профиль. Нельзя показывать выдуманный mastery на основании
@@ -234,6 +244,19 @@ objective-aligned opportunity, наблюдаемое действие, поня
 learners действительно наблюдались. LA-M1 сохраняет entry method; confidence
 становится отдельным signal только если будущий evidence policy объяснит его
 шкалу и назначение.
+
+Current LA-M1 реализует только первый component-level слой этого понятия:
+
+- ровно одна текущая строка на `LearningRecord + source Component`;
+- nullable live Component FK и стабильный source UUID-at-time;
+- position/type/bounded label/observable criterion-at-time без полного
+  Component, Slide или Lesson snapshot;
+- `independent | with_support | not_yet`, отсутствие строки как
+  `not_observed`, `direct | bulk_confirmed` и optional private note;
+- recorder равен recorder родительского LearningRecord; draft меняется только
+  пока Run фактически started и открыт, finalized history read-only;
+- наблюдение не является objective evidence/mastery до отдельного LA-M2/LA-M3
+  policy.
 
 ### Learning Evidence
 
@@ -444,7 +467,7 @@ AI inference маркируется как предложение, содерж�
 
 ## Очное проведение как первый runtime
 
-### Первый полезный runtime
+### Первый полезный runtime — current source LA-M1
 
 Первый implementation slice использует существующий started LessonRun и его
 конкретный roster. Scheduled Run сначала запускается, а started Run можно
@@ -473,6 +496,17 @@ component-level teacher observations, но ещё не объявляет их o
 
 Первая версия поддерживает очное занятие при наличии сети. Настоящая
 network-offline очередь и синхронизация являются отдельным улучшением.
+
+Current application boundary — `src/modules/learning-activities/`.
+Authenticated
+`GET|PUT /api/v2/lesson-runs/[lessonRunId]/observations` остаётся adapter над
+service; React не пишет в таблицу напрямую. Один narrow batch RPC сериализует
+lock order `Lesson → Component → LessonRun → LearningRecord`, проверяет actor,
+ownership, actual start, открытый Run, Component той же Lesson и expected draft
+records. Authenticated имеет recorder-scoped raw `SELECT`, но не raw
+`INSERT|UPDATE|DELETE`; mutation разрешена только через RPC. Completion
+блокирует комбинацию `absent + observation`, не вычисляя attendance,
+`needs_repeat` или teacher report из rating.
 
 `не наблюдал` означает отсутствие педагогического evidence, а не нулевой балл.
 Отсутствие на Lesson также не означает непонимание.
@@ -625,16 +659,19 @@ contract tests, а не финальной косметической прове
 [`learning-activity-system-implementation.md`](../plans/learning-activity-system-implementation.md).
 Коротко:
 
-1. быстрые component-level teacher observations поверх существующего
-   LessonRun, без заявления mastery;
-2. Course objectives, один primary objective на Component и optional registry
+1. **CURRENT SOURCE:** быстрые component-level teacher observations поверх
+   существующего LessonRun, без заявления mastery;
+2. **NEXT:** Course objectives, один primary objective на Component и optional registry
    activity facet;
-3. history/objective-state projection для objective-aligned observations;
-4. learner authorization и teacher-controlled live delivery;
-5. один полный `choice_quiz` через learner-safe delivery и server evaluation;
-6. Homework/free-response review;
-7. reference audio, learner recording и teacher review;
-8. только затем advanced sequencing, spaced review и статистические модели;
+3. **NEXT:** history/objective-state projection для objective-aligned
+   observations;
+4. **NEXT:** learner authorization и teacher-controlled live delivery;
+5. **NEXT:** один полный `choice_quiz` через learner-safe delivery и server
+   evaluation;
+6. **NEXT:** Homework/free-response review;
+7. **LATER:** reference audio, learner recording и teacher review;
+8. **LATER:** только затем advanced sequencing, spaced review и статистические
+   модели;
    простые reason-coded recommendations уже входят в profile slice.
 
 ## Уроки существующих систем

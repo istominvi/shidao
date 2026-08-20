@@ -38,6 +38,16 @@ test("LessonRun UI derives lifecycle only from timestamps", () => {
     "active",
   );
   assert.equal(
+    lessonRunState(
+      run({
+        startedAt: "2026-08-08T10:02:00.000Z",
+        startedAtIsActual: false,
+      }),
+      after,
+    ),
+    "attention",
+  );
+  assert.equal(
     lessonRunState(run({ endedAt: "2026-08-08T10:58:00.000Z" }), after),
     "completed",
   );

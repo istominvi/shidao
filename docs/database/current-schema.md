@@ -18,6 +18,13 @@ Center boundary содержит 17 authenticated user RPC, два service-only 
 RPC и два trigger. Exact A2 SHA-256 —
 `61ddca91ad28d60aac5ebdbbbb12e0d8e0ef2b8b52a0501de792d416052c6834`.
 
+**Current source DB contract / pending DB-first production delivery:**
+`20260819142602_learning_activity_foundation.sql` добавляет LA-M1
+`lesson_component_observation`, recorder-scoped read policy, narrow batch-save
+RPC и completion guard `absent + observation`. Наличие migration и зависимого
+source code не является production execution evidence: до фактического apply
+последним подтверждённым production head остаётся A2 выше.
+
 **Последняя применённая authored-data-only migration:**
 exact tracked `20260813063716_unify_heading_rich_text_components.sql` применён
 production; `psql` зафиксировал `COMMIT`, а maximum `updated_at`
@@ -37,12 +44,20 @@ Admin create/delete probe
 
 **SQL snapshot:**
 [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
-содержит live production dump после A2, снятый штатным script через read-only
-SSH transport в `2026-08-16T07:42:38Z`. Strict signature осталась
-`shidao-v2-contract`, SHA-256 snapshot —
+содержит current source contract после LA-M1. Он снят штатным
+script в `2026-08-20T07:17:17Z` из изолированного PostgreSQL 16.13 clone:
+в clone был восстановлен tracked A2 baseline, exact LA-M1 migration прошла
+rollback rehearsal, затем была применена с `COMMIT`, а functional и
+multi-session concurrency harness завершились успешно. Strict signature —
+`shidao-v2-contract`, SHA-256 current source snapshot —
+`4e04a6f7ee6ffe3c925e9d225534fca75c3316bc5671ad072dad7f91740ad037`.
+
+Этот clone snapshot подтверждает source/schema parity, но не заменяет
+production 15.8 identity, backup, observed `COMMIT` и postflight. После DB-first
+apply production head можно изменить только фактическое execution
+evidence; последним подтверждённым production dump до этого остаётся A2
+`2026-08-16T07:42:38Z`, SHA-256
 `a91aefb693fc5857e1ae921e7226bc688230d0dd3c7e9373197c1006b4314a7d`.
-Локальный PostgreSQL 16 dump не принимается как замена production 15.8
-snapshot из-за version/encoding/default-ACL drift.
 
 ## Read order для DB-задач
 
@@ -76,6 +91,7 @@ snapshot из-за version/encoding/default-ACL drift.
 | AV1   | `20260814050347_account_profile_avatars.sql`                           | applied production required Account avatar, 20 preset keys, private server-only WebP Storage и optimistic setter RPC                           |
 | CC1   | `20260816053117_communication_center.sql`                              | applied production unified inbox persistence: human threads, system notifications и persisted assistant conversations                          |
 | A2    | `20260816072345_atomic_assistant_lesson_run_schedule.sql`              | applied production atomic compare-and-schedule guard для confirmed Assistant LessonRun proposal                                                |
+| LA-M1 | `20260819142602_learning_activity_foundation.sql`                      | current source additive component-observation contract; production apply/postflight не утверждаются до отдельного execution evidence           |
 
 M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
 первого deploy и применена только после доказательства, что running и rollback
@@ -87,6 +103,55 @@ backup. Он перевёл authored `heading` в title-only `rich_text` и об
 только непосредственные `heading → rich_text` при одинаковых visibility,
 `student_slide_id` и placement. Immutable `course_publication_revision`
 snapshots остались неизменными.
+
+### Current source LA-M1 learning activity foundation
+
+LA-M1 добавляет одну отдельную текущую observation на
+`learning_record + source_lesson_component_id_at_time`:
+
+```text
+lesson_component_observation
+- id
+- learning_record_id
+- lesson_component_id | null
+- source_lesson_component_id_at_time
+- component_position_at_time
+- component_type_key_at_time
+- component_label_at_time
+- observable_criterion_at_time
+- rating: independent | with_support | not_yet
+- entry_method: direct | bulk_confirmed
+- private_note | null
+- observed_at
+- recorded_by_account_id
+- created_at | updated_at
+```
+
+Physical contract:
+
+- composite FK `(learning_record_id, recorded_by_account_id)` закрепляет
+  совпадение recorder и удаляет draft observations вместе с отменёнными draft
+  LearningRecords;
+- nullable live Component FK использует `ON DELETE SET NULL`, а stable source
+  UUID и bounded position/type/label/criterion-at-time сохраняют понятную
+  finalized history без полного Component/Lesson snapshot;
+- RLS включён; `authenticated` имеет только recorder-scoped `SELECT`, не имеет
+  raw `INSERT|UPDATE|DELETE`, а `anon` не имеет доступа;
+- `save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)` —
+  `SECURITY DEFINER`, empty `search_path`, `EXECUTE` только
+  `postgres/authenticated`; один batch проверяет owner, actual start, open Run,
+  Component той же Lesson, expected draft LearningRecords и детерминированный
+  parent-first lock order;
+- null rating удаляет draft row и означает `not_observed`; rating требует
+  non-empty bounded criterion, а `bulk_confirmed` появляется только после
+  explicit UI confirmation;
+- `complete_lesson_run_v2` сохраняет compact LearningRecord contract и лишь
+  отклоняет absent learner, у которого осталась observation. Attendance,
+  `needs_repeat` и teacher report не выводятся из rating.
+
+Production checksum, backup, observed `COMMIT`, postflight, refreshed live
+snapshot и dependent web SHA должны добавляться только после фактического
+DB-first rollout; этот раздел их не подменяет.
 
 ### Production CC1 Communication Center
 
@@ -895,6 +960,12 @@ Actor boundaries:
 Отдельной history copy, Lesson snapshot, `lesson_run_participant`, persisted
 Run status или speculative metrics JSON нет.
 
+Current source LA-M1 хранит detailed component observations не внутри
+`learning_record`, а в `lesson_component_observation`. Teacher-owned Lesson,
+Course и Learner history загружает их отдельной recorder-scoped projection.
+Learner/observer safe functions и их explicit shared-comment envelope не
+расширены; `private_note` туда не попадает.
+
 ## Identity workflows и principal RPC groups
 
 ### Account/auth
@@ -1042,7 +1113,8 @@ Snapshot обязан сохранить:
   `<account UUID>/<UUID-v4>.webp` path;
 - grants/default ACL.
 
-Current CC1+A2 public snapshot дополнительно сохраняет `archive_course`, все
+Последний подтверждённый production CC1+A2 public snapshot дополнительно
+сохраняет `archive_course`, все
 четыре guard functions/triggers, `SECURITY DEFINER` у двух private touch-helper,
 закрытые function ACL, column-only Course/Lesson update grants и полный
 Communication Center RPC/trigger/ACL contract и atomic Assistant schedule
@@ -1053,7 +1125,9 @@ guard.
 В active model по-прежнему нет Methodology, Lesson Step/root Step,
 `lesson_run_participant`, operational LessonRun snapshot, persisted Run/Record
 status, Homework persistence, parsing/RAG, learner enrollment/consumption
-детского Course или live Student Screen. E2 educator self-learning progress —
+детского Course, live Student Screen, Course objectives, learner attempts,
+typed evidence или mastery/objective-state persistence. E2 educator
+self-learning progress —
 отдельный Account-scoped contract без roster/Run. Observer capability не
 является Parent/Guardian role, а
 AI consent не является Course access.
@@ -1066,9 +1140,11 @@ provider-backed explicit action executor доступны в current application
 
 `scripts/refresh-schema-snapshot.sh` принимает ровно два строгих compatibility
 stage: `expand` сохраняет полный legacy compatibility contract, `contract`
-требует завершённый M4 cleanup. Оба stage дополнительно требуют полный M1–M3
-identity contract, M5/M6 Auth hardening и current A1/E1/E2/CC1/A2 database
-contract.
+требует завершённый M4 cleanup. Current source script дополнительно требует
+полный M1–M3 identity contract, M5/M6 Auth hardening, A1/E1/E2/CC1/A2 и LA-M1
+database contract. Поэтому последний подтверждённый A2 production snapshot
+остаётся execution evidence прошлого head, но новый refresh fail closed до
+LA-M1 apply.
 В обоих
 signature проверяет:
 
@@ -1090,6 +1166,9 @@ signature проверяет:
   authenticated user RPC, один authenticated-only A2 atomic schedule guard и
   два service-only producer RPC с `SECURITY DEFINER`/пустым `search_path`, а
   также оба CC1 trigger;
+- LA-M1 observation table, recorder policy/closed mutation ACL, batch RPC
+  security/ACL, composite recorder FK, nullable live Component FK и absent
+  completion guard;
 - сохранность cross-schema Auth/Storage section.
 
 Перед refresh выполнить read-only ShiDao identity/schema sanity check:
@@ -1120,3 +1199,9 @@ capability, exact review/approval, revision-scoped progress, official license
 `2026-08-16T07:42:38Z` добавляет atomic Assistant schedule guard и подтверждает
 total `17` authenticated user RPC; SHA-256
 `a91aefb693fc5857e1ae921e7226bc688230d0dd3c7e9373197c1006b4314a7d`.
+
+После exact LA-M1 clone rehearsal current source snapshot снят
+`2026-08-20T07:17:17Z`; SHA-256
+`4e04a6f7ee6ffe3c925e9d225534fca75c3316bc5671ad072dad7f91740ad037`.
+Production execution details здесь намеренно не заявлены до
+фактического DB-first apply/postflight.

@@ -78,7 +78,7 @@ import {
   workspaceTabId,
   workspaceTabPanelId,
 } from "@/components/ui/workspace-tabs";
-import { ROUTES } from "@/lib/auth";
+import { ROUTES, toLessonRunRoute } from "@/lib/auth";
 import type {
   CourseLesson,
   CourseWorkspace,
@@ -88,6 +88,7 @@ import type {
   LearnerProfile,
   LessonRun,
 } from "@/modules/lesson-runs/domain";
+import type { LessonComponentObservation } from "@/modules/learning-activities";
 import type { SystemAssistantActionResult } from "@/modules/ai/system-assistant-contracts";
 
 type CourseWorkspaceClientProps = {
@@ -108,14 +109,20 @@ async function loadOwnedCourseProjection(courseId: string) {
     return {
       workspace,
       runs: [] as LessonRun[],
+      observations: [] as LessonComponentObservation[],
       audience: EMPTY_COURSE_AUDIENCE,
     };
   }
-  const [runs, audience] = await Promise.all([
+  const [history, audience] = await Promise.all([
     loadCourseHistory(courseId),
     loadCourseAudience(courseId),
   ]);
-  return { workspace, runs, audience };
+  return {
+    workspace,
+    runs: history.runs,
+    observations: history.observations,
+    audience,
+  };
 }
 
 type CourseLessonSortKey =
@@ -412,6 +419,7 @@ function CourseLessonsPanel({
   onSelect,
   runMutation,
   onScheduleSummaryChanged,
+  onOpenRun,
   courseId,
   focusLessonId,
   onFocusRestored,
@@ -425,6 +433,7 @@ function CourseLessonsPanel({
   onSelect: (lessonId: string) => void;
   runMutation: RunMutation;
   onScheduleSummaryChanged: () => void;
+  onOpenRun: (lessonRunId: string) => void;
   courseId: string;
   focusLessonId: string | null;
   onFocusRestored: () => void;
@@ -698,7 +707,7 @@ function CourseLessonsPanel({
                   const currentRun = openLessonRun(lessonRuns);
                   const scheduleActionLabel = currentRun
                     ? lessonRunState(currentRun) === "active"
-                      ? "Завершить урок"
+                      ? "Продолжить проведение"
                       : lessonRunState(currentRun) === "attention"
                         ? "Отметить результаты"
                         : "Изменить назначение"
@@ -724,7 +733,11 @@ function CourseLessonsPanel({
                             id: "schedule",
                             label: scheduleActionLabel,
                             icon: CalendarClock,
-                            onSelect: () => setScheduledLessonId(lesson.id),
+                            onSelect: () =>
+                              currentRun &&
+                              lessonRunState(currentRun) === "active"
+                                ? onOpenRun(currentRun.id)
+                                : setScheduledLessonId(lesson.id),
                           },
                         ]
                       : []),
@@ -935,6 +948,7 @@ function CourseLessonsPanel({
           mutationError={mutationError}
           runMutation={runMutation}
           onScheduleSummaryChanged={onScheduleSummaryChanged}
+          onStarted={onOpenRun}
           onClose={() => setScheduledLessonId(null)}
         />
       ) : null}
@@ -1039,10 +1053,17 @@ function CourseAboutPanel({
   );
 }
 
-function CourseHistoryPanel({ runs }: { runs: LessonRun[] }) {
+function CourseHistoryPanel({
+  runs,
+  observations,
+}: {
+  runs: LessonRun[];
+  observations: LessonComponentObservation[];
+}) {
   return (
     <RunHistoryList
       runs={runs.filter((run) => Boolean(run.endedAt))}
+      observations={observations}
       showLessonTitle
       emptyTitle="Курс ещё не проводился"
       emptyDescription="Назначьте время любому уроку. После завершения здесь появятся проведения всего курса, отчёты и результаты учеников."
@@ -1057,6 +1078,9 @@ export function CourseWorkspaceClient({
   const { refresh: refreshPrimaryHeaderSummary } = usePrimaryHeaderSummary();
   const [course, setCourse] = useState<CourseWorkspace | null>(null);
   const [courseRuns, setCourseRuns] = useState<LessonRun[]>([]);
+  const [courseObservations, setCourseObservations] = useState<
+    LessonComponentObservation[]
+  >([]);
   const [courseAudience, setCourseAudience] = useState<CourseAudience>(
     EMPTY_COURSE_AUDIENCE,
   );
@@ -1072,10 +1096,11 @@ export function CourseWorkspaceClient({
   const mutationInFlightRef = useRef(false);
 
   const reload = useCallback(async () => {
-    const { workspace, runs, audience } =
+    const { workspace, runs, observations, audience } =
       await loadOwnedCourseProjection(courseId);
     setCourse(workspace);
     setCourseRuns(runs);
+    setCourseObservations(observations);
     setCourseAudience(audience);
     setNavigation((current) =>
       reconcileCourseWorkspaceNavigation(
@@ -1293,6 +1318,15 @@ export function CourseWorkspaceClient({
     else update();
   }
 
+  function openRunWorkspace(lessonRunId: string) {
+    const href = toLessonRunRoute(courseId, lessonRunId);
+    if (pageTransition) {
+      pageTransition.navigate(href, { direction: "forward" });
+      return;
+    }
+    window.location.assign(href);
+  }
+
   return (
     <div className="container app-page-container course-workspace-container pb-16">
       {selectedLesson ? (
@@ -1317,7 +1351,9 @@ export function CourseWorkspaceClient({
           mutationError={error}
           runMutation={runMutation}
           onScheduleSummaryChanged={refreshPrimaryHeaderSummary}
+          onOpenRun={openRunWorkspace}
           runs={courseRuns.filter((run) => run.lessonId === selectedLesson.id)}
+          observations={courseObservations}
           learners={courseAudience.effectiveLearners}
         />
       ) : (
@@ -1382,6 +1418,7 @@ export function CourseWorkspaceClient({
                 onSelect={openLesson}
                 runMutation={runMutation}
                 onScheduleSummaryChanged={refreshPrimaryHeaderSummary}
+                onOpenRun={openRunWorkspace}
                 courseId={course.id}
                 focusLessonId={returnFocusLessonId}
                 onFocusRestored={() => setReturnFocusLessonId(null)}
@@ -1401,7 +1438,10 @@ export function CourseWorkspaceClient({
               <CourseMaterialsPanel course={course} onOpenLesson={openLesson} />
             ) : null}
             {mounted && item.value === "history" ? (
-              <CourseHistoryPanel runs={courseRuns} />
+              <CourseHistoryPanel
+                runs={courseRuns}
+                observations={courseObservations}
+              />
             ) : null}
             {mounted && item.value === "attestation" ? (
               <CourseAttestationEditor courseId={course.id} />

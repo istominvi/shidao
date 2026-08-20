@@ -1,19 +1,27 @@
 # Правила изменений базы ShiDao
 
 **Статус:** обязательная политика для всех новых DB changes
-**Текущий production schema head:**
-`20260814050347_account_profile_avatars.sql`; generated snapshot снят
-`2026-08-14T05:53:08Z`, SHA-256
-`3ca847164526568def44d2deed9a6b1d6cd1742e168462376b4f41fe6383ef97`.
+**Последний подтверждённый production schema head:**
+`20260816072345_atomic_assistant_lesson_run_schedule.sql`; generated snapshot
+снят `2026-08-16T07:42:38Z`, SHA-256
+`a91aefb693fc5857e1ae921e7226bc688230d0dd3c7e9373197c1006b4314a7d`.
+**Current source migration / pending DB-first production delivery:**
+`20260819142602_learning_activity_foundation.sql`. Source contract не является
+execution evidence; production head меняется только после read-only identity,
+rollback rehearsal, verified backup, observed `COMMIT` и postflight.
+Current source snapshot снят из verified migrated clone
+`2026-08-20T07:17:17Z`; SHA-256
+`4e04a6f7ee6ffe3c925e9d225534fca75c3316bc5671ad072dad7f91740ad037`.
+Он подтверждает source parity, а не production apply.
 **Последняя применённая authored-data-only migration:**
 exact tracked `20260813063716_unify_heading_rich_text_components.sql` применён
 production; `psql` зафиксировал `COMMIT`, а maximum `updated_at`
 преобразованных строк — `2026-08-13T07:05:50.169297Z`. Она не меняла
-physical schema; последующий E2A и AV1 schema rollout отражены в current
-snapshot выше.
-**Текущий application rollout source:**
-`1d4e5deff83cbdc1b479b16e4220cf799327009f`; он сохраняет U1/E2A contracts и
-является текущим зависимым web/API release для обязательного Account avatar.
+physical schema; последующие E2A, AV1, CC1 и A2 schema rollout отражены в
+последнем подтверждённом production snapshot выше.
+**Последний документированный coupled A2 application rollout source:**
+`2efaa86851fffc7e444af904fb900d9984caa6a8`. LA-M1 dependent web SHA до
+фактического production rollout здесь не заявляется.
 
 Исторический U1-compatible source
 `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da` был развёрнут и проверен до U1
@@ -195,6 +203,11 @@ generated SQL snapshot не переписывается только ради �
 - после AV1 — mandatory Account avatar columns/check, revision-aware
   server-only setter ACL, private `profile-avatars` bucket и отсутствие
   browser Storage policies для него.
+- после CC1/A2 — Communication Center tables/RPC/triggers/closed raw ACL и
+  atomic Assistant LessonRun schedule guard;
+- после LA-M1 — observation table, composite recorder FK, nullable live
+  Component FK, recorder SELECT policy, закрытый raw mutation ACL, narrow batch
+  RPC и absent-completion guard.
 
 Скрипт сначала проверяет read-only ShiDao schema signature, пишет во временный
 файл и не должен менять migration history. Полученный snapshot не применяется
@@ -214,6 +227,20 @@ generated SQL snapshot не переписывается только ради �
 - PostgREST видит новые relationships/RPC;
 - Storage/Auth остались работоспособны, если migration их косвенно затронула;
 - application typecheck/tests/build проходят.
+
+Для LA-M1 дополнительно обязательны:
+
+- `scripts/db-learning-activity-tests.sh` на isolated database с exact именем
+  `shidao_learning_activity_test`;
+- `scripts/db-learning-activity-concurrency-tests.sh` на той же disposable
+  базе: реальные отдельные sessions должны доказать оба порядка гонки
+  save/completion;
+- denial до actual start, для foreign Component/record/owner и после
+  complete/cancel; cancel cascade и readable at-time history после удаления
+  live Component;
+- отсутствие `private_note` в learner/observer safe projections;
+- PostgREST RPC visibility после cache reload при сохранённом запрете raw
+  mutation.
 
 Записать измеримые результаты в commit/hand-off, а не только «migration
 успешна».

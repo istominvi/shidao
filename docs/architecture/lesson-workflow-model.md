@@ -4,9 +4,9 @@
 
 **Дата решения:** 5 августа 2026 года
 
-**Актуально на:** 19 августа 2026 года
+**Актуально на:** 20 августа 2026 года
 
-**Область:** Course Builder / Lesson / Components / Student Screen / audience / scheduling / learning history / course materials / homework
+**Область:** Course Builder / Lesson / Components / Student Screen / audience / scheduling / learning history / teacher observations / course materials / homework
 
 **Implementation state:** deployed baseline включает authoring, persisted
 Slides/preview, RouterAI, groups/audience, LessonRun и recorder-scoped history.
@@ -19,6 +19,11 @@ publications с revision progress и аттестацией также явля�
 production. Homework, enrollment/consumption детских Course через
 LearnerProfile и live Student Screen sync не реализованы; их sequencing
 зафиксирован в roadmap.
+
+Current source дополнительно реализует LA-M1: focused teacher workspace и
+recorder-owned component observations поверх фактически started LessonRun.
+Это описание source contract, а не утверждение о production DB apply, Coolify
+exact SHA или production postflight.
 
 Этот документ владеет authored hierarchy, Slides projection, Homework
 separation и compact LessonRun/LearningRecord boundary. Учебные цели, ответы,
@@ -50,6 +55,7 @@ Account
         │   └── ordered Slides 0..N → component references
         └── LessonRun 0..N
             └── LearningRecord 0..N → LearnerProfile + recorded-by Account
+                └── LessonComponentObservation 0..N → source Component-at-time
 
 Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 ```
@@ -98,6 +104,10 @@ Lesson остаётся одной сущностью содержания и т
 - **LearningRecord / Учебная запись** — ожидаемый участник Run до завершения и
   его компактный индивидуальный результат после завершения; recorder Account
   сохраняется явно и определяет текущую teacher-history boundary.
+- **LessonComponentObservation / Наблюдение по компоненту** — отдельная
+  recorder-owned отметка ожидаемого learner по одному source Component
+  фактически started Run. Она хранит compact context-at-time, но не становится
+  полным Lesson/Component snapshot, LearningRecord metric или mastery.
 - **ObserverGrant / Наблюдение** — explicit read-only capability на learner-safe
   projection конкретного LearnerProfile; не Parent/Guardian role.
 - **Lesson Component / Компонент урока** — элемент единого ordered list Lesson.
@@ -183,6 +193,17 @@ learning_record
 - actual_duration_minutes_at_time | null
 - superseded_by_record_id | null
 - course_title_at_time | lesson_title_at_time | subject_at_time
+
+lesson_component_observation
+- learning_record_id + recorded_by_account_id
+- lesson_component_id | null
+- source_lesson_component_id_at_time
+- component_position/type/label_at_time
+- observable_criterion_at_time
+- rating: independent | with_support | not_yet
+- entry_method: direct | bulk_confirmed
+- private_note | null
+- observed_at | created_at | updated_at
 ```
 
 Минимальный справочник и аудитория:
@@ -244,6 +265,11 @@ comment. Merge conflict сохраняет losing record как superseded prove
 9. Slide positions плотные и уникальные; пустых Slides нет.
 10. При проходе компонентов по `component.position` номер Slide не
     может уменьшаться.
+11. LA-M1 observation принадлежит LearningRecord того же recorder и source
+    Component той же Lesson; отдельный runtime component order не появляется.
+12. Observation изменяется только у фактически started открытого Run. После
+    completion она read-only; cancel удаляет draft rows через LearningRecord
+    cascade, а удаление live Component сохраняет compact context-at-time.
 
 Это invariants поддерживаемого application/RPC path. Для Lesson/Component DB
 напрямую гарантирует positive+unique position; gapless append и concurrency
@@ -1349,8 +1375,11 @@ schedule/reschedule/start/complete/cancel и Lesson/Course/Profile history.
 Mutations выполняются узкими authenticated RPC; MCP остаётся Course authoring
 adapter и не получает параллельный доступ к таблицам.
 
-Будущие responses/evaluations/evidence обслуживает отдельный activity
-application boundary. Он переиспользует registry contracts, но не превращает
+Current component observations обслуживает отдельный
+`LearningActivitiesApplicationService`: API route остаётся adapter над
+service/repository, а React не пишет в observation table напрямую. Будущие
+responses/evaluations/evidence расширят activity boundary отдельными slices.
+Он переиспользует registry contracts, но не превращает
 `CourseBuilderApplicationService` или MCP в универсальный learner runtime.
 
 Roleless identity, observer и learner-safe projections находятся в отдельном
@@ -1404,6 +1433,10 @@ Implementation map:
   `schedule-date-picker.tsx` и `schedule-period.ts`;
 - scheduling API: `src/app/api/v2/lesson-runs/`, `learner-profiles/` и
   `learner-groups/`, Course/Lesson `audience|history|runs` routes;
+- learning activity observations: `src/modules/learning-activities/`,
+  `src/app/api/v2/lesson-runs/[lessonRunId]/observations/`,
+  `src/app/(app)/courses/[courseId]/runs/[lessonRunId]/` и
+  `src/components/learning-activities/`;
 - identity contracts/service/repositories: `src/modules/learner-identity/`;
 - identity/self/observer UI: `src/components/profile/`,
   `src/components/learner-identity/`, `/profile`, `/students?tab=observing`;
@@ -1415,6 +1448,8 @@ Implementation map:
 - current schema: `supabase/schema/current-schema.sql`;
 - Slide migration: `20260804044955_add_lesson_student_slides.sql`;
 - LessonRun migration: `20260806190044_lesson_runs_learning_records.sql`.
+- LA-M1 observation migration:
+  `20260819142602_learning_activity_foundation.sql`.
 - educator governance/progress migration:
   `20260812150745_educator_course_governance_progress.sql`.
 - educator content-guard ACL correction:
@@ -1540,16 +1575,17 @@ Learner-identity consent/audit schema входит в отдельные M2–M3
 
 ## Runtime and future live mode
 
-Current repository реализует appointment/completion history, но не live sync.
+Current repository реализует appointment/completion history и LA-M1 teacher
+observation workspace, но не learner live sync.
 Открытый LessonRun уже является конкретным проведением; второй content-bearing
 `LessonSession` не нужен. Будущий operational presentation cursor может быть
 связан с открытым Run и текущим Student Screen Slide, не меняя authored
 hierarchy и не создавая Step entity.
 
-Presentation cursor отвечает только за то, что показывается. Ответы,
-evaluations и teacher observations хранятся отдельно по Learning Activity
-contract. Ни cursor, ни адаптивная рекомендация не меняют authored Component
-order или Slide membership.
+Presentation cursor отвечает только за то, что показывается. Current teacher
+observations и будущие responses/evaluations хранятся отдельно по Learning
+Activity contract. Ни observation, ни cursor, ни адаптивная рекомендация не
+меняют authored Component order или Slide membership.
 
 В live mode по умолчанию teacher управляет learner surface; свободная
 предыдущая/следующая навигация учащегося не включается автоматически. Review
@@ -1596,7 +1632,6 @@ application services и MCP не импортируют demo fixtures; все н
 - persistent AI quota/ledger, billing и change sets/undo;
 - parsing/RAG загруженных файлов;
 - persisted homework editor;
-- component-level teacher observations во время открытого LessonRun;
 - live Student Screen sync, realtime presence и runtime cursor;
 - Course objectives, Component alignment, versioned activity attempts,
   server-side evaluation, typed learning evidence, rebuildable objective state

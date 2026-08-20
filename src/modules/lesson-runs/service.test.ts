@@ -571,7 +571,12 @@ class InMemoryLessonRunsRepository implements LessonRunsRepository {
   async startRun(runId: string) {
     const context = this.runs.get(runId);
     if (!context) throw new Error("run not found");
-    context.run = { ...context.run, startedAt: STARTED_AT, updatedAt: NOW };
+    context.run = {
+      ...context.run,
+      startedAt: STARTED_AT,
+      startedAtIsActual: true,
+      updatedAt: NOW,
+    };
     return context.run;
   }
 
@@ -962,6 +967,38 @@ test("assistant scheduling maps an atomic stale guard failure to ai_action_stale
       error instanceof CourseBuilderConflictError &&
       error.code === "ai_action_stale",
   );
+});
+
+test("explicit start upgrades a legacy non-actual timestamp and stays idempotent afterwards", async () => {
+  const repository = new InMemoryLessonRunsRepository();
+  const service = createLessonRunsService({ repository });
+  await service.replaceCourseAudience(alice, ALICE_COURSE_ID, {
+    learnerProfileIds: [ANNA_ID],
+  });
+  const scheduled = await service.scheduleRun(alice, ALICE_LESSON_ID, {
+    scheduledAt: "2026-08-08T01:00:00Z",
+    plannedDurationMinutes: 45,
+  });
+  const context = repository.runs.get(scheduled.id)!;
+  context.run = {
+    ...context.run,
+    startedAt: context.run.scheduledAt,
+    startedAtIsActual: false,
+  };
+  let startCalls = 0;
+  const startRun = repository.startRun.bind(repository);
+  repository.startRun = async (runId) => {
+    startCalls += 1;
+    return startRun(runId);
+  };
+
+  const started = await service.startRun(alice, scheduled.id);
+  assert.equal(started.startedAtIsActual, true);
+  assert.equal(startCalls, 1);
+
+  const repeated = await service.startRun(alice, scheduled.id);
+  assert.equal(repeated.startedAtIsActual, true);
+  assert.equal(startCalls, 1);
 });
 
 test("completion is owner-scoped and requires exactly the expected learners", async () => {

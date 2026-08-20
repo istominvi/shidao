@@ -159,7 +159,7 @@ test("course Lessons uses full-width controls and a dense sortable ProductTable"
     "Назначить урок",
     "Изменить назначение",
     "Отметить результаты",
-    "Завершить урок",
+    "Продолжить проведение",
   ]) {
     assert.match(panel, new RegExp(`"${contextualLabel}"`));
   }
@@ -279,7 +279,7 @@ test("course uses audience-aware four-tab sets while lesson history is teaching-
   );
   assert.match(
     authoring,
-    /LessonHistorySurface lesson=\{lesson\} runs=\{runs\}/,
+    /<LessonHistorySurface[\s\S]*?lesson=\{lesson\}[\s\S]*?runs=\{runs\}[\s\S]*?observations=\{observations\}/,
   );
   assert.match(authoring, /LessonRunStatusButton/);
   assert.match(

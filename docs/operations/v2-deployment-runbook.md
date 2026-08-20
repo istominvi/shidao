@@ -79,6 +79,21 @@ overlapping Group/Course links, finalized same-Run conflict, open/draft blocker
 и erasure всей lineage. Простая последовательная SQL transaction не заменяет
 multi-session race test.
 
+Для LA-M1 learning activities дополнительно обязательны isolated functional и
+multi-session checks на disposable database с exact именем
+`shidao_learning_activity_test`:
+
+```bash
+DATABASE_URL='postgresql://...' ./scripts/db-learning-activity-tests.sh
+DATABASE_URL='postgresql://...' ./scripts/db-learning-activity-concurrency-tests.sh
+```
+
+Оба scripts fail closed на другом database/schema identity. Первый выполняет
+contract/lifecycle/ACL workflow и завершает fixture transaction через
+`ROLLBACK`. Второй использует отдельные реальные `psql` sessions и доказывает
+оба порядка гонки: save ждёт completion или completion ждёт save; простая
+последовательная transaction этот gate не заменяет.
+
 Provider tests в AI-release используют только fake credentials и локальный
 mock. CI/build не получают реальный `ROUTERAI_API_KEY`; если сборка требует
 production secret, release останавливается как нарушение server-runtime
@@ -114,6 +129,53 @@ Worktree должен содержать только изменения тек�
 чужие локальные правки или `.local-backups`.
 
 ## 4. Если release содержит DB migration
+
+### LA-M1 learning activity foundation — DB-first delivery contract
+
+Это порядок доставки current source migration
+`20260819142602_learning_activity_foundation.sql`, а не production execution
+record. Пока exact apply/postflight/deploy фактически не выполнены, не добавлять
+сюда придуманные checksum, backup path, `COMMIT`, snapshot SHA, Coolify
+deployment ID или application SHA.
+
+Совместимость односторонняя: старый web игнорирует additive observation table и
+RPC, а зависимый LA-M1 web требует их. Поэтому порядок обязателен:
+
+1. На exact production-derived isolated clone применить tracked migration и
+   пройти оба LA-M1 DB scripts, schema/RLS/ACL contract tests, application tests,
+   browser flow, typecheck, lint, format, build и `git diff --check`.
+2. Обновить generated current-schema snapshot штатным read-only script,
+   проверить полный diff/strict signature и создать один локальный task commit.
+3. Через project-local `.codex/ssh-db.local.toml` выполнить read-only production
+   sanity: положительно подтвердить текущую ShiDao database, canonical
+   Account/Course/Lesson/Component/LessonRun/LearningRecord shape, ожидаемый
+   прежний head и отсутствие LA-M1 objects. Global/random database MCP
+   запрещён.
+4. Зафиксировать SHA-256 exact tracked migration; на isolated production clone
+   выполнить exact rollback rehearsal до конца и подтвердить отсутствие
+   объектов/изменения canonical counts после `ROLLBACK`.
+5. Создать timestamped production full-format backup, проверить nonzero size,
+   mode `600`, `pg_restore --list` и SHA-256. Restore не выполнять без
+   отдельного явного maintenance решения.
+6. Применить неизменённый tracked SQL owner connection через
+   `psql -X -v ON_ERROR_STOP=1`; принимать только наблюдаемый `COMMIT`.
+7. Read-only postflight обязан подтвердить table/constraints/indexes/RLS,
+   recorder-only SELECT policy, отсутствие raw browser mutation/anon access,
+   exact batch RPC `SECURITY DEFINER`/empty-search-path/ACL, absent-completion
+   guard, unchanged canonical counts и ноль неожиданных observation rows.
+8. Выполнить PostgREST cache reload и проверить owner/cross-account/anon/RPC
+   boundary. Production fixtures не создавать; destructive lifecycle cases и
+   обе lock races уже доказаны на isolated clone.
+9. Сверить production contract со staged schema snapshot. Только после
+   успешного DB postflight выполнить обычный fast-forward push `main`, дождаться
+   Coolify matching `SOURCE_COMMIT`/healthy container и пройти guest, CSRF,
+   authenticated API и focused browser smoke.
+
+Если database identity, rollback rehearsal, backup или DB postflight нельзя
+положительно подтвердить, dependent web не push/deploy: оставить готовый
+локальный commit и сообщить точный blocker. При дефекте после apply не
+force-push и не переписывать migration; выпускать новую forward correction или
+отдельно согласовывать restore.
 
 ### A2 atomic Assistant LessonRun schedule guard — production DB execution record
 
