@@ -42,6 +42,7 @@ const OTHER_COMPONENT_ID = uuid(7);
 const RECORD_ID = uuid(8);
 const OTHER_RECORD_ID = uuid(9);
 const LEARNER_ID = uuid(10);
+const OBJECTIVE_ID = uuid(11);
 
 const actor: CourseBuilderActor = {
   authUserId: USER_ID,
@@ -64,6 +65,8 @@ function component(overrides: Partial<LessonComponent> = {}): LessonComponent {
     placement: { width: "content", compact: false },
     visibility: "staff_only",
     studentSlideId: null,
+    primaryLearningObjectiveId: null,
+    activityRole: null,
     createdAt: NOW,
     updatedAt: NOW,
     ...overrides,
@@ -150,6 +153,17 @@ function courseWorkspace(
       },
     ],
     attachments: [],
+    learningObjectives: [
+      {
+        id: OBJECTIVE_ID,
+        courseId: COURSE_ID,
+        title: "Объясняет правило своими словами",
+        description: null,
+        archivedAt: null,
+        createdAt: NOW,
+        updatedAt: NOW,
+      },
+    ],
   };
 }
 
@@ -161,6 +175,9 @@ function observation(
     learningRecordId: RECORD_ID,
     lessonComponentId: COMPONENT_ID,
     sourceComponentIdAtTime: COMPONENT_ID,
+    learningObjectiveId: null,
+    sourceLearningObjectiveIdAtTime: null,
+    learningObjectiveTitleAtTime: null,
     componentPositionAtTime: 2,
     componentTypeAtTime: "free_response",
     componentLabelAtTime: "Свободный ответ: Объясните правило своими словами.",
@@ -181,6 +198,16 @@ class InMemoryLearningActivitiesRepository implements LearningActivitiesReposito
   historyReads: string[][] = [];
   saves: SaveRunObservationsRepositoryInput[] = [];
   saveError: Error | null = null;
+  objectiveContext: Pick<
+    LessonComponentObservation,
+    | "learningObjectiveId"
+    | "sourceLearningObjectiveIdAtTime"
+    | "learningObjectiveTitleAtTime"
+  > = {
+    learningObjectiveId: null,
+    sourceLearningObjectiveIdAtTime: null,
+    learningObjectiveTitleAtTime: null,
+  };
 
   async listByLearningRecordIds(learningRecordIds: string[]) {
     this.historyReads.push(learningRecordIds);
@@ -205,6 +232,7 @@ class InMemoryLearningActivitiesRepository implements LearningActivitiesReposito
           learningRecordId: entry.learningRecordId,
           lessonComponentId: input.lessonComponentId,
           sourceComponentIdAtTime: input.lessonComponentId,
+          ...this.objectiveContext,
           componentLabelAtTime: input.componentLabelAtTime,
           observableCriterionAtTime: input.observableCriterionAtTime ?? "",
           rating: entry.rating,
@@ -287,6 +315,7 @@ test("workspace composes the owned Run with the canonical ordered Lesson", async
   );
   assert.equal(workspace.observations[0]?.learningRecordId, RECORD_ID);
   assert.deepEqual(workspace.attachments, []);
+  assert.equal(workspace.learningObjectives[0]?.id, OBJECTIVE_ID);
 });
 
 test("component label uses registry title and one bounded canonical prompt excerpt", () => {
@@ -354,7 +383,21 @@ test("save validates the open actual start, Component and expected records local
 });
 
 test("save sends only compact at-time context and returns all Run observations", async () => {
-  const { repository, service } = fixture();
+  const repository = new InMemoryLearningActivitiesRepository();
+  const { service } = fixture({
+    repository,
+    course: courseWorkspace([
+      component({
+        primaryLearningObjectiveId: OBJECTIVE_ID,
+        activityRole: "assessment",
+      }),
+    ]),
+  });
+  repository.objectiveContext = {
+    learningObjectiveId: OBJECTIVE_ID,
+    sourceLearningObjectiveIdAtTime: OBJECTIVE_ID,
+    learningObjectiveTitleAtTime: "Объясняет правило своими словами",
+  };
 
   const observations = await service.saveRunObservations(actor, RUN_ID, {
     lessonComponentId: COMPONENT_ID,
@@ -384,8 +427,21 @@ test("save sends only compact at-time context and returns all Run observations",
       },
     ],
   });
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(
+      repository.saves[0],
+      "learningObjectiveId",
+    ),
+    false,
+  );
   assert.equal(observations[0]?.rating, "with_support");
   assert.equal(observations[0]?.entryMethod, "bulk_confirmed");
+  assert.equal(observations[0]?.learningObjectiveId, OBJECTIVE_ID);
+  assert.equal(observations[0]?.sourceLearningObjectiveIdAtTime, OBJECTIVE_ID);
+  assert.equal(
+    observations[0]?.learningObjectiveTitleAtTime,
+    "Объясняет правило своими словами",
+  );
 });
 
 test("service maps atomic RPC lifecycle and validation failures", async () => {

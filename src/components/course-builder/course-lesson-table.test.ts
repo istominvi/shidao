@@ -111,6 +111,8 @@ test("lesson content update uses the newest lesson, component, or slide timestam
         placement: {},
         visibility: "staff_only",
         studentSlideId: null,
+        primaryLearningObjectiveId: null,
+        activityRole: null,
         createdAt: "2026-08-10T08:00:00.000Z",
         updatedAt: "2026-08-13T08:00:00.000Z",
       },

@@ -1,6 +1,8 @@
 # План реализации Learning Activity System
 
-**Статус:** LA-M0–LA-M1 CURRENT; LA-M2–LA-M6 NEXT; LA-M7–LA-M9 LATER
+**Статус:** LA-M0 — CURRENT architecture; LA-M1 — CURRENT production; LA-M2 —
+CURRENT PRODUCTION DB / READY SOURCE / NEXT WEB; LA-M3–LA-M6 — NEXT;
+LA-M7–LA-M9 — LATER.
 **Актуально на:** 20 августа 2026 года
 **Архитектура:**
 [`learning-activity-system.md`](../architecture/learning-activity-system.md)
@@ -196,7 +198,26 @@ save-versus-completion проверяется отдельным
 доказывают оба lock order исхода, а не имитируют race последовательными
 statements одной transaction.
 
-## LA-M2 — Course objectives и Component alignment (**NEXT**)
+## LA-M2 — Course objectives и Component alignment (**CURRENT DB / NEXT WEB**)
+
+**Статус:** законченный source/schema vertical slice; production DB rollout
+завершён, application source готов. Task commit, dependent web rollout и
+deployed-SHA smoke остаются **NEXT**.
+
+Текущий implementation map:
+
+- flat Course objectives, owner-scoped RPC/RLS и Component alignment:
+  `20260820085049_learning_objectives_component_alignment.sql`;
+- immutable publication snapshot V2 и V1/V2-compatible copy/duplicate:
+  `20260820090529_course_publication_snapshot_v2.sql`;
+- authenticated Course objective API и единый application service:
+  `src/app/api/v2/courses/[courseId]/learning-objectives/` и
+  `src/modules/course-builder/`;
+- manual editor, AI и development MCP используют тот же service contract;
+- единственный registry содержит optional `activityFacet`, learner-safe
+  delivery и server-private evaluator projection;
+- observation objective-at-time provenance и pure evidence-eligibility
+  projection находятся в `src/modules/learning-activities/`.
 
 ### Цель
 
@@ -222,6 +243,12 @@ statements одной transaction.
   explicit confirmation; один bulk draft сам current state не меняет;
 - старые component-only observations не переосмысливаются автоматически.
 
+LA-M2 не создаёт learner attempts/evaluations, durable typed evidence,
+objective state, mastery percentage или recommendations. Evidence eligibility
+лишь классифицирует сохранённое наблюдение по objective alignment,
+наблюдаемому критерию, подтверждению и уровню поддержки/самостоятельности; она
+ничего не пишет в учебный профиль.
+
 ### Definition of Done
 
 - objective нельзя связать с Component другого Course;
@@ -232,6 +259,33 @@ statements одной transaction.
 - learner-safe delivery contract для assessable definition не допускает answer
   key, но ещё не создаёт execution records;
 - registry остаётся единственным источником type capabilities.
+
+### Выполненные compatibility и retention guarantees
+
+- новая публикация строится как snapshot schema V2 с objective definitions,
+  Component `primaryObjectiveRef`/`activityRole` и deterministic ID remap;
+- immutable V1 revisions читаются и копируются без переписывания checksum или
+  payload; V1 не может молча отбросить уже существующие LA-M2 данные;
+- архивирование objective не разрывает существующие Component alignment и
+  history, но новое назначение архивной objective запрещено;
+- новые observations получают nullable live objective FK и стабильные
+  objective ID/title-at-time; удаление live relation сохраняет at-time
+  provenance, а прежние observations остаются с `NULL` без backfill;
+- `practice | assessment | survey` разрешены только registry types, которые
+  явно поддерживают соответствующую роль;
+- learner-facing Student Screen/catalog projections строятся на серверной
+  learner-safe projection и не содержат objective IDs, role metadata,
+  evaluator config или answer keys.
+
+### Production gate (**DB COMPLETE / WEB NEXT**)
+
+DB-first часть выполнена: повторный read-only identity/schema sanity подтвердил
+ShiDao PostgreSQL `15.8`, verified backup создан и проверен, обе exact
+migrations завершились `COMMIT`, а RLS/ACL/RPC/FK/trigger/lock-order,
+PostgREST visibility и unchanged legacy V1 snapshot прошли postflight без
+production fixtures. Остаются normal fast-forward `main` rollout, Coolify
+exact-image verification и deployed-SHA HTTP/API/CSRF/browser smoke. До их
+завершения документация не утверждает, что LA-M2 доступен в deployed web.
 
 ## LA-M3 — учебный профиль: история, навыки, рекомендации (**NEXT**)
 

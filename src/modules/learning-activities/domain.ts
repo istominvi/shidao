@@ -1,6 +1,7 @@
 import type {
   CourseAsset,
   CourseLesson,
+  LearningObjective,
 } from "@/modules/course-builder/domain";
 import type { LessonRun } from "@/modules/lesson-runs/domain";
 
@@ -18,6 +19,12 @@ export type LessonComponentObservation = {
   learningRecordId: string;
   lessonComponentId: string | null;
   sourceComponentIdAtTime: string;
+  /** Nullable live FK; deletion does not erase the stable fields below. */
+  learningObjectiveId: string | null;
+  /** Stable objective provenance captured by the save RPC under its locks. */
+  sourceLearningObjectiveIdAtTime: string | null;
+  /** Bounded historical title; null for honest LA-M1 component-only rows. */
+  learningObjectiveTitleAtTime: string | null;
   componentPositionAtTime: number;
   /** Historical registry key; it remains readable if a live type is retired. */
   componentTypeAtTime: string;
@@ -41,5 +48,6 @@ export type RunObservationWorkspace = {
   run: LessonRun;
   lesson: CourseLesson;
   attachments: CourseAsset[];
+  learningObjectives: LearningObjective[];
   observations: LessonComponentObservation[];
 };

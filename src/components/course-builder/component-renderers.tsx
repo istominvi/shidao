@@ -551,9 +551,14 @@ function SingleChoicePollRenderer({
   component,
   mode,
 }: RegisteredRendererProps) {
-  const payload = componentRegistry.single_choice_poll.payloadSchema.parse(
-    component.payload,
-  );
+  const payload =
+    mode === "student"
+      ? componentRegistry.single_choice_poll.activityFacet.learnerDeliverySchema.parse(
+          component.payload,
+        )
+      : componentRegistry.single_choice_poll.payloadSchema.parse(
+          component.payload,
+        );
   const placement = componentRegistry.single_choice_poll.placementSchema.parse(
     component.placement,
   );
@@ -637,50 +642,117 @@ function SingleChoicePollRenderer({
 }
 
 function MatchingGameRenderer({ component, mode }: RegisteredRendererProps) {
-  const payload = componentRegistry.matching_game.payloadSchema.parse(
-    component.payload,
-  );
+  const authorPayload =
+    mode === "teacher"
+      ? componentRegistry.matching_game.payloadSchema.parse(component.payload)
+      : null;
+  const learnerPayload =
+    mode === "student"
+      ? componentRegistry.matching_game.activityFacet.learnerDeliverySchema.parse(
+          component.payload,
+        )
+      : null;
   const placement = componentRegistry.matching_game.placementSchema.parse(
     component.placement,
   );
+  const instruction = authorPayload?.instruction ?? learnerPayload!.instruction;
+  const leftItems = authorPayload
+    ? authorPayload.pairs.map((pair) => ({
+        id: pair.id,
+        text: pair.left,
+        evaluatorId: pair.id,
+      }))
+    : learnerPayload!.leftItems.map((item) => ({
+        ...item,
+        evaluatorId: null,
+      }));
   const rightItems = useMemo(
-    () => (payload.shuffle ? [...payload.pairs].reverse() : payload.pairs),
-    [payload.pairs, payload.shuffle],
+    () =>
+      authorPayload
+        ? deterministicOrder(
+            authorPayload.pairs.map((pair) => ({
+              id: pair.id,
+              text: pair.right,
+              evaluatorId: pair.id,
+            })),
+            authorPayload.shuffle,
+          )
+        : learnerPayload!.rightItems.map((item) => ({
+            ...item,
+            evaluatorId: null,
+          })),
+    [authorPayload, learnerPayload],
   );
   const [selectedLeftId, setSelectedLeftId] = useState<string | null>(null);
-  const [matchedPairIds, setMatchedPairIds] = useState<string[]>([]);
+  const [matchedLeftIds, setMatchedLeftIds] = useState<string[]>([]);
+  const [matchedRightIds, setMatchedRightIds] = useState<string[]>([]);
   const [feedback, setFeedback] = useState("Выберите элемент слева.");
-  const validPairIds = new Set(payload.pairs.map((pair) => pair.id));
-  const matchedIds = new Set(
-    matchedPairIds.filter((pairId) => validPairIds.has(pairId)),
+  const validLeftIds = new Set(leftItems.map((item) => item.id));
+  const validRightIds = new Set(rightItems.map((item) => item.id));
+  const matchedLeft = new Set(
+    matchedLeftIds.filter((itemId) => validLeftIds.has(itemId)),
   );
-  const completed = matchedIds.size === payload.pairs.length;
+  const matchedRight = new Set(
+    matchedRightIds.filter((itemId) => validRightIds.has(itemId)),
+  );
+  const completed = matchedLeft.size === leftItems.length;
 
-  function chooseRight(pairId: string) {
+  function chooseRight(rightId: string) {
     if (!selectedLeftId) {
       setFeedback("Сначала выберите элемент слева.");
       return;
     }
 
-    if (selectedLeftId === pairId) {
-      setMatchedPairIds((current) =>
-        current.includes(pairId) ? current : [...current, pairId],
+    const selectedLeft = leftItems.find((item) => item.id === selectedLeftId);
+    const selectedRight = rightItems.find((item) => item.id === rightId);
+    if (!selectedLeft || !selectedRight) return;
+
+    if (mode === "student") {
+      setMatchedLeftIds((current) =>
+        current.includes(selectedLeft.id)
+          ? current
+          : [...current, selectedLeft.id],
+      );
+      setMatchedRightIds((current) =>
+        current.includes(selectedRight.id)
+          ? current
+          : [...current, selectedRight.id],
       );
       setSelectedLeftId(null);
       setFeedback(
-        matchedIds.size + 1 === payload.pairs.length
+        matchedLeft.size + 1 === leftItems.length
+          ? "Все пары выбраны. Проверка будет доступна в учебной активности."
+          : "Пара выбрана без локальной проверки. Продолжайте.",
+      );
+      return;
+    }
+
+    if (selectedLeft.evaluatorId === selectedRight.evaluatorId) {
+      setMatchedLeftIds((current) =>
+        current.includes(selectedLeft.id)
+          ? current
+          : [...current, selectedLeft.id],
+      );
+      setMatchedRightIds((current) =>
+        current.includes(selectedRight.id)
+          ? current
+          : [...current, selectedRight.id],
+      );
+      setSelectedLeftId(null);
+      setFeedback(
+        matchedLeft.size + 1 === leftItems.length
           ? "Все пары найдены!"
           : "Верно. Найдите следующую пару.",
       );
       return;
     }
-
     setFeedback("Пока не совпало. Попробуйте ещё раз.");
   }
 
   function reset() {
     setSelectedLeftId(null);
-    setMatchedPairIds([]);
+    setMatchedLeftIds([]);
+    setMatchedRightIds([]);
     setFeedback("Выберите элемент слева.");
   }
 
@@ -689,43 +761,41 @@ function MatchingGameRenderer({ component, mode }: RegisteredRendererProps) {
       className={`${widthClass(placement.width, mode)} rounded-3xl border border-violet-200 bg-violet-50/60 ${placement.compact ? "p-4" : "p-5 md:p-6"}`}
       aria-label="Игра Найди пару"
     >
-      <h3 className="text-lg font-bold text-neutral-950">
-        {payload.instruction}
-      </h3>
+      <h3 className="text-lg font-bold text-neutral-950">{instruction}</h3>
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div className="grid content-start gap-2" aria-label="Левая колонка">
-          {payload.pairs.map((pair) => {
-            const matched = matchedIds.has(pair.id);
-            const selected = selectedLeftId === pair.id;
+          {leftItems.map((item) => {
+            const matched = matchedLeft.has(item.id);
+            const selected = selectedLeftId === item.id;
             return (
               <button
-                key={pair.id}
+                key={item.id}
                 type="button"
                 disabled={matched}
                 aria-pressed={selected}
                 onClick={() => {
-                  setSelectedLeftId(pair.id);
+                  setSelectedLeftId(item.id);
                   setFeedback("Теперь выберите пару справа.");
                 }}
-                className={`min-h-12 rounded-2xl border px-3 py-2 text-sm font-semibold transition ${matched ? "border-emerald-300 bg-emerald-100 text-emerald-900" : selected ? "border-violet-500 bg-white text-violet-950 shadow-sm" : "border-violet-200 bg-white/80 text-neutral-800 hover:border-violet-400"}`}
+                className={`min-h-12 rounded-2xl border px-3 py-2 text-sm font-semibold transition ${matched ? (mode === "teacher" ? "border-emerald-300 bg-emerald-100 text-emerald-900" : "border-violet-300 bg-violet-100 text-violet-900") : selected ? "border-violet-500 bg-white text-violet-950 shadow-sm" : "border-violet-200 bg-white/80 text-neutral-800 hover:border-violet-400"}`}
               >
-                {pair.left}
+                {item.text}
               </button>
             );
           })}
         </div>
         <div className="grid content-start gap-2" aria-label="Правая колонка">
-          {rightItems.map((pair) => {
-            const matched = matchedIds.has(pair.id);
+          {rightItems.map((item) => {
+            const matched = matchedRight.has(item.id);
             return (
               <button
-                key={pair.id}
+                key={item.id}
                 type="button"
                 disabled={matched}
-                onClick={() => chooseRight(pair.id)}
-                className={`min-h-12 rounded-2xl border px-3 py-2 text-sm font-semibold transition ${matched ? "border-emerald-300 bg-emerald-100 text-emerald-900" : "border-violet-200 bg-white/80 text-neutral-800 hover:border-violet-400"}`}
+                onClick={() => chooseRight(item.id)}
+                className={`min-h-12 rounded-2xl border px-3 py-2 text-sm font-semibold transition ${matched ? (mode === "teacher" ? "border-emerald-300 bg-emerald-100 text-emerald-900" : "border-violet-300 bg-violet-100 text-violet-900") : "border-violet-200 bg-white/80 text-neutral-800 hover:border-violet-400"}`}
               >
-                {pair.right}
+                {item.text}
               </button>
             );
           })}
@@ -734,7 +804,7 @@ function MatchingGameRenderer({ component, mode }: RegisteredRendererProps) {
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p
-          className={`text-sm ${completed ? "font-semibold text-emerald-800" : "text-violet-900"}`}
+          className={`text-sm ${completed && mode === "teacher" ? "font-semibold text-emerald-800" : "text-violet-900"}`}
           role="status"
         >
           {mode === "teacher" ? "Предпросмотр: " : ""}
@@ -780,15 +850,26 @@ function teacherPreviewPrefix(mode: CourseComponentRenderMode) {
 }
 
 function ChoiceQuizRenderer({ component, mode }: RegisteredRendererProps) {
-  const payload = componentRegistry.choice_quiz.payloadSchema.parse(
-    component.payload,
-  );
+  const authorPayload =
+    mode === "teacher"
+      ? componentRegistry.choice_quiz.payloadSchema.parse(component.payload)
+      : null;
+  const learnerPayload =
+    mode === "student"
+      ? componentRegistry.choice_quiz.activityFacet.learnerDeliverySchema.parse(
+          component.payload,
+        )
+      : null;
+  const payload = authorPayload ?? learnerPayload!;
   const placement = componentRegistry.choice_quiz.placementSchema.parse(
     component.placement,
   );
   const orderedOptions = useMemo(
-    () => deterministicOrder(payload.options, payload.shuffle),
-    [payload.options, payload.shuffle],
+    () =>
+      authorPayload
+        ? deterministicOrder(authorPayload.options, authorPayload.shuffle)
+        : payload.options,
+    [authorPayload, payload.options],
   );
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
@@ -796,12 +877,14 @@ function ChoiceQuizRenderer({ component, mode }: RegisteredRendererProps) {
   const normalizedSelectedIds = selectedIds.filter((id) =>
     currentOptionIds.has(id),
   );
-  const correctIds = payload.options
-    .filter((option) => option.isCorrect)
-    .map((option) => option.id);
-  const isCorrect =
-    normalizedSelectedIds.length === correctIds.length &&
-    correctIds.every((id) => normalizedSelectedIds.includes(id));
+  const correctIds =
+    authorPayload?.options
+      .filter((option) => option.isCorrect)
+      .map((option) => option.id) ?? [];
+  const isCorrect = authorPayload
+    ? normalizedSelectedIds.length === correctIds.length &&
+      correctIds.every((id) => normalizedSelectedIds.includes(id))
+    : null;
 
   function toggleOption(optionId: string) {
     setSubmitted(false);
@@ -868,7 +951,7 @@ function ChoiceQuizRenderer({ component, mode }: RegisteredRendererProps) {
           onClick={() => setSubmitted(true)}
           className="rounded-xl bg-neutral-950 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Проверить
+          {mode === "teacher" ? "Проверить" : "Зафиксировать выбор"}
         </button>
         <button
           type="button"
@@ -880,14 +963,20 @@ function ChoiceQuizRenderer({ component, mode }: RegisteredRendererProps) {
       </div>
 
       <div className="mt-3 min-h-6 text-sm" role="status" aria-live="polite">
-        {submitted ? (
+        {submitted && mode === "student" ? (
+          <p className="font-semibold text-indigo-900">
+            Ответ выбран. Локальная проверка на экране ученика отключена.
+          </p>
+        ) : submitted && authorPayload ? (
           <div className={isCorrect ? "text-emerald-800" : "text-rose-800"}>
             <p className="font-semibold">
               {teacherPreviewPrefix(mode)}
               {isCorrect ? "Верно!" : "Ответ пока неверный."}
             </p>
-            {payload.explanation ? (
-              <p className="mt-1 text-neutral-700">{payload.explanation}</p>
+            {authorPayload.explanation ? (
+              <p className="mt-1 text-neutral-700">
+                {authorPayload.explanation}
+              </p>
             ) : null}
           </div>
         ) : (
@@ -910,21 +999,34 @@ function templateMarkerIndex(part: string) {
 }
 
 function FillBlanksRenderer({ component, mode }: RegisteredRendererProps) {
-  const payload = componentRegistry.fill_blanks.payloadSchema.parse(
-    component.payload,
-  );
+  const authorPayload =
+    mode === "teacher"
+      ? componentRegistry.fill_blanks.payloadSchema.parse(component.payload)
+      : null;
+  const learnerPayload =
+    mode === "student"
+      ? componentRegistry.fill_blanks.activityFacet.learnerDeliverySchema.parse(
+          component.payload,
+        )
+      : null;
+  const payload = authorPayload ?? learnerPayload!;
   const placement = componentRegistry.fill_blanks.placementSchema.parse(
     component.placement,
   );
   const [values, setValues] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
-  const correctness = payload.answers.map((answer, index) => {
-    const value = normalizeAnswer(values[index] ?? "");
-    return answer.accepted.some(
-      (alternative) => normalizeAnswer(alternative) === value,
-    );
-  });
-  const allCorrect = correctness.every(Boolean);
+  const hints =
+    authorPayload?.answers.map((answer) => answer.hint ?? null) ??
+    learnerPayload!.hints;
+  const correctness = authorPayload
+    ? authorPayload.answers.map((answer, index) => {
+        const value = normalizeAnswer(values[index] ?? "");
+        return answer.accepted.some(
+          (alternative) => normalizeAnswer(alternative) === value,
+        );
+      })
+    : hints.map(() => false);
+  const allCorrect = authorPayload ? correctness.every(Boolean) : null;
 
   function reset() {
     setValues({});
@@ -947,7 +1049,7 @@ function FillBlanksRenderer({ component, mode }: RegisteredRendererProps) {
           if (answerIndex === null) {
             return <Fragment key={`text-${partIndex}`}>{part}</Fragment>;
           }
-          const answer = payload.answers[answerIndex];
+          const hint = hints[answerIndex];
           return (
             <label
               key={`blank-${partIndex}`}
@@ -957,7 +1059,11 @@ function FillBlanksRenderer({ component, mode }: RegisteredRendererProps) {
               <input
                 type="text"
                 value={values[answerIndex] ?? ""}
-                aria-invalid={submitted ? !correctness[answerIndex] : undefined}
+                aria-invalid={
+                  submitted && authorPayload
+                    ? !correctness[answerIndex]
+                    : undefined
+                }
                 onChange={(event) => {
                   const value = event.target.value;
                   setValues((current) => ({
@@ -966,11 +1072,11 @@ function FillBlanksRenderer({ component, mode }: RegisteredRendererProps) {
                   }));
                   setSubmitted(false);
                 }}
-                className={`min-w-28 rounded-lg border px-2 py-1 leading-6 outline-none transition ${submitted ? (correctness[answerIndex] ? "border-emerald-500 bg-emerald-50" : "border-rose-500 bg-rose-50") : "border-neutral-300 bg-white focus:border-indigo-500"}`}
+                className={`min-w-28 rounded-lg border px-2 py-1 leading-6 outline-none transition ${submitted && authorPayload ? (correctness[answerIndex] ? "border-emerald-500 bg-emerald-50" : "border-rose-500 bg-rose-50") : "border-neutral-300 bg-white focus:border-indigo-500"}`}
               />
-              {answer?.hint ? (
+              {hint ? (
                 <span className="mt-0.5 text-xs leading-4 text-neutral-500">
-                  {answer.hint}
+                  {hint}
                 </span>
               ) : null}
             </label>
@@ -983,7 +1089,7 @@ function FillBlanksRenderer({ component, mode }: RegisteredRendererProps) {
           onClick={() => setSubmitted(true)}
           className="rounded-xl bg-neutral-950 px-4 py-2 text-sm font-semibold text-white"
         >
-          Проверить
+          {mode === "teacher" ? "Проверить" : "Зафиксировать ответы"}
         </button>
         <button
           type="button"
@@ -994,12 +1100,14 @@ function FillBlanksRenderer({ component, mode }: RegisteredRendererProps) {
         </button>
       </div>
       <p
-        className={`mt-3 min-h-6 text-sm ${submitted ? (allCorrect ? "font-semibold text-emerald-800" : "text-rose-800") : "text-indigo-900"}`}
+        className={`mt-3 min-h-6 text-sm ${submitted && authorPayload ? (allCorrect ? "font-semibold text-emerald-800" : "text-rose-800") : "text-indigo-900"}`}
         role="status"
         aria-live="polite"
       >
         {submitted
-          ? `${teacherPreviewPrefix(mode)}${allCorrect ? "Все пропуски заполнены верно!" : "Проверьте отмеченные пропуски."}`
+          ? authorPayload
+            ? `${teacherPreviewPrefix(mode)}${allCorrect ? "Все пропуски заполнены верно!" : "Проверьте отмеченные пропуски."}`
+            : "Ответы заполнены. Локальная проверка на экране ученика отключена."
           : "Заполните пропуски и проверьте себя."}
       </p>
     </ExerciseFrame>
@@ -1011,32 +1119,46 @@ function splitAcceptedAlternatives(value: string) {
 }
 
 function WordBankRenderer({ component, mode }: RegisteredRendererProps) {
-  const payload = componentRegistry.word_bank.payloadSchema.parse(
-    component.payload,
-  );
+  const authorPayload =
+    mode === "teacher"
+      ? componentRegistry.word_bank.payloadSchema.parse(component.payload)
+      : null;
+  const learnerPayload =
+    mode === "student"
+      ? componentRegistry.word_bank.activityFacet.learnerDeliverySchema.parse(
+          component.payload,
+        )
+      : null;
+  const payload = authorPayload ?? learnerPayload!;
   const placement = componentRegistry.word_bank.placementSchema.parse(
     component.placement,
   );
   const [values, setValues] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const options = useMemo(() => {
+    if (learnerPayload) return learnerPayload.options;
     const unique = new Map<string, string>();
     for (const value of [
-      ...payload.answers.flatMap(splitAcceptedAlternatives),
-      ...payload.distractors,
+      ...authorPayload!.answers.flatMap(splitAcceptedAlternatives),
+      ...authorPayload!.distractors,
     ]) {
       const key = normalizeAnswer(value);
       if (!unique.has(key)) unique.set(key, value);
     }
-    return deterministicOrder(Array.from(unique.values()), payload.shuffle);
-  }, [payload.answers, payload.distractors, payload.shuffle]);
-  const correctness = payload.answers.map((answer, index) => {
-    const value = normalizeAnswer(values[index] ?? "");
-    return splitAcceptedAlternatives(answer).some(
-      (alternative) => normalizeAnswer(alternative) === value,
+    return deterministicOrder(
+      Array.from(unique.values()),
+      authorPayload!.shuffle,
     );
-  });
-  const allCorrect = correctness.every(Boolean);
+  }, [authorPayload, learnerPayload]);
+  const correctness = authorPayload
+    ? authorPayload.answers.map((answer, index) => {
+        const value = normalizeAnswer(values[index] ?? "");
+        return splitAcceptedAlternatives(answer).some(
+          (alternative) => normalizeAnswer(alternative) === value,
+        );
+      })
+    : Array.from({ length: learnerPayload!.blankCount }, () => false);
+  const allCorrect = authorPayload ? correctness.every(Boolean) : null;
 
   function reset() {
     setValues({});
@@ -1064,7 +1186,11 @@ function WordBankRenderer({ component, mode }: RegisteredRendererProps) {
               <span className="sr-only">Пропуск {answerIndex + 1}</span>
               <select
                 value={values[answerIndex] ?? ""}
-                aria-invalid={submitted ? !correctness[answerIndex] : undefined}
+                aria-invalid={
+                  submitted && authorPayload
+                    ? !correctness[answerIndex]
+                    : undefined
+                }
                 onChange={(event) => {
                   const value = event.target.value;
                   setValues((current) => ({
@@ -1073,7 +1199,7 @@ function WordBankRenderer({ component, mode }: RegisteredRendererProps) {
                   }));
                   setSubmitted(false);
                 }}
-                className={`max-w-full rounded-lg border px-2 py-1 leading-6 outline-none transition ${submitted ? (correctness[answerIndex] ? "border-emerald-500 bg-emerald-50" : "border-rose-500 bg-rose-50") : "border-neutral-300 bg-white focus:border-indigo-500"}`}
+                className={`max-w-full rounded-lg border px-2 py-1 leading-6 outline-none transition ${submitted && authorPayload ? (correctness[answerIndex] ? "border-emerald-500 bg-emerald-50" : "border-rose-500 bg-rose-50") : "border-neutral-300 bg-white focus:border-indigo-500"}`}
               >
                 <option value="">Выберите слово</option>
                 {options.map((option) => (
@@ -1092,7 +1218,7 @@ function WordBankRenderer({ component, mode }: RegisteredRendererProps) {
           onClick={() => setSubmitted(true)}
           className="rounded-xl bg-neutral-950 px-4 py-2 text-sm font-semibold text-white"
         >
-          Проверить
+          {mode === "teacher" ? "Проверить" : "Зафиксировать ответы"}
         </button>
         <button
           type="button"
@@ -1103,12 +1229,14 @@ function WordBankRenderer({ component, mode }: RegisteredRendererProps) {
         </button>
       </div>
       <p
-        className={`mt-3 min-h-6 text-sm ${submitted ? (allCorrect ? "font-semibold text-emerald-800" : "text-rose-800") : "text-indigo-900"}`}
+        className={`mt-3 min-h-6 text-sm ${submitted && authorPayload ? (allCorrect ? "font-semibold text-emerald-800" : "text-rose-800") : "text-indigo-900"}`}
         role="status"
         aria-live="polite"
       >
         {submitted
-          ? `${teacherPreviewPrefix(mode)}${allCorrect ? "Все слова выбраны верно!" : "Некоторые слова пока не подходят."}`
+          ? authorPayload
+            ? `${teacherPreviewPrefix(mode)}${allCorrect ? "Все слова выбраны верно!" : "Некоторые слова пока не подходят."}`
+            : "Ответы выбраны. Локальная проверка на экране ученика отключена."
           : "Выберите слова для каждого пропуска."}
       </p>
     </ExerciseFrame>
@@ -1116,33 +1244,42 @@ function WordBankRenderer({ component, mode }: RegisteredRendererProps) {
 }
 
 function SequenceRenderer({ component, mode }: RegisteredRendererProps) {
-  const payload = componentRegistry.sequence.payloadSchema.parse(
-    component.payload,
-  );
+  const authorPayload =
+    mode === "teacher"
+      ? componentRegistry.sequence.payloadSchema.parse(component.payload)
+      : null;
+  const learnerPayload =
+    mode === "student"
+      ? componentRegistry.sequence.activityFacet.learnerDeliverySchema.parse(
+          component.payload,
+        )
+      : null;
+  const payload = authorPayload ?? learnerPayload!;
   const placement = componentRegistry.sequence.placementSchema.parse(
     component.placement,
   );
-  const expectedIds = payload.items.map((item) => item.id);
-  const [orderedIds, setOrderedIds] = useState(() =>
-    deterministicOrder(expectedIds, payload.shuffle),
-  );
+  const canonicalIds = authorPayload?.items.map((item) => item.id) ?? null;
+  const initialIds = authorPayload
+    ? deterministicOrder(canonicalIds!, authorPayload.shuffle)
+    : learnerPayload!.items.map((item) => item.id);
+  const [orderedIds, setOrderedIds] = useState(() => initialIds);
   const [submitted, setSubmitted] = useState(false);
-  const validIds = new Set(expectedIds);
+  const validIds = new Set(initialIds);
   const normalizedOrderedIds = [
     ...orderedIds.filter((id, index) => {
       return validIds.has(id) && orderedIds.indexOf(id) === index;
     }),
-    ...expectedIds.filter((id) => !orderedIds.includes(id)),
+    ...initialIds.filter((id) => !orderedIds.includes(id)),
   ];
   const itemsById = new Map(payload.items.map((item) => [item.id, item]));
-  const isCorrect = expectedIds.every(
-    (id, index) => normalizedOrderedIds[index] === id,
-  );
+  const isCorrect = canonicalIds
+    ? canonicalIds.every((id, index) => normalizedOrderedIds[index] === id)
+    : null;
 
   function move(itemId: string, offset: -1 | 1) {
     const currentIndex = normalizedOrderedIds.indexOf(itemId);
     const nextIndex = currentIndex + offset;
-    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= expectedIds.length) {
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= initialIds.length) {
       return;
     }
     const next = [...normalizedOrderedIds];
@@ -1155,7 +1292,7 @@ function SequenceRenderer({ component, mode }: RegisteredRendererProps) {
   }
 
   function reset() {
-    setOrderedIds(deterministicOrder(expectedIds, payload.shuffle));
+    setOrderedIds(initialIds);
     setSubmitted(false);
   }
 
@@ -1217,7 +1354,7 @@ function SequenceRenderer({ component, mode }: RegisteredRendererProps) {
           onClick={() => setSubmitted(true)}
           className="rounded-xl bg-neutral-950 px-4 py-2 text-sm font-semibold text-white"
         >
-          Проверить порядок
+          {mode === "teacher" ? "Проверить порядок" : "Зафиксировать порядок"}
         </button>
         <button
           type="button"
@@ -1228,12 +1365,14 @@ function SequenceRenderer({ component, mode }: RegisteredRendererProps) {
         </button>
       </div>
       <p
-        className={`mt-3 min-h-6 text-sm ${submitted ? (isCorrect ? "font-semibold text-emerald-800" : "text-rose-800") : "text-indigo-900"}`}
+        className={`mt-3 min-h-6 text-sm ${submitted && authorPayload ? (isCorrect ? "font-semibold text-emerald-800" : "text-rose-800") : "text-indigo-900"}`}
         role="status"
         aria-live="polite"
       >
         {submitted
-          ? `${teacherPreviewPrefix(mode)}${isCorrect ? "Порядок верный!" : "Порядок пока неверный."}`
+          ? authorPayload
+            ? `${teacherPreviewPrefix(mode)}${isCorrect ? "Порядок верный!" : "Порядок пока неверный."}`
+            : "Порядок выбран. Локальная проверка на экране ученика отключена."
           : `Перемещайте ${payload.mode === "words" ? "слова" : "фразы"} кнопками со стрелками.`}
       </p>
     </ExerciseFrame>
@@ -1241,22 +1380,33 @@ function SequenceRenderer({ component, mode }: RegisteredRendererProps) {
 }
 
 function CategorizeRenderer({ component, mode }: RegisteredRendererProps) {
-  const payload = componentRegistry.categorize.payloadSchema.parse(
-    component.payload,
-  );
+  const authorPayload =
+    mode === "teacher"
+      ? componentRegistry.categorize.payloadSchema.parse(component.payload)
+      : null;
+  const learnerPayload =
+    mode === "student"
+      ? componentRegistry.categorize.activityFacet.learnerDeliverySchema.parse(
+          component.payload,
+        )
+      : null;
+  const payload = authorPayload ?? learnerPayload!;
   const placement = componentRegistry.categorize.placementSchema.parse(
     component.placement,
   );
   const orderedItems = useMemo(
-    () => deterministicOrder(payload.items, payload.shuffle),
-    [payload.items, payload.shuffle],
+    () =>
+      authorPayload
+        ? deterministicOrder(authorPayload.items, authorPayload.shuffle)
+        : learnerPayload!.items,
+    [authorPayload, learnerPayload],
   );
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
-  const correctness = payload.items.map(
-    (item) => selections[item.id] === item.categoryId,
-  );
-  const allCorrect = correctness.every(Boolean);
+  const correctness = authorPayload
+    ? authorPayload.items.map((item) => selections[item.id] === item.categoryId)
+    : learnerPayload!.items.map(() => false);
+  const allCorrect = authorPayload ? correctness.every(Boolean) : null;
 
   function reset() {
     setSelections({});
@@ -1282,14 +1432,16 @@ function CategorizeRenderer({ component, mode }: RegisteredRendererProps) {
           return (
             <label
               key={item.id}
-              className={`rounded-2xl border bg-white px-4 py-3 ${submitted ? (itemIsCorrect ? "border-emerald-400" : "border-rose-400") : "border-indigo-100"}`}
+              className={`rounded-2xl border bg-white px-4 py-3 ${submitted && authorPayload ? (itemIsCorrect ? "border-emerald-400" : "border-rose-400") : "border-indigo-100"}`}
             >
               <span className="block text-sm font-semibold text-neutral-900">
                 {item.text}
               </span>
               <select
                 value={selections[item.id] ?? ""}
-                aria-invalid={submitted ? !itemIsCorrect : undefined}
+                aria-invalid={
+                  submitted && authorPayload ? !itemIsCorrect : undefined
+                }
                 onChange={(event) => {
                   const categoryId = event.target.value;
                   setSelections((current) => ({
@@ -1317,7 +1469,7 @@ function CategorizeRenderer({ component, mode }: RegisteredRendererProps) {
           onClick={() => setSubmitted(true)}
           className="rounded-xl bg-neutral-950 px-4 py-2 text-sm font-semibold text-white"
         >
-          Проверить
+          {mode === "teacher" ? "Проверить" : "Зафиксировать ответы"}
         </button>
         <button
           type="button"
@@ -1328,12 +1480,14 @@ function CategorizeRenderer({ component, mode }: RegisteredRendererProps) {
         </button>
       </div>
       <p
-        className={`mt-3 min-h-6 text-sm ${submitted ? (allCorrect ? "font-semibold text-emerald-800" : "text-rose-800") : "text-indigo-900"}`}
+        className={`mt-3 min-h-6 text-sm ${submitted && authorPayload ? (allCorrect ? "font-semibold text-emerald-800" : "text-rose-800") : "text-indigo-900"}`}
         role="status"
         aria-live="polite"
       >
         {submitted
-          ? `${teacherPreviewPrefix(mode)}${allCorrect ? "Все элементы распределены верно!" : "Проверьте отмеченные элементы."}`
+          ? authorPayload
+            ? `${teacherPreviewPrefix(mode)}${allCorrect ? "Все элементы распределены верно!" : "Проверьте отмеченные элементы."}`
+            : "Категории выбраны. Локальная проверка на экране ученика отключена."
           : "Выберите категорию для каждого элемента."}
       </p>
     </ExerciseFrame>
@@ -1341,9 +1495,12 @@ function CategorizeRenderer({ component, mode }: RegisteredRendererProps) {
 }
 
 function FreeResponseRenderer({ component, mode }: RegisteredRendererProps) {
-  const payload = componentRegistry.free_response.payloadSchema.parse(
-    component.payload,
-  );
+  const payload =
+    mode === "student"
+      ? componentRegistry.free_response.activityFacet.learnerDeliverySchema.parse(
+          component.payload,
+        )
+      : componentRegistry.free_response.payloadSchema.parse(component.payload);
   const placement = componentRegistry.free_response.placementSchema.parse(
     component.placement,
   );
@@ -1481,40 +1638,56 @@ function ExternalLinkRenderer({ component, mode }: RegisteredRendererProps) {
 }
 
 function WordBuilderRenderer({ component, mode }: RegisteredRendererProps) {
-  const payload = componentRegistry.word_builder.payloadSchema.parse(
-    component.payload,
-  );
+  const authorPayload =
+    mode === "teacher"
+      ? componentRegistry.word_builder.payloadSchema.parse(component.payload)
+      : null;
+  const learnerPayload =
+    mode === "student"
+      ? componentRegistry.word_builder.activityFacet.learnerDeliverySchema.parse(
+          component.payload,
+        )
+      : null;
+  const payload = authorPayload ?? learnerPayload!;
   const placement = componentRegistry.word_builder.placementSchema.parse(
     component.placement,
   );
-  const letters = Array.from(payload.targetWord);
-  const availableOrder = deterministicOrder(
-    letters.map((letter, index) => ({ letter, index })),
-    payload.shuffle,
-  );
-  const [selectedIndexes, setSelectedIndexes] = useState<number[]>([]);
+  const availableTokens = authorPayload
+    ? deterministicOrder(
+        Array.from(authorPayload.targetWord).map((text, index) => ({
+          id: `author-letter-${index + 1}`,
+          text,
+        })),
+        authorPayload.shuffle,
+      )
+    : learnerPayload!.tokens;
+  const [selectedTokenIds, setSelectedTokenIds] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
-  const normalizedSelectedIndexes = selectedIndexes.filter(
-    (index, position) =>
-      index >= 0 &&
-      index < letters.length &&
-      selectedIndexes.indexOf(index) === position,
+  const availableTokenIds = new Set(availableTokens.map((token) => token.id));
+  const normalizedSelectedTokenIds = selectedTokenIds.filter(
+    (tokenId, position) =>
+      availableTokenIds.has(tokenId) &&
+      selectedTokenIds.indexOf(tokenId) === position,
   );
-  const builtWord = normalizedSelectedIndexes
-    .map((index) => letters[index])
+  const tokenById = new Map(
+    availableTokens.map((token) => [token.id, token.text]),
+  );
+  const builtWord = normalizedSelectedTokenIds
+    .map((tokenId) => tokenById.get(tokenId) ?? "")
     .join("");
-  const isCorrect =
-    normalizeAnswer(builtWord) === normalizeAnswer(payload.targetWord);
+  const isCorrect = authorPayload
+    ? normalizeAnswer(builtWord) === normalizeAnswer(authorPayload.targetWord)
+    : null;
 
-  function chooseLetter(index: number) {
-    setSelectedIndexes((current) =>
-      current.includes(index) ? current : [...current, index],
+  function chooseToken(tokenId: string) {
+    setSelectedTokenIds((current) =>
+      current.includes(tokenId) ? current : [...current, tokenId],
     );
     setSubmitted(false);
   }
 
   function reset() {
-    setSelectedIndexes([]);
+    setSelectedTokenIds([]);
     setSubmitted(false);
   }
 
@@ -1544,19 +1717,19 @@ function WordBuilderRenderer({ component, mode }: RegisteredRendererProps) {
         className="mt-3 flex flex-wrap justify-center gap-2"
         aria-label="Буквы"
       >
-        {availableOrder.map(({ letter, index }) => {
-          const selected = normalizedSelectedIndexes.includes(index);
-          const label = letter.trim() ? letter : "Пробел";
+        {availableTokens.map((token) => {
+          const selected = normalizedSelectedTokenIds.includes(token.id);
+          const label = token.text.trim() ? token.text : "Пробел";
           return (
             <button
-              key={index}
+              key={token.id}
               type="button"
               disabled={selected}
               aria-label={`Добавить: ${label}`}
-              onClick={() => chooseLetter(index)}
+              onClick={() => chooseToken(token.id)}
               className="flex h-11 min-w-11 items-center justify-center rounded-xl border border-indigo-300 bg-white px-3 text-lg font-bold text-indigo-950 shadow-sm disabled:cursor-not-allowed disabled:opacity-25"
             >
-              {letter.trim() ? letter : "␠"}
+              {token.text.trim() ? token.text : "␠"}
             </button>
           );
         })}
@@ -1564,9 +1737,9 @@ function WordBuilderRenderer({ component, mode }: RegisteredRendererProps) {
       <div className="mt-4 flex flex-wrap gap-2">
         <button
           type="button"
-          disabled={normalizedSelectedIndexes.length === 0}
+          disabled={normalizedSelectedTokenIds.length === 0}
           onClick={() => {
-            setSelectedIndexes((current) => current.slice(0, -1));
+            setSelectedTokenIds((current) => current.slice(0, -1));
             setSubmitted(false);
           }}
           className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 disabled:cursor-not-allowed disabled:opacity-40"
@@ -1575,11 +1748,13 @@ function WordBuilderRenderer({ component, mode }: RegisteredRendererProps) {
         </button>
         <button
           type="button"
-          disabled={normalizedSelectedIndexes.length !== letters.length}
+          disabled={
+            normalizedSelectedTokenIds.length !== availableTokens.length
+          }
           onClick={() => setSubmitted(true)}
           className="rounded-xl bg-neutral-950 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Проверить
+          {mode === "teacher" ? "Проверить" : "Зафиксировать слово"}
         </button>
         <button
           type="button"
@@ -1590,12 +1765,14 @@ function WordBuilderRenderer({ component, mode }: RegisteredRendererProps) {
         </button>
       </div>
       <p
-        className={`mt-3 min-h-6 text-sm ${submitted ? (isCorrect ? "font-semibold text-emerald-800" : "text-rose-800") : "text-indigo-900"}`}
+        className={`mt-3 min-h-6 text-sm ${submitted && authorPayload ? (isCorrect ? "font-semibold text-emerald-800" : "text-rose-800") : "text-indigo-900"}`}
         role="status"
         aria-live="polite"
       >
         {submitted
-          ? `${teacherPreviewPrefix(mode)}${isCorrect ? "Слово собрано верно!" : "Слово пока неверное."}`
+          ? authorPayload
+            ? `${teacherPreviewPrefix(mode)}${isCorrect ? "Слово собрано верно!" : "Слово пока неверное."}`
+            : "Слово собрано. Локальная проверка на экране ученика отключена."
           : "Нажимайте на буквы в нужном порядке."}
       </p>
     </ExerciseFrame>
@@ -1770,7 +1947,12 @@ export function CourseComponentRenderer({
   const definition = findComponentDefinition(component.typeKey);
   if (!definition) return <InvalidComponent />;
 
-  const payload = definition.payloadSchema.safeParse(component.payload);
+  const payload =
+    mode === "student" && definition.activityFacet
+      ? definition.activityFacet.learnerDeliverySchema.safeParse(
+          component.payload,
+        )
+      : definition.payloadSchema.safeParse(component.payload);
   const placement = definition.placementSchema.safeParse(component.placement);
   if (!payload.success || !placement.success) return <InvalidComponent />;
 

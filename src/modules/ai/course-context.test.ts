@@ -32,6 +32,8 @@ function component(index: number): LessonComponent {
     placement: { width: "content", textAlign: "start" },
     visibility: "staff_only",
     studentSlideId: null,
+    primaryLearningObjectiveId: null,
+    activityRole: null,
     createdAt: "2026-08-05T00:00:00.000Z",
     updatedAt: "2026-08-05T00:00:00.000Z",
   };
@@ -55,6 +57,7 @@ function workspace(): CourseWorkspace {
     createdAt: "2026-08-05T00:00:00.000Z",
     publicationContentUpdatedAt: "2026-08-05T00:00:00.000Z",
     updatedAt: "2026-08-05T00:00:00.000Z",
+    learningObjectives: [],
     lessons: [
       {
         id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
@@ -163,6 +166,44 @@ test("assistant context explicitly marks component truncation", () => {
   assert.equal(context.selectedLesson?.componentsTruncated, true);
   assert.equal(context.selectedLesson?.components.length, 20);
   assert.doesNotMatch(JSON.stringify(context), /storedFileId/);
+});
+
+test("AI context includes Course objectives and Component alignment without IDs", () => {
+  const course = workspace();
+  const objectiveId = "90000000-0000-4000-8000-000000000001";
+  course.learningObjectives = [
+    {
+      id: objectiveId,
+      courseId: course.id,
+      title: "Сравнивает дроби с общим знаменателем",
+      description: "Объясняет выбор большего числителя",
+      archivedAt: null,
+      createdAt: "2026-08-05T00:00:00.000Z",
+      updatedAt: "2026-08-05T00:00:00.000Z",
+    },
+  ];
+  course.lessons[0]!.components[0] = {
+    ...course.lessons[0]!.components[0]!,
+    primaryLearningObjectiveId: objectiveId,
+    activityRole: "assessment",
+  };
+
+  const context = buildLessonPlanningContext(
+    course,
+    course.lessons[0]!,
+    course.lessons[0]!.title,
+  );
+  const serialized = JSON.stringify(context);
+
+  assert.equal(context.learningObjectives.objectiveCount, 1);
+  assert.equal(
+    context.lesson.components[0]?.primaryLearningObjective?.title,
+    "Сравнивает дроби с общим знаменателем",
+  );
+  assert.equal(context.lesson.components[0]?.activityRole, "assessment");
+  assert.match(serialized, /Объясняет выбор большего числителя/);
+  assert.doesNotMatch(serialized, /90000000-0000-4000-8000/);
+  assert.doesNotMatch(serialized, /primaryLearningObjectiveId|courseId/);
 });
 
 test("lesson planning context contains bounded finalized learner history without technical IDs", () => {

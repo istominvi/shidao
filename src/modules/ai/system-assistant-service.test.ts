@@ -109,6 +109,8 @@ function courseWorkspace(title = courseSummary().title): CourseWorkspace {
             placement: { width: "content", display: "card" },
             visibility: "staff_only",
             studentSlideId: null,
+            primaryLearningObjectiveId: null,
+            activityRole: null,
             createdAt: NOW,
             updatedAt: NOW,
           },
@@ -118,6 +120,7 @@ function courseWorkspace(title = courseSummary().title): CourseWorkspace {
         updatedAt: NOW,
       },
     ],
+    learningObjectives: [],
     attachments: [
       {
         id: FILE_ID,

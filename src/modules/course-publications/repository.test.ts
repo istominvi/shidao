@@ -59,6 +59,54 @@ function educatorCatalogRevision(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function objectiveAlignedSnapshot() {
+  return {
+    schemaVersion: 2,
+    course: {
+      title: "Китайский с нуля",
+      subject: "Китайский язык",
+      goal: "Научиться вести короткий диалог",
+      level: "Начальный",
+      audienceDescription: "Дети 9–11 лет",
+      targetLessonCount: 1,
+    },
+    objectives: [
+      {
+        ref: "00000000-0000-4000-8000-000000000501",
+        position: 1,
+        title: "Распознавать приветствие на слух",
+        description: null,
+        archivedAt: null,
+      },
+    ],
+    lessons: [
+      {
+        ref: "00000000-0000-4000-8000-000000000502",
+        position: 1,
+        title: "Знакомство",
+        summary: "",
+        estimatedDurationMinutes: null,
+        components: [
+          {
+            ref: "00000000-0000-4000-8000-000000000503",
+            position: 1,
+            typeKey: "choice_quiz",
+            schemaVersion: 1,
+            payload: {},
+            placement: {},
+            visibility: "staff_only",
+            studentSlideRef: null,
+            primaryObjectiveRef: "00000000-0000-4000-8000-000000000501",
+            activityRole: "assessment",
+          },
+        ],
+        slides: [],
+      },
+    ],
+    materials: [],
+  };
+}
+
 async function withRepository(
   fetcher: typeof fetch,
   run: (
@@ -558,6 +606,51 @@ test("child catalog detail keeps the current-revision path without educator gate
   );
 });
 
+test("catalog repository parses objective-aligned V2 revisions", async () => {
+  await withRepository(
+    (async (input) => {
+      const url = String(input);
+      if (url.includes("/rest/v1/course_publication?")) {
+        return Response.json([
+          educatorCatalogPublication({
+            learning_audience: "children",
+            is_shidao: false,
+            approved_revision_id: null,
+          }),
+        ]);
+      }
+      if (url.includes("/rest/v1/account?")) {
+        return Response.json([{ id: ACCOUNT_ID }]);
+      }
+      if (url.includes("/rest/v1/course_publication_revision?")) {
+        return Response.json([
+          educatorCatalogRevision({
+            id: REVISION_ID,
+            license_code: "shidao_catalog_reuse_v1",
+            snapshot: objectiveAlignedSnapshot(),
+          }),
+        ]);
+      }
+      if (url.includes("/rest/v1/course_publication_asset?")) {
+        return Response.json([]);
+      }
+      throw new Error(`unexpected request: ${url}`);
+    }) as typeof fetch,
+    async (repository) => {
+      const detail = await repository.getCatalogPublication(PUBLICATION_ID);
+      assert.equal(detail?.snapshot.schemaVersion, 2);
+      if (detail?.snapshot.schemaVersion !== 2) {
+        assert.fail("expected a V2 publication snapshot");
+      }
+      assert.equal(detail.snapshot.objectives.length, 1);
+      assert.equal(
+        detail.snapshot.lessons[0]?.components[0]?.primaryObjectiveRef,
+        detail.snapshot.objectives[0]?.ref,
+      );
+    },
+  );
+});
+
 test("catalog listing uses the compact filtered RPC contract", async () => {
   let requestUrl = "";
   let requestBody: unknown;
@@ -868,4 +961,57 @@ test("publish uses the attestation-aware RPC contract", async () => {
     p_asset_manifest: [],
     p_rights_confirmed: true,
   });
+});
+
+test("clone and duplicate RPCs forward the objective remap contract", async () => {
+  const targetCourseId = "00000000-0000-4000-8000-000000000601";
+  const idMap = {
+    objectives: [
+      {
+        ref: "00000000-0000-4000-8000-000000000501",
+        id: "00000000-0000-4000-8000-000000000602",
+      },
+    ],
+    lessons: [],
+    components: [],
+    slides: [],
+  };
+  const requests: Array<{ url: string; body: Record<string, unknown> }> = [];
+  await withRepository(
+    (async (input, init) => {
+      requests.push({
+        url: String(input),
+        body: JSON.parse(String(init?.body)) as Record<string, unknown>,
+      });
+      return Response.json({ courseId: targetCourseId });
+    }) as typeof fetch,
+    async (repository) => {
+      await repository.clonePublication({
+        actorAccountId: ACCOUNT_ID,
+        publicationId: PUBLICATION_ID,
+        targetCourseId,
+        targetTitle: null,
+        idMap,
+        assetManifest: [],
+      });
+      await repository.duplicateCourse({
+        actorAccountId: ACCOUNT_ID,
+        sourceCourseId: COURSE_ID,
+        targetCourseId,
+        targetTitle: "Копия",
+        idMap,
+      });
+    },
+  );
+
+  assert.match(
+    requests[0]!.url,
+    /\/rpc\/clone_course_publication_with_attestation_admin$/,
+  );
+  assert.deepEqual(requests[0]!.body.p_id_map, idMap);
+  assert.match(
+    requests[1]!.url,
+    /\/rpc\/duplicate_course_with_attestation_admin$/,
+  );
+  assert.deepEqual(requests[1]!.body.p_id_map, idMap);
 });

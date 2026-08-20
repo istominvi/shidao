@@ -111,6 +111,7 @@ export function createLearningActivitiesService(
       run,
       lesson,
       attachments: course.attachments,
+      learningObjectives: course.learningObjectives,
       observations,
     };
   }

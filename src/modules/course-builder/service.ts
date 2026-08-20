@@ -3,6 +3,7 @@ import type { ZodType } from "zod";
 import {
   addLessonInputSchema,
   COURSE_ASSET_BUCKET,
+  createLearningObjectiveInputSchema,
   CourseBuilderAccessError,
   CourseBuilderConflictError,
   courseDraftInputSchema,
@@ -13,8 +14,10 @@ import {
   setComponentStudentScreenInputSchema,
   updateLessonComponentInputSchema,
   updateLessonInputSchema,
+  updateLearningObjectiveInputSchema,
   uuidSchema,
   type AddLessonInput,
+  type CreateLearningObjectiveInput,
   type CourseDraftInput,
   type CourseUpdateInput,
   type PrepareCourseAttachmentInput,
@@ -22,6 +25,7 @@ import {
   type SetComponentStudentScreenInput,
   type UpdateLessonComponentInput,
   type UpdateLessonInput,
+  type UpdateLearningObjectiveInput,
 } from "./contracts";
 import type {
   AssembleCourseResult,
@@ -42,9 +46,11 @@ import {
   lessonAddComponentInputSchema,
   parseComponentPayload,
   parseComponentPlacement,
+  projectLearnerComponentPayload,
   type ComponentTypeKey,
   type CreatableComponentTypeKey,
   type LessonAddComponentInput,
+  type ActivityRole,
 } from "./registry/contracts";
 import { extractComponentStoredFileReferences } from "./registry/stored-file-references";
 import {
@@ -87,6 +93,25 @@ function assertRegistryComponent(component: LessonComponent) {
   }
   definition.payloadSchema.parse(component.payload);
   definition.placementSchema.parse(component.placement);
+  assertSupportedActivityRole(definition, component.activityRole);
+}
+
+function assertSupportedActivityRole(
+  definition: ReturnType<typeof getComponentDefinition>,
+  role: ActivityRole | null,
+) {
+  if (role === null) return;
+  if (
+    !(
+      definition.activityFacet?.supportedRoles as
+        readonly ActivityRole[] | undefined
+    )?.includes(role)
+  ) {
+    throw new CourseBuilderConflictError(
+      "Этот тип компонента не поддерживает выбранную учебную роль.",
+      "component_activity_role_unsupported",
+    );
+  }
 }
 
 export function createCourseBuilderService(
@@ -231,9 +256,29 @@ export function createCourseBuilderService(
     courseId: string,
   ) {
     const workspace = await requireOwnedCourse(actor, courseId);
+    const objectiveIds = new Set(
+      workspace.learningObjectives.map((objective) => {
+        if (objective.courseId !== workspace.id) {
+          throw new CourseBuilderConflictError(
+            "Цель обучения повреждена или относится к другому курсу.",
+            "learning_objective_cross_course",
+          );
+        }
+        return objective.id;
+      }),
+    );
     for (const lesson of workspace.lessons) {
       for (const component of lesson.components) {
         assertRegistryComponent(component);
+        if (
+          component.primaryLearningObjectiveId !== null &&
+          !objectiveIds.has(component.primaryLearningObjectiveId)
+        ) {
+          throw new CourseBuilderConflictError(
+            "Связь компонента с целью обучения повреждена.",
+            "learning_objective_cross_course",
+          );
+        }
       }
     }
     return hydrateSignedUrls(actor, workspace);
@@ -254,19 +299,58 @@ export function createCourseBuilderService(
     return { definition, payload, placement };
   }
 
-  async function persistValidatedComponent(
-    lessonId: string,
+  async function validateComponentPedagogy(
+    actor: CourseBuilderActor,
+    courseId: string,
+    definition: ReturnType<typeof getComponentDefinition>,
     input: {
-      typeKey: ComponentTypeKey;
+      primaryLearningObjectiveId: string | null;
+      activityRole: ActivityRole | null;
     },
+    currentObjectiveId: string | null = null,
+  ) {
+    assertSupportedActivityRole(definition, input.activityRole);
+    if (input.primaryLearningObjectiveId === null) return;
+
+    const course = await requireMutableOwnedCourse(actor, courseId);
+    const objective = course.learningObjectives.find(
+      (candidate) => candidate.id === input.primaryLearningObjectiveId,
+    );
+    if (!objective) {
+      throw new CourseBuilderConflictError(
+        "Выбранная цель не принадлежит этому курсу.",
+        "learning_objective_cross_course",
+      );
+    }
+    if (objective.archivedAt !== null && objective.id !== currentObjectiveId) {
+      throw new CourseBuilderConflictError(
+        "Архивную цель нельзя выбрать для новой связи.",
+        "learning_objective_archived",
+      );
+    }
+  }
+
+  async function persistValidatedComponent(
+    actor: CourseBuilderActor,
+    courseId: string,
+    lessonId: string,
+    input: LessonAddComponentInput,
     validated: Awaited<ReturnType<typeof validateComponentForLesson>>,
   ) {
+    const primaryLearningObjectiveId = input.primaryLearningObjectiveId ?? null;
+    const activityRole = input.activityRole ?? null;
+    await validateComponentPedagogy(actor, courseId, validated.definition, {
+      primaryLearningObjectiveId,
+      activityRole,
+    });
     return repository.addComponent({
       lessonId,
       typeKey: input.typeKey,
       schemaVersion: validated.definition.version,
       payload: validated.payload as Record<string, unknown>,
       placement: validated.placement as Record<string, unknown>,
+      primaryLearningObjectiveId,
+      activityRole,
     });
   }
 
@@ -277,7 +361,13 @@ export function createCourseBuilderService(
     const input = parseContract(lessonAddComponentInputSchema, rawInput);
     const lesson = await requireOwnedLesson(actor, input.lessonId);
     const validated = await validateComponentForLesson(lesson, input);
-    return persistValidatedComponent(lesson.id, input, validated);
+    return persistValidatedComponent(
+      actor,
+      lesson.courseId,
+      lesson.id,
+      input,
+      validated,
+    );
   }
 
   return {
@@ -311,6 +401,63 @@ export function createCourseBuilderService(
       return getValidatedWorkspace(actor, courseId);
     },
 
+    async createLearningObjective(
+      actor: CourseBuilderActor,
+      courseId: string,
+      rawInput: CreateLearningObjectiveInput | unknown,
+    ) {
+      const course = await requireMutableOwnedCourse(actor, courseId);
+      const input = parseContract(createLearningObjectiveInputSchema, rawInput);
+      return repository.createLearningObjective(course.id, input);
+    },
+
+    async updateLearningObjective(
+      actor: CourseBuilderActor,
+      courseId: string,
+      objectiveIdValue: string,
+      rawInput: UpdateLearningObjectiveInput | unknown,
+    ) {
+      const course = await requireMutableOwnedCourse(actor, courseId);
+      const objectiveId = parseContract(uuidSchema, objectiveIdValue);
+      if (
+        !course.learningObjectives.some(
+          (objective) => objective.id === objectiveId,
+        )
+      ) {
+        throw new CourseBuilderAccessError("Цель обучения не найдена.");
+      }
+      const input = parseContract(updateLearningObjectiveInputSchema, rawInput);
+      const updated = await repository.updateLearningObjective(
+        objectiveId,
+        input,
+      );
+      if (!updated) {
+        throw new CourseBuilderAccessError("Цель обучения не найдена.");
+      }
+      return updated;
+    },
+
+    async archiveLearningObjective(
+      actor: CourseBuilderActor,
+      courseId: string,
+      objectiveIdValue: string,
+    ) {
+      const course = await requireMutableOwnedCourse(actor, courseId);
+      const objectiveId = parseContract(uuidSchema, objectiveIdValue);
+      if (
+        !course.learningObjectives.some(
+          (objective) => objective.id === objectiveId,
+        )
+      ) {
+        throw new CourseBuilderAccessError("Цель обучения не найдена.");
+      }
+      const archived = await repository.archiveLearningObjective(objectiveId);
+      if (!archived) {
+        throw new CourseBuilderAccessError("Цель обучения не найдена.");
+      }
+      return archived;
+    },
+
     async getStudentPreview(
       actor: CourseBuilderActor,
       courseId: string,
@@ -326,11 +473,28 @@ export function createCourseBuilderService(
         slides: lesson.studentSlides
           .map((slide) => ({
             ...slide,
-            components: lesson.components.filter(
-              (component) =>
-                component.visibility === "learner_visible" &&
-                component.studentSlideId === slide.id,
-            ),
+            components: lesson.components
+              .filter(
+                (component) =>
+                  component.visibility === "learner_visible" &&
+                  component.studentSlideId === slide.id,
+              )
+              .map((component) => ({
+                id: component.id,
+                lessonId: component.lessonId,
+                typeKey: component.typeKey,
+                schemaVersion: component.schemaVersion,
+                position: component.position,
+                payload: projectLearnerComponentPayload(
+                  component.typeKey,
+                  component.payload,
+                ) as Record<string, unknown>,
+                placement: structuredClone(component.placement),
+                visibility: component.visibility,
+                studentSlideId: component.studentSlideId,
+                createdAt: component.createdAt,
+                updatedAt: component.updatedAt,
+              })),
           }))
           .filter((slide) => slide.components.length > 0),
       }));
@@ -467,6 +631,21 @@ export function createCourseBuilderService(
       if (payload !== undefined) {
         await assertAttachedFiles(lesson.courseId, component.typeKey, payload);
       }
+      const primaryLearningObjectiveId =
+        input.primaryLearningObjectiveId === undefined
+          ? component.primaryLearningObjectiveId
+          : input.primaryLearningObjectiveId;
+      const activityRole =
+        input.activityRole === undefined
+          ? component.activityRole
+          : input.activityRole;
+      await validateComponentPedagogy(
+        actor,
+        lesson.courseId,
+        definition,
+        { primaryLearningObjectiveId, activityRole },
+        component.primaryLearningObjectiveId,
+      );
       const updated = await repository.updateComponent({
         componentId,
         ...(payload === undefined
@@ -475,6 +654,14 @@ export function createCourseBuilderService(
         ...(placement === undefined
           ? {}
           : { placement: placement as Record<string, unknown> }),
+        ...(input.primaryLearningObjectiveId === undefined
+          ? {}
+          : {
+              primaryLearningObjectiveId: input.primaryLearningObjectiveId,
+            }),
+        ...(input.activityRole === undefined
+          ? {}
+          : { activityRole: input.activityRole }),
       });
       if (!updated) {
         throw new CourseBuilderAccessError("Компонент не найден.");

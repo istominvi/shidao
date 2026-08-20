@@ -1,6 +1,8 @@
 import { getSupabasePublicConfig } from "@/lib/server/auth-config";
+import { postgresUuidSchema } from "@/lib/postgres-uuid";
 import { CourseBuilderRepositoryError } from "@/modules/course-builder/repository";
 import {
+  OBSERVATION_OBJECTIVE_TITLE_AT_TIME_MAX_LENGTH,
   observationEntryMethodSchema,
   observationRatingSchema,
   type SaveLessonComponentObservationsInput,
@@ -17,6 +19,9 @@ type LessonComponentObservationRow = {
   learning_record_id: string;
   lesson_component_id: string | null;
   source_lesson_component_id_at_time: string;
+  learning_objective_id: string | null;
+  source_learning_objective_id_at_time: string | null;
+  learning_objective_title_at_time: string | null;
   component_position_at_time: number;
   component_type_key_at_time: string;
   component_label_at_time: string;
@@ -49,6 +54,26 @@ export interface LearningActivitiesRepository {
 const POSTGREST_IN_FILTER_CHUNK_SIZE = 50;
 const POSTGREST_READ_CONCURRENCY = 8;
 const POSTGREST_PAGE_SIZE = 500;
+const OBSERVATION_SELECT = [
+  "id",
+  "learning_record_id",
+  "lesson_component_id",
+  "source_lesson_component_id_at_time",
+  "learning_objective_id",
+  "source_learning_objective_id_at_time",
+  "learning_objective_title_at_time",
+  "component_position_at_time",
+  "component_type_key_at_time",
+  "component_label_at_time",
+  "observable_criterion_at_time",
+  "rating",
+  "entry_method",
+  "private_note",
+  "observed_at",
+  "recorded_by_account_id",
+  "created_at",
+  "updated_at",
+].join(",");
 
 function encodeFilter(value: string) {
   return encodeURIComponent(value);
@@ -122,6 +147,47 @@ function compareObservations(
   );
 }
 
+function invalidObservationProjection(): never {
+  throw new CourseBuilderRepositoryError(
+    "Supabase вернул неподдерживаемое наблюдение.",
+    502,
+    "observation_projection_invalid",
+  );
+}
+
+function mapObjectiveContext(row: LessonComponentObservationRow) {
+  const liveId = row.learning_objective_id;
+  const sourceId = row.source_learning_objective_id_at_time;
+  const title = row.learning_objective_title_at_time;
+
+  if (liveId === null && sourceId === null && title === null) {
+    return {
+      learningObjectiveId: null,
+      sourceLearningObjectiveIdAtTime: null,
+      learningObjectiveTitleAtTime: null,
+    };
+  }
+
+  if (
+    sourceId === null ||
+    title === null ||
+    !postgresUuidSchema.safeParse(sourceId).success ||
+    (liveId !== null &&
+      (!postgresUuidSchema.safeParse(liveId).success || liveId !== sourceId)) ||
+    !title ||
+    title !== title.trim() ||
+    title.length > OBSERVATION_OBJECTIVE_TITLE_AT_TIME_MAX_LENGTH
+  ) {
+    invalidObservationProjection();
+  }
+
+  return {
+    learningObjectiveId: liveId,
+    sourceLearningObjectiveIdAtTime: sourceId,
+    learningObjectiveTitleAtTime: title,
+  };
+}
+
 function mapObservation(
   row: LessonComponentObservationRow,
 ): LessonComponentObservation {
@@ -133,17 +199,15 @@ function mapObservation(
     !rating.success ||
     !entryMethod.success
   ) {
-    throw new CourseBuilderRepositoryError(
-      "Supabase вернул неподдерживаемое наблюдение.",
-      502,
-      "observation_projection_invalid",
-    );
+    invalidObservationProjection();
   }
+  const objectiveContext = mapObjectiveContext(row);
   return {
     id: row.id,
     learningRecordId: row.learning_record_id,
     lessonComponentId: row.lesson_component_id,
     sourceComponentIdAtTime: row.source_lesson_component_id_at_time,
+    ...objectiveContext,
     componentPositionAtTime: row.component_position_at_time,
     componentTypeAtTime: row.component_type_key_at_time,
     componentLabelAtTime: row.component_label_at_time,
@@ -227,7 +291,7 @@ export function createLearningActivitiesRepository(
 
   async function listBatch(batch: string[]) {
     const rows: LessonComponentObservationRow[] = [];
-    const path = `/rest/v1/lesson_component_observation?select=*&learning_record_id=in.(${inFilter(batch)})&order=component_position_at_time.asc,learning_record_id.asc,id.asc`;
+    const path = `/rest/v1/lesson_component_observation?select=${OBSERVATION_SELECT}&learning_record_id=in.(${inFilter(batch)})&order=component_position_at_time.asc,learning_record_id.asc,id.asc`;
     let expectedStart = 0;
     let exactTotal: number | null = null;
 

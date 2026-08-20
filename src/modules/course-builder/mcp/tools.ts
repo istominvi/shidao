@@ -3,8 +3,10 @@ import { logger } from "@/lib/server/logger";
 import {
   addLessonInputSchema,
   courseDraftInputSchema,
+  createLearningObjectiveInputSchema,
   reorderLessonComponentInputSchema,
   setComponentStudentScreenCommandInputSchema,
+  updateLessonComponentInputSchema,
   uuidSchema,
 } from "../contracts";
 import type { CourseBuilderActor } from "../domain";
@@ -19,7 +21,10 @@ export const courseBuilderMcpToolNames = [
   "course.create_draft",
   "course.get",
   "course.add_lesson",
+  "course.create_learning_objective",
+  "course.archive_learning_objective",
   "lesson.add_component",
+  "lesson.update_component",
   "lesson.set_component_student_screen",
   "lesson.reorder_component",
 ] as const;
@@ -40,6 +45,19 @@ export const lessonReorderComponentMcpInputSchema =
     componentId: uuidSchema,
   });
 
+export const courseCreateLearningObjectiveMcpInputSchema =
+  createLearningObjectiveInputSchema.extend({ courseId: uuidSchema });
+
+export const courseArchiveLearningObjectiveMcpInputSchema = z
+  .object({
+    courseId: uuidSchema,
+    learningObjectiveId: uuidSchema,
+  })
+  .strict();
+
+export const lessonUpdateComponentMcpInputSchema =
+  updateLessonComponentInputSchema.safeExtend({ componentId: uuidSchema });
+
 /**
  * The values are the canonical application/registry contracts themselves or
  * schemas composed from them. There is no second hand-written MCP schema.
@@ -48,7 +66,12 @@ export const courseBuilderMcpInputContracts = {
   "course.create_draft": courseDraftInputSchema,
   "course.get": courseGetMcpInputSchema,
   "course.add_lesson": courseAddLessonMcpInputSchema,
+  "course.create_learning_objective":
+    courseCreateLearningObjectiveMcpInputSchema,
+  "course.archive_learning_objective":
+    courseArchiveLearningObjectiveMcpInputSchema,
   "lesson.add_component": lessonAddComponentInputSchema,
+  "lesson.update_component": lessonUpdateComponentMcpInputSchema,
   "lesson.set_component_student_screen":
     setComponentStudentScreenCommandInputSchema,
   "lesson.reorder_component": lessonReorderComponentMcpInputSchema,
@@ -80,8 +103,14 @@ export const courseBuilderMcpToolDescriptions = {
   "course.create_draft": "Создать черновик курса преподавателя.",
   "course.get": "Получить доступный преподавателю Course workspace.",
   "course.add_lesson": "Добавить Lesson в Course.",
+  "course.create_learning_objective":
+    "Создать проверяемую цель обучения внутри Course.",
+  "course.archive_learning_objective":
+    "Безопасно отправить цель Course в архив, сохранив связи и историю.",
   "lesson.add_component":
     "Добавить в Lesson новый поддерживаемый компонент registry.",
+  "lesson.update_component":
+    "Изменить содержимое, primary objective или учебную роль Component.",
   "lesson.set_component_student_screen":
     "Скрыть компонент или назначить его на существующий либо новый слайд Student Screen.",
   "lesson.reorder_component":
@@ -93,7 +122,10 @@ export type CourseBuilderMcpApplicationService = Pick<
   | "createDraft"
   | "getCourse"
   | "addLesson"
+  | "createLearningObjective"
+  | "archiveLearningObjective"
   | "addComponent"
+  | "updateComponent"
   | "setComponentStudentScreen"
   | "reorderComponent"
 >;
@@ -129,6 +161,7 @@ function resultIdentifiers(value: unknown) {
     "courseId",
     "lessonId",
     "componentId",
+    "learningObjectiveId",
     "lessonIds",
     "componentIds",
   ]) {
@@ -250,6 +283,40 @@ export function createCourseBuilderMcpTools({
         }),
     },
     {
+      name: "course.create_learning_objective",
+      description:
+        courseBuilderMcpToolDescriptions["course.create_learning_objective"],
+      inputContract:
+        courseBuilderMcpInputContracts["course.create_learning_objective"],
+      inputSchema:
+        courseBuilderMcpInputJsonSchemas["course.create_learning_objective"],
+      execute: (rawInput) =>
+        execute("course.create_learning_objective", () => {
+          const { courseId, ...input } =
+            courseCreateLearningObjectiveMcpInputSchema.parse(rawInput);
+          return service.createLearningObjective(actor, courseId, input);
+        }),
+    },
+    {
+      name: "course.archive_learning_objective",
+      description:
+        courseBuilderMcpToolDescriptions["course.archive_learning_objective"],
+      inputContract:
+        courseBuilderMcpInputContracts["course.archive_learning_objective"],
+      inputSchema:
+        courseBuilderMcpInputJsonSchemas["course.archive_learning_objective"],
+      execute: (rawInput) =>
+        execute("course.archive_learning_objective", () => {
+          const { courseId, learningObjectiveId } =
+            courseArchiveLearningObjectiveMcpInputSchema.parse(rawInput);
+          return service.archiveLearningObjective(
+            actor,
+            courseId,
+            learningObjectiveId,
+          );
+        }),
+    },
+    {
       name: "lesson.add_component",
       description: courseBuilderMcpToolDescriptions["lesson.add_component"],
       inputContract: courseBuilderMcpInputContracts["lesson.add_component"],
@@ -258,6 +325,18 @@ export function createCourseBuilderMcpTools({
         execute("lesson.add_component", () => {
           const input = lessonAddComponentInputSchema.parse(rawInput);
           return service.addComponent(actor, input);
+        }),
+    },
+    {
+      name: "lesson.update_component",
+      description: courseBuilderMcpToolDescriptions["lesson.update_component"],
+      inputContract: courseBuilderMcpInputContracts["lesson.update_component"],
+      inputSchema: courseBuilderMcpInputJsonSchemas["lesson.update_component"],
+      execute: (rawInput) =>
+        execute("lesson.update_component", () => {
+          const parsed = lessonUpdateComponentMcpInputSchema.parse(rawInput);
+          const { componentId, ...input } = parsed;
+          return service.updateComponent(actor, componentId, input);
         }),
     },
     {

@@ -14,6 +14,7 @@ const COURSE_ID = "00000000-0000-4000-8000-000000001001";
 const LESSON_ID = "00000000-0000-4000-8000-000000002001";
 const COMPONENT_ID = "00000000-0000-4000-8000-000000004001";
 const SLIDE_ID = "00000000-0000-4000-8000-000000005001";
+const OBJECTIVE_ID = "00000000-0000-4000-8000-000000006001";
 const NOW = "2026-08-03T00:00:00.000Z";
 
 type CapturedRequest = {
@@ -62,7 +63,7 @@ function courseRow() {
   };
 }
 
-function componentRow() {
+function componentRow(overrides: Record<string, unknown> = {}) {
   return {
     id: COMPONENT_ID,
     lesson_id: LESSON_ID,
@@ -73,12 +74,28 @@ function componentRow() {
     placement_config: { width: "content", textAlign: "left" },
     visibility: "learner_visible",
     student_slide_id: SLIDE_ID,
+    primary_learning_objective_id: null,
+    activity_role: null,
     created_at: NOW,
     updated_at: NOW,
+    ...overrides,
   };
 }
 
-test("getCourseWorkspace loads ordered Student Screen slides beside the canonical component list", async () => {
+function learningObjectiveRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: OBJECTIVE_ID,
+    course_id: COURSE_ID,
+    title: "Различает второй и третий тон",
+    description: "Слышит различие в знакомых словах",
+    archived_at: null,
+    created_at: NOW,
+    updated_at: NOW,
+    ...overrides,
+  };
+}
+
+test("getCourseWorkspace keeps legacy components unaligned beside ordered Student Screen slides", async () => {
   await withMockSupabase(
     [
       { payload: [courseRow()] },
@@ -106,6 +123,7 @@ test("getCourseWorkspace loads ordered Student Screen slides beside the canonica
         ],
       },
       { payload: [] },
+      { payload: [] },
     ],
     async (repository, requests) => {
       const workspace = await repository.getCourseWorkspace(COURSE_ID);
@@ -115,11 +133,71 @@ test("getCourseWorkspace loads ordered Student Screen slides beside the canonica
         workspace?.lessons[0]?.components[0]?.studentSlideId,
         SLIDE_ID,
       );
+      assert.equal(
+        workspace?.lessons[0]?.components[0]?.primaryLearningObjectiveId,
+        null,
+      );
+      assert.equal(workspace?.lessons[0]?.components[0]?.activityRole, null);
+      assert.deepEqual(workspace?.learningObjectives, []);
       assert.match(
         requests[1]?.url ?? "",
         /components:lesson_component\(\*\).*studentSlides:lesson_student_slide\(\*\)/,
       );
-      assert.equal(requests.length, 3);
+      assert.match(requests[2]?.url ?? "", /\/learning_objective\?select=\*/);
+      assert.equal(requests.length, 4);
+    },
+  );
+});
+
+test("getCourseWorkspace reloads Course objectives and Component alignment", async () => {
+  await withMockSupabase(
+    [
+      { payload: [courseRow()] },
+      {
+        payload: [
+          {
+            id: LESSON_ID,
+            course_id: COURSE_ID,
+            position: 1,
+            title: "Первый урок",
+            summary: "",
+            created_at: NOW,
+            updated_at: NOW,
+            components: [
+              componentRow({
+                primary_learning_objective_id: OBJECTIVE_ID,
+                activity_role: "assessment",
+              }),
+            ],
+            studentSlides: [],
+          },
+        ],
+      },
+      { payload: [learningObjectiveRow()] },
+      { payload: [] },
+    ],
+    async (repository) => {
+      const workspace = await repository.getCourseWorkspace(COURSE_ID);
+
+      assert.deepEqual(workspace?.learningObjectives, [
+        {
+          id: OBJECTIVE_ID,
+          courseId: COURSE_ID,
+          title: "Различает второй и третий тон",
+          description: "Слышит различие в знакомых словах",
+          archivedAt: null,
+          createdAt: NOW,
+          updatedAt: NOW,
+        },
+      ]);
+      assert.equal(
+        workspace?.lessons[0]?.components[0]?.primaryLearningObjectiveId,
+        OBJECTIVE_ID,
+      );
+      assert.equal(
+        workspace?.lessons[0]?.components[0]?.activityRole,
+        "assessment",
+      );
     },
   );
 });
@@ -267,6 +345,81 @@ test("archiveCourse preserves a conflict outcome returned by the RPC", async () 
   );
 });
 
+test("LearningObjective mutations use narrow atomic RPC bodies", async () => {
+  await withMockSupabase(
+    [
+      { payload: [learningObjectiveRow()] },
+      {
+        payload: [
+          learningObjectiveRow({ title: "Различает тоны в знакомых словах" }),
+        ],
+      },
+      {
+        payload: [learningObjectiveRow({ description: null })],
+      },
+      {
+        payload: [learningObjectiveRow({ archived_at: NOW })],
+      },
+    ],
+    async (repository, requests) => {
+      const created = await repository.createLearningObjective(COURSE_ID, {
+        title: "Различает второй и третий тон",
+        description: "Слышит различие в знакомых словах",
+      });
+      const renamed = await repository.updateLearningObjective(OBJECTIVE_ID, {
+        title: "Различает тоны в знакомых словах",
+        description: undefined,
+      });
+      const cleared = await repository.updateLearningObjective(OBJECTIVE_ID, {
+        description: null,
+      });
+      const archived = await repository.archiveLearningObjective(OBJECTIVE_ID);
+
+      assert.equal(created.id, OBJECTIVE_ID);
+      assert.equal(renamed?.title, "Различает тоны в знакомых словах");
+      assert.equal(cleared?.description, null);
+      assert.equal(archived?.archivedAt, NOW);
+      assert.deepEqual(
+        requests.map((request) => [request.url, request.body]),
+        [
+          [
+            `${API_URL}/rest/v1/rpc/create_learning_objective`,
+            {
+              p_course_id: COURSE_ID,
+              p_title: "Различает второй и третий тон",
+              p_description: "Слышит различие в знакомых словах",
+            },
+          ],
+          [
+            `${API_URL}/rest/v1/rpc/update_learning_objective`,
+            {
+              p_objective_id: OBJECTIVE_ID,
+              p_title: "Различает тоны в знакомых словах",
+              p_update_title: true,
+              p_description: null,
+              p_update_description: false,
+            },
+          ],
+          [
+            `${API_URL}/rest/v1/rpc/update_learning_objective`,
+            {
+              p_objective_id: OBJECTIVE_ID,
+              p_title: null,
+              p_update_title: false,
+              p_description: null,
+              p_update_description: true,
+            },
+          ],
+          [
+            `${API_URL}/rest/v1/rpc/archive_learning_objective`,
+            { p_objective_id: OBJECTIVE_ID },
+          ],
+        ],
+      );
+    },
+  );
+});
+
 test("assembleDraft sends one validated plan to the transactional RPC", async () => {
   const resultPayload = {
     courseId: COURSE_ID,
@@ -324,6 +477,8 @@ test("addComponent persists an ordered component directly under Lesson", async (
         schemaVersion: 1,
         payload: { text: "Путь начинается с первого шага." },
         placement: { width: "content", textAlign: "left" },
+        primaryLearningObjectiveId: null,
+        activityRole: null,
       });
 
       assert.equal(component.lessonId, LESSON_ID);
@@ -339,6 +494,50 @@ test("addComponent persists an ordered component directly under Lesson", async (
         position: 1,
         payload: { text: "Путь начинается с первого шага." },
         placement_config: { width: "content", textAlign: "left" },
+        primary_learning_objective_id: null,
+        activity_role: null,
+      });
+    },
+  );
+});
+
+test("Component alignment and activity role are persisted in one atomic row mutation", async () => {
+  await withMockSupabase(
+    [
+      {
+        payload: [
+          componentRow({
+            primary_learning_objective_id: OBJECTIVE_ID,
+            activity_role: "assessment",
+          }),
+        ],
+      },
+    ],
+    async (repository, requests) => {
+      const component = await repository.updateComponent({
+        componentId: COMPONENT_ID,
+        primaryLearningObjectiveId: OBJECTIVE_ID,
+        activityRole: "assessment",
+      });
+
+      assert.equal(component?.primaryLearningObjectiveId, OBJECTIVE_ID);
+      assert.equal(component?.activityRole, "assessment");
+      assert.equal(requests.length, 1);
+      assert.equal(requests[0]?.method, "POST");
+      assert.equal(
+        requests[0]?.url,
+        `${API_URL}/rest/v1/rpc/update_lesson_component_v2`,
+      );
+      assert.deepEqual(requests[0]?.body, {
+        p_component_id: COMPONENT_ID,
+        p_payload: null,
+        p_update_payload: false,
+        p_placement_config: null,
+        p_update_placement_config: false,
+        p_primary_learning_objective_id: OBJECTIVE_ID,
+        p_update_primary_learning_objective_id: true,
+        p_activity_role: "assessment",
+        p_update_activity_role: true,
       });
     },
   );
@@ -358,9 +557,46 @@ test("updateComponent persists payload fields without changing Student Screen as
       });
 
       assert.deepEqual(component?.payload, { text: "Новая цитата" });
-      assert.equal(requests[0]?.method, "PATCH");
+      assert.equal(requests[0]?.method, "POST");
+      assert.equal(
+        requests[0]?.url,
+        `${API_URL}/rest/v1/rpc/update_lesson_component_v2`,
+      );
       assert.deepEqual(requests[0]?.body, {
-        payload: { text: "Новая цитата" },
+        p_component_id: COMPONENT_ID,
+        p_payload: { text: "Новая цитата" },
+        p_update_payload: true,
+        p_placement_config: null,
+        p_update_placement_config: false,
+        p_primary_learning_objective_id: null,
+        p_update_primary_learning_objective_id: false,
+        p_activity_role: null,
+        p_update_activity_role: false,
+      });
+    },
+  );
+});
+
+test("updateComponent sends explicit nulls only when alignment fields are cleared", async () => {
+  await withMockSupabase(
+    [{ payload: [componentRow()] }],
+    async (repository, requests) => {
+      await repository.updateComponent({
+        componentId: COMPONENT_ID,
+        primaryLearningObjectiveId: null,
+        activityRole: null,
+      });
+
+      assert.deepEqual(requests[0]?.body, {
+        p_component_id: COMPONENT_ID,
+        p_payload: null,
+        p_update_payload: false,
+        p_placement_config: null,
+        p_update_placement_config: false,
+        p_primary_learning_objective_id: null,
+        p_update_primary_learning_objective_id: true,
+        p_activity_role: null,
+        p_update_activity_role: true,
       });
     },
   );

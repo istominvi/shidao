@@ -4,6 +4,7 @@ import {
   courseLearningAudienceSchema,
   DEFAULT_COURSE_LEARNING_AUDIENCE,
 } from "./learning-audience";
+import { activityRoleSchema } from "./registry/contracts";
 
 export const COURSE_ASSET_BUCKET = "course-assets";
 export const COURSE_ASSET_MAX_BYTES = 10 * 1024 * 1024;
@@ -67,15 +68,54 @@ export const updateLessonComponentInputSchema = z
   .object({
     payload: z.unknown().optional(),
     placement: z.unknown().optional(),
+    primaryLearningObjectiveId: postgresUuidSchema.nullable().optional(),
+    activityRole: activityRoleSchema.nullable().optional(),
   })
   .strict()
   .refine(
-    (input) => input.payload !== undefined || input.placement !== undefined,
-    { message: "Нужно передать payload или placement." },
+    (input) =>
+      input.payload !== undefined ||
+      input.placement !== undefined ||
+      input.primaryLearningObjectiveId !== undefined ||
+      input.activityRole !== undefined,
+    { message: "Нужно передать изменение компонента." },
   );
 
 export type UpdateLessonComponentInput = z.infer<
   typeof updateLessonComponentInputSchema
+>;
+
+const learningObjectiveDescriptionValueSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(2_000)
+  .nullable();
+
+export const createLearningObjectiveInputSchema = z
+  .object({
+    title: z.string().trim().min(2).max(240),
+    description: learningObjectiveDescriptionValueSchema.default(null),
+  })
+  .strict();
+
+export type CreateLearningObjectiveInput = z.infer<
+  typeof createLearningObjectiveInputSchema
+>;
+
+export const updateLearningObjectiveInputSchema = z
+  .object({
+    title: z.string().trim().min(2).max(240).optional(),
+    description: learningObjectiveDescriptionValueSchema.optional(),
+  })
+  .strict()
+  .refine(
+    (input) => input.title !== undefined || input.description !== undefined,
+    { message: "Нужно передать изменение цели." },
+  );
+
+export type UpdateLearningObjectiveInput = z.infer<
+  typeof updateLearningObjectiveInputSchema
 >;
 
 export const reorderLessonComponentInputSchema = z.object({

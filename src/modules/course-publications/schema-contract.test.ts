@@ -6,6 +6,10 @@ const migration = readFileSync(
   "supabase/migrations/20260810035033_course_publication_catalog.sql",
   "utf8",
 );
+const publicationV2Migration = readFileSync(
+  "supabase/migrations/20260820090529_course_publication_snapshot_v2.sql",
+  "utf8",
+);
 const snapshot = readFileSync("supabase/schema/current-schema.sql", "utf8");
 const schemaGuide = readFileSync("docs/database/current-schema.md", "utf8");
 
@@ -15,6 +19,23 @@ function migrationFunction(name: string) {
   const end = migration.indexOf("\n$$;", start);
   assert.notEqual(end, -1, `unterminated function ${name}`);
   return migration.slice(start, end + 4);
+}
+
+function migrationFunctionIn(source: string, name: string) {
+  const startMatch = new RegExp(
+    `create(?: or replace)? function public\\.${name}\\(`,
+    "i",
+  ).exec(source);
+  assert.ok(startMatch, `missing function ${name}`);
+  const start = startMatch.index;
+  const tail = source.slice(start);
+  const delimiterMatch = /\bas\s+(\$[A-Za-z_]*\$)/i.exec(tail);
+  assert.ok(delimiterMatch, `missing function delimiter for ${name}`);
+  const delimiter = delimiterMatch[1];
+  const bodyStart = start + delimiterMatch.index;
+  const end = source.indexOf(`\n${delimiter};`, bodyStart);
+  assert.notEqual(end, -1, `unterminated function ${name}`);
+  return source.slice(start, end + delimiter.length + 2);
 }
 
 const publicationTables = [
@@ -491,4 +512,184 @@ test("authoring descendants touch the publication clock and repository docs desc
     schemaGuide,
     /2b1a3f475074940e69e1dee6ba12edc8d3103a23a01c640ec342e3cb31f0af46/,
   );
+});
+
+test("publication V2 is a forward-only V1-compatible immutable snapshot migration", () => {
+  assert.match(publicationV2Migration, /^begin;\n/);
+  assert.match(
+    publicationV2Migration,
+    /\nnotify pgrst, 'reload schema';\n\ncommit;\n$/,
+  );
+  assert.doesNotMatch(
+    publicationV2Migration,
+    /drop\s+(?:table|function|schema)[^;]*\bcascade\b/i,
+  );
+  assert.match(
+    publicationV2Migration,
+    /select revision\.id, md5\(revision\.snapshot::text\) as snapshot_md5[\s\S]*?from public\.course_publication_revision/,
+  );
+  assert.match(
+    publicationV2Migration,
+    /snapshot ->> 'schemaVersion' in \('1', '2'\)/,
+  );
+  assert.match(
+    publicationV2Migration,
+    /snapshot ->> 'schemaVersion' = '1'[\s\S]*?jsonb_typeof\(snapshot -> 'objectives'\) = 'array'/,
+  );
+  assert.match(
+    publicationV2Migration,
+    /full join public\.course_publication_revision[\s\S]*?baseline\.snapshot_md5 is distinct from md5\(revision\.snapshot::text\)[\s\S]*?course_publication_v2_immutable_revision_changed/,
+  );
+  for (const requiredHead of [
+    "primary_learning_objective_id",
+    "activity_role",
+    "source_learning_objective_id_at_time",
+    "update_lesson_component_v2",
+  ]) {
+    assert.equal(
+      publicationV2Migration.includes(requiredHead),
+      true,
+      `V2 preflight missing ${requiredHead}`,
+    );
+  }
+});
+
+test("publication V2 strictly separates V1 and V2 and locks objective state", () => {
+  const publish = migrationFunctionIn(
+    publicationV2Migration,
+    "publish_course_revision_admin",
+  ).toLowerCase();
+
+  assert.match(
+    publish,
+    /v_snapshot_version = 1[\s\S]*?array\['schemaversion', 'course', 'lessons', 'materials'\]/,
+  );
+  assert.match(
+    publish,
+    /v_snapshot_version = 2[\s\S]*?array\[[\s\S]*?'objectives'[\s\S]*?'materials'/,
+  );
+  assert.match(
+    publish,
+    /v_snapshot_version = 1[\s\S]*?v_objective_count <> 0[\s\S]*?primary_learning_objective_id is not null[\s\S]*?course_publication_snapshot_version_too_old/,
+  );
+  for (const key of [
+    "'ref'",
+    "'position'",
+    "'title'",
+    "'description'",
+    "'archivedat'",
+  ]) {
+    assert.equal(publish.includes(key), true, `objective shape missing ${key}`);
+  }
+  assert.match(
+    publish,
+    /char_length\(btrim\(submitted\.value ->> 'title'\)\)[\s\S]*?not between 2 and 240/,
+  );
+  assert.match(
+    publish,
+    /row_number\(\) over \([\s\S]*?order by objective\.created_at, objective\.id[\s\S]*?as position/,
+  );
+  assert.match(
+    publish,
+    /primaryobjectiveref[\s\S]*?submitted_objective\.value ->> 'ref'/,
+  );
+  assert.match(publish, /activityrole[\s\S]*?component\.activity_role/);
+
+  const courseLock = publish.indexOf("for update;");
+  const lessonLock = publish.indexOf("for update;", courseLock + 1);
+  const componentLock = publish.indexOf("for update of component;");
+  const objectiveLock = publish.indexOf("for share of objective;");
+  assert.equal(
+    courseLock >= 0 &&
+      courseLock < lessonLock &&
+      lessonLock < componentLock &&
+      componentLock < objectiveLock,
+    true,
+    "publication must lock parent state before Component and Objective",
+  );
+});
+
+test("publication V2 copy paths normalize V1 maps and deterministically remap objectives", () => {
+  const clone = migrationFunctionIn(
+    publicationV2Migration,
+    "clone_course_publication_admin",
+  ).toLowerCase();
+  const duplicate = migrationFunctionIn(
+    publicationV2Migration,
+    "duplicate_course_admin",
+  ).toLowerCase();
+
+  for (const body of [clone, duplicate]) {
+    assert.match(
+      body,
+      /if not \(p_id_map \? 'objectives'\) then[\s\S]*?jsonb_build_object\('objectives', '\[\]'::jsonb\)/,
+    );
+    assert.match(body, /jsonb_array_length\(p_id_map -> 'objectives'\)/);
+    assert.match(body, /insert into public\.learning_objective/);
+    assert.match(body, /primary_learning_objective_id/);
+    assert.equal(
+      body.indexOf("insert into public.learning_objective") <
+        body.indexOf("insert into public.lesson_component"),
+      true,
+      "objectives must exist before aligned Components",
+    );
+    assert.equal(
+      body.indexOf("insert into public.lesson_component") <
+        body.indexOf("update public.learning_objective"),
+      true,
+      "archived objectives must be restored only after retained alignments",
+    );
+  }
+
+  assert.match(
+    clone,
+    /interval '1 microsecond' \* \(submitted\.position - 1\)/,
+  );
+  assert.match(clone, /order by submitted\.position/);
+  assert.match(
+    duplicate,
+    /row_number\(\) over \([\s\S]*?order by objective\.created_at, objective\.id[\s\S]*?as copy_position/,
+  );
+  assert.match(
+    duplicate,
+    /interval '1 microsecond' \* \(source_objective\.copy_position - 1\)/,
+  );
+  assert.match(duplicate, /order by source_objective\.copy_position/);
+
+  const sourceCourseLock = duplicate.indexOf("select course.*");
+  const actorLock = duplicate.indexOf("from public.account as account");
+  assert.equal(
+    sourceCourseLock >= 0 && sourceCourseLock < actorLock,
+    true,
+    "duplicate must share publication's Course-before-Account order",
+  );
+});
+
+test("publication V2 base RPCs remain invoker-only and closed to browser/service roles", () => {
+  for (const name of [
+    "publish_course_revision_admin",
+    "clone_course_publication_admin",
+    "duplicate_course_admin",
+  ]) {
+    const body = migrationFunctionIn(publicationV2Migration, name);
+    assert.doesNotMatch(body, /security definer/i);
+    assert.match(body, /set search_path to ''/i);
+    assert.match(
+      publicationV2Migration,
+      new RegExp(
+        `revoke all on function public\\.${name}\\([\\s\\S]*?from public, anon, authenticated, service_role`,
+      ),
+    );
+  }
+  for (const marker of [
+    "course_publication_v2_rpc_security_failed",
+    "course_publication_v2_rpc_acl_failed",
+    "course_publication_v2_rpc_contract_failed",
+  ]) {
+    assert.equal(
+      publicationV2Migration.includes(marker),
+      true,
+      `postflight missing ${marker}`,
+    );
+  }
 });

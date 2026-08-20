@@ -64,6 +64,7 @@ import type {
   CourseAsset,
   CourseLesson,
   CourseWorkspace,
+  LearningObjective,
   LessonComponent,
 } from "@/modules/course-builder/domain";
 import type { LearnerProfile, LessonRun } from "@/modules/lesson-runs/domain";
@@ -71,6 +72,7 @@ import type { LessonComponentObservation } from "@/modules/learning-activities";
 import {
   creatableComponentDefinitions,
   getComponentDefinition,
+  projectLearnerComponentPayload,
   type CreatableComponentTypeKey,
 } from "@/modules/course-builder/registry/contracts";
 
@@ -148,17 +150,21 @@ function assetMapFor(assets: CourseAsset[]) {
 }
 
 function ComponentEditorDialog({
+  courseId,
   component,
   displayPosition,
   assets,
+  learningObjectives,
   disabled,
   mutationError,
   runMutation,
   onClose,
 }: {
+  courseId: string;
   component: LessonComponent;
   displayPosition: number;
   assets: CourseAsset[];
+  learningObjectives: LearningObjective[];
   disabled: boolean;
   mutationError: string | null;
   runMutation: CourseBuilderMutationRunner;
@@ -166,6 +172,34 @@ function ComponentEditorDialog({
 }) {
   const definition = getComponentDefinition(component.typeKey);
   const [saveAttempted, setSaveAttempted] = useState(false);
+
+  async function createLearningObjective(input: {
+    title: string;
+    description: string | null;
+  }) {
+    let created: LearningObjective | null = null;
+    await runMutation("Создаём цель обучения…", async () => {
+      const response = await courseBuilderJsonRequest<{
+        learningObjective: LearningObjective;
+      }>(`/api/v2/courses/${courseId}/learning-objectives`, "POST", input);
+      created = response.learningObjective;
+    });
+    return created;
+  }
+
+  async function archiveLearningObjective(objectiveId: string) {
+    let archived: LearningObjective | null = null;
+    await runMutation("Отправляем цель в архив…", async () => {
+      const response = await courseBuilderJsonRequest<{
+        learningObjective: LearningObjective;
+      }>(
+        `/api/v2/courses/${courseId}/learning-objectives/${objectiveId}`,
+        "DELETE",
+      );
+      archived = response.learningObjective;
+    });
+    return archived;
+  }
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -192,9 +226,12 @@ function ComponentEditorDialog({
       <ComponentPayloadEditor
         component={component}
         assets={assets}
+        learningObjectives={learningObjectives}
         disabled={disabled}
         saveError={saveAttempted ? mutationError : null}
         onCancel={onClose}
+        onCreateLearningObjective={createLearningObjective}
+        onArchiveLearningObjective={archiveLearningObjective}
         onSave={async (input) => {
           setSaveAttempted(true);
           let committed = false;
@@ -214,6 +251,7 @@ function ComponentEditorDialog({
 }
 
 function ComponentCard({
+  courseId,
   component,
   displayPosition,
   indexInLesson,
@@ -221,11 +259,13 @@ function ComponentCard({
   lessonComponents,
   studentSlides,
   assets,
+  learningObjectives,
   assetMap,
   disabled,
   mutationError,
   runMutation,
 }: {
+  courseId: string;
   component: LessonComponent;
   displayPosition: number;
   indexInLesson: number;
@@ -233,6 +273,7 @@ function ComponentCard({
   lessonComponents: LessonComponent[];
   studentSlides: CourseLesson["studentSlides"];
   assets: CourseAsset[];
+  learningObjectives: LearningObjective[];
   assetMap: SignedCourseComponentAssetMap;
   disabled: boolean;
   mutationError: string | null;
@@ -243,6 +284,9 @@ function ComponentCard({
   const studentScreenTriggerRef = useRef<HTMLButtonElement>(null);
   const accessibleLabelId = useId();
   const definition = getComponentDefinition(component.typeKey);
+  const learningObjective = learningObjectives.find(
+    (objective) => objective.id === component.primaryLearningObjectiveId,
+  );
   const learnerVisible = component.studentSlideId !== null;
   const currentStudentSlidePosition = studentSlides.find(
     (slide) => slide.id === component.studentSlideId,
@@ -397,6 +441,12 @@ function ComponentCard({
         </div>
 
         <div className="lesson-component-card-content">
+          {learningObjective ? (
+            <p className="mb-3 inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-900">
+              Цель: {learningObjective.title}
+              {learningObjective.archivedAt ? " · в архиве" : ""}
+            </p>
+          ) : null}
           <CourseComponentRenderer
             component={component}
             assets={assetMap}
@@ -408,9 +458,11 @@ function ComponentCard({
       {editing ? (
         <ComponentEditorDialog
           key={component.id}
+          courseId={courseId}
           component={component}
           displayPosition={displayPosition}
           assets={assets}
+          learningObjectives={learningObjectives}
           disabled={disabled}
           mutationError={mutationError}
           runMutation={runMutation}
@@ -422,15 +474,19 @@ function ComponentCard({
 }
 
 function ComponentPickerDialog({
+  courseId,
   lessonId,
   assets,
+  learningObjectives,
   disabled,
   mutationError,
   runMutation,
   onClose,
 }: {
+  courseId: string;
   lessonId: string;
   assets: CourseAsset[];
+  learningObjectives: LearningObjective[];
   disabled: boolean;
   mutationError: string | null;
   runMutation: CourseBuilderMutationRunner;
@@ -453,13 +509,19 @@ function ComponentPickerDialog({
     : null;
   const draftComponent = useMemo<Pick<
     LessonComponent,
-    "typeKey" | "payload" | "placement"
+    | "typeKey"
+    | "payload"
+    | "placement"
+    | "primaryLearningObjectiveId"
+    | "activityRole"
   > | null>(() => {
     if (!selectedDefinition || !selectedTypeKey) return null;
     return {
       typeKey: selectedTypeKey,
       payload: structuredClone(selectedDefinition.defaultPayload),
       placement: structuredClone(selectedDefinition.defaultPlacement),
+      primaryLearningObjectiveId: null,
+      activityRole: null,
     };
   }, [selectedDefinition, selectedTypeKey]);
 
@@ -476,6 +538,8 @@ function ComponentPickerDialog({
   async function add(input: {
     payload: Record<string, unknown>;
     placement: Record<string, unknown>;
+    primaryLearningObjectiveId: string | null;
+    activityRole: LessonComponent["activityRole"];
   }) {
     if (!selectedDefinition || !selectedTypeKey) return;
     setSaveAttempted(true);
@@ -492,6 +556,34 @@ function ComponentPickerDialog({
       },
     );
     if (saved || committed) onClose();
+  }
+
+  async function createLearningObjective(input: {
+    title: string;
+    description: string | null;
+  }) {
+    let created: LearningObjective | null = null;
+    await runMutation("Создаём цель обучения…", async () => {
+      const response = await courseBuilderJsonRequest<{
+        learningObjective: LearningObjective;
+      }>(`/api/v2/courses/${courseId}/learning-objectives`, "POST", input);
+      created = response.learningObjective;
+    });
+    return created;
+  }
+
+  async function archiveLearningObjective(objectiveId: string) {
+    let archived: LearningObjective | null = null;
+    await runMutation("Отправляем цель в архив…", async () => {
+      const response = await courseBuilderJsonRequest<{
+        learningObjective: LearningObjective;
+      }>(
+        `/api/v2/courses/${courseId}/learning-objectives/${objectiveId}`,
+        "DELETE",
+      );
+      archived = response.learningObjective;
+    });
+    return archived;
   }
 
   function returnToCatalog() {
@@ -535,11 +627,14 @@ function ComponentPickerDialog({
           key={selectedDefinition.key}
           component={draftComponent}
           assets={assets}
+          learningObjectives={learningObjectives}
           disabled={disabled}
           saveError={saveAttempted ? mutationError : null}
           cancelLabel="Назад к компонентам"
           onCancel={returnToCatalog}
           onSave={add}
+          onCreateLearningObjective={createLearningObjective}
+          onArchiveLearningObjective={archiveLearningObjective}
         />
       ) : (
         <>
@@ -737,6 +832,7 @@ function LessonPlan({
       {visibleComponents.map(({ component, index }) => (
         <ComponentCard
           key={component.id}
+          courseId={course.id}
           component={component}
           displayPosition={index + 1}
           indexInLesson={index}
@@ -744,6 +840,7 @@ function LessonPlan({
           lessonComponents={components}
           studentSlides={lesson.studentSlides}
           assets={course.attachments}
+          learningObjectives={course.learningObjectives}
           assetMap={assetMap}
           disabled={disabled}
           mutationError={mutationError}
@@ -793,9 +890,15 @@ function StudentLessonSurface({
         .sort((left, right) => left.position - right.position)
         .map((slide) => ({
           ...slide,
-          components: lesson.components.filter(
-            (component) => component.studentSlideId === slide.id,
-          ),
+          components: lesson.components
+            .filter((component) => component.studentSlideId === slide.id)
+            .map((component) => ({
+              ...component,
+              payload: projectLearnerComponentPayload(
+                component.typeKey,
+                component.payload,
+              ) as Record<string, unknown>,
+            })),
         })),
     [lesson.components, lesson.studentSlides],
   );
@@ -1213,8 +1316,10 @@ export function LessonAuthoringWorkspace({
 
       {pickerOpen ? (
         <ComponentPickerDialog
+          courseId={course.id}
           lessonId={lesson.id}
           assets={course.attachments}
+          learningObjectives={course.learningObjectives}
           disabled={disabled}
           mutationError={mutationError}
           runMutation={runMutation}

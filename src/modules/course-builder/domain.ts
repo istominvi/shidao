@@ -1,4 +1,5 @@
 import type {
+  ActivityRole,
   ComponentTypeKey,
   CreatableComponentTypeKey,
 } from "./registry/contracts";
@@ -42,6 +43,16 @@ export type CourseAsset = {
   createdAt: string;
 };
 
+export type LearningObjective = {
+  id: string;
+  courseId: string;
+  title: string;
+  description: string | null;
+  archivedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type LessonComponent = {
   id: string;
   lessonId: string;
@@ -52,6 +63,8 @@ export type LessonComponent = {
   placement: Record<string, unknown>;
   visibility: ComponentVisibility;
   studentSlideId: string | null;
+  primaryLearningObjectiveId: string | null;
+  activityRole: ActivityRole | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -62,6 +75,13 @@ export type LessonStudentSlide = {
   position: number;
   createdAt: string;
   updatedAt: string;
+};
+
+export type LearnerSafeLessonComponent = Omit<
+  LessonComponent,
+  "payload" | "primaryLearningObjectiveId" | "activityRole"
+> & {
+  payload: Record<string, unknown>;
 };
 
 export type CourseLesson = {
@@ -80,10 +100,11 @@ export type CourseLesson = {
 export type CourseWorkspace = CourseSummary & {
   lessons: CourseLesson[];
   attachments: CourseAsset[];
+  learningObjectives: LearningObjective[];
 };
 
 export type StudentScreenSlide = LessonStudentSlide & {
-  components: LessonComponent[];
+  components: LearnerSafeLessonComponent[];
 };
 
 export type StudentScreenLesson = Omit<

@@ -55,10 +55,78 @@ export const componentCapabilitiesSchema = z
 
 export type ComponentCapabilities = z.infer<typeof componentCapabilitiesSchema>;
 
+export const activityRoleSchema = z.enum(["practice", "assessment", "survey"]);
+
+export type ActivityRole = z.infer<typeof activityRoleSchema>;
+
+export const activityResponseModeSchema = z.enum([
+  "survey_choice",
+  "matching",
+  "choice",
+  "fill_blanks",
+  "word_bank",
+  "ordering",
+  "categorization",
+  "constructed_text",
+  "word_construction",
+]);
+
+export type ActivityResponseMode = z.infer<typeof activityResponseModeSchema>;
+
+export const activityEvaluatorModeSchema = z.enum([
+  "none",
+  "deterministic",
+  "teacher_review",
+]);
+
+export type ActivityEvaluatorMode = z.infer<typeof activityEvaluatorModeSchema>;
+
+export const activityEvidencePolicySchema = z.enum([
+  "never",
+  "requires_evaluation",
+  "requires_teacher_confirmation",
+]);
+
+export type ActivityEvidencePolicy = z.infer<
+  typeof activityEvidencePolicySchema
+>;
+
+export type ComponentActivityFacet<
+  TAuthorPayloadSchema extends z.ZodType = z.ZodType,
+  TLearnerDeliverySchema extends z.ZodType = z.ZodType,
+  TEvaluatorConfigSchema extends z.ZodType = z.ZodType,
+> = {
+  readonly supportedRoles: readonly ActivityRole[];
+  readonly responseMode: ActivityResponseMode;
+  readonly evaluatorMode: ActivityEvaluatorMode;
+  readonly evidencePolicy: ActivityEvidencePolicy;
+  readonly learnerDeliverySchema: TLearnerDeliverySchema;
+  readonly evaluatorConfigSchema: TEvaluatorConfigSchema;
+  readonly projectLearnerDelivery: (
+    payload: z.output<TAuthorPayloadSchema>,
+  ) => z.input<TLearnerDeliverySchema>;
+  readonly projectEvaluatorConfig: (
+    payload: z.output<TAuthorPayloadSchema>,
+  ) => z.input<TEvaluatorConfigSchema>;
+};
+
+type AnyComponentActivityFacet = {
+  readonly supportedRoles: readonly ActivityRole[];
+  readonly responseMode: ActivityResponseMode;
+  readonly evaluatorMode: ActivityEvaluatorMode;
+  readonly evidencePolicy: ActivityEvidencePolicy;
+  readonly learnerDeliverySchema: z.ZodType;
+  readonly evaluatorConfigSchema: z.ZodType;
+  readonly projectLearnerDelivery: (payload: never) => unknown;
+  readonly projectEvaluatorConfig: (payload: never) => unknown;
+};
+
 export type ComponentDefinition<
   TKey extends ComponentTypeKey = ComponentTypeKey,
   TPayloadSchema extends z.ZodType = z.ZodType,
   TPlacementSchema extends z.ZodType = z.ZodType,
+  TActivityFacet extends AnyComponentActivityFacet | undefined =
+    AnyComponentActivityFacet | undefined,
 > = {
   readonly key: TKey;
   readonly version: number;
@@ -70,21 +138,67 @@ export type ComponentDefinition<
   readonly defaultPayload: z.output<TPayloadSchema>;
   readonly defaultPlacement: z.output<TPlacementSchema>;
   readonly aiInstructions: string;
+} & (TActivityFacet extends undefined
+  ? { readonly activityFacet?: undefined }
+  : { readonly activityFacet: TActivityFacet });
+
+type ComponentDefinitionInput<
+  TKey extends ComponentTypeKey,
+  TPayloadSchema extends z.ZodType,
+  TPlacementSchema extends z.ZodType,
+> = {
+  readonly key: TKey;
+  readonly version: number;
+  readonly title: string;
+  readonly category: ComponentCategory;
+  readonly payloadSchema: TPayloadSchema;
+  readonly placementSchema: TPlacementSchema;
+  readonly capabilities: ComponentCapabilities;
+  readonly defaultPayload: z.input<TPayloadSchema>;
+  readonly defaultPlacement: z.input<TPlacementSchema>;
+  readonly aiInstructions: string;
 };
 
 function defineComponent<
   const TKey extends ComponentTypeKey,
   TPayloadSchema extends z.ZodType,
   TPlacementSchema extends z.ZodType,
+  TActivityFacet extends ComponentActivityFacet<
+    TPayloadSchema,
+    z.ZodType,
+    z.ZodType
+  >,
 >(
-  definition: Omit<
-    ComponentDefinition<TKey, TPayloadSchema, TPlacementSchema>,
-    "defaultPayload" | "defaultPlacement"
-  > & {
-    defaultPayload: z.input<TPayloadSchema>;
-    defaultPlacement: z.input<TPlacementSchema>;
-  },
-): ComponentDefinition<TKey, TPayloadSchema, TPlacementSchema> {
+  definition: ComponentDefinitionInput<
+    TKey,
+    TPayloadSchema,
+    TPlacementSchema
+  > & { readonly activityFacet: TActivityFacet },
+): ComponentDefinition<TKey, TPayloadSchema, TPlacementSchema, TActivityFacet>;
+function defineComponent<
+  const TKey extends ComponentTypeKey,
+  TPayloadSchema extends z.ZodType,
+  TPlacementSchema extends z.ZodType,
+>(
+  definition: ComponentDefinitionInput<
+    TKey,
+    TPayloadSchema,
+    TPlacementSchema
+  > & { readonly activityFacet?: undefined },
+): ComponentDefinition<TKey, TPayloadSchema, TPlacementSchema, undefined>;
+function defineComponent<
+  const TKey extends ComponentTypeKey,
+  TPayloadSchema extends z.ZodType,
+  TPlacementSchema extends z.ZodType,
+  TActivityFacet extends
+    ComponentActivityFacet<TPayloadSchema, z.ZodType, z.ZodType> | undefined,
+>(
+  definition: ComponentDefinitionInput<
+    TKey,
+    TPayloadSchema,
+    TPlacementSchema
+  > & { readonly activityFacet?: TActivityFacet },
+): ComponentDefinition<TKey, TPayloadSchema, TPlacementSchema, TActivityFacet> {
   const capabilities = componentCapabilitiesSchema.parse(
     definition.capabilities,
   );
@@ -95,12 +209,33 @@ function defineComponent<
     definition.defaultPlacement,
   );
 
+  if (definition.activityFacet) {
+    activityRoleSchema
+      .array()
+      .min(1)
+      .parse(definition.activityFacet.supportedRoles);
+    activityResponseModeSchema.parse(definition.activityFacet.responseMode);
+    activityEvaluatorModeSchema.parse(definition.activityFacet.evaluatorMode);
+    activityEvidencePolicySchema.parse(definition.activityFacet.evidencePolicy);
+    definition.activityFacet.learnerDeliverySchema.parse(
+      definition.activityFacet.projectLearnerDelivery(defaultPayload),
+    );
+    definition.activityFacet.evaluatorConfigSchema.parse(
+      definition.activityFacet.projectEvaluatorConfig(defaultPayload),
+    );
+  }
+
   return {
     ...definition,
     capabilities,
     defaultPayload,
     defaultPlacement,
-  };
+  } as ComponentDefinition<
+    TKey,
+    TPayloadSchema,
+    TPlacementSchema,
+    TActivityFacet
+  >;
 }
 
 const contentWidthSchema = z.enum(["content", "wide", "full"]);
@@ -663,6 +798,553 @@ export const filePayloadSchema = z
   })
   .strict();
 
+const learnerMatchingItemIdSchema = z
+  .string()
+  .regex(/^(?:left|right)-[1-9]\d*$/);
+
+export const matchingGameLearnerItemSchema = z
+  .object({
+    id: learnerMatchingItemIdSchema,
+    text: z.string().trim().min(1).max(500),
+  })
+  .strict();
+
+export const matchingGameLearnerDeliverySchema = z
+  .object({
+    instruction: z.string().trim().min(1).max(2_000),
+    leftItems: z.array(matchingGameLearnerItemSchema).min(2).max(30),
+    rightItems: z.array(matchingGameLearnerItemSchema).min(2).max(30),
+  })
+  .strict()
+  .superRefine((delivery, context) => {
+    if (delivery.leftItems.length !== delivery.rightItems.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["rightItems"],
+        message: "Обе колонки должны содержать одинаковое число элементов.",
+      });
+    }
+    const ids = [
+      ...delivery.leftItems.map((item) => item.id),
+      ...delivery.rightItems.map((item) => item.id),
+    ];
+    if (new Set(ids).size !== ids.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["rightItems"],
+        message: "Learner-facing идентификаторы должны быть уникальными.",
+      });
+    }
+  });
+
+export const matchingGameEvaluatorConfigSchema = z
+  .object({
+    pairs: z.array(matchingGamePairSchema).min(2).max(30),
+  })
+  .strict();
+
+export const choiceQuizLearnerDeliverySchema = z
+  .object({
+    question: z.string().trim().min(1).max(2_000),
+    options: z.array(singleChoicePollOptionSchema).min(2).max(20),
+    allowMultiple: z.boolean(),
+  })
+  .strict()
+  .superRefine((delivery, context) => {
+    const ids = delivery.options.map((option) => option.id);
+    if (new Set(ids).size !== ids.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["options"],
+        message: "Идентификаторы вариантов должны быть уникальными.",
+      });
+    }
+  });
+
+export const choiceQuizEvaluatorConfigSchema = z
+  .object({
+    correctOptionIds: z.array(z.uuid()).min(1).max(20),
+    allowMultiple: z.boolean(),
+    explanation: z.string().trim().min(1).max(4_000).optional(),
+  })
+  .strict();
+
+const fillBlankHintSchema = z.string().trim().min(1).max(500).nullable();
+
+export const fillBlanksLearnerDeliverySchema = z
+  .object({
+    instruction: z.string().trim().min(1).max(2_000),
+    template: z.string().trim().min(1).max(10_000),
+    hints: z.array(fillBlankHintSchema).min(1).max(50),
+  })
+  .strict()
+  .superRefine((delivery, context) => {
+    validateDenseTemplateMarkers(
+      delivery.template,
+      delivery.hints.length,
+      context,
+    );
+  });
+
+export const fillBlanksEvaluatorConfigSchema = z
+  .object({
+    answers: z
+      .array(
+        z
+          .object({
+            accepted: z.array(z.string().trim().min(1).max(500)).min(1).max(20),
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(50),
+  })
+  .strict();
+
+export const wordBankLearnerDeliverySchema = z
+  .object({
+    instruction: z.string().trim().min(1).max(2_000),
+    template: z.string().trim().min(1).max(10_000),
+    blankCount: z.number().int().min(1).max(50),
+    options: z.array(z.string().trim().min(1).max(500)).min(1).max(150),
+  })
+  .strict()
+  .superRefine((delivery, context) => {
+    validateDenseTemplateMarkers(
+      delivery.template,
+      delivery.blankCount,
+      context,
+    );
+  });
+
+export const wordBankEvaluatorConfigSchema = z
+  .object({
+    answers: z.array(acceptedAlternativesLineSchema).min(1).max(50),
+  })
+  .strict();
+
+export const sequenceLearnerDeliverySchema = z
+  .object({
+    instruction: z.string().trim().min(1).max(2_000),
+    items: z.array(sequenceItemSchema).min(2).max(40),
+    mode: z.enum(["words", "sentences"]),
+  })
+  .strict();
+
+export const sequenceEvaluatorConfigSchema = z
+  .object({
+    orderedItemIds: z.array(z.uuid()).min(2).max(40),
+  })
+  .strict();
+
+export const categorizeLearnerItemSchema = z
+  .object({
+    id: z.uuid(),
+    text: z.string().trim().min(1).max(1_000),
+  })
+  .strict();
+
+export const categorizeLearnerDeliverySchema = z
+  .object({
+    instruction: z.string().trim().min(1).max(2_000),
+    categories: z.array(categorizeCategorySchema).min(2).max(12),
+    items: z.array(categorizeLearnerItemSchema).min(2).max(60),
+  })
+  .strict();
+
+export const categorizeEvaluatorConfigSchema = z
+  .object({
+    assignments: z
+      .array(
+        z
+          .object({
+            itemId: z.uuid(),
+            categoryId: z.uuid(),
+          })
+          .strict(),
+      )
+      .min(2)
+      .max(60),
+  })
+  .strict();
+
+export const wordBuilderLearnerTokenSchema = z
+  .object({
+    id: z.string().regex(/^letter-[1-9]\d*$/),
+    text: z.string().min(1).max(8),
+  })
+  .strict();
+
+export const wordBuilderLearnerDeliverySchema = z
+  .object({
+    instruction: z.string().trim().min(1).max(2_000),
+    tokens: z.array(wordBuilderLearnerTokenSchema).min(1).max(240),
+    hint: z.string().trim().min(1).max(500).optional(),
+  })
+  .strict();
+
+export const wordBuilderEvaluatorConfigSchema = z
+  .object({
+    targetWord: z.string().trim().min(1).max(240),
+  })
+  .strict();
+
+export const singleChoicePollLearnerDeliverySchema =
+  singleChoicePollPayloadSchema;
+
+export const singleChoicePollEvaluatorConfigSchema = z
+  .object({ mode: z.literal("survey") })
+  .strict();
+
+export const freeResponseLearnerDeliverySchema = freeResponsePayloadSchema;
+
+export const freeResponseEvaluatorConfigSchema = z
+  .object({
+    reviewMode: z.literal("teacher"),
+    responseType: z.enum(["short", "long"]),
+    minChars: z.number().int().min(0).max(20_000),
+    maxChars: z.number().int().min(1).max(20_000),
+  })
+  .strict();
+
+function stableOpaqueHash(value: string) {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = Math.imul(hash ^ value.charCodeAt(index), 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function stableDeliveryOrder<T>(
+  items: readonly T[],
+  key: (item: T) => string,
+  forceDifferentFromSource = false,
+) {
+  const source = [...items];
+  const ordered = [...items].sort((left, right) => {
+    const leftKey = key(left);
+    const rightKey = key(right);
+    const leftHash = stableOpaqueHash(leftKey);
+    const rightHash = stableOpaqueHash(rightKey);
+    if (leftHash !== rightHash) return leftHash < rightHash ? -1 : 1;
+    if (leftKey === rightKey) return 0;
+    return leftKey < rightKey ? -1 : 1;
+  });
+
+  if (
+    forceDifferentFromSource &&
+    ordered.length > 1 &&
+    ordered.every((item, index) => item === source[index])
+  ) {
+    return [...ordered.slice(1), ordered[0]];
+  }
+  return ordered;
+}
+
+function projectMatchingGameLearnerDelivery(
+  payload: z.output<typeof matchingGamePayloadSchema>,
+) {
+  const leftOrder = stableDeliveryOrder(
+    payload.pairs,
+    (pair) => `matching-left:${pair.id}`,
+    true,
+  );
+  const initialRightOrder = stableDeliveryOrder(
+    payload.pairs,
+    (pair) => `matching-right:${pair.id}`,
+    true,
+  );
+  const rightOrder = [...initialRightOrder];
+  const fixedIndexes = rightOrder.flatMap((pair, index) =>
+    pair.id === leftOrder[index]?.id ? [index] : [],
+  );
+
+  if (fixedIndexes.length > 1) {
+    const fixedValues = fixedIndexes.map((index) => rightOrder[index]);
+    fixedIndexes.forEach((index, fixedIndex) => {
+      rightOrder[index] = fixedValues[(fixedIndex + 1) % fixedValues.length];
+    });
+  } else if (fixedIndexes.length === 1) {
+    const fixedIndex = fixedIndexes[0];
+    const swapIndex = rightOrder.findIndex(
+      (pair, index) =>
+        index !== fixedIndex &&
+        pair.id !== leftOrder[fixedIndex]?.id &&
+        rightOrder[fixedIndex]?.id !== leftOrder[index]?.id,
+    );
+    if (swapIndex < 0) {
+      throw new Error("Unable to build a learner-safe matching delivery.");
+    }
+    [rightOrder[fixedIndex], rightOrder[swapIndex]] = [
+      rightOrder[swapIndex],
+      rightOrder[fixedIndex],
+    ];
+  }
+
+  return {
+    instruction: payload.instruction,
+    leftItems: leftOrder.map((pair, index) => ({
+      id: `left-${index + 1}`,
+      text: pair.left,
+    })),
+    rightItems: rightOrder.map((pair, index) => ({
+      id: `right-${index + 1}`,
+      text: pair.right,
+    })),
+  };
+}
+
+function splitAcceptedAlternatives(value: string) {
+  return value.split("|").map((alternative) => alternative.trim());
+}
+
+const singleChoicePollActivityFacet = {
+  supportedRoles: ["survey"],
+  responseMode: "survey_choice",
+  evaluatorMode: "none",
+  evidencePolicy: "never",
+  learnerDeliverySchema: singleChoicePollLearnerDeliverySchema,
+  evaluatorConfigSchema: singleChoicePollEvaluatorConfigSchema,
+  projectLearnerDelivery: (
+    payload: z.output<typeof singleChoicePollPayloadSchema>,
+  ) => payload,
+  projectEvaluatorConfig: () => ({ mode: "survey" as const }),
+} as const satisfies ComponentActivityFacet<
+  typeof singleChoicePollPayloadSchema,
+  typeof singleChoicePollLearnerDeliverySchema,
+  typeof singleChoicePollEvaluatorConfigSchema
+>;
+
+const matchingGameActivityFacet = {
+  supportedRoles: ["practice", "assessment"],
+  responseMode: "matching",
+  evaluatorMode: "deterministic",
+  evidencePolicy: "requires_evaluation",
+  learnerDeliverySchema: matchingGameLearnerDeliverySchema,
+  evaluatorConfigSchema: matchingGameEvaluatorConfigSchema,
+  projectLearnerDelivery: projectMatchingGameLearnerDelivery,
+  projectEvaluatorConfig: (
+    payload: z.output<typeof matchingGamePayloadSchema>,
+  ) => ({ pairs: payload.pairs }),
+} as const satisfies ComponentActivityFacet<
+  typeof matchingGamePayloadSchema,
+  typeof matchingGameLearnerDeliverySchema,
+  typeof matchingGameEvaluatorConfigSchema
+>;
+
+const choiceQuizActivityFacet = {
+  supportedRoles: ["practice", "assessment"],
+  responseMode: "choice",
+  evaluatorMode: "deterministic",
+  evidencePolicy: "requires_evaluation",
+  learnerDeliverySchema: choiceQuizLearnerDeliverySchema,
+  evaluatorConfigSchema: choiceQuizEvaluatorConfigSchema,
+  projectLearnerDelivery: (
+    payload: z.output<typeof choiceQuizPayloadSchema>,
+  ) => ({
+    question: payload.question,
+    options: (payload.shuffle
+      ? stableDeliveryOrder(
+          payload.options,
+          (option) => `quiz:${option.id}`,
+          true,
+        )
+      : payload.options
+    ).map(({ id, label }) => ({ id, label })),
+    allowMultiple: payload.allowMultiple,
+  }),
+  projectEvaluatorConfig: (
+    payload: z.output<typeof choiceQuizPayloadSchema>,
+  ) => ({
+    correctOptionIds: payload.options
+      .filter((option) => option.isCorrect)
+      .map((option) => option.id),
+    allowMultiple: payload.allowMultiple,
+    ...(payload.explanation ? { explanation: payload.explanation } : {}),
+  }),
+} as const satisfies ComponentActivityFacet<
+  typeof choiceQuizPayloadSchema,
+  typeof choiceQuizLearnerDeliverySchema,
+  typeof choiceQuizEvaluatorConfigSchema
+>;
+
+const fillBlanksActivityFacet = {
+  supportedRoles: ["practice", "assessment"],
+  responseMode: "fill_blanks",
+  evaluatorMode: "deterministic",
+  evidencePolicy: "requires_evaluation",
+  learnerDeliverySchema: fillBlanksLearnerDeliverySchema,
+  evaluatorConfigSchema: fillBlanksEvaluatorConfigSchema,
+  projectLearnerDelivery: (
+    payload: z.output<typeof fillBlanksPayloadSchema>,
+  ) => ({
+    instruction: payload.instruction,
+    template: payload.template,
+    hints: payload.answers.map((answer) => answer.hint ?? null),
+  }),
+  projectEvaluatorConfig: (
+    payload: z.output<typeof fillBlanksPayloadSchema>,
+  ) => ({
+    answers: payload.answers.map((answer) => ({ accepted: answer.accepted })),
+  }),
+} as const satisfies ComponentActivityFacet<
+  typeof fillBlanksPayloadSchema,
+  typeof fillBlanksLearnerDeliverySchema,
+  typeof fillBlanksEvaluatorConfigSchema
+>;
+
+const wordBankActivityFacet = {
+  supportedRoles: ["practice", "assessment"],
+  responseMode: "word_bank",
+  evaluatorMode: "deterministic",
+  evidencePolicy: "requires_evaluation",
+  learnerDeliverySchema: wordBankLearnerDeliverySchema,
+  evaluatorConfigSchema: wordBankEvaluatorConfigSchema,
+  projectLearnerDelivery: (payload: z.output<typeof wordBankPayloadSchema>) => {
+    const options = new Map<string, string>();
+    for (const option of [
+      ...payload.answers.flatMap(splitAcceptedAlternatives),
+      ...payload.distractors,
+    ]) {
+      const normalized = option.toLocaleLowerCase("ru-RU");
+      if (!options.has(normalized)) options.set(normalized, option);
+    }
+    return {
+      instruction: payload.instruction,
+      template: payload.template,
+      blankCount: payload.answers.length,
+      options: stableDeliveryOrder(
+        [...options.values()],
+        (option) => `word-bank:${option.toLocaleLowerCase("ru-RU")}`,
+        true,
+      ),
+    };
+  },
+  projectEvaluatorConfig: (
+    payload: z.output<typeof wordBankPayloadSchema>,
+  ) => ({ answers: payload.answers }),
+} as const satisfies ComponentActivityFacet<
+  typeof wordBankPayloadSchema,
+  typeof wordBankLearnerDeliverySchema,
+  typeof wordBankEvaluatorConfigSchema
+>;
+
+const sequenceActivityFacet = {
+  supportedRoles: ["practice", "assessment"],
+  responseMode: "ordering",
+  evaluatorMode: "deterministic",
+  evidencePolicy: "requires_evaluation",
+  learnerDeliverySchema: sequenceLearnerDeliverySchema,
+  evaluatorConfigSchema: sequenceEvaluatorConfigSchema,
+  projectLearnerDelivery: (
+    payload: z.output<typeof sequencePayloadSchema>,
+  ) => ({
+    instruction: payload.instruction,
+    items: stableDeliveryOrder(
+      payload.items,
+      (item) => `sequence:${item.id}`,
+      true,
+    ),
+    mode: payload.mode,
+  }),
+  projectEvaluatorConfig: (
+    payload: z.output<typeof sequencePayloadSchema>,
+  ) => ({ orderedItemIds: payload.items.map((item) => item.id) }),
+} as const satisfies ComponentActivityFacet<
+  typeof sequencePayloadSchema,
+  typeof sequenceLearnerDeliverySchema,
+  typeof sequenceEvaluatorConfigSchema
+>;
+
+const categorizeActivityFacet = {
+  supportedRoles: ["practice", "assessment"],
+  responseMode: "categorization",
+  evaluatorMode: "deterministic",
+  evidencePolicy: "requires_evaluation",
+  learnerDeliverySchema: categorizeLearnerDeliverySchema,
+  evaluatorConfigSchema: categorizeEvaluatorConfigSchema,
+  projectLearnerDelivery: (
+    payload: z.output<typeof categorizePayloadSchema>,
+  ) => ({
+    instruction: payload.instruction,
+    categories: payload.categories,
+    items: stableDeliveryOrder(
+      payload.items,
+      (item) => `categorize:${item.id}`,
+      true,
+    ).map(({ id, text }) => ({ id, text })),
+  }),
+  projectEvaluatorConfig: (
+    payload: z.output<typeof categorizePayloadSchema>,
+  ) => ({
+    assignments: payload.items.map((item) => ({
+      itemId: item.id,
+      categoryId: item.categoryId,
+    })),
+  }),
+} as const satisfies ComponentActivityFacet<
+  typeof categorizePayloadSchema,
+  typeof categorizeLearnerDeliverySchema,
+  typeof categorizeEvaluatorConfigSchema
+>;
+
+const freeResponseActivityFacet = {
+  supportedRoles: ["practice", "assessment"],
+  responseMode: "constructed_text",
+  evaluatorMode: "teacher_review",
+  evidencePolicy: "requires_teacher_confirmation",
+  learnerDeliverySchema: freeResponseLearnerDeliverySchema,
+  evaluatorConfigSchema: freeResponseEvaluatorConfigSchema,
+  projectLearnerDelivery: (
+    payload: z.output<typeof freeResponsePayloadSchema>,
+  ) => payload,
+  projectEvaluatorConfig: (
+    payload: z.output<typeof freeResponsePayloadSchema>,
+  ) => ({
+    reviewMode: "teacher" as const,
+    responseType: payload.responseType,
+    minChars: payload.minChars,
+    maxChars: payload.maxChars,
+  }),
+} as const satisfies ComponentActivityFacet<
+  typeof freeResponsePayloadSchema,
+  typeof freeResponseLearnerDeliverySchema,
+  typeof freeResponseEvaluatorConfigSchema
+>;
+
+const wordBuilderActivityFacet = {
+  supportedRoles: ["practice", "assessment"],
+  responseMode: "word_construction",
+  evaluatorMode: "deterministic",
+  evidencePolicy: "requires_evaluation",
+  learnerDeliverySchema: wordBuilderLearnerDeliverySchema,
+  evaluatorConfigSchema: wordBuilderEvaluatorConfigSchema,
+  projectLearnerDelivery: (
+    payload: z.output<typeof wordBuilderPayloadSchema>,
+  ) => ({
+    instruction: payload.instruction,
+    tokens: stableDeliveryOrder(
+      Array.from(payload.targetWord).map((text, sourceIndex) => ({
+        text,
+        sourceIndex,
+      })),
+      (token) => `word-builder:${token.sourceIndex}:${token.text}`,
+      true,
+    ).map((token, deliveryIndex) => ({
+      id: `letter-${deliveryIndex + 1}`,
+      text: token.text,
+    })),
+    ...(payload.hint ? { hint: payload.hint } : {}),
+  }),
+  projectEvaluatorConfig: (
+    payload: z.output<typeof wordBuilderPayloadSchema>,
+  ) => ({ targetWord: payload.targetWord }),
+} as const satisfies ComponentActivityFacet<
+  typeof wordBuilderPayloadSchema,
+  typeof wordBuilderLearnerDeliverySchema,
+  typeof wordBuilderEvaluatorConfigSchema
+>;
+
 const defaultCapabilities = {
   teacherSurface: true,
   studentSurface: true,
@@ -835,6 +1517,7 @@ export const componentRegistry = {
       showResults: true,
     },
     defaultPlacement: { width: "content", compact: false },
+    activityFacet: singleChoicePollActivityFacet,
     aiInstructions:
       "Формулируй один нейтральный вопрос без правильного ответа. Сохраняй UUID существующих вариантов при редактировании; новым вариантам назначай новые UUID.",
   }),
@@ -867,6 +1550,7 @@ export const componentRegistry = {
       shuffle: true,
     },
     defaultPlacement: { width: "wide", compact: false },
+    activityFacet: matchingGameActivityFacet,
     aiInstructions:
       "Создавай однозначные пары. Сохраняй UUID существующих пар при редактировании; новым парам назначай новые UUID.",
   }),
@@ -896,6 +1580,7 @@ export const componentRegistry = {
       shuffle: true,
     },
     defaultPlacement: { width: "content", compact: false },
+    activityFacet: choiceQuizActivityFacet,
     aiInstructions:
       "Сохраняй стабильные UUID вариантов и явно отмечай правильные ответы. Автоматическое создание и редактирование этого типа пока отключено.",
   }),
@@ -913,6 +1598,7 @@ export const componentRegistry = {
       answers: [{ accepted: ["Париж"] }],
     },
     defaultPlacement: { width: "content", compact: false },
+    activityFacet: fillBlanksActivityFacet,
     aiInstructions:
       "Связывай маркеры [[1]], [[2]] и далее с ответами без пропусков индексов. Автоматическое создание и редактирование этого типа пока отключено.",
   }),
@@ -932,6 +1618,7 @@ export const componentRegistry = {
       shuffle: true,
     },
     defaultPlacement: { width: "content", compact: false },
+    activityFacet: wordBankActivityFacet,
     aiInstructions:
       "Связывай маркеры [[1]], [[2]] и далее с ответами без пропусков индексов и отделяй альтернативы символом |. Автоматическое редактирование пока отключено.",
   }),
@@ -959,6 +1646,7 @@ export const componentRegistry = {
       shuffle: true,
     },
     defaultPlacement: { width: "content", compact: false },
+    activityFacet: sequenceActivityFacet,
     aiInstructions:
       "Порядок массива считается правильным ответом; сохраняй стабильные UUID элементов. Автоматическое создание и редактирование пока отключено.",
   }),
@@ -997,6 +1685,7 @@ export const componentRegistry = {
       shuffle: true,
     },
     defaultPlacement: { width: "wide", compact: false },
+    activityFacet: categorizeActivityFacet,
     aiInstructions:
       "Каждый элемент должен ссылаться на UUID существующей категории; сохраняй стабильные UUID. Автоматическое создание и редактирование пока отключено.",
   }),
@@ -1015,6 +1704,7 @@ export const componentRegistry = {
       maxChars: 2_000,
     },
     defaultPlacement: { width: "content", compact: false },
+    activityFacet: freeResponseActivityFacet,
     aiInstructions:
       "Свободный ответ не оценивается автоматически. Автоматическое создание и редактирование этого типа пока отключено.",
   }),
@@ -1049,6 +1739,7 @@ export const componentRegistry = {
       shuffle: true,
     },
     defaultPlacement: { width: "content", compact: false },
+    activityFacet: wordBuilderActivityFacet,
     aiInstructions:
       "Целевое слово является правильным ответом. Автоматическое создание и редактирование этого типа пока отключено.",
   }),
@@ -1145,17 +1836,106 @@ export function parseComponentPlacement<TKey extends ComponentTypeKey>(
   ) as ComponentPlacement<TKey>;
 }
 
+type ComponentActivityFacetFor<TKey extends ComponentTypeKey> = NonNullable<
+  ComponentRegistry[TKey]["activityFacet"]
+>;
+
+export type ComponentLearnerDelivery<TKey extends ComponentTypeKey> = [
+  ComponentActivityFacetFor<TKey>,
+] extends [never]
+  ? ComponentPayload<TKey>
+  : ComponentActivityFacetFor<TKey> extends {
+        learnerDeliverySchema: infer TLearnerDeliverySchema extends z.ZodType;
+      }
+    ? z.output<TLearnerDeliverySchema>
+    : never;
+
+export type ComponentEvaluatorConfig<TKey extends ComponentTypeKey> = [
+  ComponentActivityFacetFor<TKey>,
+] extends [never]
+  ? never
+  : ComponentActivityFacetFor<TKey> extends {
+        evaluatorConfigSchema: infer TEvaluatorConfigSchema extends z.ZodType;
+      }
+    ? z.output<TEvaluatorConfigSchema>
+    : never;
+
+/**
+ * Converts a validated author payload into the only shape that may cross a
+ * learner-facing boundary. Both the source and projected values are parsed;
+ * malformed data throws and is never returned as a raw fallback.
+ */
+export function projectLearnerComponentPayload<TKey extends ComponentTypeKey>(
+  key: TKey,
+  payload: unknown,
+): ComponentLearnerDelivery<TKey> {
+  const definition = componentRegistry[key] as ComponentDefinition;
+  const authorPayload = definition.payloadSchema.parse(payload);
+  const facet = definition.activityFacet;
+  if (!facet) {
+    return authorPayload as ComponentLearnerDelivery<TKey>;
+  }
+  const projectLearnerDelivery = facet.projectLearnerDelivery as (
+    source: unknown,
+  ) => unknown;
+  return facet.learnerDeliverySchema.parse(
+    projectLearnerDelivery(authorPayload),
+  ) as ComponentLearnerDelivery<TKey>;
+}
+
+/**
+ * Extracts server-private evaluator configuration. Calling this for a passive
+ * Component is an integration error and therefore fails closed.
+ */
+export function projectComponentEvaluatorConfig<TKey extends ComponentTypeKey>(
+  key: TKey,
+  payload: unknown,
+): ComponentEvaluatorConfig<TKey> {
+  const definition = componentRegistry[key] as ComponentDefinition;
+  const authorPayload = definition.payloadSchema.parse(payload);
+  const facet = definition.activityFacet;
+  if (!facet) {
+    throw new Error(`Component type ${key} has no activity facet.`);
+  }
+  const projectEvaluatorConfig = facet.projectEvaluatorConfig as (
+    source: unknown,
+  ) => unknown;
+  return facet.evaluatorConfigSchema.parse(
+    projectEvaluatorConfig(authorPayload),
+  ) as ComponentEvaluatorConfig<TKey>;
+}
+
+type SupportedActivityRole<TKey extends ComponentTypeKey> = [
+  ComponentActivityFacetFor<TKey>,
+] extends [never]
+  ? never
+  : ComponentActivityFacetFor<TKey>["supportedRoles"][number];
+
 export type LessonAddComponentInput = {
   [TKey in CreatableComponentTypeKey]: {
     lessonId: string;
     typeKey: TKey;
     payload: ComponentPayload<TKey>;
     placement: ComponentPlacement<TKey>;
+    primaryLearningObjectiveId: string | null;
+    activityRole: SupportedActivityRole<TKey> | null;
   };
 }[CreatableComponentTypeKey];
 
 const addComponentVariantSchemas = creatableComponentTypeKeys.map((typeKey) => {
   const definition = componentRegistry[typeKey];
+  const activityFacet = definition.activityFacet;
+  const roleSchema = activityFacet
+    ? z
+        .enum(
+          activityFacet.supportedRoles as unknown as [
+            ActivityRole,
+            ...ActivityRole[],
+          ],
+        )
+        .nullable()
+        .default(null)
+    : z.null().default(null);
   return z
     .object({
       // PostgreSQL UUID values are not guaranteed to carry an RFC version bit
@@ -1165,6 +1945,8 @@ const addComponentVariantSchemas = creatableComponentTypeKeys.map((typeKey) => {
       typeKey: z.literal(typeKey),
       payload: definition.payloadSchema,
       placement: definition.placementSchema,
+      primaryLearningObjectiveId: z.guid().nullable().default(null),
+      activityRole: roleSchema,
     })
     .strict();
 });

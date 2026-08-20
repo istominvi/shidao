@@ -383,6 +383,8 @@ function lessonFingerprint(lesson: CourseLesson) {
             placement: component.placement,
             visibility: component.visibility,
             studentSlideId: component.studentSlideId,
+            primaryLearningObjectiveId: component.primaryLearningObjectiveId,
+            activityRole: component.activityRole,
             updatedAt: component.updatedAt,
           })),
         studentSlides: lesson.studentSlides

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Transactional acceptance harness for LA-M1 learning activities.
+# Transactional acceptance harness for LA-M2 learning activities.
 #
 # This script is deliberately impossible to point at the live ShiDao database:
 # the connected database name must be exactly `shidao_learning_activity_test`.
@@ -24,7 +24,7 @@ db_name="$(
     'select current_database()'
 )"
 if [[ "$db_name" != "shidao_learning_activity_test" ]]; then
-  echo "Refusing LA-M1 fixtures for database '$db_name'; expected exactly 'shidao_learning_activity_test'." >&2
+  echo "Refusing LA-M2 fixtures for database '$db_name'; expected exactly 'shidao_learning_activity_test'." >&2
   exit 2
 fi
 
@@ -38,6 +38,44 @@ schema_marker="$(
        and to_regclass('public.lesson_run') is not null
        and to_regclass('public.learning_record') is not null
        and to_regclass('public.lesson_component_observation') is not null
+       and to_regclass('public.learning_objective') is not null
+       and exists (
+         select 1
+         from information_schema.columns
+         where table_schema = 'public'
+           and table_name = 'lesson_component'
+           and column_name = 'primary_learning_objective_id'
+       )
+       and exists (
+         select 1
+         from information_schema.columns
+         where table_schema = 'public'
+           and table_name = 'lesson_component'
+           and column_name = 'activity_role'
+       )
+       and (
+         select count(*)
+         from information_schema.columns
+         where table_schema = 'public'
+           and table_name = 'lesson_component_observation'
+           and column_name in (
+             'learning_objective_id',
+             'source_learning_objective_id_at_time',
+             'learning_objective_title_at_time'
+           )
+       ) = 3
+       and to_regprocedure(
+         'public.create_learning_objective(uuid,text,text)'
+       ) is not null
+       and to_regprocedure(
+         'public.update_learning_objective(uuid,text,boolean,text,boolean)'
+       ) is not null
+       and to_regprocedure(
+         'public.archive_learning_objective(uuid)'
+       ) is not null
+       and to_regprocedure(
+         'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
+       ) is not null
        and to_regprocedure(
          'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)'
        ) is not null
@@ -50,10 +88,39 @@ schema_marker="$(
            'public.complete_lesson_run_v2(uuid,jsonb,text,timestamp with time zone,integer)'
          ))
        ) > 0
-     then 'shidao-learning-activity-la-m1' else '' end"
+       and position(
+         'for update of component'
+         in lower(pg_get_functiondef(to_regprocedure(
+           'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)'
+         )))
+       ) > 0
+       and position(
+         'for key share of objective'
+         in lower(pg_get_functiondef(to_regprocedure(
+           'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)'
+         )))
+       ) > 0
+       and position(
+         'for update of course'
+         in lower(pg_get_functiondef(to_regprocedure(
+           'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
+         )))
+       ) > 0
+       and position(
+         'for update of lesson'
+         in lower(pg_get_functiondef(to_regprocedure(
+           'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
+         )))
+       ) > position(
+         'for update of course'
+         in lower(pg_get_functiondef(to_regprocedure(
+           'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
+         )))
+       )
+     then 'shidao-learning-activity-la-m2' else '' end"
 )"
-if [[ "$schema_marker" != "shidao-learning-activity-la-m1" ]]; then
-  echo "Refusing fixtures: '$db_name' is not a fully migrated ShiDao LA-M1 test database." >&2
+if [[ "$schema_marker" != "shidao-learning-activity-la-m2" ]]; then
+  echo "Refusing fixtures: '$db_name' is not a fully migrated ShiDao LA-M2 test database." >&2
   exit 2
 fi
 
@@ -83,12 +150,68 @@ begin
     or to_regclass('public.lesson_run') is null
     or to_regclass('public.learning_record') is null
     or to_regclass('public.lesson_component_observation') is null
+    or to_regclass('public.learning_objective') is null
+    or not exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'lesson_component'
+        and column_name = 'primary_learning_objective_id'
+    )
+    or not exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'lesson_component'
+        and column_name = 'activity_role'
+    )
+    or (
+      select count(*)
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'lesson_component_observation'
+        and column_name in (
+          'learning_objective_id',
+          'source_learning_objective_id_at_time',
+          'learning_objective_title_at_time'
+        )
+    ) <> 3
+    or to_regprocedure(
+      'public.create_learning_objective(uuid,text,text)'
+    ) is null
+    or to_regprocedure(
+      'public.update_learning_objective(uuid,text,boolean,text,boolean)'
+    ) is null
+    or to_regprocedure(
+      'public.archive_learning_objective(uuid)'
+    ) is null
+    or to_regprocedure(
+      'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
+    ) is null
     or to_regprocedure(
       'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)'
     ) is null
     or to_regprocedure(
       'public.complete_lesson_run_v2(uuid,jsonb,text,timestamp with time zone,integer)'
     ) is null
+    or position(
+      'for update of component'
+      in lower(pg_get_functiondef(to_regprocedure(
+        'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)'
+      )))
+    ) = 0
+    or position(
+      'for key share of objective'
+      in lower(pg_get_functiondef(to_regprocedure(
+        'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)'
+      )))
+    ) = 0
+    or position(
+      'for update of course'
+      in lower(pg_get_functiondef(to_regprocedure(
+        'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
+      )))
+    ) = 0
   then
     raise exception 'learning_activity_acceptance_wrong_schema'
       using errcode = '42501';
@@ -168,6 +291,16 @@ select pg_temp.assert_true(
 );
 
 select pg_temp.assert_true(
+  exists (
+    select 1
+    from pg_class as relation
+    where relation.oid = 'public.learning_objective'::regclass
+      and relation.relrowsecurity
+  ),
+  'learning-objective RLS is not enabled'
+);
+
+select pg_temp.assert_true(
   (
     select count(*)
     from pg_policies as policy
@@ -177,6 +310,18 @@ select pg_temp.assert_true(
       and policy.cmd = 'SELECT'
   ) = 1,
   'recorder SELECT policy is missing or duplicated'
+);
+
+select pg_temp.assert_true(
+  (
+    select count(*)
+    from pg_policies as policy
+    where policy.schemaname = 'public'
+      and policy.tablename = 'learning_objective'
+      and policy.policyname = 'learning_objective_course_owner_select'
+      and policy.cmd = 'SELECT'
+  ) = 1,
+  'Course-owner learning-objective SELECT policy is missing or duplicated'
 );
 
 select pg_temp.assert_true(
@@ -209,6 +354,35 @@ select pg_temp.assert_true(
 );
 
 select pg_temp.assert_true(
+  has_table_privilege(
+    'authenticated',
+    'public.learning_objective',
+    'SELECT'
+  )
+    and not has_table_privilege(
+      'authenticated',
+      'public.learning_objective',
+      'INSERT'
+    )
+    and not has_table_privilege(
+      'authenticated',
+      'public.learning_objective',
+      'UPDATE'
+    )
+    and not has_table_privilege(
+      'authenticated',
+      'public.learning_objective',
+      'DELETE'
+    )
+    and not has_table_privilege(
+      'anon',
+      'public.learning_objective',
+      'SELECT'
+    ),
+  'learning-objective table ACL is broader than owner-scoped SELECT'
+);
+
+select pg_temp.assert_true(
   exists (
     select 1
     from pg_proc as procedure
@@ -238,6 +412,67 @@ select pg_temp.assert_true(
 );
 
 select pg_temp.assert_true(
+  (
+    select count(*) = 3
+      and bool_and(procedure.prosecdef)
+      and bool_and(
+        procedure.proconfig @> array['search_path=""']::text[]
+      )
+      and bool_and(
+        has_function_privilege(
+          'authenticated',
+          procedure.oid,
+          'EXECUTE'
+        )
+      )
+      and bool_and(
+        not has_function_privilege('anon', procedure.oid, 'EXECUTE')
+      )
+      and bool_and(
+        not has_function_privilege('service_role', procedure.oid, 'EXECUTE')
+      )
+    from pg_proc as procedure
+    where procedure.oid in (
+      to_regprocedure('public.create_learning_objective(uuid,text,text)'),
+      to_regprocedure(
+        'public.update_learning_objective(uuid,text,boolean,text,boolean)'
+      ),
+      to_regprocedure('public.archive_learning_objective(uuid)')
+    )
+  ),
+  'learning-objective RPC SECURITY DEFINER or EXECUTE ACL is wrong'
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from pg_proc as procedure
+    where procedure.oid = to_regprocedure(
+        'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
+      )
+      and procedure.prosecdef
+      and procedure.proretset
+      and procedure.proconfig @> array['search_path=""']::text[]
+  )
+    and has_function_privilege(
+      'authenticated',
+      'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)',
+      'EXECUTE'
+    )
+    and not has_function_privilege(
+      'anon',
+      'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)',
+      'EXECUTE'
+    )
+    and not has_function_privilege(
+      'service_role',
+      'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)',
+      'EXECUTE'
+    ),
+  'Component update RPC SECURITY DEFINER or EXECUTE ACL is wrong'
+);
+
+select pg_temp.assert_true(
   exists (
     select 1
     from pg_constraint
@@ -263,31 +498,117 @@ select pg_temp.assert_true(
         and contype = 'f'
         and confdeltype = 'n'
         and convalidated
+    )
+    and exists (
+      select 1
+      from pg_constraint
+      where conrelid = 'public.lesson_component'::regclass
+        and conname = 'lesson_component_primary_learning_objective_fkey'
+        and contype = 'f'
+        and confdeltype = 'n'
+        and convalidated
+    )
+    and exists (
+      select 1
+      from pg_constraint
+      where conrelid = 'public.lesson_component_observation'::regclass
+        and conname = 'lesson_component_observation_live_objective_fkey'
+        and contype = 'f'
+        and confdeltype = 'n'
+        and convalidated
+    )
+    and exists (
+      select 1
+      from pg_constraint
+      where conrelid = 'public.lesson_component_observation'::regclass
+        and conname = 'lesson_component_observation_objective_context_check'
+        and contype = 'c'
+        and convalidated
+    )
+    and exists (
+      select 1
+      from pg_constraint
+      where conrelid = 'public.lesson_component'::regclass
+        and conname = 'lesson_component_activity_role_check'
+        and contype = 'c'
+        and convalidated
     ),
-  'recorder, erasure, or live-component FK contract is wrong'
+  'recorder, erasure, alignment, or objective provenance constraints are wrong'
 );
 
+with definition as (
+  select lower(pg_get_functiondef(to_regprocedure(
+    'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)'
+  ))) as body
+)
 select pg_temp.assert_true(
-  position(
-    'for update of run'
-    in lower(pg_get_functiondef(to_regprocedure(
-      'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)'
-    )))
-  ) > 0
-    and position(
-      'for update of record'
-      in lower(pg_get_functiondef(to_regprocedure(
-        'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)'
-      )))
-    ) > 0
+  position('for update of lesson' in body) > 0
+    and position('for update of component' in body)
+      > position('for update of lesson' in body)
+    and position('for key share of objective' in body)
+      > position('for update of component' in body)
+    and position('for update of run' in body)
+      > position('for key share of objective' in body)
+    and position('for update of record' in body)
+      > position('for update of run' in body)
     and position(
       'lesson_run_absent_learner_has_observation'
       in pg_get_functiondef(to_regprocedure(
         'public.complete_lesson_run_v2(uuid,jsonb,text,timestamp with time zone,integer)'
       ))
     ) > 0,
-  'save/completion serialization contract is absent'
+  'Lesson/Component/Objective/Run/Record serialization contract is absent'
+)
+from definition;
+
+select pg_temp.assert_true(
+  position(
+    'for update of course'
+    in lower(pg_get_functiondef(to_regprocedure(
+      'public.update_learning_objective(uuid,text,boolean,text,boolean)'
+    )))
+  ) > 0
+    and position(
+      'for update of objective'
+      in lower(pg_get_functiondef(to_regprocedure(
+        'public.update_learning_objective(uuid,text,boolean,text,boolean)'
+      )))
+    ) > position(
+      'for update of course'
+      in lower(pg_get_functiondef(to_regprocedure(
+        'public.update_learning_objective(uuid,text,boolean,text,boolean)'
+      )))
+    )
+    and position(
+      'for update of objective'
+      in lower(pg_get_functiondef(to_regprocedure(
+        'public.archive_learning_objective(uuid)'
+      )))
+    ) > position(
+      'for update of course'
+      in lower(pg_get_functiondef(to_regprocedure(
+        'public.archive_learning_objective(uuid)'
+      )))
+    ),
+  'objective RPC Course-before-Objective lock order is absent'
 );
+
+with definition as (
+  select lower(pg_get_functiondef(to_regprocedure(
+    'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
+  ))) as body
+)
+select pg_temp.assert_true(
+  position('for update of course' in body) > 0
+    and position('for update of lesson' in body)
+      > position('for update of course' in body)
+    and position('for update of component' in body)
+      > position('for update of lesson' in body)
+    and position('for key share of objective' in body)
+      > position('for update of component' in body),
+  'Component update RPC Course/Lesson/Component/Objective lock order is absent'
+)
+from definition;
 
 -- -------------------------------------------------------------------------
 -- Canonical, rollback-only fixtures.
@@ -387,14 +708,23 @@ insert into public.course (
   audience_type,
   learning_audience
 )
-values (
-  'b4000000-0000-4000-8000-000000000001',
-  'b2000000-0000-4000-8000-000000000001',
-  'LA-M1 acceptance course',
-  'Русский язык',
-  'learner_profile',
-  'children'
-);
+values
+  (
+    'b4000000-0000-4000-8000-000000000001',
+    'b2000000-0000-4000-8000-000000000001',
+    'LA-M2 acceptance course',
+    'Русский язык',
+    'learner_profile',
+    'children'
+  ),
+  (
+    'b4000000-0000-4000-8000-000000000002',
+    'b2000000-0000-4000-8000-000000000001',
+    'LA-M2 cross-Course objective fixture',
+    'Русский язык',
+    'learner_profile',
+    'children'
+  );
 
 insert into public.lesson (id, course_id, position, title)
 values
@@ -459,6 +789,35 @@ select
   '{}'::jsonb,
   'staff_only'
 from generate_series(1, 7) as component(ordinal);
+
+insert into public.lesson_component (
+  id,
+  lesson_id,
+  position,
+  type_key,
+  payload,
+  placement_config,
+  visibility
+)
+values
+  (
+    'b6000000-0000-4000-8000-000000000008',
+    'b5000000-0000-4000-8000-000000000001',
+    2,
+    'choice_quiz',
+    '{}'::jsonb,
+    '{}'::jsonb,
+    'staff_only'
+  ),
+  (
+    'b6000000-0000-4000-8000-000000000009',
+    'b5000000-0000-4000-8000-000000000001',
+    3,
+    'single_choice_poll',
+    '{}'::jsonb,
+    '{}'::jsonb,
+    'staff_only'
+  );
 
 insert into public.teacher_learner (
   teacher_account_id,
@@ -622,6 +981,39 @@ values
     'b2000000-0000-4000-8000-000000000001'
   );
 
+-- A pre-LA-M2-shaped row proves the additive columns remain all-null for
+-- legacy observations. It deliberately omits every objective column.
+insert into public.lesson_component_observation (
+  id,
+  learning_record_id,
+  lesson_component_id,
+  source_lesson_component_id_at_time,
+  component_position_at_time,
+  component_type_key_at_time,
+  component_label_at_time,
+  observable_criterion_at_time,
+  rating,
+  entry_method,
+  private_note,
+  observed_at,
+  recorded_by_account_id
+)
+values (
+  'b9000000-0000-4000-8000-000000000001',
+  'b8000000-0000-4000-8000-000000000001',
+  'b6000000-0000-4000-8000-000000000001',
+  'b6000000-0000-4000-8000-000000000001',
+  1,
+  'discussion',
+  'Legacy LA-M1 observation',
+  'Legacy criterion',
+  'independent',
+  'direct',
+  null,
+  '2026-08-19 10:01:00+09',
+  'b2000000-0000-4000-8000-000000000001'
+);
+
 set local session_replication_role = origin;
 
 select set_config(
@@ -642,6 +1034,222 @@ from unnest(array[
   'b7000000-0000-4000-8000-000000000006'::uuid,
   'b7000000-0000-4000-8000-000000000007'::uuid
 ]) as started(run_id);
+
+-- -------------------------------------------------------------------------
+-- LA-M2 objective ownership, alignment and activity-role semantics.
+-- -------------------------------------------------------------------------
+
+select id::text as active_objective_id
+from public.create_learning_objective(
+  'b4000000-0000-4000-8000-000000000001',
+  '  Формулирует доказательство  ',
+  '  Исходное описание  '
+)
+\gset
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.learning_objective
+    where id = :'active_objective_id'::uuid
+      and course_id = 'b4000000-0000-4000-8000-000000000001'
+      and title = 'Формулирует доказательство'
+      and description = 'Исходное описание'
+      and archived_at is null
+  ),
+  'owner create RPC lost normalized objective fields'
+);
+
+select id
+from public.update_learning_objective(
+  :'active_objective_id'::uuid,
+  '  Объясняет решение по шагам  ',
+  true,
+  null,
+  false
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.learning_objective
+    where id = :'active_objective_id'::uuid
+      and title = 'Объясняет решение по шагам'
+      and description = 'Исходное описание'
+      and archived_at is null
+  ),
+  'owner update RPC cleared an omitted description or lost the title'
+);
+
+select id::text as archived_objective_id
+from public.create_learning_objective(
+  'b4000000-0000-4000-8000-000000000001',
+  'Архивная цель',
+  null
+)
+\gset
+
+select pg_temp.assert_true(
+  archived_at is not null,
+  'owner archive RPC did not archive its objective'
+)
+from public.archive_learning_objective(:'archived_objective_id'::uuid);
+
+select id::text as cross_course_objective_id
+from public.create_learning_objective(
+  'b4000000-0000-4000-8000-000000000002',
+  'Цель другого курса',
+  null
+)
+\gset
+
+select pg_temp.assert_true(
+  learning_objective_id is null
+    and source_learning_objective_id_at_time is null
+    and learning_objective_title_at_time is null,
+  'legacy LA-M1 observation gained objective provenance'
+)
+from public.lesson_component_observation
+where id = 'b9000000-0000-4000-8000-000000000001';
+
+select id
+from public.update_lesson_component_v2(
+  'b6000000-0000-4000-8000-000000000008',
+  null,
+  false,
+  null,
+  false,
+  null,
+  false,
+  'practice',
+  true
+);
+
+select id
+from public.update_lesson_component_v2(
+  'b6000000-0000-4000-8000-000000000008',
+  null,
+  false,
+  null,
+  false,
+  null,
+  false,
+  'assessment',
+  true
+);
+
+select id
+from public.update_lesson_component_v2(
+  'b6000000-0000-4000-8000-000000000009',
+  null,
+  false,
+  null,
+  false,
+  null,
+  false,
+  'survey',
+  true
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.lesson_component
+    where id = 'b6000000-0000-4000-8000-000000000008'
+      and type_key = 'choice_quiz'
+      and activity_role = 'assessment'
+  )
+    and exists (
+      select 1
+      from public.lesson_component
+      where id = 'b6000000-0000-4000-8000-000000000009'
+        and type_key = 'single_choice_poll'
+        and activity_role = 'survey'
+    ),
+  'supported activity roles were not persisted'
+);
+
+select pg_temp.assert_raises(
+  $sql$
+    select *
+    from public.update_lesson_component_v2(
+      'b6000000-0000-4000-8000-000000000001',
+      null, false, null, false, null, false, 'assessment', true
+    )
+  $sql$,
+  '23514',
+  'lesson_component_activity_role_unsupported',
+  'passive Component accepted an assessable activity role'
+);
+
+select pg_temp.assert_raises(
+  $sql$
+    select *
+    from public.update_lesson_component_v2(
+      'b6000000-0000-4000-8000-000000000008',
+      null, false, null, false, null, false, 'survey', true
+    )
+  $sql$,
+  '23514',
+  'lesson_component_activity_role_unsupported',
+  'assessable Component accepted survey role'
+);
+
+select pg_temp.assert_raises(
+  $sql$
+    select *
+    from public.update_lesson_component_v2(
+      'b6000000-0000-4000-8000-000000000009',
+      null, false, null, false, null, false, 'practice', true
+    )
+  $sql$,
+  '23514',
+  'lesson_component_activity_role_unsupported',
+  'poll Component accepted practice role'
+);
+
+select pg_temp.assert_raises(
+  format(
+    'select * from public.update_lesson_component_v2(%L::uuid, null, false, null, false, %L::uuid, true, null, false)',
+    'b6000000-0000-4000-8000-000000000008',
+    :'cross_course_objective_id'
+  ),
+  '23514',
+  'lesson_component_learning_objective_cross_course',
+  'Component accepted an objective from another Course'
+);
+
+select pg_temp.assert_raises(
+  format(
+    'select * from public.update_lesson_component_v2(%L::uuid, null, false, null, false, %L::uuid, true, null, false)',
+    'b6000000-0000-4000-8000-000000000008',
+    :'archived_objective_id'
+  ),
+  '23514',
+  'lesson_component_learning_objective_archived',
+  'new Component alignment accepted an archived objective'
+);
+
+select id
+from public.update_lesson_component_v2(
+  'b6000000-0000-4000-8000-000000000002',
+  null,
+  false,
+  null,
+  false,
+  :'active_objective_id'::uuid,
+  true,
+  null,
+  false
+);
+
+select pg_temp.assert_true(
+  primary_learning_objective_id = :'active_objective_id'::uuid
+    and activity_role is null,
+  'active same-Course objective alignment was not persisted'
+)
+from public.lesson_component
+where id = 'b6000000-0000-4000-8000-000000000002';
 
 -- -------------------------------------------------------------------------
 -- Lifecycle, ownership, RLS and compact batch semantics.
@@ -741,8 +1349,17 @@ select pg_temp.assert_true(
     and bool_and(component_type_key_at_time = 'discussion')
     and bool_and(component_label_at_time = 'Устный ответ')
     and bool_and(observable_criterion_at_time = 'Формулирует полный ответ')
-    and bool_and(entry_method = 'direct'),
-  'owner reload lost compact at-time context or recorder identity'
+    and bool_and(entry_method = 'direct')
+    and bool_and(
+      learning_objective_id = :'active_objective_id'::uuid
+    )
+    and bool_and(
+      source_learning_objective_id_at_time = :'active_objective_id'::uuid
+    )
+    and bool_and(
+      learning_objective_title_at_time = 'Объясняет решение по шагам'
+    ),
+  'owner reload lost compact context, objective provenance, or recorder identity'
 )
 from public.lesson_component_observation
 where learning_record_id in (
@@ -787,6 +1404,53 @@ select pg_temp.assert_raises(
   'foreign authenticated writer reached the SECURITY DEFINER mutation'
 );
 
+select pg_temp.assert_true(
+  (
+    select count(*)
+    from public.learning_objective
+    where course_id in (
+      'b4000000-0000-4000-8000-000000000001',
+      'b4000000-0000-4000-8000-000000000002'
+    )
+  ) = 0,
+  'foreign authenticated account read another owner''s objectives'
+);
+
+select pg_temp.assert_raises(
+  $sql$
+    select *
+    from public.create_learning_objective(
+      'b4000000-0000-4000-8000-000000000001',
+      'Чужая цель',
+      null
+    )
+  $sql$,
+  'P0002',
+  'learning_objective_not_found',
+  'foreign account created an objective in the owner Course'
+);
+
+select pg_temp.assert_raises(
+  format(
+    'select * from public.update_learning_objective(%L::uuid, %L, true, null, false)',
+    :'active_objective_id',
+    'Чужое изменение'
+  ),
+  'P0002',
+  'learning_objective_not_found',
+  'foreign account updated the owner objective'
+);
+
+select pg_temp.assert_raises(
+  format(
+    'select * from public.archive_learning_objective(%L::uuid)',
+    :'active_objective_id'
+  ),
+  'P0002',
+  'learning_objective_not_found',
+  'foreign account archived the owner objective'
+);
+
 reset role;
 set local role anon;
 
@@ -823,6 +1487,63 @@ select set_config(
   true
 );
 set local role authenticated;
+
+select pg_temp.assert_true(
+  archived_at is not null,
+  'owner could not archive the objective captured by observations'
+)
+from public.archive_learning_objective(:'active_objective_id'::uuid);
+
+select pg_temp.assert_true(
+  count(*) = 2
+    and bool_and(learning_objective_id = :'active_objective_id'::uuid)
+    and bool_and(
+      source_learning_objective_id_at_time = :'active_objective_id'::uuid
+    )
+    and bool_and(
+      learning_objective_title_at_time = 'Объясняет решение по шагам'
+    ),
+  'objective archival changed persisted observation provenance'
+)
+from public.lesson_component_observation
+where learning_record_id in (
+  'b8000000-0000-4000-8000-000000000002',
+  'b8000000-0000-4000-8000-000000000003'
+);
+
+reset role;
+delete from public.learning_objective
+where id = :'active_objective_id'::uuid;
+
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+
+select pg_temp.assert_true(
+  count(*) = 2
+    and bool_and(learning_objective_id is null)
+    and bool_and(
+      source_learning_objective_id_at_time = :'active_objective_id'::uuid
+    )
+    and bool_and(
+      learning_objective_title_at_time = 'Объясняет решение по шагам'
+    )
+    and not exists (
+      select 1
+      from public.lesson_component
+      where id = 'b6000000-0000-4000-8000-000000000002'
+        and primary_learning_objective_id is not null
+    ),
+  'objective deletion did not null live FKs while retaining at-time provenance'
+)
+from public.lesson_component_observation
+where learning_record_id in (
+  'b8000000-0000-4000-8000-000000000002',
+  'b8000000-0000-4000-8000-000000000003'
+);
 
 select pg_temp.assert_true(
   (

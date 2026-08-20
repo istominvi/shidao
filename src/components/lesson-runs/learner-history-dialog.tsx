@@ -10,7 +10,10 @@ import type {
   LearningRecord,
 } from "@/modules/lesson-runs/domain";
 import type { LessonComponentObservation } from "@/modules/learning-activities";
-import { ratingLabel } from "@/components/learning-activities/observation-format";
+import {
+  observationObjectiveTitleAtTime,
+  ratingLabel,
+} from "@/components/learning-activities/observation-format";
 
 function observationsByRecord(
   observations: LessonComponentObservation[],
@@ -164,24 +167,34 @@ export function LearnerHistoryPanel({ profile }: { profile: LearnerProfile }) {
                 ) : null}
                 {recordObservations.length > 0 ? (
                   <ol className="learner-observation-history-list">
-                    {recordObservations.map((observation) => (
-                      <li key={observation.id}>
-                        <div>
-                          <strong>
-                            {observation.componentPositionAtTime}.{" "}
-                            {observation.componentLabelAtTime}
-                          </strong>
-                          <span>{ratingLabel(observation.rating)}</span>
-                        </div>
-                        <p>{observation.observableCriterionAtTime}</p>
-                        {observation.privateNote ? (
-                          <small>
-                            Личная заметка преподавателя:{" "}
-                            {observation.privateNote}
-                          </small>
-                        ) : null}
-                      </li>
-                    ))}
+                    {recordObservations.map((observation) => {
+                      const objectiveTitle =
+                        observationObjectiveTitleAtTime(observation);
+                      return (
+                        <li key={observation.id}>
+                          <div>
+                            <strong>
+                              {observation.componentPositionAtTime}.{" "}
+                              {observation.componentLabelAtTime}
+                            </strong>
+                            <span>{ratingLabel(observation.rating)}</span>
+                          </div>
+                          {objectiveTitle ? (
+                            <p>
+                              <strong>Учебная цель в момент наблюдения:</strong>{" "}
+                              {objectiveTitle}
+                            </p>
+                          ) : null}
+                          <p>{observation.observableCriterionAtTime}</p>
+                          {observation.privateNote ? (
+                            <small>
+                              Личная заметка преподавателя:{" "}
+                              {observation.privateNote}
+                            </small>
+                          ) : null}
+                        </li>
+                      );
+                    })}
                   </ol>
                 ) : null}
               </li>

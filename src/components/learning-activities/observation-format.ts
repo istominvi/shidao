@@ -101,6 +101,12 @@ export function persistedCriterionForComponent(
   );
 }
 
+export function observationObjectiveTitleAtTime(
+  observation: Pick<LessonComponentObservation, "learningObjectiveTitleAtTime">,
+) {
+  return observation.learningObjectiveTitleAtTime?.trim() || null;
+}
+
 export function componentDisplayLabel(
   component: Pick<LessonComponent, "position" | "typeKey">,
 ) {

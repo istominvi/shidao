@@ -94,7 +94,7 @@ structured observation учитель сначала подтверждает к
 
 ## CURRENT: что уже существует
 
-В подтверждённом current production baseline:
+В подтверждённом current deployed application baseline LA-M1:
 
 - Course напрямую владеет Lessons, а Lesson — одним ordered списком Components;
 - Student Screen Slides являются только learner-facing presentation projection;
@@ -103,10 +103,8 @@ structured observation учитель сначала подтверждает к
 - payload, placement, defaults и capabilities валидируются общими Zod
   contracts;
 - ответы интерактивных renderer сейчас живут только в локальном preview state;
-- learner attempts, objective alignment, component evidence и skill state ещё
-  не сохраняются;
-- current Component payload/read models могут содержать answer keys и являются
-  authoring/preview contracts, а не безопасным learner assessment delivery;
+- learner attempts, evaluations, durable typed evidence и skill state ещё не
+  сохраняются;
 - LessonRun и compact LearningRecord уже сохраняют факт занятия, посещаемость,
   teacher comment и рекомендацию повторения;
 - learner-safe history/progress уже отделены от teacher-private raw history;
@@ -117,6 +115,41 @@ structured observation учитель сначала подтверждает к
   и не расширяет compact LearningRecord, learner-safe history или Component
   payload;
 - persisted Homework и детский learner runtime ещё не реализованы.
+
+В current production DB и ready application source LA-M2, dependent web
+rollout которого ещё предстоит:
+
+- Course владеет плоским списком `LearningObjective` с title, optional
+  description и archive state;
+- один Component имеет не больше одной optional primary objective и optional
+  роль `practice | assessment | survey`, причём Course ownership, archive state
+  и registry-supported role проверяются service и DB;
+- обычный Component editor создаёт, выбирает и архивирует objectives через тот
+  же `CourseBuilderApplicationService`, который используют AI и development
+  MCP; прямого альтернативного table workflow нет;
+- единственный component registry получил один optional `activityFacet`
+  contract. Он разделяет author payload, learner-safe delivery и server-private
+  evaluator config; malformed projection fail closed;
+- Student Screen и published catalog получают server-built learner-safe
+  payload без answer keys, evaluator config, objective ID и activity role;
+- новые immutable Course publication revisions используют schema V2 с
+  objective definitions и remapped Component alignment; прежние V1 revisions
+  остаются exact, читаются/копируются и не переписываются;
+- новые teacher observations сохраняют nullable live objective relation и
+  стабильные objective ID/title-at-time. Прежние component-only rows остаются
+  с `NULL` без backfill;
+- pure evidence-eligibility projection требует objective-at-time, observable
+  criterion и explicit `direct | bulk_confirmed` confirmation, различает
+  independent/support и positive/negative direction, но ничего не записывает
+  в objective state.
+
+LA-M2 production DB migrations:
+`20260820085049_learning_objectives_component_alignment.sql` и
+`20260820090529_course_publication_snapshot_v2.sql`. Обе применены owner
+`supabase_admin` к production PostgreSQL `15.8` с наблюдаемыми `COMMIT` после
+verified backup; read-only postflight подтвердил schema/RLS/ACL/RPC/FK/trigger,
+lock-order, publication V2, PostgREST visibility и неизменность legacy V1
+revision. Task commit и dependent web rollout пока не заявляются завершёнными.
 
 LA-M1 доставлен DB-first 20 августа 2026 года: exact migration применена с
 `COMMIT`, dependent source `25d7855831273ff5feea14473c2870b729ac39b3`
@@ -170,15 +203,19 @@ ComponentDefinition
     └── meaningful telemetry
 ```
 
-В target у `rich_text` этот facet отсутствует. У `choice_quiz` он появится, а
-poll будет помечен как survey и не будет обновлять предметное знание.
+В current source у passive `rich_text` facet отсутствует. Один и тот же
+optional facet задан для поддерживаемых activity types: poll поддерживает
+только `survey` и имеет evidence policy `never`; deterministic practice types
+поддерживают `practice | assessment`; `free_response` требует teacher review.
+Facet ещё не означает наличие learner execution runtime или persisted attempt.
 
 ### Component Instance
 
 Конкретный Component в Lesson: вопрос, варианты, контент, primary objective,
 роль активности, feedback и optional authored difficulty metadata. Авторская
-сложность не становится multiplier evidence без item calibration. В NEXT у
-одного Component достаточно одной primary Course objective. Поддержку
+сложность не становится multiplier evidence без item calibration. В current
+LA-M2 source у одного Component не больше одной primary Course objective.
+Поддержку
 нескольких целей нельзя добавлять, пока реальный workflow не докажет
 необходимость.
 
@@ -233,10 +270,10 @@ delayed feedback в review или withheld feedback до завершения as
 
 Структурированная отметка преподавателя во время очного или online занятия.
 Она имеет learner, LessonRun, Component context, значение, время и автора.
-После появления objective alignment новые наблюдения также получают objective
-context и могут стать evidence с provenance `teacher_observation`. Старые
-component-only наблюдения остаются честной историей и автоматически в mastery
-не переосмысливаются.
+Current LA-M2 source сохраняет у новых наблюдений objective context: nullable
+live FK, стабильный source objective UUID-at-time и title-at-time. Старые
+component-only наблюдения остаются честной историей с `NULL`, не получают
+backfill и автоматически в evidence/mastery не переосмысливаются.
 
 Bulk entry остаётся способом создать draft, а не автоматической гарантией
 evidence. Для влияния на objective state должны быть зафиксированы
@@ -246,7 +283,9 @@ learners действительно наблюдались. LA-M1 сохраня
 становится отдельным signal только если будущий evidence policy объяснит его
 шкалу и назначение.
 
-Current LA-M1 реализует только первый component-level слой этого понятия:
+Current production LA-M1, current production DB LA-M2 и ready source вместе
+реализуют только
+component-level history и objective provenance:
 
 - ровно одна текущая строка на `LearningRecord + source Component`;
 - nullable live Component FK и стабильный source UUID-at-time;
@@ -256,8 +295,14 @@ Current LA-M1 реализует только первый component-level сл�
   `not_observed`, `direct | bulk_confirmed` и optional private note;
 - recorder равен recorder родительского LearningRecord; draft меняется только
   пока Run фактически started и открыт, finalized history read-only;
-- наблюдение не является objective evidence/mastery до отдельного LA-M2/LA-M3
-  policy.
+- LA-M2 pure projection может назвать observation eligible/ineligible и вернуть
+  reason codes, support/direction, но не создаёт durable evidence, objective
+  state, recommendation или mastery; это остаётся LA-M3.
+
+Retention contract: archive objective сохраняет существующие alignment и
+history, но запрещает новое назначение archived objective. При физическом
+удалении live objective FK становится `NULL`, а stable UUID/title-at-time у
+observation остаются. Исторические LA-M1 rows не дополняются задним числом.
 
 ### Learning Evidence
 
@@ -480,8 +525,8 @@ component-level teacher observations, но ещё не объявляет их o
 
 Минимальный UX:
 
-1. текущая Lesson и Component; primary objective добавляется следующим
-   отдельным срезом;
+1. текущая Lesson и Component; ready source LA-M2 дополнительно показывает
+   optional primary objective, но deployed web rollout этой части ещё pending;
 2. короткий общий observable criterion-at-time; passive Component остаётся в
    navigator, но без критерия structured rating не создаётся; UI может
    предложить editable draft из Component instruction, но teacher явно его
@@ -662,8 +707,9 @@ contract tests, а не финальной косметической прове
 
 1. **CURRENT:** быстрые component-level teacher observations поверх
    существующего LessonRun, без заявления mastery;
-2. **NEXT:** Course objectives, один primary objective на Component и optional registry
-   activity facet;
+2. **CURRENT SOURCE / NEXT PRODUCTION:** Course objectives, одна optional
+   primary objective на Component, activity role и optional registry
+   `activityFacet` с learner-safe/evaluator projections;
 3. **NEXT:** history/objective-state projection для objective-aligned
    observations;
 4. **NEXT:** learner authorization и teacher-controlled live delivery;

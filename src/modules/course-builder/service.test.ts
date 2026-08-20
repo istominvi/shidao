@@ -7,9 +7,11 @@ import {
   type AddLessonInput,
   type CourseDraftInput,
   type CourseUpdateInput,
+  type CreateLearningObjectiveInput,
   type PrepareCourseAttachmentInput,
   type SetComponentStudentScreenInput,
   type UpdateLessonInput,
+  type UpdateLearningObjectiveInput,
 } from "./contracts";
 import type {
   CourseAsset,
@@ -18,11 +20,13 @@ import type {
   CourseLesson,
   CourseSummary,
   CourseWorkspace,
+  LearningObjective,
   LessonComponent,
   LessonStudentSlide,
 } from "./domain";
 import {
   getComponentDefinition,
+  type ActivityRole,
   type ComponentTypeKey,
 } from "./registry/contracts";
 import {
@@ -83,6 +87,7 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     [BOB_USER_ID, BOB_ACCOUNT_ID],
   ]);
   readonly courses = new Map<string, CourseSummary>();
+  readonly learningObjectives = new Map<string, LearningObjective>();
   readonly lessons = new Map<string, CourseLesson>();
   readonly components = new Map<string, LessonComponent>();
   readonly studentSlides = new Map<string, LessonStudentSlide>();
@@ -101,6 +106,8 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     componentId: string;
     payload?: Record<string, unknown>;
     placement?: Record<string, unknown>;
+    primaryLearningObjectiveId?: string | null;
+    activityRole?: ActivityRole | null;
   } | null = null;
 
   private sequence = 1_000;
@@ -161,6 +168,14 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
       lessonCount: lessons.length,
       lessons,
       attachments,
+      learningObjectives: [...this.learningObjectives.values()]
+        .filter((objective) => objective.courseId === courseId)
+        .sort(
+          (left, right) =>
+            left.createdAt.localeCompare(right.createdAt) ||
+            left.id.localeCompare(right.id),
+        )
+        .map((objective) => ({ ...objective })),
     };
   }
 
@@ -197,6 +212,54 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     return outcome;
   }
 
+  async createLearningObjective(
+    courseId: string,
+    input: CreateLearningObjectiveInput,
+  ) {
+    const objective: LearningObjective = {
+      id: this.createId(),
+      courseId,
+      title: input.title,
+      description: input.description,
+      archivedAt: null,
+      createdAt: NOW,
+      updatedAt: NOW,
+    };
+    this.learningObjectives.set(objective.id, objective);
+    return { ...objective };
+  }
+
+  async updateLearningObjective(
+    objectiveId: string,
+    input: UpdateLearningObjectiveInput,
+  ) {
+    const objective = this.learningObjectives.get(objectiveId);
+    if (!objective) return null;
+    const updated: LearningObjective = {
+      ...objective,
+      title: input.title ?? objective.title,
+      description:
+        input.description === undefined
+          ? objective.description
+          : input.description,
+      updatedAt: NOW,
+    };
+    this.learningObjectives.set(objectiveId, updated);
+    return { ...updated };
+  }
+
+  async archiveLearningObjective(objectiveId: string) {
+    const objective = this.learningObjectives.get(objectiveId);
+    if (!objective) return null;
+    const archived: LearningObjective = {
+      ...objective,
+      archivedAt: objective.archivedAt ?? NOW,
+      updatedAt: NOW,
+    };
+    this.learningObjectives.set(objectiveId, archived);
+    return { ...archived };
+  }
+
   async assembleDraft(input: CourseDraftAssemblyPlan) {
     const course = this.courses.get(input.courseId);
     if (!course) throw new Error("course not found");
@@ -207,6 +270,8 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
       const component = await this.addComponent({
         lessonId: lesson.id,
         ...planned,
+        primaryLearningObjectiveId: null,
+        activityRole: null,
       });
       componentIds.push(component.id);
     }
@@ -270,6 +335,8 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     schemaVersion: number;
     payload: Record<string, unknown>;
     placement: Record<string, unknown>;
+    primaryLearningObjectiveId: string | null;
+    activityRole: ActivityRole | null;
   }) {
     this.calls.addComponent += 1;
     const component: LessonComponent = {
@@ -282,6 +349,8 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
       placement: { ...input.placement },
       visibility: "staff_only",
       studentSlideId: null,
+      primaryLearningObjectiveId: input.primaryLearningObjectiveId,
+      activityRole: input.activityRole,
       createdAt: NOW,
       updatedAt: NOW,
     };
@@ -298,6 +367,8 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
     componentId: string;
     payload?: Record<string, unknown>;
     placement?: Record<string, unknown>;
+    primaryLearningObjectiveId?: string | null;
+    activityRole?: ActivityRole | null;
   }) {
     const component = this.components.get(input.componentId);
     if (!component) return null;
@@ -307,6 +378,14 @@ class InMemoryCourseBuilderRepository implements CourseBuilderRepository {
       ...component,
       payload: input.payload ?? component.payload,
       placement: input.placement ?? component.placement,
+      primaryLearningObjectiveId:
+        input.primaryLearningObjectiveId === undefined
+          ? component.primaryLearningObjectiveId
+          : input.primaryLearningObjectiveId,
+      activityRole:
+        input.activityRole === undefined
+          ? component.activityRole
+          : input.activityRole,
       updatedAt: NOW,
     };
     this.components.set(component.id, updated);
@@ -857,6 +936,272 @@ test("direct component authoring validates before persistence", async () => {
   });
 
   assert.equal(harness.repository.components.size, 2);
+  const legacyWorkspace = await harness.service.getCourse(alice, course.id);
+  assert.deepEqual(legacyWorkspace.learningObjectives, []);
+  assert.equal(
+    legacyWorkspace.lessons[0]?.components.every(
+      (component) =>
+        component.primaryLearningObjectiveId === null &&
+        component.activityRole === null,
+    ),
+    true,
+  );
+});
+
+test("LearningObjective create, select, update, archive, and reload preserve alignment", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(alice, courseInput());
+  const lesson = await createLesson(harness, alice, course.id);
+
+  const objective = await harness.service.createLearningObjective(
+    alice,
+    course.id,
+    {
+      title: "  Различает второй и третий тон  ",
+      description: "  Слышит различие в знакомых словах  ",
+    },
+  );
+  assert.equal(objective.title, "Различает второй и третий тон");
+  assert.equal(objective.description, "Слышит различие в знакомых словах");
+
+  const renamed = await harness.service.updateLearningObjective(
+    alice,
+    course.id,
+    objective.id,
+    { title: "Различает тоны в знакомых словах" },
+  );
+  assert.equal(renamed.title, "Различает тоны в знакомых словах");
+  assert.equal(renamed.description, "Слышит различие в знакомых словах");
+
+  const definition = getComponentDefinition("choice_quiz");
+  const component = await harness.service.addComponent(alice, {
+    lessonId: lesson.id,
+    typeKey: "choice_quiz",
+    payload: definition.defaultPayload,
+    placement: definition.defaultPlacement,
+    primaryLearningObjectiveId: objective.id,
+    activityRole: "assessment",
+  });
+  assert.equal(component.primaryLearningObjectiveId, objective.id);
+  assert.equal(component.activityRole, "assessment");
+
+  let workspace = await harness.service.getCourse(alice, course.id);
+  assert.equal(workspace.learningObjectives[0]?.title, renamed.title);
+  assert.equal(
+    workspace.learningObjectives[0]?.description,
+    "Слышит различие в знакомых словах",
+  );
+  assert.equal(
+    workspace.lessons[0]?.components[0]?.primaryLearningObjectiveId,
+    objective.id,
+  );
+
+  const archived = await harness.service.archiveLearningObjective(
+    alice,
+    course.id,
+    objective.id,
+  );
+  assert.notEqual(archived.archivedAt, null);
+
+  const editedAfterArchive = await harness.service.updateComponent(
+    alice,
+    component.id,
+    { activityRole: "practice" },
+  );
+  assert.equal(editedAfterArchive.primaryLearningObjectiveId, objective.id);
+  assert.equal(editedAfterArchive.activityRole, "practice");
+
+  workspace = await harness.service.getCourse(alice, course.id);
+  assert.notEqual(workspace.learningObjectives[0]?.archivedAt, null);
+  assert.equal(
+    workspace.lessons[0]?.components[0]?.primaryLearningObjectiveId,
+    objective.id,
+  );
+});
+
+test("service denies cross-Course and archived alignment plus unsupported roles", async () => {
+  const harness = createHarness();
+  const firstCourse = await harness.service.createDraft(alice, courseInput());
+  const secondCourse = await harness.service.createDraft(
+    alice,
+    courseInput({ title: "Второй курс" }),
+  );
+  const firstLesson = await createLesson(harness, alice, firstCourse.id);
+  const foreignObjective = await harness.service.createLearningObjective(
+    alice,
+    secondCourse.id,
+    { title: "Цель другого курса" },
+  );
+  const definition = getComponentDefinition("choice_quiz");
+
+  await assert.rejects(
+    () =>
+      harness.service.addComponent(alice, {
+        lessonId: firstLesson.id,
+        typeKey: "choice_quiz",
+        payload: definition.defaultPayload,
+        placement: definition.defaultPlacement,
+        primaryLearningObjectiveId: foreignObjective.id,
+        activityRole: "assessment",
+      }),
+    (error: unknown) =>
+      error instanceof CourseBuilderConflictError &&
+      error.code === "learning_objective_cross_course",
+  );
+
+  const archivedObjective = await harness.service.createLearningObjective(
+    alice,
+    firstCourse.id,
+    { title: "Архивная цель" },
+  );
+  await harness.service.archiveLearningObjective(
+    alice,
+    firstCourse.id,
+    archivedObjective.id,
+  );
+  await assert.rejects(
+    () =>
+      harness.service.addComponent(alice, {
+        lessonId: firstLesson.id,
+        typeKey: "choice_quiz",
+        payload: definition.defaultPayload,
+        placement: definition.defaultPlacement,
+        primaryLearningObjectiveId: archivedObjective.id,
+        activityRole: "practice",
+      }),
+    (error: unknown) =>
+      error instanceof CourseBuilderConflictError &&
+      error.code === "learning_objective_archived",
+  );
+
+  const textDefinition = getComponentDefinition("rich_text");
+  const passiveComponent = await harness.service.addComponent(alice, {
+    lessonId: firstLesson.id,
+    typeKey: "rich_text",
+    payload: textDefinition.defaultPayload,
+    placement: textDefinition.defaultPlacement,
+  });
+  await assert.rejects(
+    () =>
+      harness.service.updateComponent(alice, passiveComponent.id, {
+        activityRole: "assessment",
+      }),
+    (error: unknown) =>
+      error instanceof CourseBuilderConflictError &&
+      error.code === "component_activity_role_unsupported",
+  );
+
+  assert.equal(harness.repository.components.size, 1);
+});
+
+test("LearningObjective mutations enforce the Course owner boundary", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(alice, courseInput());
+  const objective = await harness.service.createLearningObjective(
+    alice,
+    course.id,
+    { title: "Различает тоны" },
+  );
+
+  await assert.rejects(
+    () =>
+      harness.service.createLearningObjective(bob, course.id, {
+        title: "Чужая цель",
+      }),
+    CourseBuilderAccessError,
+  );
+  await assert.rejects(
+    () =>
+      harness.service.updateLearningObjective(bob, course.id, objective.id, {
+        title: "Подменённая цель",
+      }),
+    CourseBuilderAccessError,
+  );
+  await assert.rejects(
+    () =>
+      harness.service.archiveLearningObjective(bob, course.id, objective.id),
+    CourseBuilderAccessError,
+  );
+
+  assert.equal(harness.repository.learningObjectives.size, 1);
+  assert.equal(
+    harness.repository.learningObjectives.get(objective.id)?.title,
+    "Различает тоны",
+  );
+  assert.equal(
+    harness.repository.learningObjectives.get(objective.id)?.archivedAt,
+    null,
+  );
+});
+
+test("component update denies a primary objective from another Course", async () => {
+  const harness = createHarness();
+  const firstCourse = await harness.service.createDraft(alice, courseInput());
+  const secondCourse = await harness.service.createDraft(
+    alice,
+    courseInput({ title: "Второй курс" }),
+  );
+  const lesson = await createLesson(harness, alice, firstCourse.id);
+  const objective = await harness.service.createLearningObjective(
+    alice,
+    secondCourse.id,
+    { title: "Цель второго курса" },
+  );
+  const definition = getComponentDefinition("choice_quiz");
+  const component = await harness.service.addComponent(alice, {
+    lessonId: lesson.id,
+    typeKey: "choice_quiz",
+    payload: definition.defaultPayload,
+    placement: definition.defaultPlacement,
+  });
+
+  await assert.rejects(
+    () =>
+      harness.service.updateComponent(alice, component.id, {
+        primaryLearningObjectiveId: objective.id,
+        activityRole: "assessment",
+      }),
+    (error: unknown) =>
+      error instanceof CourseBuilderConflictError &&
+      error.code === "learning_objective_cross_course",
+  );
+  assert.equal(harness.repository.calls.updateComponent, 0);
+});
+
+test("workspace read fails closed on a corrupted cross-Course alignment", async () => {
+  const harness = createHarness();
+  const course = await harness.service.createDraft(alice, courseInput());
+  const otherCourse = await harness.service.createDraft(
+    alice,
+    courseInput({ title: "Другой курс" }),
+  );
+  const lesson = await createLesson(harness, alice, course.id);
+  const foreignObjective = await harness.service.createLearningObjective(
+    alice,
+    otherCourse.id,
+    { title: "Чужая цель" },
+  );
+  const definition = getComponentDefinition("choice_quiz");
+  const component = await harness.repository.addComponent({
+    lessonId: lesson.id,
+    typeKey: "choice_quiz",
+    schemaVersion: definition.version,
+    payload: definition.defaultPayload,
+    placement: definition.defaultPlacement,
+    primaryLearningObjectiveId: foreignObjective.id,
+    activityRole: "assessment",
+  });
+
+  await assert.rejects(
+    () => harness.service.getCourse(alice, course.id),
+    (error: unknown) =>
+      error instanceof CourseBuilderConflictError &&
+      error.code === "learning_objective_cross_course",
+  );
+  assert.equal(
+    harness.repository.components.get(component.id)?.primaryLearningObjectiveId,
+    foreignObjective.id,
+  );
 });
 
 test("legacy heading remains readable and editable without being creatable", async () => {
@@ -876,6 +1221,8 @@ test("legacy heading remains readable and editable without being creatable", asy
     placement: { width: "content", textAlign: "start" },
     visibility: "staff_only",
     studentSlideId: null,
+    primaryLearningObjectiveId: null,
+    activityRole: null,
     createdAt: NOW,
     updatedAt: NOW,
   };
@@ -883,6 +1230,12 @@ test("legacy heading remains readable and editable without being creatable", asy
 
   const workspace = await harness.service.getCourse(alice, course.id);
   assert.equal(workspace.lessons[0]?.components[0]?.typeKey, "heading");
+  assert.equal(
+    workspace.lessons[0]?.components[0]?.primaryLearningObjectiveId,
+    null,
+  );
+  assert.equal(workspace.lessons[0]?.components[0]?.activityRole, null);
+  assert.deepEqual(workspace.learningObjectives, []);
 
   const updated = await harness.service.updateComponent(
     alice,

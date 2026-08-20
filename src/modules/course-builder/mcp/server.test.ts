@@ -42,13 +42,17 @@ function serviceDouble(
     createDraft: unavailable,
     getCourse: unavailable,
     addLesson: unavailable,
+    createLearningObjective: unavailable,
+    archiveLearningObjective: unavailable,
     addComponent: unavailable,
+    updateComponent: unavailable,
+    setComponentStudentScreen: unavailable,
     reorderComponent: unavailable,
     ...overrides,
   } as CourseBuilderApplicationService;
 }
 
-test("stdio MCP advertises exactly six tools with canonical JSON schemas", async () => {
+test("stdio MCP advertises every canonical Course Builder tool schema", async () => {
   let contextCalls = 0;
   const { client, server } = await connectTestClient({
     resolveContext: async () => {
@@ -69,12 +73,26 @@ test("stdio MCP advertises exactly six tools with canonical JSON schemas", async
     const addComponent = listed.tools.find(
       (tool) => tool.name === "lesson.add_component",
     );
+    const createObjective = listed.tools.find(
+      (tool) => tool.name === "course.create_learning_objective",
+    );
+    const updateComponent = listed.tools.find(
+      (tool) => tool.name === "lesson.update_component",
+    );
     const addComponentSchema = JSON.stringify(addComponent?.inputSchema);
     assert.match(JSON.stringify(createDraft?.inputSchema), /targetLessonCount/);
     assert.match(addComponentSchema, /single_choice_poll/);
     assert.match(addComponentSchema, /lessonId/);
     assert.doesNotMatch(addComponentSchema, /lessonStepId/);
     assert.doesNotMatch(addComponentSchema, /"const":"heading"/);
+    const createObjectiveSchema = JSON.stringify(createObjective?.inputSchema);
+    assert.match(createObjectiveSchema, /courseId/);
+    assert.match(createObjectiveSchema, /title/);
+    assert.match(createObjectiveSchema, /description/);
+    const updateComponentSchema = JSON.stringify(updateComponent?.inputSchema);
+    assert.match(updateComponentSchema, /componentId/);
+    assert.match(updateComponentSchema, /primaryLearningObjectiveId/);
+    assert.match(updateComponentSchema, /activityRole/);
   } finally {
     await client.close();
     await server.close().catch(() => undefined);

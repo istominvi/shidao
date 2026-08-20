@@ -1,5 +1,8 @@
 import type { CourseLearningAudience } from "@/modules/course-builder/learning-audience";
-import type { ComponentTypeKey } from "@/modules/course-builder/registry/contracts";
+import type {
+  ActivityRole,
+  ComponentTypeKey,
+} from "@/modules/course-builder/registry/contracts";
 
 export type CoursePublicationStatus = "published" | "unpublished";
 export type EducatorCourseReviewStatus = "pending" | "approved" | "rejected";
@@ -102,10 +105,10 @@ export type PublicationSnapshotSlide = {
   position: number;
 };
 
-export type PublicationSnapshotComponent = {
+export type PublicationSnapshotComponentV1 = {
   ref: string;
   position: number;
-  typeKey: string;
+  typeKey: ComponentTypeKey;
   schemaVersion: number;
   payload: Record<string, unknown>;
   placement: Record<string, unknown>;
@@ -113,30 +116,70 @@ export type PublicationSnapshotComponent = {
   studentSlideRef: string | null;
 };
 
-export type PublicationSnapshotLesson = {
+export type PublicationSnapshotComponentV2 = PublicationSnapshotComponentV1 & {
+  primaryObjectiveRef: string | null;
+  activityRole: ActivityRole | null;
+};
+
+export type PublicationSnapshotComponent =
+  PublicationSnapshotComponentV1 | PublicationSnapshotComponentV2;
+
+export type PublicationSnapshotLessonV1 = {
   ref: string;
   position: number;
   title: string;
   summary: string;
   estimatedDurationMinutes: number | null;
-  components: PublicationSnapshotComponent[];
+  components: PublicationSnapshotComponentV1[];
   slides: PublicationSnapshotSlide[];
 };
 
-export type CoursePublicationSnapshot = {
+export type PublicationSnapshotLessonV2 = Omit<
+  PublicationSnapshotLessonV1,
+  "components"
+> & {
+  components: PublicationSnapshotComponentV2[];
+};
+
+export type PublicationSnapshotLesson =
+  PublicationSnapshotLessonV1 | PublicationSnapshotLessonV2;
+
+export type PublicationSnapshotObjective = {
+  ref: string;
+  position: number;
+  title: string;
+  description: string | null;
+  archivedAt: string | null;
+};
+
+type PublicationSnapshotCourse = Pick<
+  CourseCatalogEntry,
+  | "title"
+  | "subject"
+  | "goal"
+  | "level"
+  | "audienceDescription"
+  | "targetLessonCount"
+>;
+
+/** Immutable legacy shape. Keep exact: old revisions are read, never rewritten. */
+export type CoursePublicationSnapshotV1 = {
   schemaVersion: 1;
-  course: Pick<
-    CourseCatalogEntry,
-    | "title"
-    | "subject"
-    | "goal"
-    | "level"
-    | "audienceDescription"
-    | "targetLessonCount"
-  >;
-  lessons: PublicationSnapshotLesson[];
+  course: PublicationSnapshotCourse;
+  lessons: PublicationSnapshotLessonV1[];
   materials: PublicationSnapshotMaterial[];
 };
+
+export type CoursePublicationSnapshotV2 = {
+  schemaVersion: 2;
+  course: PublicationSnapshotCourse;
+  objectives: PublicationSnapshotObjective[];
+  lessons: PublicationSnapshotLessonV2[];
+  materials: PublicationSnapshotMaterial[];
+};
+
+export type CoursePublicationSnapshot =
+  CoursePublicationSnapshotV1 | CoursePublicationSnapshotV2;
 
 export type PublicationAssetManifestItem = Omit<
   PublicationSnapshotMaterial,
@@ -159,6 +202,7 @@ export type ClonedAssetManifestItem = Omit<
 };
 
 export type PublicationIdMap = {
+  objectives: Array<{ ref: string; id: string }>;
   lessons: Array<{ ref: string; id: string }>;
   components: Array<{ ref: string; id: string }>;
   slides: Array<{ ref: string; id: string }>;

@@ -385,7 +385,7 @@ function parseRpc<T>(operation: string, value: unknown, schema: ZodType<T>): T {
   );
 }
 
-function parseSnapshot(value: unknown) {
+function parseSnapshot(value: unknown): CoursePublicationSnapshot {
   const parsed = coursePublicationSnapshotSchema.safeParse(value);
   if (parsed.success) return parsed.data;
   throw new CoursePublicationRepositoryError(

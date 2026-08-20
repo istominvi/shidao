@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   componentDisplayLabel,
   observationsForComponent,
+  observationObjectiveTitleAtTime,
   persistedCriterionForComponent,
   ratingLabel,
   suggestObservableCriterion,
@@ -20,6 +21,9 @@ function observation(
     learningRecordId,
     lessonComponentId: "component-1",
     sourceComponentIdAtTime: "component-1",
+    learningObjectiveId: null,
+    sourceLearningObjectiveIdAtTime: null,
+    learningObjectiveTitleAtTime: null,
     componentPositionAtTime: 1,
     componentTypeAtTime: "free_response",
     componentLabelAtTime: "Свободный ответ",
@@ -92,4 +96,24 @@ test("criterion suggestion is derived from visible component copy", () => {
   assert.equal(ratingLabel("with_support"), "С помощью");
   assert.equal(ratingLabel("not_yet"), "Пока не получилось");
   assert.equal(ratingLabel(null), "Не наблюдал");
+});
+
+test("objective-at-time formatter keeps legacy rows empty and preserves history", () => {
+  const legacy = observation({
+    learningRecordId: "record-legacy",
+    rating: "independent",
+  });
+  const aligned = observation({
+    learningRecordId: "record-aligned",
+    rating: "with_support",
+    learningObjectiveId: null,
+    sourceLearningObjectiveIdAtTime: "objective-deleted",
+    learningObjectiveTitleAtTime: "Различает второй и третий тон",
+  });
+
+  assert.equal(observationObjectiveTitleAtTime(legacy), null);
+  assert.equal(
+    observationObjectiveTitleAtTime(aligned),
+    "Различает второй и третий тон",
+  );
 });

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Real multi-session concurrency acceptance harness for LA-M1.
+# Real multi-session concurrency acceptance harness for LA-M2.
 #
 # This suite commits deliberately disposable fixtures so that independent psql
 # sessions can see them. It is guarded by the exact database name below and a
@@ -22,7 +22,7 @@ db_name="$(
     'select current_database()'
 )"
 if [[ "$db_name" != "shidao_learning_activity_test" ]]; then
-  echo "Refusing LA-M1 concurrency fixtures for database '$db_name'; expected exactly 'shidao_learning_activity_test'." >&2
+  echo "Refusing LA-M2 concurrency fixtures for database '$db_name'; expected exactly 'shidao_learning_activity_test'." >&2
   exit 2
 fi
 
@@ -36,16 +36,123 @@ schema_marker="$(
        and to_regclass('public.lesson_run') is not null
        and to_regclass('public.learning_record') is not null
        and to_regclass('public.lesson_component_observation') is not null
+       and to_regclass('public.learning_objective') is not null
+       and exists (
+         select 1
+         from information_schema.columns
+         where table_schema = 'public'
+           and table_name = 'lesson_component'
+           and column_name in (
+             'primary_learning_objective_id',
+             'activity_role'
+           )
+         group by table_schema, table_name
+         having count(*) = 2
+       )
+       and exists (
+         select 1
+         from information_schema.columns
+         where table_schema = 'public'
+           and table_name = 'lesson_component_observation'
+           and column_name in (
+             'learning_objective_id',
+             'source_learning_objective_id_at_time',
+             'learning_objective_title_at_time'
+           )
+         group by table_schema, table_name
+         having count(*) = 3
+       )
+       and to_regprocedure(
+         'public.update_learning_objective(uuid,text,boolean,text,boolean)'
+       ) is not null
+       and to_regprocedure(
+         'public.create_learning_objective(uuid,text,text)'
+       ) is not null
+       and to_regprocedure(
+         'public.archive_learning_objective(uuid)'
+       ) is not null
+       and to_regprocedure(
+         'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
+       ) is not null
        and to_regprocedure(
          'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)'
        ) is not null
        and to_regprocedure(
          'public.complete_lesson_run_v2(uuid,jsonb,text,timestamp with time zone,integer)'
        ) is not null
-     then 'shidao-learning-activity-la-m1' else '' end"
+       and to_regprocedure(
+         'public.publish_course_revision_admin(uuid,uuid,uuid,uuid,text,jsonb,jsonb,boolean)'
+       ) is not null
+       and position(
+         'for update of component'
+         in lower(pg_get_functiondef(to_regprocedure(
+           'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)'
+         )))
+       ) > 0
+       and position(
+         'for key share of objective'
+         in lower(pg_get_functiondef(to_regprocedure(
+           'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)'
+         )))
+       ) > 0
+       and position(
+         'for share of objective'
+         in lower(pg_get_functiondef(to_regprocedure(
+           'public.publish_course_revision_admin(uuid,uuid,uuid,uuid,text,jsonb,jsonb,boolean)'
+         )))
+       ) > 0
+       and position(
+         'for update of course'
+         in lower(pg_get_functiondef(to_regprocedure(
+           'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
+         )))
+       ) > 0
+       and position(
+         'for update of lesson'
+         in lower(pg_get_functiondef(to_regprocedure(
+           'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
+         )))
+       ) > position(
+         'for update of course'
+         in lower(pg_get_functiondef(to_regprocedure(
+           'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
+         )))
+       )
+       and position(
+         'for update of component'
+         in lower(pg_get_functiondef(to_regprocedure(
+           'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
+         )))
+       ) > position(
+         'for update of lesson'
+         in lower(pg_get_functiondef(to_regprocedure(
+           'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
+         )))
+       )
+       and position(
+         'for key share of objective'
+         in lower(pg_get_functiondef(to_regprocedure(
+           'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
+         )))
+       ) > position(
+         'for update of component'
+         in lower(pg_get_functiondef(to_regprocedure(
+           'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
+         )))
+       )
+       and exists (
+         select 1
+         from pg_constraint as constraint_row
+         where constraint_row.conrelid =
+             'public.course_publication_revision'::regclass
+           and constraint_row.conname =
+             'course_publication_revision_snapshot_check'
+           and pg_get_constraintdef(constraint_row.oid) like '%schemaVersion%2%'
+       )
+     then 'shidao-learning-activity-la-m2-publication-v2' else '' end"
 )"
-if [[ "$schema_marker" != "shidao-learning-activity-la-m1" ]]; then
-  echo "Refusing fixtures: '$db_name' is not a fully migrated ShiDao LA-M1 test database." >&2
+if [[ "$schema_marker" != "shidao-learning-activity-la-m2-publication-v2" ]]; then
+  echo "Refusing fixtures: '$db_name' is not a fully migrated ShiDao LA-M2/publication-V2 test database." >&2
   exit 2
 fi
 
@@ -58,6 +165,14 @@ race_three_delete_log="$task_log_dir/race-three-delete.log"
 race_three_completion_log="$task_log_dir/race-three-completion.log"
 race_four_completion_log="$task_log_dir/race-four-completion.log"
 race_four_delete_log="$task_log_dir/race-four-delete.log"
+race_five_alignment_log="$task_log_dir/race-five-alignment.log"
+race_five_save_log="$task_log_dir/race-five-save.log"
+race_six_save_log="$task_log_dir/race-six-save.log"
+race_six_alignment_log="$task_log_dir/race-six-alignment.log"
+race_seven_publish_log="$task_log_dir/race-seven-publish.log"
+race_seven_objective_log="$task_log_dir/race-seven-objective.log"
+race_eight_objective_log="$task_log_dir/race-eight-objective.log"
+race_eight_publish_log="$task_log_dir/race-eight-publish.log"
 
 race_one_save_pid=""
 race_one_completion_pid=""
@@ -67,6 +182,14 @@ race_three_delete_pid=""
 race_three_completion_pid=""
 race_four_completion_pid=""
 race_four_delete_pid=""
+race_five_alignment_pid=""
+race_five_save_pid=""
+race_six_save_pid=""
+race_six_alignment_pid=""
+race_seven_publish_pid=""
+race_seven_objective_pid=""
+race_eight_objective_pid=""
+race_eight_publish_pid=""
 
 cleanup_fixtures() {
   psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 >/dev/null <<'SQL'
@@ -90,7 +213,9 @@ where learning_record_id in (
   'ca800000-0000-4000-8000-000000000001',
   'ca800000-0000-4000-8000-000000000002',
   'ca800000-0000-4000-8000-000000000003',
-  'ca800000-0000-4000-8000-000000000004'
+  'ca800000-0000-4000-8000-000000000004',
+  'ca800000-0000-4000-8000-000000000005',
+  'ca800000-0000-4000-8000-000000000006'
 );
 
 delete from public.learning_record
@@ -98,7 +223,9 @@ where id in (
   'ca800000-0000-4000-8000-000000000001',
   'ca800000-0000-4000-8000-000000000002',
   'ca800000-0000-4000-8000-000000000003',
-  'ca800000-0000-4000-8000-000000000004'
+  'ca800000-0000-4000-8000-000000000004',
+  'ca800000-0000-4000-8000-000000000005',
+  'ca800000-0000-4000-8000-000000000006'
 );
 
 delete from public.lesson_run
@@ -106,7 +233,9 @@ where id in (
   'ca700000-0000-4000-8000-000000000001',
   'ca700000-0000-4000-8000-000000000002',
   'ca700000-0000-4000-8000-000000000003',
-  'ca700000-0000-4000-8000-000000000004'
+  'ca700000-0000-4000-8000-000000000004',
+  'ca700000-0000-4000-8000-000000000005',
+  'ca700000-0000-4000-8000-000000000006'
 );
 
 delete from public.lesson_component
@@ -114,7 +243,9 @@ where id in (
   'ca600000-0000-4000-8000-000000000001',
   'ca600000-0000-4000-8000-000000000002',
   'ca600000-0000-4000-8000-000000000003',
-  'ca600000-0000-4000-8000-000000000004'
+  'ca600000-0000-4000-8000-000000000004',
+  'ca600000-0000-4000-8000-000000000005',
+  'ca600000-0000-4000-8000-000000000006'
 );
 
 delete from public.lesson
@@ -122,11 +253,45 @@ where id in (
   'ca500000-0000-4000-8000-000000000001',
   'ca500000-0000-4000-8000-000000000002',
   'ca500000-0000-4000-8000-000000000003',
-  'ca500000-0000-4000-8000-000000000004'
+  'ca500000-0000-4000-8000-000000000004',
+  'ca500000-0000-4000-8000-000000000005',
+  'ca500000-0000-4000-8000-000000000006',
+  'cb500000-0000-4000-8000-000000000001',
+  'cb500000-0000-4000-8000-000000000002'
+);
+
+delete from public.course_publication_asset
+where revision_id in (
+  'cbb00000-0000-4000-8000-000000000001',
+  'cbb00000-0000-4000-8000-000000000002'
+);
+
+delete from public.course_publication_revision
+where id in (
+  'cbb00000-0000-4000-8000-000000000001',
+  'cbb00000-0000-4000-8000-000000000002'
+);
+
+delete from public.course_publication
+where id in (
+  'cba00000-0000-4000-8000-000000000001',
+  'cba00000-0000-4000-8000-000000000002'
+);
+
+delete from public.learning_objective
+where id in (
+  'ca410000-0000-4000-8000-000000000001',
+  'ca410000-0000-4000-8000-000000000002',
+  'cb410000-0000-4000-8000-000000000001',
+  'cb410000-0000-4000-8000-000000000002'
 );
 
 delete from public.course
-where id = 'ca400000-0000-4000-8000-000000000001';
+where id in (
+  'ca400000-0000-4000-8000-000000000001',
+  'cb400000-0000-4000-8000-000000000001',
+  'cb400000-0000-4000-8000-000000000002'
+);
 
 delete from public.learner_profile
 where id = 'ca300000-0000-4000-8000-000000000001';
@@ -149,6 +314,16 @@ stop_background_session() {
   fi
 }
 
+print_session_log() {
+  local label="$1"
+  local log_file="$2"
+
+  if [[ -s "$log_file" ]]; then
+    echo "--- $label (disposable fixture session) ---" >&2
+    sed -n '1,160p' "$log_file" >&2
+  fi
+}
+
 cleanup() {
   local exit_status=$?
   local cleanup_status=0
@@ -162,9 +337,17 @@ cleanup() {
   stop_background_session "$race_three_completion_pid"
   stop_background_session "$race_four_completion_pid"
   stop_background_session "$race_four_delete_pid"
+  stop_background_session "$race_five_alignment_pid"
+  stop_background_session "$race_five_save_pid"
+  stop_background_session "$race_six_save_pid"
+  stop_background_session "$race_six_alignment_pid"
+  stop_background_session "$race_seven_publish_pid"
+  stop_background_session "$race_seven_objective_pid"
+  stop_background_session "$race_eight_objective_pid"
+  stop_background_session "$race_eight_publish_pid"
 
   if ! cleanup_fixtures; then
-    echo "LA-M1 concurrency fixture cleanup failed." >&2
+    echo "LA-M2 concurrency fixture cleanup failed." >&2
     cleanup_status=1
   fi
 
@@ -176,7 +359,15 @@ cleanup() {
     "$race_three_delete_log" \
     "$race_three_completion_log" \
     "$race_four_completion_log" \
-    "$race_four_delete_log"
+    "$race_four_delete_log" \
+    "$race_five_alignment_log" \
+    "$race_five_save_log" \
+    "$race_six_save_log" \
+    "$race_six_alignment_log" \
+    "$race_seven_publish_log" \
+    "$race_seven_objective_log" \
+    "$race_eight_objective_log" \
+    "$race_eight_publish_log"
   rmdir "$task_log_dir" 2>/dev/null || true
 
   if [[ "$exit_status" -eq 0 && "$cleanup_status" -eq 0 ]]; then
@@ -253,17 +444,50 @@ insert into public.course (
   owner_account_id,
   title,
   subject,
+  goal,
+  level,
+  audience_description,
+  target_lesson_count,
   audience_type,
   learning_audience
 )
-values (
-  'ca400000-0000-4000-8000-000000000001',
-  'ca200000-0000-4000-8000-000000000001',
-  'LA-M1 concurrency course',
-  'Русский язык',
-  'learner_profile',
-  'children'
-);
+values
+  (
+    'ca400000-0000-4000-8000-000000000001',
+    'ca200000-0000-4000-8000-000000000001',
+    'LA-M2 concurrency course',
+    'Русский язык',
+    'Concurrency acceptance goal',
+    'A1',
+    'Disposable concurrency learners',
+    6,
+    'learner_profile',
+    'children'
+  ),
+  (
+    'cb400000-0000-4000-8000-000000000001',
+    'ca200000-0000-4000-8000-000000000001',
+    'LA-M2 publication-first course',
+    'Русский язык',
+    'Publication-first consistency goal',
+    'A1',
+    'Disposable publication learners',
+    1,
+    'learner_profile',
+    'children'
+  ),
+  (
+    'cb400000-0000-4000-8000-000000000002',
+    'ca200000-0000-4000-8000-000000000001',
+    'LA-M2 objective-first course',
+    'Русский язык',
+    'Objective-first consistency goal',
+    'A1',
+    'Disposable publication learners',
+    1,
+    'learner_profile',
+    'children'
+  );
 
 insert into public.lesson (id, course_id, position, title)
 values
@@ -290,6 +514,67 @@ values
     'ca400000-0000-4000-8000-000000000001',
     4,
     'Completion wins before component deletion'
+  ),
+  (
+    'ca500000-0000-4000-8000-000000000005',
+    'ca400000-0000-4000-8000-000000000001',
+    5,
+    'Alignment wins before observation save'
+  ),
+  (
+    'ca500000-0000-4000-8000-000000000006',
+    'ca400000-0000-4000-8000-000000000001',
+    6,
+    'Observation save wins before alignment'
+  ),
+  (
+    'cb500000-0000-4000-8000-000000000001',
+    'cb400000-0000-4000-8000-000000000001',
+    1,
+    'Publication-first lesson'
+  ),
+  (
+    'cb500000-0000-4000-8000-000000000002',
+    'cb400000-0000-4000-8000-000000000002',
+    1,
+    'Objective-first lesson'
+  );
+
+insert into public.learning_objective (
+  id,
+  course_id,
+  title,
+  description,
+  archived_at
+)
+values
+  (
+    'ca410000-0000-4000-8000-000000000001',
+    'ca400000-0000-4000-8000-000000000001',
+    'Concurrency objective A',
+    null,
+    null
+  ),
+  (
+    'ca410000-0000-4000-8000-000000000002',
+    'ca400000-0000-4000-8000-000000000001',
+    'Concurrency objective B',
+    null,
+    null
+  ),
+  (
+    'cb410000-0000-4000-8000-000000000001',
+    'cb400000-0000-4000-8000-000000000001',
+    'Publication objective before update',
+    null,
+    null
+  ),
+  (
+    'cb410000-0000-4000-8000-000000000002',
+    'cb400000-0000-4000-8000-000000000002',
+    'Objective pending update',
+    null,
+    null
   );
 
 insert into public.lesson_component (
@@ -337,7 +622,30 @@ values
     '{}'::jsonb,
     '{}'::jsonb,
     'staff_only'
+  ),
+  (
+    'ca600000-0000-4000-8000-000000000005',
+    'ca500000-0000-4000-8000-000000000005',
+    1,
+    'discussion',
+    '{}'::jsonb,
+    '{}'::jsonb,
+    'staff_only'
+  ),
+  (
+    'ca600000-0000-4000-8000-000000000006',
+    'ca500000-0000-4000-8000-000000000006',
+    1,
+    'discussion',
+    '{}'::jsonb,
+    '{}'::jsonb,
+    'staff_only'
   );
+
+update public.lesson_component
+set primary_learning_objective_id =
+  'ca410000-0000-4000-8000-000000000001'
+where id = 'ca600000-0000-4000-8000-000000000006';
 
 insert into public.lesson_run (
   id,
@@ -378,6 +686,22 @@ values
     '2026-08-20 13:00:00+09',
     45,
     '2026-08-20 13:05:00+09',
+    true
+  ),
+  (
+    'ca700000-0000-4000-8000-000000000005',
+    'ca500000-0000-4000-8000-000000000005',
+    '2026-08-20 14:00:00+09',
+    45,
+    '2026-08-20 14:05:00+09',
+    true
+  ),
+  (
+    'ca700000-0000-4000-8000-000000000006',
+    'ca500000-0000-4000-8000-000000000006',
+    '2026-08-20 15:00:00+09',
+    45,
+    '2026-08-20 15:05:00+09',
     true
   );
 
@@ -420,6 +744,22 @@ values
     'ca700000-0000-4000-8000-000000000004',
     'ca400000-0000-4000-8000-000000000001',
     'ca500000-0000-4000-8000-000000000004',
+    'ca200000-0000-4000-8000-000000000001'
+  ),
+  (
+    'ca800000-0000-4000-8000-000000000005',
+    'ca300000-0000-4000-8000-000000000001',
+    'ca700000-0000-4000-8000-000000000005',
+    'ca400000-0000-4000-8000-000000000001',
+    'ca500000-0000-4000-8000-000000000005',
+    'ca200000-0000-4000-8000-000000000001'
+  ),
+  (
+    'ca800000-0000-4000-8000-000000000006',
+    'ca300000-0000-4000-8000-000000000001',
+    'ca700000-0000-4000-8000-000000000006',
+    'ca400000-0000-4000-8000-000000000001',
+    'ca500000-0000-4000-8000-000000000006',
     'ca200000-0000-4000-8000-000000000001'
   );
 
@@ -482,6 +822,14 @@ race_three_delete_app="la_m1_${session_suffix}_delete_before_completion"
 race_three_completion_app="la_m1_${session_suffix}_completion_after_delete"
 race_four_completion_app="la_m1_${session_suffix}_completion_before_delete"
 race_four_delete_app="la_m1_${session_suffix}_delete_after_completion"
+race_five_alignment_app="la_m2_${session_suffix}_alignment_before_save"
+race_five_save_app="la_m2_${session_suffix}_save_after_alignment"
+race_six_save_app="la_m2_${session_suffix}_save_before_alignment"
+race_six_alignment_app="la_m2_${session_suffix}_alignment_after_save"
+race_seven_publish_app="la_m2_${session_suffix}_publish_before_objective"
+race_seven_objective_app="la_m2_${session_suffix}_objective_after_publish"
+race_eight_objective_app="la_m2_${session_suffix}_objective_before_publish"
+race_eight_publish_app="la_m2_${session_suffix}_publish_after_objective"
 
 wait_for_sleeping_session() {
   local application_name="$1"
@@ -1037,5 +1385,579 @@ race_four_state="$(
 )"
 if [[ "$race_four_state" != "serialized" ]]; then
   echo "Race 4 did not retain finalized at-time evidence after Component deletion." >&2
+  exit 1
+fi
+
+# Race 5: canonical alignment owns Course -> Lesson -> Component until commit.
+# Observation save must wait, then snapshot the committed aligned objective
+# from server-owned state.
+PGAPPNAME="$race_five_alignment_app" \
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  >"$race_five_alignment_log" 2>&1 <<'SQL' &
+begin;
+set local statement_timeout = '15s';
+do $guard$
+begin
+  if current_database() <> 'shidao_learning_activity_test' then
+    raise exception 'learning_activity_concurrency_wrong_database'
+      using errcode = '42501';
+  end if;
+end
+$guard$;
+select set_config(
+  'request.jwt.claim.sub',
+  'ca100000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select count(*)
+from public.update_lesson_component_v2(
+  'ca600000-0000-4000-8000-000000000005',
+  null,
+  false,
+  null,
+  false,
+  'ca410000-0000-4000-8000-000000000001',
+  true,
+  null,
+  false
+);
+select pg_sleep(6);
+commit;
+SQL
+race_five_alignment_pid=$!
+
+if ! wait_for_sleeping_session \
+  "$race_five_alignment_app" \
+  "$race_five_alignment_pid"; then
+  echo "Race 5 alignment did not reach its canonical lock hold." >&2
+  exit 1
+fi
+
+PGAPPNAME="$race_five_save_app" \
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  >"$race_five_save_log" 2>&1 <<'SQL' &
+begin;
+set local statement_timeout = '15s';
+do $guard$
+begin
+  if current_database() <> 'shidao_learning_activity_test' then
+    raise exception 'learning_activity_concurrency_wrong_database'
+      using errcode = '42501';
+  end if;
+end
+$guard$;
+select set_config(
+  'request.jwt.claim.sub',
+  'ca100000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select count(*)
+from public.save_lesson_component_observations(
+  'ca700000-0000-4000-8000-000000000005',
+  'ca600000-0000-4000-8000-000000000005',
+  'Alignment-first context',
+  'Snapshots committed alignment',
+  'direct',
+  '[{"learningRecordId":"ca800000-0000-4000-8000-000000000005","rating":"independent"}]'::jsonb
+);
+commit;
+SQL
+race_five_save_pid=$!
+
+if ! wait_for_blocked_pair \
+  "$race_five_save_app" \
+  "$race_five_alignment_app" \
+  "$race_five_save_pid"; then
+  echo "Race 5 observation save was not observed waiting on alignment." >&2
+  exit 1
+fi
+
+set +e
+wait "$race_five_alignment_pid"
+race_five_alignment_status=$?
+race_five_alignment_pid=""
+wait "$race_five_save_pid"
+race_five_save_status=$?
+race_five_save_pid=""
+set -e
+
+if [[ "$race_five_alignment_status" -ne 0 ]] \
+  || [[ "$race_five_save_status" -ne 0 ]]; then
+  echo "Race 5 alignment/save transactions did not both succeed." >&2
+  exit 1
+fi
+
+race_five_state="$(
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc \
+    "select case when
+       exists (
+         select 1
+         from public.lesson_component
+         where id = 'ca600000-0000-4000-8000-000000000005'
+           and primary_learning_objective_id =
+             'ca410000-0000-4000-8000-000000000001'
+       )
+       and exists (
+         select 1
+         from public.lesson_component_observation
+         where learning_record_id =
+             'ca800000-0000-4000-8000-000000000005'
+           and learning_objective_id =
+             'ca410000-0000-4000-8000-000000000001'
+           and source_learning_objective_id_at_time =
+             'ca410000-0000-4000-8000-000000000001'
+           and learning_objective_title_at_time =
+             'Concurrency objective A'
+           and rating = 'independent'
+       )
+     then 'serialized' else '' end"
+)"
+if [[ "$race_five_state" != "serialized" ]]; then
+  echo "Race 5 did not snapshot the committed Component alignment." >&2
+  exit 1
+fi
+
+# Race 6: observation save owns Lesson -> Component first and snapshots
+# objective A. Canonical alignment owns Course and waits on Lesson, then moves
+# only live Component state to B; persisted at-time provenance remains A.
+PGAPPNAME="$race_six_save_app" \
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  >"$race_six_save_log" 2>&1 <<'SQL' &
+begin;
+set local statement_timeout = '15s';
+do $guard$
+begin
+  if current_database() <> 'shidao_learning_activity_test' then
+    raise exception 'learning_activity_concurrency_wrong_database'
+      using errcode = '42501';
+  end if;
+end
+$guard$;
+select set_config(
+  'request.jwt.claim.sub',
+  'ca100000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select count(*)
+from public.save_lesson_component_observations(
+  'ca700000-0000-4000-8000-000000000006',
+  'ca600000-0000-4000-8000-000000000006',
+  'Save-first context',
+  'Retains objective at observation time',
+  'bulk_confirmed',
+  '[{"learningRecordId":"ca800000-0000-4000-8000-000000000006","rating":"not_yet"}]'::jsonb
+);
+select pg_sleep(6);
+commit;
+SQL
+race_six_save_pid=$!
+
+if ! wait_for_sleeping_session \
+  "$race_six_save_app" \
+  "$race_six_save_pid"; then
+  echo "Race 6 save did not reach its Lesson/Component lock hold." >&2
+  exit 1
+fi
+
+PGAPPNAME="$race_six_alignment_app" \
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  >"$race_six_alignment_log" 2>&1 <<'SQL' &
+begin;
+set local statement_timeout = '15s';
+do $guard$
+begin
+  if current_database() <> 'shidao_learning_activity_test' then
+    raise exception 'learning_activity_concurrency_wrong_database'
+      using errcode = '42501';
+  end if;
+end
+$guard$;
+select set_config(
+  'request.jwt.claim.sub',
+  'ca100000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select count(*)
+from public.update_lesson_component_v2(
+  'ca600000-0000-4000-8000-000000000006',
+  null,
+  false,
+  null,
+  false,
+  'ca410000-0000-4000-8000-000000000002',
+  true,
+  null,
+  false
+);
+commit;
+SQL
+race_six_alignment_pid=$!
+
+if ! wait_for_blocked_pair \
+  "$race_six_alignment_app" \
+  "$race_six_save_app" \
+  "$race_six_alignment_pid"; then
+  echo "Race 6 alignment was not observed waiting on observation save." >&2
+  exit 1
+fi
+
+set +e
+wait "$race_six_save_pid"
+race_six_save_status=$?
+race_six_save_pid=""
+wait "$race_six_alignment_pid"
+race_six_alignment_status=$?
+race_six_alignment_pid=""
+set -e
+
+if [[ "$race_six_save_status" -ne 0 ]] \
+  || [[ "$race_six_alignment_status" -ne 0 ]]; then
+  echo "Race 6 save/alignment transactions did not both succeed." >&2
+  exit 1
+fi
+
+race_six_state="$(
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc \
+    "select case when
+       exists (
+         select 1
+         from public.lesson_component
+         where id = 'ca600000-0000-4000-8000-000000000006'
+           and primary_learning_objective_id =
+             'ca410000-0000-4000-8000-000000000002'
+       )
+       and exists (
+         select 1
+         from public.lesson_component_observation
+         where learning_record_id =
+             'ca800000-0000-4000-8000-000000000006'
+           and learning_objective_id =
+             'ca410000-0000-4000-8000-000000000001'
+           and source_learning_objective_id_at_time =
+             'ca410000-0000-4000-8000-000000000001'
+           and learning_objective_title_at_time =
+             'Concurrency objective A'
+           and rating = 'not_yet'
+           and entry_method = 'bulk_confirmed'
+       )
+     then 'serialized' else '' end"
+)"
+if [[ "$race_six_state" != "serialized" ]]; then
+  echo "Race 6 rewrote objective-at-time provenance after alignment changed." >&2
+  exit 1
+fi
+
+# Race 7: publication V2 locks Course and the exact objective graph first. The
+# subsequent objective update must wait; after both commit the immutable
+# revision keeps the old title and the live Course is explicitly dirty.
+PGAPPNAME="$race_seven_publish_app" \
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  >"$race_seven_publish_log" 2>&1 <<'SQL' &
+begin;
+set local statement_timeout = '15s';
+do $guard$
+begin
+  if current_database() <> 'shidao_learning_activity_test' then
+    raise exception 'learning_activity_concurrency_wrong_database'
+      using errcode = '42501';
+  end if;
+end
+$guard$;
+select public.publish_course_revision_admin(
+  'ca200000-0000-4000-8000-000000000001',
+  'cb400000-0000-4000-8000-000000000001',
+  'cba00000-0000-4000-8000-000000000001',
+  'cbb00000-0000-4000-8000-000000000001',
+  '1111111111111111111111111111111111111111111111111111111111111111',
+  $snapshot$
+  {
+    "schemaVersion": 2,
+    "course": {
+      "title": "LA-M2 publication-first course",
+      "subject": "Русский язык",
+      "goal": "Publication-first consistency goal",
+      "level": "A1",
+      "audienceDescription": "Disposable publication learners",
+      "targetLessonCount": 1
+    },
+    "objectives": [
+      {
+        "ref": "cb410000-0000-4000-8000-000000000001",
+        "position": 1,
+        "title": "Publication objective before update",
+        "description": null,
+        "archivedAt": null
+      }
+    ],
+    "lessons": [
+      {
+        "ref": "cb500000-0000-4000-8000-000000000001",
+        "position": 1,
+        "title": "Publication-first lesson",
+        "summary": null,
+        "estimatedDurationMinutes": null,
+        "components": [],
+        "slides": []
+      }
+    ],
+    "materials": []
+  }
+  $snapshot$::jsonb,
+  '[]'::jsonb,
+  true
+);
+select pg_sleep(6);
+commit;
+SQL
+race_seven_publish_pid=$!
+
+if ! wait_for_sleeping_session \
+  "$race_seven_publish_app" \
+  "$race_seven_publish_pid"; then
+  echo "Race 7 publication did not reach its Course/objective lock hold." >&2
+  print_session_log "Race 7 publication log" "$race_seven_publish_log"
+  exit 1
+fi
+
+PGAPPNAME="$race_seven_objective_app" \
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  >"$race_seven_objective_log" 2>&1 <<'SQL' &
+begin;
+set local statement_timeout = '15s';
+do $guard$
+begin
+  if current_database() <> 'shidao_learning_activity_test' then
+    raise exception 'learning_activity_concurrency_wrong_database'
+      using errcode = '42501';
+  end if;
+end
+$guard$;
+select set_config(
+  'request.jwt.claim.sub',
+  'ca100000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select count(*)
+from public.update_learning_objective(
+  'cb410000-0000-4000-8000-000000000001',
+  'Publication objective updated after publish',
+  true,
+  null,
+  false
+);
+commit;
+SQL
+race_seven_objective_pid=$!
+
+if ! wait_for_blocked_pair \
+  "$race_seven_objective_app" \
+  "$race_seven_publish_app" \
+  "$race_seven_objective_pid"; then
+  echo "Race 7 objective update was not observed waiting on publication." >&2
+  exit 1
+fi
+
+set +e
+wait "$race_seven_publish_pid"
+race_seven_publish_status=$?
+race_seven_publish_pid=""
+wait "$race_seven_objective_pid"
+race_seven_objective_status=$?
+race_seven_objective_pid=""
+set -e
+
+if [[ "$race_seven_publish_status" -ne 0 ]] \
+  || [[ "$race_seven_objective_status" -ne 0 ]]; then
+  echo "Race 7 publication/objective transactions did not both succeed." >&2
+  print_session_log "Race 7 publication log" "$race_seven_publish_log"
+  print_session_log "Race 7 objective log" "$race_seven_objective_log"
+  exit 1
+fi
+
+race_seven_state="$(
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc \
+    "select case when
+       objective.title = 'Publication objective updated after publish'
+       and revision.snapshot ->> 'schemaVersion' = '2'
+       and revision.snapshot #>> '{objectives,0,title}' =
+         'Publication objective before update'
+       and publication.current_revision_id = revision.id
+       and publication.source_content_updated_at =
+         revision.source_course_updated_at
+       and course.publication_content_updated_at >
+         publication.source_content_updated_at
+     then 'serialized' else '' end
+     from public.course as course
+     join public.learning_objective as objective
+       on objective.course_id = course.id
+     join public.course_publication as publication
+       on publication.source_course_id = course.id
+     join public.course_publication_revision as revision
+       on revision.id = publication.current_revision_id
+     where course.id = 'cb400000-0000-4000-8000-000000000001'
+       and objective.id = 'cb410000-0000-4000-8000-000000000001'"
+)"
+if [[ "$race_seven_state" != "serialized" ]]; then
+  echo "Race 7 did not preserve the published snapshot and mark live content dirty." >&2
+  exit 1
+fi
+
+# Race 8: objective update owns Course and Objective first. Publication must
+# wait, then validate the strict V2 snapshot against the newly committed title
+# and capture the same publication-content clock.
+PGAPPNAME="$race_eight_objective_app" \
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  >"$race_eight_objective_log" 2>&1 <<'SQL' &
+begin;
+set local statement_timeout = '15s';
+do $guard$
+begin
+  if current_database() <> 'shidao_learning_activity_test' then
+    raise exception 'learning_activity_concurrency_wrong_database'
+      using errcode = '42501';
+  end if;
+end
+$guard$;
+select set_config(
+  'request.jwt.claim.sub',
+  'ca100000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select count(*)
+from public.update_learning_objective(
+  'cb410000-0000-4000-8000-000000000002',
+  'Objective committed before publication',
+  true,
+  null,
+  false
+);
+select pg_sleep(6);
+commit;
+SQL
+race_eight_objective_pid=$!
+
+if ! wait_for_sleeping_session \
+  "$race_eight_objective_app" \
+  "$race_eight_objective_pid"; then
+  echo "Race 8 objective update did not reach its Course/objective lock hold." >&2
+  print_session_log "Race 8 objective log" "$race_eight_objective_log"
+  exit 1
+fi
+
+PGAPPNAME="$race_eight_publish_app" \
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  >"$race_eight_publish_log" 2>&1 <<'SQL' &
+begin;
+set local statement_timeout = '15s';
+do $guard$
+begin
+  if current_database() <> 'shidao_learning_activity_test' then
+    raise exception 'learning_activity_concurrency_wrong_database'
+      using errcode = '42501';
+  end if;
+end
+$guard$;
+select public.publish_course_revision_admin(
+  'ca200000-0000-4000-8000-000000000001',
+  'cb400000-0000-4000-8000-000000000002',
+  'cba00000-0000-4000-8000-000000000002',
+  'cbb00000-0000-4000-8000-000000000002',
+  '2222222222222222222222222222222222222222222222222222222222222222',
+  $snapshot$
+  {
+    "schemaVersion": 2,
+    "course": {
+      "title": "LA-M2 objective-first course",
+      "subject": "Русский язык",
+      "goal": "Objective-first consistency goal",
+      "level": "A1",
+      "audienceDescription": "Disposable publication learners",
+      "targetLessonCount": 1
+    },
+    "objectives": [
+      {
+        "ref": "cb410000-0000-4000-8000-000000000002",
+        "position": 1,
+        "title": "Objective committed before publication",
+        "description": null,
+        "archivedAt": null
+      }
+    ],
+    "lessons": [
+      {
+        "ref": "cb500000-0000-4000-8000-000000000002",
+        "position": 1,
+        "title": "Objective-first lesson",
+        "summary": null,
+        "estimatedDurationMinutes": null,
+        "components": [],
+        "slides": []
+      }
+    ],
+    "materials": []
+  }
+  $snapshot$::jsonb,
+  '[]'::jsonb,
+  true
+);
+commit;
+SQL
+race_eight_publish_pid=$!
+
+if ! wait_for_blocked_pair \
+  "$race_eight_publish_app" \
+  "$race_eight_objective_app" \
+  "$race_eight_publish_pid"; then
+  echo "Race 8 publication was not observed waiting on objective update." >&2
+  exit 1
+fi
+
+set +e
+wait "$race_eight_objective_pid"
+race_eight_objective_status=$?
+race_eight_objective_pid=""
+wait "$race_eight_publish_pid"
+race_eight_publish_status=$?
+race_eight_publish_pid=""
+set -e
+
+if [[ "$race_eight_objective_status" -ne 0 ]] \
+  || [[ "$race_eight_publish_status" -ne 0 ]]; then
+  echo "Race 8 objective/publication transactions did not both succeed." >&2
+  print_session_log "Race 8 objective log" "$race_eight_objective_log"
+  print_session_log "Race 8 publication log" "$race_eight_publish_log"
+  exit 1
+fi
+
+race_eight_state="$(
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc \
+    "select case when
+       objective.title = 'Objective committed before publication'
+       and revision.snapshot ->> 'schemaVersion' = '2'
+       and revision.snapshot #>> '{objectives,0,title}' = objective.title
+       and publication.current_revision_id = revision.id
+       and publication.source_content_updated_at =
+         revision.source_course_updated_at
+       and publication.source_content_updated_at =
+         course.publication_content_updated_at
+     then 'serialized' else '' end
+     from public.course as course
+     join public.learning_objective as objective
+       on objective.course_id = course.id
+     join public.course_publication as publication
+       on publication.source_course_id = course.id
+     join public.course_publication_revision as revision
+       on revision.id = publication.current_revision_id
+     where course.id = 'cb400000-0000-4000-8000-000000000002'
+       and objective.id = 'cb410000-0000-4000-8000-000000000002'"
+)"
+if [[ "$race_eight_state" != "serialized" ]]; then
+  echo "Race 8 publication did not capture the committed objective graph." >&2
   exit 1
 fi

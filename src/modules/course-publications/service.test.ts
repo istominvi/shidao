@@ -12,6 +12,10 @@ import type {
   CourseWorkspace,
 } from "@/modules/course-builder/domain";
 import type {
+  CoursePublicationSnapshot,
+  CoursePublicationSnapshotV1,
+} from "./domain";
+import type {
   CatalogPublicationDetailRecord,
   CoursePublicationRepository,
   PublicationSourceAsset,
@@ -42,6 +46,8 @@ const LESSON_ID = uuid(301);
 const SLIDE_ID = uuid(401);
 const STAFF_COMPONENT_ID = uuid(501);
 const LEARNER_COMPONENT_ID = uuid(502);
+const OBJECTIVE_ID = uuid(550);
+const ARCHIVED_OBJECTIVE_ID = uuid(551);
 const ASSET_ID = uuid(601);
 const PUBLICATION_ID = uuid(701);
 const NOW = "2026-08-10T10:00:00.000Z";
@@ -64,6 +70,7 @@ function workspace(overrides: Partial<CourseWorkspace> = {}): CourseWorkspace {
     updatedAt: NOW,
     publicationContentUpdatedAt: NOW,
     publication: null,
+    learningObjectives: [],
     lessons: [
       {
         id: LESSON_ID,
@@ -87,6 +94,8 @@ function workspace(overrides: Partial<CourseWorkspace> = {}): CourseWorkspace {
             placement: { width: "content", display: "card" },
             visibility: "staff_only",
             studentSlideId: null,
+            primaryLearningObjectiveId: null,
+            activityRole: null,
             createdAt: NOW,
             updatedAt: NOW,
           },
@@ -104,6 +113,8 @@ function workspace(overrides: Partial<CourseWorkspace> = {}): CourseWorkspace {
             placement: { width: "content", display: "link" },
             visibility: "learner_visible",
             studentSlideId: SLIDE_ID,
+            primaryLearningObjectiveId: null,
+            activityRole: null,
             createdAt: NOW,
             updatedAt: NOW,
           },
@@ -135,6 +146,78 @@ function workspace(overrides: Partial<CourseWorkspace> = {}): CourseWorkspace {
     ],
     ...overrides,
     learningAudience: overrides.learningAudience ?? "children",
+  };
+}
+
+function objectiveWorkspace(): CourseWorkspace {
+  const base = workspace();
+  return workspace({
+    learningObjectives: [
+      {
+        id: OBJECTIVE_ID,
+        courseId: COURSE_ID,
+        title: "Распознавать приветствие на слух",
+        description: "Отличать приветствие от прощания.",
+        archivedAt: null,
+        createdAt: "2026-08-09T10:00:00.000Z",
+        updatedAt: NOW,
+      },
+      {
+        id: ARCHIVED_OBJECTIVE_ID,
+        courseId: COURSE_ID,
+        title: "Использовать формальное приветствие",
+        description: null,
+        archivedAt: NOW,
+        createdAt: "2026-08-08T10:00:00.000Z",
+        updatedAt: NOW,
+      },
+    ],
+    lessons: base.lessons.map((lesson) => ({
+      ...lesson,
+      components: lesson.components.map((component) =>
+        component.id === LEARNER_COMPONENT_ID
+          ? {
+              ...component,
+              primaryLearningObjectiveId: OBJECTIVE_ID,
+              activityRole: "assessment",
+            }
+          : {
+              ...component,
+              primaryLearningObjectiveId: ARCHIVED_OBJECTIVE_ID,
+            },
+      ),
+    })),
+  });
+}
+
+function legacySnapshotFixture(): CoursePublicationSnapshotV1 {
+  const current = buildCoursePublicationSnapshot({
+    workspace: workspace(),
+    sourceAssets: sourceAssets(),
+    publicationId: PUBLICATION_ID,
+  });
+  return {
+    schemaVersion: 1,
+    course: current.course,
+    lessons: current.lessons.map((lesson) => ({
+      ref: lesson.ref,
+      position: lesson.position,
+      title: lesson.title,
+      summary: lesson.summary,
+      estimatedDurationMinutes: lesson.estimatedDurationMinutes,
+      components: lesson.components.map((component) => ({
+        ref: component.ref,
+        position: component.position,
+        typeKey: component.typeKey,
+        schemaVersion: component.schemaVersion,
+        payload: component.payload,
+        placement: component.placement,
+        visibility: component.visibility,
+        studentSlideRef: component.studentSlideRef,
+      })),
+      slides: lesson.slides,
+    })),
+    materials: current.materials,
   };
 }
 
@@ -224,12 +307,13 @@ function idFactory(start = 800) {
   return () => uuid(sequence++);
 }
 
-function catalogRecordFixture(): CatalogPublicationDetailRecord {
-  const snapshot = buildCoursePublicationSnapshot({
+function catalogRecordFixture(
+  snapshot: CoursePublicationSnapshot = buildCoursePublicationSnapshot({
     workspace: workspace(),
     sourceAssets: sourceAssets(),
     publicationId: PUBLICATION_ID,
-  });
+  }),
+): CatalogPublicationDetailRecord {
   const material = snapshot.materials[0]!;
   return {
     publicationId: PUBLICATION_ID,
@@ -262,6 +346,8 @@ test("snapshot keeps all components and slides but removes private/source fields
     publicationId: PUBLICATION_ID,
   });
   const materialRef = snapshot.materials[0]!.ref;
+  assert.equal(snapshot.schemaVersion, 2);
+  assert.deepEqual(snapshot.objectives, []);
   assert.equal(snapshot.lessons[0]!.summary, "Комментарий преподавателя");
   assert.deepEqual(
     snapshot.lessons[0]!.components.map((component) => component.visibility),
@@ -283,6 +369,152 @@ test("snapshot keeps all components and slides but removes private/source fields
   );
   assert.doesNotMatch(serialized, new RegExp(COURSE_ID));
   assert.doesNotMatch(serialized, new RegExp(ASSET_ID));
+});
+
+test("V2 snapshot preserves objectives and alignment with deterministic local refs", () => {
+  const source = objectiveWorkspace();
+  const first = buildCoursePublicationSnapshot({
+    workspace: source,
+    sourceAssets: sourceAssets(),
+    publicationId: PUBLICATION_ID,
+  });
+  const second = buildCoursePublicationSnapshot({
+    workspace: source,
+    sourceAssets: sourceAssets(),
+    publicationId: PUBLICATION_ID,
+  });
+
+  assert.equal(first.schemaVersion, 2);
+  assert.deepEqual(first, second);
+  assert.deepEqual(
+    first.objectives.map((objective) => ({
+      title: objective.title,
+      position: objective.position,
+      archivedAt: objective.archivedAt,
+    })),
+    [
+      {
+        title: "Использовать формальное приветствие",
+        position: 1,
+        archivedAt: NOW,
+      },
+      {
+        title: "Распознавать приветствие на слух",
+        position: 2,
+        archivedAt: null,
+      },
+    ],
+  );
+  const activeObjective = first.objectives.find(
+    (objective) => objective.title === "Распознавать приветствие на слух",
+  )!;
+  const archivedObjective = first.objectives.find(
+    (objective) => objective.archivedAt !== null,
+  )!;
+  const learnerComponent = first.lessons[0]!.components.find(
+    (component) => component.position === 2,
+  )!;
+  const staffComponent = first.lessons[0]!.components.find(
+    (component) => component.position === 1,
+  )!;
+  assert.equal(learnerComponent.primaryObjectiveRef, activeObjective.ref);
+  assert.equal(learnerComponent.activityRole, "assessment");
+  assert.equal(staffComponent.primaryObjectiveRef, archivedObjective.ref);
+  assert.notEqual(activeObjective.ref, OBJECTIVE_ID);
+  const serialized = JSON.stringify(first);
+  assert.doesNotMatch(serialized, new RegExp(OBJECTIVE_ID));
+  assert.doesNotMatch(serialized, new RegExp(ARCHIVED_OBJECTIVE_ID));
+});
+
+test("objective and alignment changes alter the immutable publication hash", () => {
+  const baselineWorkspace = objectiveWorkspace();
+  const snapshotFor = (value: CourseWorkspace) =>
+    buildCoursePublicationSnapshot({
+      workspace: value,
+      sourceAssets: sourceAssets(),
+      publicationId: PUBLICATION_ID,
+    });
+  const baselineHash = publicationContentSha256(snapshotFor(baselineWorkspace));
+  const variants: CourseWorkspace[] = [
+    {
+      ...baselineWorkspace,
+      learningObjectives: baselineWorkspace.learningObjectives.map(
+        (objective) =>
+          objective.id === OBJECTIVE_ID
+            ? { ...objective, title: "Различать приветствия на слух" }
+            : objective,
+      ),
+    },
+    {
+      ...baselineWorkspace,
+      learningObjectives: baselineWorkspace.learningObjectives.map(
+        (objective) =>
+          objective.id === OBJECTIVE_ID
+            ? { ...objective, archivedAt: NOW }
+            : objective,
+      ),
+    },
+    {
+      ...baselineWorkspace,
+      lessons: baselineWorkspace.lessons.map((lesson) => ({
+        ...lesson,
+        components: lesson.components.map((component) =>
+          component.id === LEARNER_COMPONENT_ID
+            ? { ...component, primaryLearningObjectiveId: null }
+            : component,
+        ),
+      })),
+    },
+    {
+      ...baselineWorkspace,
+      lessons: baselineWorkspace.lessons.map((lesson) => ({
+        ...lesson,
+        components: lesson.components.map((component) =>
+          component.id === LEARNER_COMPONENT_ID
+            ? { ...component, activityRole: "practice" }
+            : component,
+        ),
+      })),
+    },
+  ];
+  for (const variant of variants) {
+    assert.notEqual(
+      publicationContentSha256(snapshotFor(variant)),
+      baselineHash,
+    );
+  }
+});
+
+test("snapshot build rejects cross-Course objectives and dangling alignments", () => {
+  const source = objectiveWorkspace();
+  assert.throws(
+    () =>
+      buildCoursePublicationSnapshot({
+        workspace: {
+          ...source,
+          learningObjectives: source.learningObjectives.map((objective) => ({
+            ...objective,
+            courseId: uuid(999),
+          })),
+        },
+        sourceAssets: sourceAssets(),
+        publicationId: PUBLICATION_ID,
+      }),
+    (error: unknown) =>
+      error instanceof CoursePublicationConflictError &&
+      error.code === "publication_objective_course_mismatch",
+  );
+  assert.throws(
+    () =>
+      buildCoursePublicationSnapshot({
+        workspace: { ...source, learningObjectives: [] },
+        sourceAssets: sourceAssets(),
+        publicationId: PUBLICATION_ID,
+      }),
+    (error: unknown) =>
+      error instanceof CoursePublicationConflictError &&
+      error.code === "publication_component_objective_missing",
+  );
 });
 
 test("publication hash includes learning audience and attestation definition", () => {
@@ -563,6 +795,73 @@ test("catalog copy checks eligibility before any Storage work", async () => {
   assert.deepEqual(broker.calls.copies, []);
 });
 
+test("catalog copy normalizes V1 and remaps V2 objective refs", async () => {
+  const v2 = buildCoursePublicationSnapshot({
+    workspace: objectiveWorkspace(),
+    sourceAssets: sourceAssets(),
+    publicationId: PUBLICATION_ID,
+  });
+  for (const [snapshot, expectedRefs] of [
+    [legacySnapshotFixture(), []],
+    [v2, v2.objectives.map((objective) => objective.ref)],
+  ] as const) {
+    let cloneInput:
+      | Parameters<CoursePublicationRepository["clonePublication"]>[0]
+      | undefined;
+    const broker = storageBroker();
+    const service = createCoursePublicationService({
+      repository: repository({
+        getCatalogPublication: async () => catalogRecordFixture(snapshot),
+        clonePublication: async (input) => {
+          cloneInput = input;
+          return { courseId: input.targetCourseId };
+        },
+      }),
+      storage: broker.storage,
+      courseService: courseService(workspace()),
+      createId: idFactory(),
+    });
+
+    await service.copyCatalogCourse(ACTOR, PUBLICATION_ID);
+    assert.ok(cloneInput);
+    assert.deepEqual(
+      cloneInput.idMap.objectives.map((item) => item.ref),
+      expectedRefs,
+    );
+    assert.equal(
+      cloneInput.idMap.objectives.every((item) => item.ref !== item.id),
+      true,
+    );
+  }
+});
+
+test("own-course duplicate sends a source-objective to target-objective id map", async () => {
+  let duplicateInput:
+    Parameters<CoursePublicationRepository["duplicateCourse"]>[0] | undefined;
+  const service = createCoursePublicationService({
+    repository: repository({
+      duplicateCourse: async (input) => {
+        duplicateInput = input;
+        return { courseId: input.targetCourseId };
+      },
+    }),
+    storage: storageBroker().storage,
+    courseService: courseService(objectiveWorkspace()),
+    createId: idFactory(),
+  });
+
+  await service.duplicateOwnCourse(ACTOR, COURSE_ID);
+  assert.ok(duplicateInput);
+  assert.deepEqual(
+    duplicateInput.idMap.objectives.map((item) => item.ref),
+    [OBJECTIVE_ID, ARCHIVED_OBJECTIVE_ID],
+  );
+  assert.equal(
+    duplicateInput.idMap.objectives.every((item) => item.ref !== item.id),
+    true,
+  );
+});
+
 test("educator publications cannot be copied or cloned", async () => {
   let eligibilityChecks = 0;
   let cloneCalls = 0;
@@ -818,11 +1117,7 @@ test("dirty publication state compares only publication content timestamps", asy
 });
 
 test("catalog detail exposes only learner slides and signed material metadata", async () => {
-  const snapshot = buildCoursePublicationSnapshot({
-    workspace: workspace(),
-    sourceAssets: sourceAssets(),
-    publicationId: PUBLICATION_ID,
-  });
+  const snapshot = legacySnapshotFixture();
   const material = snapshot.materials[0]!;
   const service = createCoursePublicationService({
     repository: repository({
@@ -868,6 +1163,79 @@ test("catalog detail exposes only learner slides and signed material metadata", 
   assert.equal(detail.materials.length, 1);
   assert.equal("checksumSha256" in detail.materials[0]!, false);
   assert.match(detail.materials[0]!.downloadUrl, /^https:\/\//);
+});
+
+test("catalog detail projects assessable payload without answer keys", async () => {
+  const base = workspace();
+  const assessableWorkspace = workspace({
+    lessons: base.lessons.map((lesson) => ({
+      ...lesson,
+      components: lesson.components.map((component) =>
+        component.id === LEARNER_COMPONENT_ID
+          ? {
+              ...component,
+              typeKey: "choice_quiz",
+              payload: {
+                question: "Как поздороваться?",
+                options: [
+                  { id: uuid(910), label: "你好", isCorrect: true },
+                  { id: uuid(911), label: "再见", isCorrect: false },
+                ],
+                allowMultiple: false,
+                explanation: "你好 — нейтральное приветствие.",
+                shuffle: true,
+              },
+              placement: { width: "content", compact: false },
+            }
+          : component,
+      ),
+    })),
+  });
+  const snapshot = buildCoursePublicationSnapshot({
+    workspace: assessableWorkspace,
+    sourceAssets: sourceAssets(),
+    publicationId: PUBLICATION_ID,
+  });
+  assert.match(JSON.stringify(snapshot), /isCorrect/);
+
+  const service = createCoursePublicationService({
+    repository: repository({
+      getCatalogPublication: async () => catalogRecordFixture(snapshot),
+    }),
+    storage: storageBroker().storage,
+    courseService: courseService(workspace()),
+  });
+  const detail = await service.getCatalogDetail(ACTOR, PUBLICATION_ID);
+  const payload = detail.lessons[0]!.slides[0]!.components[0]!.payload;
+  assert.equal(payload.question, "Как поздороваться?");
+  assert.doesNotMatch(JSON.stringify(payload), /isCorrect/);
+  assert.doesNotMatch(JSON.stringify(payload), /explanation|нейтральное/);
+});
+
+test("catalog detail fails closed when learner projection cannot validate payload", async () => {
+  const snapshot = buildCoursePublicationSnapshot({
+    workspace: workspace(),
+    sourceAssets: sourceAssets(),
+    publicationId: PUBLICATION_ID,
+  });
+  const learnerComponent = snapshot.lessons[0]!.components.find(
+    (component) => component.visibility === "learner_visible",
+  )!;
+  learnerComponent.payload = { storedFileId: "not-a-uuid" };
+  const service = createCoursePublicationService({
+    repository: repository({
+      getCatalogPublication: async () => catalogRecordFixture(snapshot),
+    }),
+    storage: storageBroker().storage,
+    courseService: courseService(workspace()),
+  });
+
+  await assert.rejects(
+    service.getCatalogDetail(ACTOR, PUBLICATION_ID),
+    (error: unknown) =>
+      error instanceof CoursePublicationConflictError &&
+      error.code === "publication_component_delivery_invalid",
+  );
 });
 
 test("catalog sourceCourseId is owner-only and null across accounts", async () => {

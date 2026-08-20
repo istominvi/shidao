@@ -27,6 +27,13 @@ DB-first migration, dependent source
 доставлены и прошли production DB/HTTP/API/CSRF/browser postflight 20 августа
 2026 года.
 
+Current production DB и ready source дополнительно реализуют LA-M2: flat
+Course-scoped objectives, одну optional primary objective и activity role на
+Component, objective-at-time provenance наблюдений, optional registry
+`activityFacet`, learner-safe delivery/evaluator split и publication snapshot
+V2. DB-first apply/postflight завершён; task commit, dependent web rollout и
+deployed-SHA smoke ещё не выполнены и здесь не заявляются.
+
 Этот документ владеет authored hierarchy, Slides projection, Homework
 separation и compact LessonRun/LearningRecord boundary. Учебные цели, ответы,
 teacher observations, evidence, learner objective state и adaptive decisions
@@ -46,6 +53,7 @@ Account
 ├── TeacherLearner 0..N → LearnerProfile
 ├── LearnerGroup 0..N → LearnerProfile 0..N
 └── Course
+    ├── LearningObjective 0..N
     ├── audience sources
     │   ├── direct LearnerProfile 0..N
     │   └── LearnerGroup 0..N
@@ -53,11 +61,13 @@ Account
     ├── course-wide attachments
     └── Lesson 0..N
         ├── ordered Components 0..N
+        │   └── optional primary LearningObjective + activity role
         ├── Student Screen projection
         │   └── ordered Slides 0..N → component references
         └── LessonRun 0..N
             └── LearningRecord 0..N → LearnerProfile + recorded-by Account
-                └── LessonComponentObservation 0..N → source Component-at-time
+                └── LessonComponentObservation 0..N
+                    └── source Component + optional Objective-at-time
 
 Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 ```
@@ -110,6 +120,15 @@ Lesson остаётся одной сущностью содержания и т
   recorder-owned отметка ожидаемого learner по одному source Component
   фактически started Run. Она хранит compact context-at-time, но не становится
   полным Lesson/Component snapshot, LearningRecord metric или mastery.
+- **LearningObjective / Учебная цель** — плоское проверяемое умение внутри
+  одного Course с title, optional description и archive state. Это не
+  глобальный skill graph и не второй authored order.
+- **Primary objective alignment / Основная цель компонента** — optional ссылка
+  одного Component на objective того же Course. Archive сохраняет существующую
+  ссылку/history, но запрещает назначать архивную objective заново.
+- **Activity role / Роль активности** — optional
+  `practice | assessment | survey`, допустимая только для типов, чьё единое
+  registry definition явно поддерживает эту роль.
 - **ObserverGrant / Наблюдение** — explicit read-only capability на learner-safe
   projection конкретного LearnerProfile; не Parent/Guardian role.
 - **Lesson Component / Компонент урока** — элемент единого ordered list Lesson.
@@ -157,6 +176,21 @@ lesson_component
 - placement (`placement_config` в PostgreSQL)
 - visibility: staff_only | learner_visible
 - student_slide_id: uuid | null
+- primary_learning_objective_id: uuid | null
+- activity_role: practice | assessment | survey | null
+- created_at
+- updated_at
+```
+
+Минимальная Course objective:
+
+```text
+learning_objective
+- id
+- course_id
+- title
+- description | null
+- archived_at | null
 - created_at
 - updated_at
 ```
@@ -200,6 +234,9 @@ lesson_component_observation
 - learning_record_id + recorded_by_account_id
 - lesson_component_id | null
 - source_lesson_component_id_at_time
+- learning_objective_id | null
+- source_learning_objective_id_at_time | null
+- learning_objective_title_at_time | null
 - component_position/type/label_at_time
 - observable_criterion_at_time
 - rating: independent | with_support | not_yet
@@ -272,6 +309,17 @@ comment. Merge conflict сохраняет losing record как superseded prove
 12. Observation изменяется только у фактически started открытого Run. После
     completion она read-only; cancel удаляет draft rows через LearningRecord
     cascade, а удаление live Component сохраняет compact context-at-time.
+13. Objective принадлежит Course, а Component может ссылаться только на
+    objective Course своей Lesson; cross-Course alignment запрещён.
+14. У Component не больше одной primary objective. Objective archive не
+    уничтожает существующую ссылку, publication revision или observation
+    provenance; новое назначение archived objective запрещено.
+15. Новое observation копирует objective UUID/title-at-time из Component под
+    lock. Старые component-only observations остаются с `NULL` без backfill;
+    nullable live FK не является единственным историческим источником.
+16. `activity_role` либо `NULL`, либо поддерживается единственным registry
+    `activityFacet` данного type. Role не создаёт attempt/evaluation сама по
+    себе.
 
 Это invariants поддерживаемого application/RPC path. Для Lesson/Component DB
 напрямую гарантирует positive+unique position; gapless append и concurrency
@@ -295,12 +343,19 @@ authored-create projection генерирует JSON Schema только для 
 Добавление типа компонента не требует новой таблицы и не создаёт отдельную
 React-страницу для конкретной Lesson.
 
-NEXT assessable definitions получают optional `activityFacet` в этом же
-registry: supported response/evaluator modes, learner-safe delivery и evidence
-rules. Passive content и survey не обязаны становиться Learning
-Activities. Отдельный canonical activity-type registry запрещён; полный target
-contract находится в
+Current LA-M2 source добавляет optional `activityFacet` в этот же registry:
+supported roles, response/evaluator modes, learner-safe delivery,
+server-private evaluator projection и evidence policy. Passive content не
+получает facet; `single_choice_poll` является survey с policy `never`, а
+assessable types поддерживают только явно перечисленные роли. Отдельный
+canonical activity-type registry запрещён; полный contract находится в
 [`learning-activity-system.md`](./learning-activity-system.md).
+
+`projectLearnerComponentPayload` валидирует author payload и projected shape и
+fail closed при ошибке; evaluator config извлекается отдельно и не пересекает
+learner-facing Student Screen/catalog boundary. Это current delivery contract,
+но не learner execution: attempts и server evaluation остаются следующими
+slices.
 
 Текущий production registry содержит 20 активных типов:
 
@@ -599,6 +654,18 @@ allowlisted immutable snapshot текущей authored-редакции:
   LessonRuns, LearningRecords, reports/history и AI consent не входят;
 - source Course/Lesson/Component/Slide/StoredFile IDs заменяются
   publication-local keys.
+
+Current LA-M2 DB/source contract создаёт новые revisions только как snapshot
+schema V2:
+в него входят Course objective definitions с archive state, Component
+`primaryObjectiveRef` и `activityRole`; clone/duplicate детерминированно создают
+новые objective IDs и remap ссылок. Legacy schema V1 остаётся exact immutable
+shape: старые revisions читаются и копируются без rewrite/checksum drift, а V1
+publish запрещён, если он отбросил бы существующие objectives/alignment.
+Catalog detail строит learner-safe Component payload на server boundary;
+snapshot сохраняет полный immutable author payload для воспроизводимости, но
+answer keys/evaluator config не выдаются learner. Production DB contract уже
+current; rollout зависимого application code ещё pending.
 
 Перед первой публикацией и обновлением есть один confirmation dialog с
 обязательным подтверждением прав на материалы. Для детского Course consent
@@ -1439,6 +1506,8 @@ Implementation map:
   `src/app/api/v2/lesson-runs/[lessonRunId]/observations/`,
   `src/app/(app)/courses/[courseId]/runs/[lessonRunId]/` и
   `src/components/learning-activities/`;
+- Course objectives/alignment API:
+  `src/app/api/v2/courses/[courseId]/learning-objectives/`;
 - identity contracts/service/repositories: `src/modules/learner-identity/`;
 - identity/self/observer UI: `src/components/profile/`,
   `src/components/learner-identity/`, `/profile`, `/students?tab=observing`;
@@ -1452,6 +1521,10 @@ Implementation map:
 - LessonRun migration: `20260806190044_lesson_runs_learning_records.sql`.
 - LA-M1 observation migration:
   `20260819142602_learning_activity_foundation.sql`.
+- LA-M2 objective/alignment migration:
+  `20260820085049_learning_objectives_component_alignment.sql`.
+- LA-M2 publication snapshot migration:
+  `20260820090529_course_publication_snapshot_v2.sql`.
 - educator governance/progress migration:
   `20260812150745_educator_course_governance_progress.sql`.
 - educator content-guard ACL correction:
@@ -1577,8 +1650,11 @@ Learner-identity consent/audit schema входит в отдельные M2–M3
 
 ## Runtime and future live mode
 
-Current repository реализует appointment/completion history и LA-M1 teacher
-observation workspace, но не learner live sync.
+Current repository реализует appointment/completion history, LA-M1 teacher
+observation workspace и LA-M2 source objective provenance/eligibility; LA-M2
+physical DB contract уже current production, но dependent web пока не
+развёрнут. Система по-прежнему не реализует
+learner live sync, attempts или objective state.
 Открытый LessonRun уже является конкретным проведением; второй content-bearing
 `LessonSession` не нужен. Будущий operational presentation cursor может быть
 связан с открытым Run и текущим Student Screen Slide, не меняя authored
@@ -1635,10 +1711,11 @@ application services и MCP не импортируют demo fixtures; все н
 - parsing/RAG загруженных файлов;
 - persisted homework editor;
 - live Student Screen sync, realtime presence и runtime cursor;
-- Course objectives, Component alignment, versioned activity attempts,
-  server-side evaluation, typed learning evidence, rebuildable objective state
-  и deterministic adaptation; `LearningRecord` не является их metrics/event
-  container;
+- versioned learner activity attempts, server-side evaluation, durable typed
+  learning evidence, rebuildable objective state и deterministic adaptation;
+  LA-M2 Course objectives/alignment уже current production DB / ready source,
+  но ещё не deployed web capability, а `LearningRecord` не является
+  metrics/event container;
 - enrollment/consumption детских Course через LearnerProfile и live Student
   Screen access; Account-scoped self-learning educator publications уже
   реализован;

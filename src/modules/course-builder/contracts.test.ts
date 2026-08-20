@@ -4,10 +4,12 @@ import {
   COURSE_ASSET_MAX_BYTES,
   addLessonInputSchema,
   courseDraftInputSchema,
+  createLearningObjectiveInputSchema,
   prepareCourseAttachmentInputSchema,
   reorderLessonComponentInputSchema,
   setComponentStudentScreenInputSchema,
   updateLessonComponentInputSchema,
+  updateLearningObjectiveInputSchema,
   uuidSchema,
 } from "./contracts";
 
@@ -115,6 +117,51 @@ test("component payload edits and Student Screen placement have separate contrac
     false,
   );
   assert.equal(updateLessonComponentInputSchema.safeParse({}).success, false);
+});
+
+test("LearningObjective contracts normalize bounded create and partial update inputs", () => {
+  assert.deepEqual(
+    createLearningObjectiveInputSchema.parse({
+      title: "  Различает второй и третий тон  ",
+    }),
+    {
+      title: "Различает второй и третий тон",
+      description: null,
+    },
+  );
+  assert.deepEqual(
+    updateLearningObjectiveInputSchema.parse({
+      description: "  Слышит различие в знакомых словах  ",
+    }),
+    { description: "Слышит различие в знакомых словах" },
+  );
+  assert.equal(updateLearningObjectiveInputSchema.safeParse({}).success, false);
+  assert.equal(
+    createLearningObjectiveInputSchema.safeParse({
+      title: "x",
+      description: null,
+    }).success,
+    false,
+  );
+  assert.equal(
+    createLearningObjectiveInputSchema.safeParse({
+      title: "Проверяемая цель",
+      description: " ",
+    }).success,
+    false,
+  );
+  assert.equal(
+    updateLessonComponentInputSchema.safeParse({
+      primaryLearningObjectiveId: null,
+      activityRole: "practice",
+    }).success,
+    true,
+  );
+  assert.equal(
+    updateLessonComponentInputSchema.safeParse({ activityRole: "grading" })
+      .success,
+    false,
+  );
 });
 
 test("Course Builder accepts canonical PostgreSQL UUID values", () => {

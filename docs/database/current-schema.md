@@ -5,18 +5,30 @@ catalog + Course Component D1 + A1 atomic Course archive + E1 educator Course
 и Account attestation + E2 educator governance/self-learning + E2A authenticated
 content-guard correction + U1 unified Text authored data + AV1 Account avatars
 и CC1 Communication Center database contract + A2 atomic Assistant schedule
-guard + LA-M1 learning activity foundation. CC1, A2 и LA-M1 DB-first contracts
-применены; dependent functional application rollout выполнен для exact source
-`25d7855831273ff5feea14473c2870b729ac39b3`.
+guard + LA-M1 learning activity foundation + LA-M2 Course objectives,
+Component alignment и publication snapshot V2. CC1, A2, LA-M1 и LA-M2
+DB-first contracts применены; последний dependent functional application
+rollout пока остаётся exact source
+`25d7855831273ff5feea14473c2870b729ac39b3`, а LA-M2 web rollout pending.
 
 **Production schema head:**
-`20260819142602_learning_activity_foundation.sql`. Она применена к production
-PostgreSQL `15.8` owner `supabase_admin` с exact `COMMIT` 20 августа 2026 года
-после read-only sanity, production-derived clone rehearsal и verified backup.
-LA-M1 добавляет
-`lesson_component_observation`, recorder-scoped read policy, narrow batch-save
-RPC и completion guard `absent + observation`. Exact migration SHA-256 —
-`07884719180adf23309ad8253dc286e7a3621797789a50fe37a69020fe0ebde5`.
+`20260820090529_course_publication_snapshot_v2.sql`, применённая после
+`20260820085049_learning_objectives_component_alignment.sql`. Обе применены к
+production PostgreSQL `15.8` owner `supabase_admin` с наблюдаемыми `COMMIT` 20
+августа 2026 года после read-only sanity, production-derived clone rehearsal и
+verified backup.
+
+**LA-M2 production migration set:**
+
+1. `20260820085049_learning_objectives_component_alignment.sql`, SHA-256
+   `82734db13f473c011ae61b24fc67601ac84cca986bf64395ac9ddd98ce07988a`;
+2. `20260820090529_course_publication_snapshot_v2.sql`, SHA-256
+   `19d4f9fddbed2beedd1b3ad60e0100e27d8d774852c4a4d95e23593fbf82e8f8`.
+
+Обе migrations отрепетированы на production-derived disposable clone с exact
+rollback/apply, functional harness и восемью multi-session races. Verified
+backup и production apply/postflight выполнены; dependent web rollout ещё не
+выполнялся.
 
 **Последняя применённая authored-data-only migration:**
 exact tracked `20260813063716_unify_heading_rich_text_components.sql` применён
@@ -37,17 +49,17 @@ Admin create/delete probe
 
 **SQL snapshot:**
 [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
-содержит current production contract после LA-M1. Он снят штатным
-script в `2026-08-20T07:17:17Z` из изолированного PostgreSQL 16.13 clone:
-в clone был восстановлен tracked A2 baseline, exact LA-M1 migration прошла
-rollback rehearsal, затем была применена с `COMMIT`, а functional и
-multi-session concurrency harness завершились успешно. Strict signature —
-`shidao-v2-contract`, SHA-256 contract snapshot —
-`4e04a6f7ee6ffe3c925e9d225534fca75c3316bc5671ad072dad7f91740ad037`.
+содержит LA-M2 contract, соответствующий current production physical head. Он
+снят
+штатным script в `2026-08-20T09:54:46Z` из изолированного PostgreSQL `15.8`
+production-derived clone после exact rollback/apply обеих migrations,
+functional harness и восьми multi-session race checks. Strict signature —
+`shidao-v2-contract`, SHA-256 snapshot —
+`46aabae2c1a00723c2c4a3322060cb49bd48f40a0ac23d7f8a294c64c630b8b3`.
 
 Clone provenance snapshot не подменяет production execution evidence. Exact
-production apply, pre/post counts, backup и RLS/ACL/PostgREST postflight
-подтвердили тот же LA-M1 contract; детали зафиксированы ниже.
+LA-M2 production backup/apply/postflight зафиксированы ниже; task commit и
+dependent deployed-source verification остаются отдельным pending web record.
 
 ## Read order для DB-задач
 
@@ -63,25 +75,27 @@ production apply, pre/post counts, backup и RLS/ACL/PostgREST postflight
 
 ## Release sequence и migration set
 
-| Stage | Migration                                                              | Назначение                                                                                                                                     |
-| ----- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| M1    | `20260807065017_identity_security_hardening.sql`                       | RLS/ACL hardening `user_preference`/`user_security`, сужение legacy table/function grants                                                      |
-| M2    | `20260807065026_learner_identity_primitives_backfill_invariant.sql`    | roleless Account, Account credential boundary, exactly-one profile bootstrap/backfill и default-deny identity primitives                       |
-| M3    | `20260807065032_learner_identity_workflows_progress_observer_ai.sql`   | discovery/claim/merge, archive/restore, self/observer projections, erasure, actual duration и AI consent                                       |
-| M4    | `20260807065038_learner_identity_legacy_contract_cleanup.sql`          | final RESTRICT cleanup dormant role helpers/types/Data API grants и rollback-only legacy security dual-writes; без удаления legacy rows/tables |
-| M5    | `20260809084500_learner_identity_auth_deferred_invariant_security.sql` | узкий `SECURITY DEFINER` boundary для deferred exactly-one invariant при реальном GoTrue commit; без расширения Auth table privileges          |
-| M6    | `20260809090000_learner_identity_provisional_auth_metadata_sync.sql`   | trusted two-phase GoTrue `app_metadata` sync для pristine provisional child Account с fail-closed защитой от позднего downgrade                |
-| C1    | `20260810035033_course_publication_catalog.sql`                        | immutable Course publication revisions, private publication Storage, independent catalog copy/duplicate и closed admin RPC                     |
-| D1    | `20260811154138_remove_divider_components.sql`                         | удаление layout-only `divider`, повторная нумерация Component/Slide и CHECK-запрет повторного создания                                         |
-| A1    | `20260811231505_atomic_course_archive.sql`                             | atomic owner-scoped Course soft archive, reverse publication/Run guards, immutable Lesson parent и narrow Course/Lesson browser ACL            |
-| E1    | `20260812113000_educator_course_attestations.sql`                      | `children \| educators`, immutable publication attestation, server-side scoring, Account attempts/awards и audience-scoped catalog             |
-| E2    | `20260812150745_educator_course_governance_progress.sql`               | trusted educator author capability, exact revision review/approval, self-learning progress, attestation gate и official no-copy invariants     |
-| U1    | `20260813063716_unify_heading_rich_text_components.sql`                | applied production data-only unified Text cleanup без physical-schema и immutable-publication changes                                          |
-| E2A   | `20260813113041_fix_educator_course_content_guard_acl.sql`             | applied production invoker guard correction с inlined predicate и неизменным закрытым helper ACL                                               |
-| AV1   | `20260814050347_account_profile_avatars.sql`                           | applied production required Account avatar, 20 preset keys, private server-only WebP Storage и optimistic setter RPC                           |
-| CC1   | `20260816053117_communication_center.sql`                              | applied production unified inbox persistence: human threads, system notifications и persisted assistant conversations                          |
-| A2    | `20260816072345_atomic_assistant_lesson_run_schedule.sql`              | applied production atomic compare-and-schedule guard для confirmed Assistant LessonRun proposal                                                |
-| LA-M1 | `20260819142602_learning_activity_foundation.sql`                      | applied production additive component-observation contract, recorder ACL/RPC и absent-completion guard                                         |
+| Stage  | Migration                                                              | Назначение                                                                                                                                     |
+| ------ | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| M1     | `20260807065017_identity_security_hardening.sql`                       | RLS/ACL hardening `user_preference`/`user_security`, сужение legacy table/function grants                                                      |
+| M2     | `20260807065026_learner_identity_primitives_backfill_invariant.sql`    | roleless Account, Account credential boundary, exactly-one profile bootstrap/backfill и default-deny identity primitives                       |
+| M3     | `20260807065032_learner_identity_workflows_progress_observer_ai.sql`   | discovery/claim/merge, archive/restore, self/observer projections, erasure, actual duration и AI consent                                       |
+| M4     | `20260807065038_learner_identity_legacy_contract_cleanup.sql`          | final RESTRICT cleanup dormant role helpers/types/Data API grants и rollback-only legacy security dual-writes; без удаления legacy rows/tables |
+| M5     | `20260809084500_learner_identity_auth_deferred_invariant_security.sql` | узкий `SECURITY DEFINER` boundary для deferred exactly-one invariant при реальном GoTrue commit; без расширения Auth table privileges          |
+| M6     | `20260809090000_learner_identity_provisional_auth_metadata_sync.sql`   | trusted two-phase GoTrue `app_metadata` sync для pristine provisional child Account с fail-closed защитой от позднего downgrade                |
+| C1     | `20260810035033_course_publication_catalog.sql`                        | immutable Course publication revisions, private publication Storage, independent catalog copy/duplicate и closed admin RPC                     |
+| D1     | `20260811154138_remove_divider_components.sql`                         | удаление layout-only `divider`, повторная нумерация Component/Slide и CHECK-запрет повторного создания                                         |
+| A1     | `20260811231505_atomic_course_archive.sql`                             | atomic owner-scoped Course soft archive, reverse publication/Run guards, immutable Lesson parent и narrow Course/Lesson browser ACL            |
+| E1     | `20260812113000_educator_course_attestations.sql`                      | `children \| educators`, immutable publication attestation, server-side scoring, Account attempts/awards и audience-scoped catalog             |
+| E2     | `20260812150745_educator_course_governance_progress.sql`               | trusted educator author capability, exact revision review/approval, self-learning progress, attestation gate и official no-copy invariants     |
+| U1     | `20260813063716_unify_heading_rich_text_components.sql`                | applied production data-only unified Text cleanup без physical-schema и immutable-publication changes                                          |
+| E2A    | `20260813113041_fix_educator_course_content_guard_acl.sql`             | applied production invoker guard correction с inlined predicate и неизменным закрытым helper ACL                                               |
+| AV1    | `20260814050347_account_profile_avatars.sql`                           | applied production required Account avatar, 20 preset keys, private server-only WebP Storage и optimistic setter RPC                           |
+| CC1    | `20260816053117_communication_center.sql`                              | applied production unified inbox persistence: human threads, system notifications и persisted assistant conversations                          |
+| A2     | `20260816072345_atomic_assistant_lesson_run_schedule.sql`              | applied production atomic compare-and-schedule guard для confirmed Assistant LessonRun proposal                                                |
+| LA-M1  | `20260819142602_learning_activity_foundation.sql`                      | applied production additive component-observation contract, recorder ACL/RPC и absent-completion guard                                         |
+| LA-M2A | `20260820085049_learning_objectives_component_alignment.sql`           | applied production: flat Course objectives, Component alignment/activity role и observation objective-at-time provenance                       |
+| LA-M2B | `20260820090529_course_publication_snapshot_v2.sql`                    | applied production: immutable publication V2 objectives/remap при exact V1 compatibility                                                       |
 
 M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
 первого deploy и применена только после доказательства, что running и rollback
@@ -162,6 +176,100 @@ Production execution evidence, 20 августа 2026 года:
   завершённый `2026-08-20 08:06:43`; running image SHA-256 —
   `95c09811ffbc3f12971494e4ad150313c2151e01e6936afb73279baab5a8001f`,
   restart count `0`, HTTPS/API/CSRF/browser guest postflight прошёл.
+
+### Production LA-M2 objective/alignment contract — web rollout pending
+
+Первая forward migration добавляет:
+
+```text
+learning_objective
+- id
+- course_id
+- title (2..240)
+- description | null (до 2000)
+- archived_at | null
+- created_at | updated_at
+
+lesson_component
+- primary_learning_objective_id | null
+- activity_role | null: practice | assessment | survey
+
+lesson_component_observation
+- learning_objective_id | null
+- source_learning_objective_id_at_time | null
+- learning_objective_title_at_time | null
+```
+
+Physical/security contract:
+
+- objective RLS даёт authenticated owner только `SELECT`; raw
+  `INSERT|UPDATE|DELETE` закрыты, create/update/archive идут через narrow
+  `SECURITY DEFINER` RPC с empty `search_path` и `auth.uid()` ownership chain;
+- Component alignment допускает только objective Course своей Lesson и не
+  позволяет заново назначить archived objective; archive не уничтожает
+  существующие links;
+- `update_lesson_component_v2` сериализует Course → Lesson → Component →
+  Objective и атомарно обновляет payload/placement/alignment/role; прежние
+  narrow column grants временно сохраняют DB-first rolling compatibility;
+- `activity_role` разрешён только registry-supported types:
+  `single_choice_poll` для `survey`, восемь activity types для
+  `practice | assessment`;
+- observation save lock order становится Lesson → Component → Objective → Run
+  → LearningRecord; новые rows копируют objective ID/title-at-time, старые rows
+  остаются `NULL` без backfill;
+- live objective FK использует `ON DELETE SET NULL`, stable source ID/title
+  сохраняют finalized provenance; это не objective state/mastery persistence.
+
+Вторая migration расширяет immutable publication contract:
+
+- новые application snapshots имеют strict schema V2: objective definitions,
+  Component `primaryObjectiveRef`/`activityRole`, dense deterministic refs;
+- publish сверяет V2 со locked live Course и не разрешает V1, если тот потерял
+  бы objectives/alignment;
+- clone/duplicate создают новые objective IDs и remap Component links, включая
+  archive state;
+- legacy V1 snapshot и legacy three-section ID map остаются допустимыми там,
+  где objectives действительно отсутствуют; существующие V1 revision bytes и
+  checksum migration не меняет;
+- raw immutable snapshot остаётся author/evaluator record, а learner catalog
+  delivery строится application server через learner-safe projection без
+  answer keys/evaluator config.
+
+Clone readiness evidence: exact migration hashes приведены в header; свежий
+production-derived clone сохранил baseline counts
+Account/Course/Lesson/Component/LessonRun/LearningRecord
+`19/6/22/84/2/2`, objective/observation fixture rows `0`, одну immutable
+revision и её aggregate checksum
+`2832fcf2ee1a4c3ccdf01501fc4f60f3`. Functional harness прошёл, а concurrency
+harness доказал восемь исходов: четыре LA-M1 races, оба alignment↔observation
+save и оба publication↔objective update. Все fixtures откатаны/удалены.
+
+Production execution evidence, 20 августа 2026 года:
+
+- project-local read-only sanity подтвердил production ShiDao PostgreSQL
+  `15.8`, database/user `postgres`/`supabase_admin`, отсутствие recovery и
+  LA-M2 objects; preflight counts Account/Course/Lesson/Component/LessonRun/
+  LearningRecord/Observation/Revision были `19/6/22/84/2/2/0/1`;
+- legacy revision имела `schemaVersion=1`, `9056` bytes и checksum
+  `e77ac1abfa333856fcf9022ef7a0666f`;
+- verified full-format backup
+  `/root/shidao-db-backups/shidao-before-learning-objective-alignment-20260820T104240Z.dump`
+  имеет size `1507990`, mode `600`, `1771` restore-list entries и SHA-256
+  `d508626107c6dc5a4222a77c483db929778a06a1825b61ff3bd6d3df271743c1`;
+- exact objective/alignment migration SHA-256
+  `82734db13f473c011ae61b24fc67601ac84cca986bf64395ac9ddd98ce07988a` и
+  exact publication V2 migration SHA-256
+  `19d4f9fddbed2beedd1b3ad60e0100e27d8d774852c4a4d95e23593fbf82e8f8`
+  завершились двумя наблюдаемыми `COMMIT`;
+- postflight подтвердил RLS/ACL/RPC/FK/trigger, parent-first locks,
+  publication V2 и PostgREST service visibility; service-role GET objective,
+  Component и observation surfaces вернули `200`, а anon objective GET —
+  `401`;
+- canonical counts не изменились, objectives, Component alignment/activity и
+  observation-objective rows остались `0`; legacy V1 сохранил прежние bytes и
+  checksum;
+- production mutation fixtures/probes не создавались. Task commit, Coolify
+  rollout и deployed-web smoke остаются pending.
 
 ### Production CC1 Communication Center
 
@@ -1073,6 +1181,7 @@ contacts, exact timestamps, foreign titles и private comments не возвра
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | Course/Lesson                                  | owner `SELECT/INSERT` + allowlisted authored-column `UPDATE`; no direct `DELETE`, `archived_at` или `course_id` update после A1 | RLS + owner service, `archive_course` и Lesson lifecycle RPC |
 | Component/Slide/File                           | existing owner-scoped permissions                                                                                               | RLS + owner service/RPC                                      |
+| `learning_objective` (LA-M2 production)        | owner-scoped `SELECT`; raw mutations closed                                                                                     | authenticated objective RPC; dependent web pending           |
 | Publication/revision/asset/origin              | none                                                                                                                            | server-only service-role adapter + closed admin RPC          |
 | Attestation definition/attempt/award           | none; `course.learning_audience` задаётся при create и затем immutable                                                          | owner/self aggregate RPC + service-only publication wrappers |
 | `learner_profile`                              | own canonical row `SELECT`; no direct mutation                                                                                  | supported identity workflows                                 |
@@ -1135,9 +1244,10 @@ guard.
 В active model по-прежнему нет Methodology, Lesson Step/root Step,
 `lesson_run_participant`, operational LessonRun snapshot, persisted Run/Record
 status, Homework persistence, parsing/RAG, learner enrollment/consumption
-детского Course, live Student Screen, Course objectives, learner attempts,
-typed evidence или mastery/objective-state persistence. E2 educator
-self-learning progress —
+детского Course, live Student Screen, learner attempts, durable typed evidence
+или mastery/objective-state persistence. LA-M2 Course objectives/alignment
+существуют в current production DB и ready source, но ещё не в deployed web.
+E2 educator self-learning progress —
 отдельный Account-scoped contract без roster/Run. Observer capability не
 является Parent/Guardian role, а
 AI consent не является Course access.
@@ -1151,9 +1261,10 @@ provider-backed explicit action executor доступны в current application
 `scripts/refresh-schema-snapshot.sh` принимает ровно два строгих compatibility
 stage: `expand` сохраняет полный legacy compatibility contract, `contract`
 требует завершённый M4 cleanup. Current script дополнительно требует
-полный M1–M3 identity contract, M5/M6 Auth hardening, A1/E1/E2/CC1/A2 и LA-M1
-database contract. Contract snapshot сохраняет verified clone provenance, а
-отдельный production execution record выше подтверждает exact apply/postflight.
+полный M1–M3 identity contract, M5/M6 Auth hardening, A1/E1/E2/CC1/A2, LA-M1 и
+LA-M2 database contracts. Contract snapshot сохраняет verified clone
+provenance; отдельный production execution record подтверждает exact
+apply/postflight только для уже применённого production head.
 В обоих
 signature проверяет:
 
@@ -1178,6 +1289,9 @@ signature проверяет:
 - LA-M1 observation table, recorder policy/closed mutation ACL, batch RPC
   security/ACL, composite recorder FK, nullable live Component FK и absent
   completion guard;
+- LA-M2 objective table/RLS/closed raw mutation ACL, objective/component RPC
+  security и lock order, same-Course/archive/role constraints, observation
+  objective-at-time retention и publication V1/V2 compatibility/remap;
 - сохранность cross-schema Auth/Storage section.
 
 Перед refresh выполнить read-only ShiDao identity/schema sanity check:
@@ -1209,8 +1323,8 @@ capability, exact review/approval, revision-scoped progress, official license
 total `17` authenticated user RPC; SHA-256
 `a91aefb693fc5857e1ae921e7226bc688230d0dd3c7e9373197c1006b4314a7d`.
 
-После exact LA-M1 clone rehearsal current contract snapshot снят
-`2026-08-20T07:17:17Z`; SHA-256
-`4e04a6f7ee6ffe3c925e9d225534fca75c3316bc5671ad072dad7f91740ad037`.
-Production apply/postflight завершены 20 августа 2026 года и зафиксированы в
-LA-M1 execution record выше.
+После exact LA-M2 production-derived clone rehearsal contract
+snapshot снят `2026-08-20T09:54:46Z`; SHA-256
+`46aabae2c1a00723c2c4a3322060cb49bd48f40a0ac23d7f8a294c64c630b8b3`.
+LA-M2 production apply/postflight завершены и зафиксированы выше; dependent
+web execution record пока отсутствует.

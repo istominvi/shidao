@@ -17,6 +17,7 @@ import {
 const COURSE_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const LESSON_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const COMPONENT_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+const OBJECTIVE_ID = "ffffffff-ffff-4fff-8fff-ffffffffffff";
 
 const actor: CourseBuilderActor = {
   authUserId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -38,7 +39,12 @@ function createServiceDouble(calls: RecordedCall[]) {
     createDraft: (...args: unknown[]) => record("createDraft", args),
     getCourse: (...args: unknown[]) => record("getCourse", args),
     addLesson: (...args: unknown[]) => record("addLesson", args),
+    createLearningObjective: (...args: unknown[]) =>
+      record("createLearningObjective", args),
+    archiveLearningObjective: (...args: unknown[]) =>
+      record("archiveLearningObjective", args),
     addComponent: (...args: unknown[]) => record("addComponent", args),
+    updateComponent: (...args: unknown[]) => record("updateComponent", args),
     setComponentStudentScreen: (...args: unknown[]) =>
       record("setComponentStudentScreen", args),
     reorderComponent: (...args: unknown[]) => record("reorderComponent", args),
@@ -96,6 +102,22 @@ test("JSON Schema is generated from the canonical application and registry contr
   assert.match(addComponentJson, /storedFileId/);
   assert.match(addComponentJson, /showResults/);
   assert.match(addComponentJson, /shuffle/);
+  assert.match(addComponentJson, /primaryLearningObjectiveId/);
+  assert.match(addComponentJson, /activityRole/);
+
+  const createObjectiveJson = JSON.stringify(
+    courseBuilderMcpInputJsonSchemas["course.create_learning_objective"],
+  );
+  assert.match(createObjectiveJson, /courseId/);
+  assert.match(createObjectiveJson, /title/);
+  assert.match(createObjectiveJson, /description/);
+
+  const updateComponentJson = JSON.stringify(
+    courseBuilderMcpInputJsonSchemas["lesson.update_component"],
+  );
+  assert.match(updateComponentJson, /componentId/);
+  assert.match(updateComponentJson, /primaryLearningObjectiveId/);
+  assert.match(updateComponentJson, /practice|assessment|survey/);
 
   const studentScreenJson = JSON.stringify(
     courseBuilderMcpInputJsonSchemas["lesson.set_component_student_screen"],
@@ -127,11 +149,24 @@ test("each tool validates input and delegates once with the injected actor", asy
     courseId: COURSE_ID,
     title: "Знакомство",
   });
+  await byName.get("course.create_learning_objective")?.execute({
+    courseId: COURSE_ID,
+    title: "Различает приветствия",
+  });
+  await byName.get("course.archive_learning_objective")?.execute({
+    courseId: COURSE_ID,
+    learningObjectiveId: OBJECTIVE_ID,
+  });
   await byName.get("lesson.add_component")?.execute({
     lessonId: LESSON_ID,
     typeKey: "rich_text",
     payload: { title: "Знакомство", format: "markdown" },
     placement: componentRegistry.rich_text.defaultPlacement,
+  });
+  await byName.get("lesson.update_component")?.execute({
+    componentId: COMPONENT_ID,
+    primaryLearningObjectiveId: OBJECTIVE_ID,
+    activityRole: "assessment",
   });
   await byName.get("lesson.set_component_student_screen")?.execute({
     componentId: COMPONENT_ID,
@@ -148,7 +183,10 @@ test("each tool validates input and delegates once with the injected actor", asy
       "createDraft",
       "getCourse",
       "addLesson",
+      "createLearningObjective",
+      "archiveLearningObjective",
       "addComponent",
+      "updateComponent",
       "setComponentStudentScreen",
       "reorderComponent",
     ],
@@ -172,14 +210,31 @@ test("each tool validates input and delegates once with the injected actor", asy
       summary: "",
     },
   ]);
-  assert.deepEqual(calls[3]?.args[1], {
+  assert.deepEqual(calls[3]?.args.slice(1), [
+    COURSE_ID,
+    {
+      title: "Различает приветствия",
+      description: null,
+    },
+  ]);
+  assert.deepEqual(calls[4]?.args.slice(1), [COURSE_ID, OBJECTIVE_ID]);
+  assert.deepEqual(calls[5]?.args[1], {
     lessonId: LESSON_ID,
     typeKey: "rich_text",
     payload: { title: "Знакомство", format: "markdown" },
     placement: componentRegistry.rich_text.defaultPlacement,
+    primaryLearningObjectiveId: null,
+    activityRole: null,
   });
-  assert.deepEqual(calls[4]?.args.slice(1), [COMPONENT_ID, { mode: "new" }]);
-  assert.deepEqual(calls[5]?.args.slice(1), [COMPONENT_ID, { toPosition: 2 }]);
+  assert.deepEqual(calls[6]?.args.slice(1), [
+    COMPONENT_ID,
+    {
+      primaryLearningObjectiveId: OBJECTIVE_ID,
+      activityRole: "assessment",
+    },
+  ]);
+  assert.deepEqual(calls[7]?.args.slice(1), [COMPONENT_ID, { mode: "new" }]);
+  assert.deepEqual(calls[8]?.args.slice(1), [COMPONENT_ID, { toPosition: 2 }]);
 });
 
 test("invalid tool input never reaches the application service", async () => {
@@ -213,6 +268,29 @@ test("invalid tool input never reaches the application service", async () => {
       errorCode: "ZodError",
     },
   ]);
+});
+
+test("MCP role validation is registry-driven and fails before the service", async () => {
+  const calls: RecordedCall[] = [];
+  const tools = createCourseBuilderMcpTools({
+    service: createServiceDouble(calls),
+    actor,
+    audit: () => undefined,
+  });
+  const addComponent = tools.find(
+    (tool) => tool.name === "lesson.add_component",
+  );
+
+  await assert.rejects(
+    addComponent?.execute({
+      lessonId: LESSON_ID,
+      typeKey: "rich_text",
+      payload: componentRegistry.rich_text.defaultPayload,
+      placement: componentRegistry.rich_text.defaultPlacement,
+      activityRole: "assessment",
+    }) ?? Promise.reject(new Error("tool not found")),
+  );
+  assert.deepEqual(calls, []);
 });
 
 test("adapter logs only safe result identifiers and strips signed attachment URLs", async () => {

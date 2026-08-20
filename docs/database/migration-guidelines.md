@@ -2,15 +2,24 @@
 
 **Статус:** обязательная политика для всех новых DB changes
 **Последний подтверждённый production schema head:**
-`20260819142602_learning_activity_foundation.sql`; exact migration SHA-256 —
-`07884719180adf23309ad8253dc286e7a3621797789a50fe37a69020fe0ebde5`.
-Migration применена к production с `COMMIT` 20 августа 2026 года после
-read-only identity, production-derived clone rehearsal и verified backup;
-RLS/ACL/PostgREST postflight прошёл. Contract snapshot снят из verified
-migrated clone
-`2026-08-20T07:17:17Z`; SHA-256
-`4e04a6f7ee6ffe3c925e9d225534fca75c3316bc5671ad072dad7f91740ad037`.
-Его clone provenance отделена от production execution record.
+`20260820090529_course_publication_snapshot_v2.sql`, применённый после
+`20260820085049_learning_objectives_component_alignment.sql` с SHA-256
+`82734db13f473c011ae61b24fc67601ac84cca986bf64395ac9ddd98ce07988a`, затем
+publication V2 migration с SHA-256
+`19d4f9fddbed2beedd1b3ad60e0100e27d8d774852c4a4d95e23593fbf82e8f8`.
+Production-derived clone прошёл exact rollback/apply, functional harness и
+восемь multi-session races; contract snapshot снят
+`2026-08-20T09:54:46Z`, SHA-256
+`46aabae2c1a00723c2c4a3322060cb49bd48f40a0ac23d7f8a294c64c630b8b3`.
+После project-local read-only sanity создан verified backup
+`/root/shidao-db-backups/shidao-before-learning-objective-alignment-20260820T104240Z.dump`
+(size `1507990`, mode `600`, `1771` restore-list entries, SHA-256
+`d508626107c6dc5a4222a77c483db929778a06a1825b61ff3bd6d3df271743c1`).
+Обе migrations завершились наблюдаемым `COMMIT`; RLS/ACL/RPC/FK/trigger,
+lock-order, publication V2, PostgREST visibility, unchanged canonical counts и
+legacy V1 bytes/checksum прошли postflight без production fixtures. Task
+commit/dependent web rollout ещё pending; clone provenance по-прежнему
+отделена от production execution record.
 **Последняя применённая authored-data-only migration:**
 exact tracked `20260813063716_unify_heading_rich_text_components.sql` применён
 production; `psql` зафиксировал `COMMIT`, а maximum `updated_at`
@@ -207,6 +216,10 @@ generated SQL snapshot не переписывается только ради �
 - после LA-M1 — observation table, composite recorder FK, nullable live
   Component FK, recorder SELECT policy, закрытый raw mutation ACL, narrow batch
   RPC и absent-completion guard.
+- после LA-M2 — objective table/RLS/closed raw mutation ACL, narrow objective
+  RPC, canonical Component update RPC и parent-first lock order,
+  same-Course/archive/role constraints, observation objective-at-time
+  provenance и exact publication V1/V2 compatibility/remap.
 
 Скрипт сначала проверяет read-only ShiDao schema signature, пишет во временный
 файл и не должен менять migration history. Полученный snapshot не применяется
@@ -240,6 +253,23 @@ generated SQL snapshot не переписывается только ради �
 - отсутствие `private_note` в learner/observer safe projections;
 - PostgREST RPC visibility после cache reload при сохранённом запрете raw
   mutation.
+
+Для LA-M2 этот же gate расширяется:
+
+- functional harness проверяет owner/cross-account/cross-Course access,
+  create/update/archive, retained archived alignment, supported activity roles,
+  objective-at-time observation provenance, отсутствие backfill старых rows и
+  immutable publication V1/V2 copy/duplicate/remap;
+- multi-session harness доказывает восемь реальных исходов: четыре LA-M1 races,
+  оба alignment↔observation-save и оба publication↔objective-update; lock order
+  нельзя заменять UI retry;
+- learner-safe application projections не содержат answer keys, evaluator
+  config, objective IDs или activity role; malformed projection fail closed;
+- postflight отдельно подтверждает objective RLS/ACL/RPC, Component update RPC,
+  observation retention, publication constraint/functions и неизменность
+  legacy revision bytes/checksum;
+- evidence eligibility остаётся pure projection и не создаёт persisted
+  evidence, objective state или mastery.
 
 Записать измеримые результаты в commit/hand-off, а не только «migration
 успешна».

@@ -340,6 +340,27 @@
     #fff;
 }
 
+.objectiveContext {
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.85rem;
+  background: #f9fafb;
+  color: #4b5563;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.objectiveContext[data-aligned="true"] {
+  border-color: #c4b5fd;
+  background: #f5f3ff;
+  color: #5b21b6;
+}
+
+.objectiveContext p {
+  margin: 0.2rem 0 0;
+}
+
 .criterionCard {
   border-color: #ddd6fe;
   background: linear-gradient(145deg, #fff 20%, #faf8ff 100%);

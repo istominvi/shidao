@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import type {
   CourseBuilderActor,
@@ -44,6 +45,7 @@ function emptyCourse(targetLessonCount = 2): CourseWorkspace {
     updatedAt: NOW,
     lessons: [],
     attachments: [],
+    learningObjectives: [],
   };
 }
 
@@ -124,6 +126,8 @@ function inMemoryService(
         placement: clone(input.placement),
         visibility: "staff_only",
         studentSlideId: null,
+        primaryLearningObjectiveId: input.primaryLearningObjectiveId,
+        activityRole: input.activityRole,
         createdAt: NOW,
         updatedAt: NOW,
       };
@@ -698,4 +702,60 @@ test("lesson apply rejects a preview after the lesson content changes", async ()
   );
   assert.equal(state.course.lessons[0]?.summary, "Свежая ручная правка");
   assert.equal(state.course.lessons[0]?.components.length, 0);
+});
+
+test("lesson apply rejects a preview after Course objectives change", async () => {
+  const state = inMemoryService(emptyCourse(1));
+  const lesson = await state.service.addLesson(ACTOR, COURSE_ID, {
+    title: "Знакомство",
+    summary: "Первая версия",
+  });
+  state.course.learningObjectives = [
+    {
+      id: "90000000-0000-4000-8000-000000000001",
+      courseId: COURSE_ID,
+      title: "Различает формальное и неформальное приветствие",
+      description: null,
+      archivedAt: null,
+      createdAt: NOW,
+      updatedAt: NOW,
+    },
+  ];
+  const ai = createAiCourseBuilderService({
+    actor: ACTOR,
+    service: state.service,
+    provider: jsonProvider(LESSON_PROVIDER_PLAN),
+    audit: () => undefined,
+  });
+  const preview = await ai.planLesson(COURSE_ID, {
+    lessonId: lesson.id,
+    title: lesson.title,
+    instruction: "",
+  });
+  state.course.learningObjectives[0]!.title =
+    "Использует формальное приветствие в диалоге";
+
+  await assert.rejects(
+    ai.applyLessonPlan(COURSE_ID, {
+      lessonId: preview.lessonId,
+      title: preview.title,
+      baseContextFingerprint: preview.baseContextFingerprint,
+      baseLessonIds: preview.baseLessonIds,
+      baseComponentIds: preview.baseComponentIds,
+      plan: preview.plan,
+    }),
+    /изменились после предпросмотра/,
+  );
+  assert.equal(state.course.lessons[0]?.components.length, 0);
+});
+
+test("AI Course Builder is an adapter over the application service only", () => {
+  const source = readFileSync(
+    "src/modules/ai/course-builder-service.ts",
+    "utf8",
+  );
+  assert.match(source, /CourseBuilderApplicationService/);
+  assert.match(source, /service\.addComponent\(/);
+  assert.doesNotMatch(source, /from ["'][^"']*repository["']/);
+  assert.doesNotMatch(source, /supabase|postgres|fetch\(/i);
 });

@@ -5,7 +5,7 @@ import {
   copyCourseInputSchema,
   COURSE_ASSET_BUCKET,
   COURSE_PUBLICATION_ASSET_BUCKET,
-  coursePublicationSnapshotSchema,
+  coursePublicationSnapshotV2Schema,
   CoursePublicationAccessError,
   CoursePublicationConflictError,
   CoursePublicationValidationError,
@@ -50,7 +50,10 @@ import {
   DEFAULT_COURSE_LEARNING_AUDIENCE,
   type CourseLearningAudience,
 } from "@/modules/course-builder/learning-audience";
-import type { ComponentTypeKey } from "@/modules/course-builder/registry/contracts";
+import {
+  projectLearnerComponentPayload,
+  type ComponentTypeKey,
+} from "@/modules/course-builder/registry/contracts";
 
 export const COURSE_PUBLICATION_MAX_MATERIALS = 24;
 export const COURSE_PUBLICATION_MAX_TOTAL_BYTES = 120 * 1024 * 1024;
@@ -334,6 +337,38 @@ export function buildCoursePublicationSnapshot(input: {
     sizeBytes: asset.sizeBytes,
     checksumSha256: asset.checksumSha256.toLowerCase(),
   }));
+  const orderedObjectives = [...workspace.learningObjectives].sort(
+    (left, right) =>
+      left.createdAt.localeCompare(right.createdAt) ||
+      left.id.localeCompare(right.id),
+  );
+  if (
+    orderedObjectives.some((objective) => objective.courseId !== workspace.id)
+  ) {
+    throw new CoursePublicationConflictError(
+      "Курс содержит цель из другого курса.",
+      "publication_objective_course_mismatch",
+    );
+  }
+  const objectiveRefBySourceId = new Map(
+    orderedObjectives.map((objective) => [
+      objective.id,
+      deterministicRef(publicationId, "objective", objective.id),
+    ]),
+  );
+  if (objectiveRefBySourceId.size !== orderedObjectives.length) {
+    throw new CoursePublicationConflictError(
+      "Курс содержит повторяющиеся цели.",
+      "publication_objective_duplicate",
+    );
+  }
+  const objectives = orderedObjectives.map((objective, index) => ({
+    ref: objectiveRefBySourceId.get(objective.id)!,
+    position: index + 1,
+    title: objective.title,
+    description: objective.description,
+    archivedAt: objective.archivedAt,
+  }));
   const lessons = [...workspace.lessons]
     .sort((left, right) => left.position - right.position)
     .map((lesson) => {
@@ -351,19 +386,35 @@ export function buildCoursePublicationSnapshot(input: {
         estimatedDurationMinutes: lesson.estimatedDurationMinutes ?? null,
         components: [...lesson.components]
           .sort((left, right) => left.position - right.position)
-          .map((component) => ({
-            ref: deterministicRef(publicationId, "component", component.id),
-            position: component.position,
-            typeKey: component.typeKey,
-            schemaVersion: component.schemaVersion,
-            payload: remapPayload(component, materialRefBySourceId),
-            placement: structuredClone(component.placement),
-            visibility: component.visibility,
-            studentSlideRef:
-              component.studentSlideId === null
+          .map((component) => {
+            const primaryObjectiveRef =
+              component.primaryLearningObjectiveId === null
                 ? null
-                : (slideRefBySourceId.get(component.studentSlideId) ?? null),
-          })),
+                : objectiveRefBySourceId.get(
+                    component.primaryLearningObjectiveId,
+                  );
+            if (primaryObjectiveRef === undefined) {
+              throw new CoursePublicationConflictError(
+                "Компонент ссылается на цель вне этого курса.",
+                "publication_component_objective_missing",
+              );
+            }
+            return {
+              ref: deterministicRef(publicationId, "component", component.id),
+              position: component.position,
+              typeKey: component.typeKey,
+              schemaVersion: component.schemaVersion,
+              payload: remapPayload(component, materialRefBySourceId),
+              placement: structuredClone(component.placement),
+              visibility: component.visibility,
+              studentSlideRef:
+                component.studentSlideId === null
+                  ? null
+                  : (slideRefBySourceId.get(component.studentSlideId) ?? null),
+              primaryObjectiveRef,
+              activityRole: component.activityRole,
+            };
+          }),
         slides: [...lesson.studentSlides]
           .sort((left, right) => left.position - right.position)
           .map((slide) => ({
@@ -385,8 +436,8 @@ export function buildCoursePublicationSnapshot(input: {
       }
     }
   }
-  return parsePublicationContract(coursePublicationSnapshotSchema, {
-    schemaVersion: 1,
+  return parsePublicationContract(coursePublicationSnapshotV2Schema, {
+    schemaVersion: 2,
     course: {
       title: workspace.title,
       subject: workspace.subject,
@@ -395,6 +446,7 @@ export function buildCoursePublicationSnapshot(input: {
       audienceDescription: workspace.audienceDescription,
       targetLessonCount: workspace.targetLessonCount,
     },
+    objectives,
     lessons,
     materials,
   });
@@ -453,11 +505,43 @@ function mapCatalogEntry(
   };
 }
 
+function projectCatalogComponentPayload(input: {
+  typeKey: ComponentTypeKey;
+  payload: Record<string, unknown>;
+}) {
+  try {
+    const projected = projectLearnerComponentPayload(
+      input.typeKey,
+      input.payload,
+    );
+    if (
+      projected === null ||
+      typeof projected !== "object" ||
+      Array.isArray(projected)
+    ) {
+      throw new Error("learner payload must be an object");
+    }
+    return structuredClone(projected) as Record<string, unknown>;
+  } catch {
+    throw new CoursePublicationConflictError(
+      "Содержимое публикации повреждено и не может быть показано ученику.",
+      "publication_component_delivery_invalid",
+    );
+  }
+}
+
 function createIdMapFromSnapshot(
   snapshot: CoursePublicationSnapshot,
   createId: () => string,
 ): PublicationIdMap {
   return {
+    objectives:
+      snapshot.schemaVersion === 2
+        ? snapshot.objectives.map((objective) => ({
+            ref: objective.ref,
+            id: createId(),
+          }))
+        : [],
     lessons: snapshot.lessons.map((lesson) => ({
       ref: lesson.ref,
       id: createId(),
@@ -479,6 +563,10 @@ function createIdMapFromWorkspace(
   createId: () => string,
 ): PublicationIdMap {
   return {
+    objectives: workspace.learningObjectives.map((objective) => ({
+      ref: objective.id,
+      id: createId(),
+    })),
     lessons: workspace.lessons.map((lesson) => ({
       ref: lesson.id,
       id: createId(),
@@ -944,9 +1032,9 @@ export function createCoursePublicationService(
                   .map((component) => ({
                     id: component.ref,
                     position: component.position,
-                    typeKey: component.typeKey as ComponentTypeKey,
+                    typeKey: component.typeKey,
                     schemaVersion: component.schemaVersion,
-                    payload: structuredClone(component.payload),
+                    payload: projectCatalogComponentPayload(component),
                     placement: structuredClone(component.placement),
                   })),
               }))

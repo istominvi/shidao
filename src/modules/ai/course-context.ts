@@ -1,6 +1,7 @@
 import type {
   CourseLesson,
   CourseWorkspace,
+  LearningObjective,
   LessonComponent,
 } from "@/modules/course-builder/domain";
 import type {
@@ -152,6 +153,7 @@ const PRIVATE_OR_TECHNICAL_KEYS = new Set([
 const MAX_COMPONENT_PAYLOAD_CONTEXT_CHARACTERS = 1_800;
 const MAX_PAYLOAD_STRING_CHARACTERS = 800;
 const MAX_PAYLOAD_ARRAY_ITEMS = 12;
+const MAX_AI_LEARNING_OBJECTIVES = 200;
 
 type ContextBudget = { remaining: number };
 
@@ -207,7 +209,43 @@ function compactPayload(
   return undefined;
 }
 
-function componentContext(component: LessonComponent) {
+function objectiveContext(objective: LearningObjective) {
+  return {
+    title: clip(objective.title, 240),
+    description: objective.description
+      ? clip(objective.description, 2_000)
+      : null,
+    archived: objective.archivedAt !== null,
+  };
+}
+
+function learningObjectivesContext(course: CourseWorkspace) {
+  const ordered = course.learningObjectives
+    .slice()
+    .sort(
+      (left, right) =>
+        left.createdAt.localeCompare(right.createdAt) ||
+        left.id.localeCompare(right.id),
+    );
+  const included = ordered.slice(0, MAX_AI_LEARNING_OBJECTIVES);
+  return {
+    objectiveCount: ordered.length,
+    objectivesIncluded: included.length,
+    objectivesTruncated: included.length < ordered.length,
+    objectives: included.map(objectiveContext),
+  };
+}
+
+function componentContext(
+  component: LessonComponent,
+  learningObjectives: readonly LearningObjective[],
+) {
+  const primaryObjective =
+    component.primaryLearningObjectiveId === null
+      ? null
+      : (learningObjectives.find(
+          (objective) => objective.id === component.primaryLearningObjectiveId,
+        ) ?? null);
   return {
     position: component.position,
     typeKey: component.typeKey,
@@ -215,11 +253,18 @@ function componentContext(component: LessonComponent) {
       component.visibility === "learner_visible"
         ? "показывается ученику"
         : "только преподавателю",
+    primaryLearningObjective: primaryObjective
+      ? objectiveContext(primaryObjective)
+      : null,
+    activityRole: component.activityRole,
     payload: compactPayload(component.payload),
   };
 }
 
-function selectedLessonContext(lesson: CourseLesson) {
+function selectedLessonContext(
+  lesson: CourseLesson,
+  learningObjectives: readonly LearningObjective[],
+) {
   const orderedComponents = lesson.components
     .slice()
     .sort((left, right) => left.position - right.position);
@@ -230,7 +275,9 @@ function selectedLessonContext(lesson: CourseLesson) {
     componentCount: orderedComponents.length,
     componentsIncluded: Math.min(orderedComponents.length, 20),
     componentsTruncated: orderedComponents.length > 20,
-    components: orderedComponents.slice(0, 20).map(componentContext),
+    components: orderedComponents
+      .slice(0, 20)
+      .map((component) => componentContext(component, learningObjectives)),
     studentSlideCount: lesson.studentSlides.length,
   };
 }
@@ -364,6 +411,7 @@ export function buildCoursePlanningContext(
   return boundAiContext({
     course: courseBasics(course),
     currentAudience: courseAudienceContext(audience),
+    learningObjectives: learningObjectivesContext(course),
     existingLessons: course.lessons.map((lesson) => ({
       position: lesson.position,
       title: lesson.title,
@@ -384,7 +432,7 @@ export function buildLessonPlanningContext(
     course: courseBasics(course),
     currentAudience: courseAudienceContext(learningHistory.audience),
     lesson: lesson
-      ? selectedLessonContext(lesson)
+      ? selectedLessonContext(lesson, course.learningObjectives)
       : {
           title: proposedTitle,
           teacherComment: "",
@@ -396,6 +444,7 @@ export function buildLessonPlanningContext(
       title: item.title,
       teacherComment: clip(item.summary, 300),
     })),
+    learningObjectives: learningObjectivesContext(course),
     learningHistory: learningHistoryContext(learningHistory),
     sharedCanonicalHistory: sharedHistory.used
       ? {
@@ -427,8 +476,9 @@ export function buildAssistantContext(
       componentCount: lesson.components.length,
       studentSlideCount: lesson.studentSlides.length,
     })),
+    learningObjectives: learningObjectivesContext(course),
     selectedLesson: selectedLesson
-      ? selectedLessonContext(selectedLesson)
+      ? selectedLessonContext(selectedLesson, course.learningObjectives)
       : null,
     learningHistory: learningHistoryContext(learningHistory),
     sharedCanonicalHistory: sharedHistory.used

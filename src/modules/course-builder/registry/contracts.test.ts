@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  activityRoleSchema,
   componentCategorySchema,
   componentDefinitions,
   componentJsonSchemas,
@@ -15,6 +16,9 @@ import {
   lessonAddComponentInputSchema,
   parseComponentPayload,
   parseLessonAddComponentInput,
+  projectComponentEvaluatorConfig,
+  projectLearnerComponentPayload,
+  type ActivityRole,
   type ComponentTypeKey,
 } from "./contracts";
 
@@ -120,6 +124,218 @@ test("every definition default payload and placement validates", () => {
       );
     }
   }
+});
+
+const EXPECTED_ACTIVITY_ROLES = {
+  single_choice_poll: ["survey"],
+  matching_game: ["practice", "assessment"],
+  choice_quiz: ["practice", "assessment"],
+  fill_blanks: ["practice", "assessment"],
+  word_bank: ["practice", "assessment"],
+  sequence: ["practice", "assessment"],
+  categorize: ["practice", "assessment"],
+  free_response: ["practice", "assessment"],
+  word_builder: ["practice", "assessment"],
+} as const satisfies Partial<Record<ComponentTypeKey, readonly ActivityRole[]>>;
+
+test("the single component registry owns the exhaustive activity facet map", () => {
+  assert.deepEqual(activityRoleSchema.options, [
+    "practice",
+    "assessment",
+    "survey",
+  ]);
+
+  for (const key of componentTypeKeys) {
+    const facet = componentRegistry[key].activityFacet;
+    const expected = EXPECTED_ACTIVITY_ROLES[
+      key as keyof typeof EXPECTED_ACTIVITY_ROLES
+    ] as readonly ActivityRole[] | undefined;
+    if (!expected) {
+      assert.equal(facet, undefined, `${key} must remain passive`);
+      continue;
+    }
+    assert.ok(facet, `${key} must expose an activity facet`);
+    assert.deepEqual(facet.supportedRoles, expected);
+    assert.doesNotThrow(() =>
+      facet.learnerDeliverySchema.parse(
+        projectLearnerComponentPayload(
+          key,
+          componentRegistry[key].defaultPayload,
+        ),
+      ),
+    );
+    assert.doesNotThrow(() =>
+      facet.evaluatorConfigSchema.parse(
+        projectComponentEvaluatorConfig(
+          key,
+          componentRegistry[key].defaultPayload,
+        ),
+      ),
+    );
+  }
+});
+
+function collectObjectKeys(value: unknown, keys = new Set<string>()) {
+  if (Array.isArray(value)) {
+    for (const item of value) collectObjectKeys(item, keys);
+    return keys;
+  }
+  if (!value || typeof value !== "object") return keys;
+  for (const [key, nested] of Object.entries(value)) {
+    keys.add(key);
+    collectObjectKeys(nested, keys);
+  }
+  return keys;
+}
+
+test("activity projections are deterministic and recursively exclude evaluator data", () => {
+  const forbiddenLearnerKeys = new Set([
+    "accepted",
+    "answers",
+    "assignments",
+    "categoryId",
+    "correctOptionIds",
+    "distractors",
+    "explanation",
+    "isCorrect",
+    "orderedItemIds",
+    "pairs",
+    "targetWord",
+  ]);
+
+  for (const key of Object.keys(
+    EXPECTED_ACTIVITY_ROLES,
+  ) as (keyof typeof EXPECTED_ACTIVITY_ROLES)[]) {
+    const payload = componentRegistry[key].defaultPayload;
+    const first = projectLearnerComponentPayload(key, payload);
+    const second = projectLearnerComponentPayload(key, payload);
+    assert.deepEqual(first, second, `${key} delivery must be stable`);
+    for (const projectedKey of collectObjectKeys(first)) {
+      assert.equal(
+        forbiddenLearnerKeys.has(projectedKey),
+        false,
+        `${key} leaked evaluator key ${projectedKey}`,
+      );
+    }
+  }
+});
+
+test("structural activity projections remove correlation and canonical order", () => {
+  const matchingAuthor = {
+    instruction: "Соедините",
+    pairs: [
+      { id: testUuid(101), left: "Лево A", right: "Право A" },
+      { id: testUuid(102), left: "Лево B", right: "Право B" },
+      { id: testUuid(103), left: "Лево C", right: "Право C" },
+    ],
+    shuffle: false,
+  };
+  const matching = projectLearnerComponentPayload(
+    "matching_game",
+    matchingAuthor,
+  );
+  const matchingByLeft = new Map(
+    matchingAuthor.pairs.map((pair) => [pair.left, pair.right]),
+  );
+  assert.ok(
+    matching.leftItems.every(
+      (item, index) =>
+        matchingByLeft.get(item.text) !== matching.rightItems[index]?.text,
+    ),
+  );
+  assert.equal(
+    matching.leftItems.some((left) =>
+      matching.rightItems.some((right) => right.id === left.id),
+    ),
+    false,
+  );
+
+  const sequenceAuthor = {
+    instruction: "По порядку",
+    items: [
+      { id: testUuid(111), text: "Первый" },
+      { id: testUuid(112), text: "Второй" },
+      { id: testUuid(113), text: "Третий" },
+    ],
+    mode: "sentences" as const,
+    shuffle: false,
+  };
+  const sequence = projectLearnerComponentPayload("sequence", sequenceAuthor);
+  assert.notDeepEqual(
+    sequence.items.map((item) => item.id),
+    sequenceAuthor.items.map((item) => item.id),
+  );
+
+  const word = projectLearnerComponentPayload("word_builder", {
+    instruction: "Соберите",
+    targetWord: "слово",
+    shuffle: false,
+  });
+  assert.notEqual(word.tokens.map((token) => token.text).join(""), "слово");
+});
+
+test("evaluator projections retain private keys without contaminating delivery", () => {
+  const quiz = componentRegistry.choice_quiz.defaultPayload;
+  const quizDelivery = projectLearnerComponentPayload("choice_quiz", quiz);
+  const quizEvaluator = projectComponentEvaluatorConfig("choice_quiz", quiz);
+  assert.equal("isCorrect" in quizDelivery.options[0], false);
+  assert.equal("explanation" in quizDelivery, false);
+  assert.deepEqual(
+    quizEvaluator.correctOptionIds,
+    quiz.options
+      .filter((option) => option.isCorrect)
+      .map((option) => option.id),
+  );
+
+  const fillDelivery = projectLearnerComponentPayload(
+    "fill_blanks",
+    componentRegistry.fill_blanks.defaultPayload,
+  );
+  const fillEvaluator = projectComponentEvaluatorConfig(
+    "fill_blanks",
+    componentRegistry.fill_blanks.defaultPayload,
+  );
+  assert.equal("answers" in fillDelivery, false);
+  assert.ok(fillEvaluator.answers[0]?.accepted.length);
+
+  const categorization = projectLearnerComponentPayload(
+    "categorize",
+    componentRegistry.categorize.defaultPayload,
+  );
+  assert.ok(categorization.items.every((item) => !("categoryId" in item)));
+  assert.ok(
+    projectComponentEvaluatorConfig(
+      "categorize",
+      componentRegistry.categorize.defaultPayload,
+    ).assignments.every((assignment) => assignment.categoryId.length > 0),
+  );
+});
+
+test("projection helpers fail closed on malformed author payloads and passive evaluator access", () => {
+  assert.throws(() =>
+    projectLearnerComponentPayload("choice_quiz", {
+      ...componentRegistry.choice_quiz.defaultPayload,
+      options: [{ id: testUuid(120), label: "Без ключа" }],
+    }),
+  );
+  assert.throws(() =>
+    projectComponentEvaluatorConfig("choice_quiz", {
+      ...componentRegistry.choice_quiz.defaultPayload,
+      options: [],
+    }),
+  );
+  assert.throws(() =>
+    projectComponentEvaluatorConfig(
+      "rich_text",
+      componentRegistry.rich_text.defaultPayload,
+    ),
+  );
+  assert.equal(
+    componentRegistry.choice_quiz.activityFacet.learnerDeliverySchema.safeParse(
+      componentRegistry.choice_quiz.defaultPayload,
+    ).success,
+    false,
+  );
 });
 
 test("rich text requires either a title or body while keeping both fields independent", () => {
@@ -663,7 +879,66 @@ test("dynamic add-component schema selects payload and placement by type key", (
 
   assert.equal(parsed.typeKey, "rich_text");
   assert.equal(parsed.payload.title, "Только заголовок");
+  assert.equal(parsed.primaryLearningObjectiveId, null);
+  assert.equal(parsed.activityRole, null);
   assert.equal("visibility" in parsed, false);
+
+  const objectiveId = testUuid(900);
+  const poll = parseLessonAddComponentInput({
+    lessonId: LESSON_ID,
+    typeKey: "single_choice_poll",
+    payload: componentRegistry.single_choice_poll.defaultPayload,
+    placement: componentRegistry.single_choice_poll.defaultPlacement,
+    primaryLearningObjectiveId: objectiveId,
+    activityRole: "survey",
+  });
+  assert.equal(poll.primaryLearningObjectiveId, objectiveId);
+  assert.equal(poll.activityRole, "survey");
+
+  for (const role of ["practice", "assessment"] as const) {
+    assert.equal(
+      lessonAddComponentInputSchema.safeParse({
+        lessonId: LESSON_ID,
+        typeKey: "choice_quiz",
+        payload: componentRegistry.choice_quiz.defaultPayload,
+        placement: componentRegistry.choice_quiz.defaultPlacement,
+        primaryLearningObjectiveId: null,
+        activityRole: role,
+      }).success,
+      true,
+    );
+  }
+  assert.equal(
+    lessonAddComponentInputSchema.safeParse({
+      lessonId: LESSON_ID,
+      typeKey: "choice_quiz",
+      payload: componentRegistry.choice_quiz.defaultPayload,
+      placement: componentRegistry.choice_quiz.defaultPlacement,
+      activityRole: "survey",
+    }).success,
+    false,
+  );
+  assert.equal(
+    lessonAddComponentInputSchema.safeParse({
+      lessonId: LESSON_ID,
+      typeKey: "rich_text",
+      payload: componentRegistry.rich_text.defaultPayload,
+      placement: componentRegistry.rich_text.defaultPlacement,
+      activityRole: "practice",
+    }).success,
+    false,
+  );
+  assert.equal(
+    lessonAddComponentInputSchema.safeParse({
+      lessonId: LESSON_ID,
+      typeKey: "single_choice_poll",
+      payload: componentRegistry.single_choice_poll.defaultPayload,
+      placement: componentRegistry.single_choice_poll.defaultPlacement,
+      primaryLearningObjectiveId: "not-a-guid",
+      activityRole: "survey",
+    }).success,
+    false,
+  );
 
   assert.equal(
     lessonAddComponentInputSchema.safeParse({
@@ -773,4 +1048,7 @@ test("JSON Schemas are generated from every registry schema", () => {
     assert.match(addComponentJson, new RegExp(`"const":"${typeKey}"`));
   }
   assert.doesNotMatch(addComponentJson, /"const":"heading"/);
+  assert.match(addComponentJson, /"primaryLearningObjectiveId"/);
+  assert.match(addComponentJson, /"enum":\["survey"\]/);
+  assert.match(addComponentJson, /"enum":\["practice","assessment"\]/);
 });

@@ -35,6 +35,7 @@ import {
   componentDisplayLabel,
   formatObservationTime,
   observationRatingOptions,
+  observationObjectiveTitleAtTime,
   observationsForComponent,
   persistedCriterionForComponent,
   suggestObservableCriterion,
@@ -173,6 +174,12 @@ export const RunObservationWorkspace = forwardRef<
     (component) => component.id === activeComponentId,
   );
   const activeComponent = activeIndex >= 0 ? components[activeIndex] : null;
+  const activeLearningObjective = activeComponent?.primaryLearningObjectiveId
+    ? (workspace.learningObjectives.find(
+        (objective) =>
+          objective.id === activeComponent.primaryLearningObjectiveId,
+      ) ?? null)
+    : null;
   const activeObservations = useMemo(
     () =>
       activeComponent
@@ -188,6 +195,16 @@ export const RunObservationWorkspace = forwardRef<
           observation,
         ]),
       ),
+    [activeObservations],
+  );
+  const activeObservationObjectiveTitles = useMemo(
+    () => [
+      ...new Set(
+        activeObservations
+          .map(observationObjectiveTitleAtTime)
+          .filter((title): title is string => title !== null),
+      ),
+    ],
     [activeObservations],
   );
   const assets = useMemo<SignedCourseComponentAssetMap>(
@@ -810,6 +827,37 @@ export const RunObservationWorkspace = forwardRef<
                 assets={assets}
                 mode="teacher"
               />
+            </div>
+            <div
+              className={styles.objectiveContext}
+              data-aligned={activeLearningObjective ? "true" : "false"}
+            >
+              <strong>
+                {activeLearningObjective
+                  ? "Учебная цель компонента"
+                  : "Учебная цель не выбрана"}
+              </strong>
+              {activeLearningObjective ? (
+                <p>
+                  {activeLearningObjective.title}
+                  {activeLearningObjective.archivedAt ? " · в архиве" : ""}
+                </p>
+              ) : (
+                <p>
+                  Наблюдение сохранится только в контексте компонента и не будет
+                  учитываться как подтверждение учебной цели.
+                </p>
+              )}
+              {activeObservationObjectiveTitles.length > 0 &&
+              (!activeLearningObjective ||
+                activeObservationObjectiveTitles.some(
+                  (title) => title !== activeLearningObjective.title,
+                )) ? (
+                <p>
+                  Сохранённые отметки относятся к целям:{" "}
+                  {activeObservationObjectiveTitles.join("; ")}.
+                </p>
+              ) : null}
             </div>
           </section>
 

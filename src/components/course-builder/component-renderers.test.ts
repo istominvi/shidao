@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
-import { componentTypeKeys } from "../../modules/course-builder/registry/contracts";
+import {
+  componentRegistry,
+  componentTypeKeys,
+  projectLearnerComponentPayload,
+  type ComponentTypeKey,
+} from "../../modules/course-builder/registry/contracts";
 
 const source = readFileSync(
   join(process.cwd(), "src/components/course-builder/component-renderers.tsx"),
@@ -64,4 +69,45 @@ test("new remote and exercise renderers stay safe, deterministic, and preview-on
   assert.doesNotMatch(source, /DividerRenderer|componentRegistry\.divider/);
   assert.match(source, /не сохраняется/);
   assert.match(source, /проверяет преподаватель вручную/);
+});
+
+const ACTIVITY_KEYS = [
+  "single_choice_poll",
+  "matching_game",
+  "choice_quiz",
+  "fill_blanks",
+  "word_bank",
+  "sequence",
+  "categorize",
+  "free_response",
+  "word_builder",
+] as const satisfies readonly ComponentTypeKey[];
+
+test("student activity renderers consume registry learner delivery shapes", () => {
+  for (const typeKey of ACTIVITY_KEYS) {
+    const delivery = projectLearnerComponentPayload(
+      typeKey,
+      componentRegistry[typeKey].defaultPayload,
+    );
+    assert.deepEqual(
+      componentRegistry[typeKey].activityFacet?.learnerDeliverySchema.parse(
+        delivery,
+      ),
+      delivery,
+    );
+  }
+  assert.match(
+    source,
+    /mode === "student" && definition\.activityFacet[\s\S]*?learnerDeliverySchema\.safeParse/,
+  );
+});
+
+test("teacher activity renderers retain author preview while student paths do not self-evaluate", () => {
+  assert.match(source, /mode === "teacher"[\s\S]*?component\.payload/);
+  assert.match(source, /Локальная проверка на экране ученика отключена/);
+  assert.match(
+    source,
+    /mode === "student"[\s\S]*?matching_game\.activityFacet\.learnerDeliverySchema/,
+  );
+  assert.doesNotMatch(source, /Math\.random|crypto\.randomUUID/);
 });

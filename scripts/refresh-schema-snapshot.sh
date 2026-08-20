@@ -9,10 +9,11 @@ set -euo pipefail
 # snapshot and must be updated deliberately when those objects change.
 #
 # The signature accepts exactly two learner-identity compatibility stages. Both
-# must contain every M1-M3 object/invariant plus the M5/M6 Auth hardening. The
-# expand stage also requires the complete, known legacy compatibility contract;
-# the final stage requires the complete M4 helper/type/ACL cleanup. A partial
-# stage is rejected.
+# must contain every learner-identity M1-M3 object/invariant plus the M5/M6
+# Auth hardening. The generated snapshot must also contain the current
+# Learning Activity System schema through LA-M2. The expand stage requires the
+# complete, known legacy compatibility contract; the final stage requires the
+# complete M4 helper/type/ACL cleanup. A partial stage is rejected.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -2181,6 +2182,11 @@ for required in \
   "CREATE TABLE public.lesson_run" \
   "CREATE TABLE public.learning_record" \
   "CREATE TABLE public.lesson_component_observation" \
+  "CREATE TABLE public.learning_objective" \
+  "primary_learning_objective_id uuid" \
+  "activity_role text" \
+  "source_learning_objective_id_at_time uuid" \
+  "learning_objective_title_at_time text" \
   "learning_record_id_recorded_by_unique" \
   "lesson_component_observation_record_source_unique" \
   "lesson_component_observation_record_recorder_fkey" \
@@ -2261,7 +2267,13 @@ for required in \
   "CREATE FUNCTION public.schedule_lesson_run" \
   "CREATE FUNCTION public.complete_lesson_run_v2" \
   "CREATE FUNCTION public.save_lesson_component_observations" \
+  "CREATE FUNCTION public.create_learning_objective" \
+  "CREATE FUNCTION public.update_learning_objective" \
+  "CREATE FUNCTION public.archive_learning_objective" \
+  "CREATE FUNCTION public.update_lesson_component_v2" \
   "CREATE POLICY lesson_component_observation_recorder_select" \
+  "CREATE POLICY learning_objective_course_owner_select" \
+  "course_publication_revision_snapshot_check" \
   "CREATE FUNCTION public.delete_draft_observations_for_lesson_component" \
   "CREATE TRIGGER trg_lesson_component_delete_draft_observations" \
   "CREATE FUNCTION public.delete_lesson_component" \

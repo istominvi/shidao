@@ -42,6 +42,17 @@ test("browser-facing code cannot write the observation table directly", () => {
     clientBoundary,
     /request<[^>]+>\(\s*`?\/rest\/v1\/lesson_component_observation[^\n]*\{\s*method:\s*"(?:POST|PATCH|DELETE)"/,
   );
+  for (const column of [
+    "learning_objective_id",
+    "source_learning_objective_id_at_time",
+    "learning_objective_title_at_time",
+  ]) {
+    assert.match(clientBoundary, new RegExp(`"${column}"`));
+  }
+  assert.doesNotMatch(
+    clientBoundary,
+    /p_(?:learning_objective_id|source_learning_objective_id_at_time|learning_objective_title_at_time)/,
+  );
 });
 
 test("history adapters can reuse one authenticated actor without a second session context", () => {

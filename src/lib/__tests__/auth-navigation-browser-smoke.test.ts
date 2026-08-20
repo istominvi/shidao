@@ -41,6 +41,7 @@ const E2E_LESSON_ID = "44444444-4444-4444-8444-444444444444";
 const E2E_SECOND_LESSON_ID = "44444444-4444-4444-8444-444444444445";
 const E2E_COMPONENT_ID = "77777777-7777-4777-8777-777777777771";
 const E2E_EXERCISE_COMPONENT_ID = "77777777-7777-4777-8777-777777777773";
+const E2E_LEARNING_OBJECTIVE_ID = "77777777-7777-4777-8777-777777777774";
 const E2E_STUDENT_SLIDE_ID = "77777777-7777-4777-8777-777777777770";
 const E2E_STORED_FILE_ID = "77777777-7777-4777-8777-777777777772";
 const E2E_LEARNER_ANNA_ID = "88888888-8888-4888-8888-888888888881";
@@ -493,6 +494,8 @@ const E2E_LESSON_BASE_ROW = {
       placement_config: { width: "content", display: "card" },
       visibility: "staff_only",
       student_slide_id: null,
+      primary_learning_objective_id: null,
+      activity_role: null,
       created_at: "2026-08-05T08:40:00.000Z",
       updated_at: "2026-08-05T09:00:00.000Z",
     },
@@ -510,16 +513,38 @@ type E2EStudentScreenRpcPayload = {
 
 let e2eComponentLearnerVisible = false;
 let e2eAuthoredExerciseVisible = false;
+let e2eComponentPayloadOverride: Record<string, unknown> | null = null;
+let e2eComponentPlacementOverride: Record<string, unknown> | null = null;
+let e2eComponentPrimaryLearningObjectiveId: string | null = null;
+let e2eComponentActivityRole: "practice" | "assessment" | "survey" | null =
+  null;
+let e2eLearningObjectiveRow: {
+  id: string;
+  course_id: string;
+  title: string;
+  description: string | null;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+} | null = null;
+const e2eLearningObjectiveCreatePayloads: Array<Record<string, unknown>> = [];
+const e2eLearningObjectiveArchivePayloads: Array<Record<string, unknown>> = [];
+const e2eComponentUpdateV2Payloads: Array<Record<string, unknown>> = [];
 const e2eStudentScreenRpcPayloads: E2EStudentScreenRpcPayload[] = [];
 
 function e2eLessonComponentRow() {
   const component = E2E_LESSON_BASE_ROW.components[0]!;
   return {
     ...component,
+    payload: e2eComponentPayloadOverride ?? component.payload,
+    placement_config:
+      e2eComponentPlacementOverride ?? component.placement_config,
     visibility: e2eComponentLearnerVisible
       ? ("learner_visible" as const)
       : ("staff_only" as const),
     student_slide_id: e2eComponentLearnerVisible ? E2E_STUDENT_SLIDE_ID : null,
+    primary_learning_objective_id: e2eComponentPrimaryLearningObjectiveId,
+    activity_role: e2eComponentActivityRole,
   };
 }
 
@@ -538,6 +563,8 @@ function e2eAuthoredExerciseComponentRow() {
     placement_config: { width: "content", compact: false },
     visibility: "staff_only" as const,
     student_slide_id: null,
+    primary_learning_objective_id: null,
+    activity_role: null,
     created_at: "2026-08-05T08:45:00.000Z",
     updated_at: "2026-08-05T09:00:00.000Z",
   };
@@ -724,6 +751,9 @@ type E2ELessonComponentObservationRow = {
   learning_record_id: string;
   lesson_component_id: string | null;
   source_lesson_component_id_at_time: string;
+  learning_objective_id: string | null;
+  source_learning_objective_id_at_time: string | null;
+  learning_objective_title_at_time: string | null;
   component_position_at_time: number;
   component_type_key_at_time: string;
   component_label_at_time: string;
@@ -878,6 +908,9 @@ function applyE2eObservationPayload(payload: E2EObservationRpcPayload) {
       learning_record_id: submitted.learningRecordId,
       lesson_component_id: payload.p_lesson_component_id,
       source_lesson_component_id_at_time: payload.p_lesson_component_id,
+      learning_objective_id: null,
+      source_learning_objective_id_at_time: null,
+      learning_objective_title_at_time: null,
       component_position_at_time: 1,
       component_type_key_at_time: "file",
       component_label_at_time: payload.p_component_label_at_time,
@@ -1439,7 +1472,11 @@ type PlaywrightChromium = {
         url: () => string;
         waitForResponse: (
           predicate: (response: { url: () => string }) => boolean,
-        ) => Promise<{ url: () => string; status: () => number }>;
+        ) => Promise<{
+          url: () => string;
+          status: () => number;
+          text: () => Promise<string>;
+        }>;
         waitForURL: (
           url: string | RegExp,
           options?: {
@@ -2768,6 +2805,113 @@ async function handleMockSupabase(
         publicationAvailable: true,
       },
     ]);
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/learning_objective" &&
+    request.method === "GET"
+  ) {
+    const requestedCourseId = readEqFilter(requestUrl, "course_id");
+    json(
+      response,
+      200,
+      e2eLearningObjectiveRow &&
+        (!requestedCourseId || requestedCourseId === E2E_COURSE_ID)
+        ? [e2eLearningObjectiveRow]
+        : [],
+    );
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/create_learning_objective" &&
+    request.method === "POST"
+  ) {
+    const payload = (await readJsonBody(request)) as Record<string, unknown>;
+    if (
+      payload.p_course_id !== E2E_COURSE_ID ||
+      typeof payload.p_title !== "string"
+    ) {
+      json(response, 400, { message: "unexpected objective create payload" });
+      return;
+    }
+    e2eLearningObjectiveCreatePayloads.push(payload);
+    e2eLearningObjectiveRow = {
+      id: E2E_LEARNING_OBJECTIVE_ID,
+      course_id: E2E_COURSE_ID,
+      title: payload.p_title,
+      description:
+        typeof payload.p_description === "string"
+          ? payload.p_description
+          : null,
+      archived_at: null,
+      created_at: "2026-08-20T10:00:00.000Z",
+      updated_at: "2026-08-20T10:00:00.000Z",
+    };
+    json(response, 200, [e2eLearningObjectiveRow]);
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/archive_learning_objective" &&
+    request.method === "POST"
+  ) {
+    const payload = (await readJsonBody(request)) as Record<string, unknown>;
+    if (
+      payload.p_objective_id !== E2E_LEARNING_OBJECTIVE_ID ||
+      !e2eLearningObjectiveRow
+    ) {
+      json(response, 404, { message: "learning_objective_not_found" });
+      return;
+    }
+    e2eLearningObjectiveArchivePayloads.push(payload);
+    e2eLearningObjectiveRow = {
+      ...e2eLearningObjectiveRow,
+      archived_at: "2026-08-20T10:05:00.000Z",
+      updated_at: "2026-08-20T10:05:00.000Z",
+    };
+    json(response, 200, [e2eLearningObjectiveRow]);
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/update_lesson_component_v2" &&
+    request.method === "POST"
+  ) {
+    const payload = (await readJsonBody(request)) as Record<string, unknown>;
+    if (payload.p_component_id !== E2E_COMPONENT_ID) {
+      json(response, 404, { message: "lesson_component_not_found" });
+      return;
+    }
+    e2eComponentUpdateV2Payloads.push(payload);
+    if (payload.p_update_payload === true) {
+      e2eComponentPayloadOverride = payload.p_payload as Record<
+        string,
+        unknown
+      >;
+    }
+    if (payload.p_update_placement_config === true) {
+      e2eComponentPlacementOverride = payload.p_placement_config as Record<
+        string,
+        unknown
+      >;
+    }
+    if (payload.p_update_primary_learning_objective_id === true) {
+      e2eComponentPrimaryLearningObjectiveId =
+        typeof payload.p_primary_learning_objective_id === "string"
+          ? payload.p_primary_learning_objective_id
+          : null;
+    }
+    if (payload.p_update_activity_role === true) {
+      e2eComponentActivityRole =
+        payload.p_activity_role === "practice" ||
+        payload.p_activity_role === "assessment" ||
+        payload.p_activity_role === "survey"
+          ? payload.p_activity_role
+          : null;
+    }
+    json(response, 200, [e2eLessonComponentRow()]);
     return;
   }
 
@@ -12765,7 +12909,12 @@ test("browser smoke: LA-M1 bulk observations persist, guard absence, and freeze 
         name: /^Подтвердить 2 отмет/,
       })
       .click();
-    assert.equal((await saved).status(), 200);
+    const savedResponse = await saved;
+    assert.equal(
+      savedResponse.status(),
+      200,
+      `observation save failed: ${await savedResponse.text()}`,
+    );
     await learnerRow("E2E Adult")
       .getByText("Сохранено", { exact: true })
       .waitFor();
@@ -15461,6 +15610,14 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
   e2eSecondCourseVisible = true;
   e2eSecondLessonVisible = true;
   e2eComponentLearnerVisible = false;
+  e2eComponentPayloadOverride = null;
+  e2eComponentPlacementOverride = null;
+  e2eComponentPrimaryLearningObjectiveId = null;
+  e2eComponentActivityRole = null;
+  e2eLearningObjectiveRow = null;
+  e2eLearningObjectiveCreatePayloads.length = 0;
+  e2eLearningObjectiveArchivePayloads.length = 0;
+  e2eComponentUpdateV2Payloads.length = 0;
   e2eStudentScreenRpcPayloads.length = 0;
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
 
@@ -17942,7 +18099,7 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     await draftTextDialog.waitFor();
     await draftTextDialog.locator(".component-payload-editor").waitFor();
     const draftRichTextFields = draftTextDialog.locator(
-      ".component-payload-editor > .grid:first-child",
+      ".component-payload-editor > div.grid:first-of-type",
     );
     assert.deepEqual(
       await draftRichTextFields.locator(".field-label").allTextContents(),
@@ -18468,10 +18625,93 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
       fileComponentDialogVisual.documentScrollWidth,
       fileComponentDialogVisual.documentClientWidth,
     );
+    const objectiveTitle = "Использует Present Perfect в рассказе";
+    const objectiveSection = fileComponentDialog.getByRole("region", {
+      name: "Учебная цель компонента",
+      exact: true,
+    });
+    await objectiveSection
+      .getByRole("button", { name: "Создать цель", exact: true })
+      .click();
+    await objectiveSection
+      .locator('input[placeholder="Например: различает второй и третий тон"]')
+      .fill(objectiveTitle);
+    await objectiveSection
+      .locator("textarea")
+      .fill("Применяет форму в самостоятельном коротком рассказе.");
+    await objectiveSection
+      .getByRole("button", { name: "Создать и выбрать", exact: true })
+      .click();
+    await runtime.page.waitForFunction(
+      () =>
+        document.querySelector<HTMLSelectElement>(
+          'section[aria-label="Учебная цель компонента"] select',
+        )?.value === "77777777-7777-4777-8777-777777777774",
+    );
+    assert.deepEqual(e2eLearningObjectiveCreatePayloads, [
+      {
+        p_course_id: E2E_COURSE_ID,
+        p_title: objectiveTitle,
+        p_description: "Применяет форму в самостоятельном коротком рассказе.",
+      },
+    ]);
+    await fileComponentEditor
+      .getByRole("button", { name: "Сохранить компонент", exact: true })
+      .click();
+    await fileComponentDialog.waitFor({ state: "detached" });
+    await fileComponentCard.getByText(`Цель: ${objectiveTitle}`).waitFor();
+    assert.equal(
+      e2eComponentPrimaryLearningObjectiveId,
+      E2E_LEARNING_OBJECTIVE_ID,
+    );
+    assert.equal(e2eComponentActivityRole, null);
+    assert.equal(e2eComponentUpdateV2Payloads.length, 1);
+    assert.equal(
+      e2eComponentUpdateV2Payloads[0]?.p_primary_learning_objective_id,
+      E2E_LEARNING_OBJECTIVE_ID,
+    );
+    assert.equal(
+      e2eComponentUpdateV2Payloads[0]?.p_update_primary_learning_objective_id,
+      true,
+    );
+
+    await fileComponentEdit.click();
+    await fileComponentDialog.waitFor();
+    const reloadedObjectiveSection = fileComponentDialog.getByRole("region", {
+      name: "Учебная цель компонента",
+      exact: true,
+    });
+    assert.equal(
+      await reloadedObjectiveSection.locator("select").inputValue(),
+      E2E_LEARNING_OBJECTIVE_ID,
+    );
+    await reloadedObjectiveSection
+      .getByRole("button", { name: "В архив", exact: true })
+      .click();
+    await runtime.page.waitForFunction(
+      () =>
+        document
+          .querySelector(
+            'section[aria-label="Учебная цель компонента"] option:checked',
+          )
+          ?.textContent?.includes(
+            "Использует Present Perfect в рассказе (в архиве)",
+          ) === true,
+    );
+    assert.deepEqual(e2eLearningObjectiveArchivePayloads, [
+      { p_objective_id: E2E_LEARNING_OBJECTIVE_ID },
+    ]);
+    assert.equal(
+      e2eComponentPrimaryLearningObjectiveId,
+      E2E_LEARNING_OBJECTIVE_ID,
+    );
     await fileComponentEditor
       .getByRole("button", { name: "Отмена", exact: true })
       .click();
     await fileComponentDialog.waitFor({ state: "detached" });
+    await fileComponentCard
+      .getByText(`Цель: ${objectiveTitle} · в архиве`)
+      .waitFor();
     await runtime.page.evaluate(
       () =>
         new Promise<void>((resolve) =>
@@ -18640,6 +18880,14 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     e2eSecondCourseArchived = false;
     e2eSecondLessonVisible = false;
     e2eComponentLearnerVisible = false;
+    e2eComponentPayloadOverride = null;
+    e2eComponentPlacementOverride = null;
+    e2eComponentPrimaryLearningObjectiveId = null;
+    e2eComponentActivityRole = null;
+    e2eLearningObjectiveRow = null;
+    e2eLearningObjectiveCreatePayloads.length = 0;
+    e2eLearningObjectiveArchivePayloads.length = 0;
+    e2eComponentUpdateV2Payloads.length = 0;
     e2eStudentScreenRpcPayloads.length = 0;
     await runtime.close();
   }

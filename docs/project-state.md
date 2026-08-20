@@ -13,6 +13,13 @@ typecheck, lint, repository-wide format check и production build)
 **Исторический functional E2 baseline:**
 `22b486a7163453019d9720cb4fe0f36ed7c0228d`
 
+**Current production DB / next web — LA-M2 Course objectives:** flat Course
+objectives, Component alignment/activity role, observation objective provenance
+и publication snapshot V2 уже применены к production DB. Learner-safe activity
+projection и application workflow готовы в repository; task commit, dependent
+web rollout и deployed-SHA smoke ещё не выполнены и ниже не выдаются за current
+deployed application.
+
 **Current source / next production — единый Auth и registration entry UI:**
 `/login`, `/join`, `/join/check-email`, `/forgot-password` и
 `/reset-password` теперь используют один route-owned `AuthPage` contract и
@@ -1348,16 +1355,19 @@ Account
 ├── TeacherLearner 0..N → LearnerProfile
 ├── LearnerGroup 0..N → LearnerProfile 0..N
 └── Course
+    ├── LearningObjective 0..N
     ├── audience sources → direct LearnerProfile + LearnerGroup
     ├── effective audience → unique active LearnerProfile 0..N
     ├── course-wide Attachments
     └── Lesson 0..N
         ├── ordered Components 0..N
+        │   └── optional primary LearningObjective + activity role
         ├── Student Screen projection
         │   └── ordered Slides 0..N → ссылки на Components
         └── LessonRun 0..N
             └── LearningRecord 0..N → LearnerProfile + recorded-by Account
-                └── LessonComponentObservation 0..N → source Component-at-time
+                └── LessonComponentObservation 0..N
+                    └── source Component + optional Objective-at-time
 
 Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 ```
@@ -1387,6 +1397,12 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   Component, compact position/type/label/criterion-at-time, rating, entry method,
   private note и recorder. Отсутствие строки означает «не наблюдал»;
   полного Component/Lesson snapshot нет.
+- Current production DB и ready source LA-M2 добавляют плоские Course-scoped
+  objectives, одну
+  optional primary objective и activity role на Component, а новым
+  observations — nullable live objective FK и стабильные ID/title-at-time.
+  Старые rows остаются с `NULL` без backfill; eligible observation ещё не
+  является mastery или persisted objective state.
 - LearnerProfile — canonical learning identity без teacher owner. Каждый
   active/provisional Account имеет ровно один linked profile как deferred DB
   invariant; offline profiles сохраняют `account_id IS NULL` до explicit claim.
@@ -1403,7 +1419,8 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 Полные Lesson/Run invariants зафиксированы в
 [`docs/architecture/lesson-workflow-model.md`](./architecture/lesson-workflow-model.md),
-канонический contract учебных активностей и current production LA-M1 — в
+канонический contract учебных активностей, current production LA-M1 и current
+production DB / ready source LA-M2 — в
 [`docs/architecture/learning-activity-system.md`](./architecture/learning-activity-system.md),
 а identity/access boundary — в
 [`docs/architecture/learner-identity-access-model.md`](./architecture/learner-identity-access-model.md).
@@ -1984,6 +2001,57 @@ postflight завершены без создания observation fixtures.
 - LA-M1 является историей component-level observation, а не Course
   objective, evidence/mastery, learner attempt или adaptive decision.
 
+### Course objectives и activity foundation — current production DB / next web LA-M2
+
+Production DB rollout LA-M2 завершён 20 августа 2026 года. В текущем
+repository реализован законченный application/source contract, однако task
+commit, push, Coolify rollout и deployed-web smoke ещё pending:
+
+- `LearningObjective` принадлежит одному Course, содержит title, optional
+  description и archive state; owner читает строки через RLS, а
+  create/update/archive выполняются узкими authenticated RPC;
+- обычный Component editor позволяет создать, выбрать и архивировать objective
+  на понятном языке. Архивирование сохраняет существующую alignment/history,
+  но новое назначение archived objective запрещено;
+- у Component не больше одной optional primary objective и одной optional роли
+  `practice | assessment | survey`; cross-Course link и role, не
+  поддерживаемая registry type, fail closed в application и DB;
+- Component update проходит через canonical
+  `update_lesson_component_v2` с parent-first lock order, а не через новый
+  прямой table adapter;
+- manual editor, AI и development MCP делегируют одному
+  `CourseBuilderApplicationService` и общим registry/contracts;
+- новые observations получают objective ID/title-at-time в той же locked save
+  transaction. Nullable live relation допускает `ON DELETE SET NULL`, а
+  stable at-time provenance и прежние component-only rows сохраняют историю;
+- evidence-eligibility projection только объясняет наличие objective,
+  observable criterion, teacher confirmation и independence/support с reason
+  codes. Она не пишет durable evidence, objective state, recommendation или
+  mastery;
+- новые immutable publication revisions имеют schema V2 с objective
+  definitions, `primaryObjectiveRef`, `activityRole` и deterministic ID remap;
+  legacy V1 revisions остаются byte-for-byte immutable, читаются/копируются и
+  не переписываются;
+- Student Screen и published catalog получают server-built learner-safe
+  payload без answer keys, evaluator config, objective ID и activity role.
+
+Forward migrations:
+`20260820085049_learning_objectives_component_alignment.sql` (SHA-256
+`82734db13f473c011ae61b24fc67601ac84cca986bf64395ac9ddd98ce07988a`) и
+`20260820090529_course_publication_snapshot_v2.sql` (SHA-256
+`19d4f9fddbed2beedd1b3ad60e0100e27d8d774852c4a4d95e23593fbf82e8f8`).
+Они прошли isolated production-derived clone rollback/apply, functional и
+восемь multi-session race checks, после чего были применены owner
+`supabase_admin` к production PostgreSQL `15.8` с двумя наблюдаемыми `COMMIT`.
+Перед apply создан verified backup
+`/root/shidao-db-backups/shidao-before-learning-objective-alignment-20260820T104240Z.dump`
+(size `1507990`, mode `600`, `1771` restore-list entries, SHA-256
+`d508626107c6dc5a4222a77c483db929778a06a1825b61ff3bd6d3df271743c1`).
+Postflight подтвердил RLS/ACL/RPC/FK/trigger/lock-order и publication V2
+contracts, PostgREST visibility и неизменность canonical counts и legacy V1
+revision; production fixtures не создавались. Dependent web delivery остаётся
+следующим шагом.
+
 ### Экран ученика
 
 - В current production кнопка «Экран ученика» использует ту же иконку `MonitorPlay`,
@@ -2038,6 +2106,14 @@ Zod payload/placement schemas, defaults и capabilities. Текущий payload 
 renderers — отдельную exhaustive typed map. JSON Schema для MCP генерируется из
 registry contracts.
 
+Current LA-M2 source сохраняет этот registry единственным: optional
+`activityFacet` задаёт supported roles, response/evaluator modes, evidence
+policy, learner delivery schema и отдельный server-private evaluator config.
+`single_choice_poll` поддерживает только `survey`; восемь deterministic/manual
+review activity types — `practice | assessment`; passive types facet не имеют.
+Learner projection валидирует и author payload, и projected shape и fail closed
+вместо raw fallback.
+
 Authored-create projection содержит 19 вариантов и не является вторым registry:
 `heading` сохранён в 20-типовом runtime contract для чтения, renderer,
 modal edit/PATCH и immutable publication revisions, но исключён из picker,
@@ -2053,20 +2129,23 @@ HTTPS URL; upload/transcoding медиа не заявлены. Самопров
 image-match типов в active registry нет. Продуктовое сопоставление с
 ProgressMe и границы этого среза зафиксированы в
 [`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
-Versioned execution/evaluation/evidence и objective-state target описан в
+Versioned execution/evaluation/durable evidence и objective-state target описан в
 [`docs/architecture/learning-activity-system.md`](./architecture/learning-activity-system.md);
 он не является current runtime.
 
 ### Development MCP
 
 В репозитории есть локальный `stdio` MCP server. Он не является HTTP endpoint и
-не опубликован наружу. Зарегистрированы шесть tools:
+не опубликован наружу. Зарегистрированы девять tools:
 
 ```text
 course.create_draft
 course.get
 course.add_lesson
+course.create_learning_objective
+course.archive_learning_objective
 lesson.add_component
+lesson.update_component
 lesson.set_component_student_screen
 lesson.reorder_component
 ```
@@ -2342,7 +2421,7 @@ History-aware context развёрнут в release `9393080`; production provid
   educator Course описан отдельно и не является LessonRun/live flow;
 - live Student Screen sync, realtime presence и teacher-controlled runtime
   cursor поверх открытого LessonRun;
-- Course learning objectives и Component alignment;
+- production rollout current-source Course objectives/Component alignment;
 - versioned learner activity attempts, server-side evaluation, typed evidence,
   rebuildable learner-objective state и adaptive recommendations;
   `LearningRecord` остаётся compact LessonRun outcome, а не metrics/event
@@ -2485,6 +2564,14 @@ recorder с record; cancel cascade удаляет drafts, а nullable live Compo
 `ON DELETE SET NULL` сохраняет finalized at-time history. Raw browser writes
 запрещены; recorder читает свои rows, а mutation выполняет narrow
 `save_lesson_component_observations`.
+
+Current production LA-M2 schema и matching verified-clone snapshot
+дополнительно содержат
+`learning_objective`, Component `primary_learning_objective_id`/
+`activity_role`, observation objective-at-time columns и publication snapshot
+V2 function definitions. Verified-clone reference остаётся независимым
+rehearsal artifact; production physical head теперь LA-M2B, а dependent web
+остаётся на предыдущем deployed source до отдельного rollout.
 
 Current Communication Center читает bounded finalized history и сохраняет
 несколько AI conversations/turns/read cursors; human threads/messages и system
@@ -2635,6 +2722,21 @@ payloads, отдельный quota/billing ledger и durable action/job ledger �
   прошёл. Dependent source `25d7855831273ff5feea14473c2870b729ac39b3`
   развёрнут Coolify deployment `1001` с restart count `0`; HTTPS/API/CSRF и
   browser guest smoke прошли.
+- `20260820085049_learning_objectives_component_alignment.sql` — applied
+  production LA-M2 objective/alignment forward migration; exact SHA-256
+  `82734db13f473c011ae61b24fc67601ac84cca986bf64395ac9ddd98ce07988a`.
+  Добавляет owner-read/closed-mutation objective table/RPC, one-primary
+  Component alignment/activity role и observation objective provenance без
+  legacy backfill.
+- `20260820090529_course_publication_snapshot_v2.sql` — applied production LA-M2
+  publication compatibility migration; exact SHA-256
+  `19d4f9fddbed2beedd1b3ad60e0100e27d8d774852c4a4d95e23593fbf82e8f8`.
+  Новые snapshots получают V2 objectives/remap; прежние V1 revisions остаются
+  immutable/readable/copyable. Обе migrations завершились наблюдаемым `COMMIT`;
+  pre/post counts Account/Course/Lesson/Component/LessonRun/LearningRecord/
+  Observation/Revision остались `19/6/22/84/2/2/0/1`, LA-M2 rows отсутствуют,
+  а legacy V1 snapshot сохранил `9056` bytes и checksum
+  `e77ac1abfa333856fcf9022ef7a0666f`. Task commit/web rollout ещё pending.
 
 Источники истины для текущего состояния:
 
@@ -2684,6 +2786,7 @@ positions, а плотность поддерживают текущие service
 | Cross-surface image delivery       | `next.config.ts`, `src/lib/__tests__/image-delivery-contract.test.ts`, `docs/architecture/image-delivery.md`                                                                                                                                                                       |
 | Learner identity access doc        | `docs/architecture/learner-identity-access-model.md`                                                                                                                                                                                                                               |
 | Learning Activity target/plan      | `docs/architecture/learning-activity-system.md`, `docs/plans/learning-activity-system-implementation.md`                                                                                                                                                                           |
+| Course objectives/alignment API    | `src/app/api/v2/courses/[courseId]/learning-objectives/`, `src/modules/course-builder/`                                                                                                                                                                                            |
 | Consented AI safe history          | `src/modules/ai/shared-history.ts`, `course-context.ts`, `course-builder-service.ts`                                                                                                                                                                                               |
 | Course browser client              | `src/components/course-builder/course-builder-client.ts`                                                                                                                                                                                                                           |
 | Course publication domain/service  | `src/modules/course-publications/`                                                                                                                                                                                                                                                 |
@@ -2747,6 +2850,12 @@ slice сохраняет эти URL и product RPC names, меняя их backin
 `teacher_learner`. Все используют per-request actor, application service и user
 JWT/RLS; старые dashboard/methodology/group/scheduled-lesson routes не
 поддерживаются как compatibility URL.
+
+Current source LA-M2 дополнительно добавляет Course-owned
+`/api/v2/courses/[courseId]/learning-objectives` и
+`.../learning-objectives/[objectiveId]`; DB contract уже current production,
+но availability этих routes в deployed application остаётся pending до
+dependent web rollout.
 
 Current identity API добавляет namespaces `me/learning-profile`,
 `learner-directory`, `learner-connections`, `identity-invitations`,

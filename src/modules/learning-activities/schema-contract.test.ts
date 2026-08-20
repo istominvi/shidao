@@ -6,6 +6,10 @@ const migration = readFileSync(
   "supabase/migrations/20260819142602_learning_activity_foundation.sql",
   "utf8",
 );
+const objectiveMigration = readFileSync(
+  "supabase/migrations/20260820085049_learning_objectives_component_alignment.sql",
+  "utf8",
+);
 const snapshot = readFileSync("supabase/schema/current-schema.sql", "utf8");
 const refreshScript = readFileSync(
   "scripts/refresh-schema-snapshot.sh",
@@ -20,18 +24,22 @@ function tableBody(name: string) {
   return migration.slice(start, end + 3);
 }
 
-function functionBody(name: string) {
-  const createStart = migration.indexOf(`create function public.${name}(`);
-  const replaceStart = migration.indexOf(
+function functionBodyIn(source: string, name: string) {
+  const createStart = source.indexOf(`create function public.${name}(`);
+  const replaceStart = source.indexOf(
     `create or replace function public.${name}(`,
   );
   const start = createStart === -1 ? replaceStart : createStart;
   assert.notEqual(start, -1, `missing function ${name}`);
-  const delimiter = migration.indexOf("as $function$", start);
+  const delimiter = source.indexOf("as $function$", start);
   assert.notEqual(delimiter, -1, `missing function delimiter for ${name}`);
-  const end = migration.indexOf("\n$function$;", delimiter);
+  const end = source.indexOf("\n$function$;", delimiter);
   assert.notEqual(end, -1, `unterminated function ${name}`);
-  return migration.slice(start, end + 12);
+  return source.slice(start, end + 12);
+}
+
+function functionBody(name: string) {
+  return functionBodyIn(migration, name);
 }
 
 function snapshotTableBody(name: string) {
@@ -157,6 +165,176 @@ test("observation rows are compact, bounded, and tied to the record producer", (
   assert.doesNotMatch(
     table,
     /\b(?:payload|placement|student_slide|lesson_snapshot|responses|events|metrics)\b/i,
+  );
+});
+
+test("LA-M2 adds honest nullable objective-at-time context without backfilling LA-M1 rows", () => {
+  const observationAlterStart = objectiveMigration.indexOf(
+    "alter table public.lesson_component_observation",
+  );
+  const observationAlterEnd = objectiveMigration.indexOf(
+    "\n\ncreate index lesson_component_observation_live_objective_idx",
+    observationAlterStart,
+  );
+  assert.notEqual(observationAlterStart, -1);
+  assert.notEqual(observationAlterEnd, -1);
+  const observationAlter = objectiveMigration.slice(
+    observationAlterStart,
+    observationAlterEnd,
+  );
+
+  for (const column of [
+    "learning_objective_id uuid null",
+    "source_learning_objective_id_at_time uuid null",
+    "learning_objective_title_at_time text null",
+  ]) {
+    assert.equal(observationAlter.includes(column), true, `missing ${column}`);
+  }
+  assert.match(
+    observationAlter,
+    /foreign key \(learning_objective_id\)[\s\S]*?references public\.learning_objective\(id\)[\s\S]*?on delete set null/,
+  );
+  assert.match(
+    observationAlter,
+    /source_learning_objective_id_at_time is null[\s\S]*?learning_objective_title_at_time is null[\s\S]*?learning_objective_id is null/,
+  );
+  assert.match(
+    observationAlter,
+    /source_learning_objective_id_at_time is not null[\s\S]*?learning_objective_title_at_time is not null[\s\S]*?char_length\(btrim\(learning_objective_title_at_time\)\) <= 240[\s\S]*?learning_objective_id = source_learning_objective_id_at_time/,
+  );
+  assert.doesNotMatch(
+    observationAlter,
+    /foreign key \(source_learning_objective_id_at_time\)/,
+  );
+  assert.match(
+    objectiveMigration,
+    /where observation\.learning_objective_id is not null[\s\S]*?or observation\.source_learning_objective_id_at_time is not null[\s\S]*?or observation\.learning_objective_title_at_time is not null[\s\S]*?learning_objective_postflight_legacy_data_changed/,
+  );
+});
+
+test("LA-M2 save snapshots objective provenance only from locked server state", () => {
+  const save = functionBodyIn(
+    objectiveMigration,
+    "save_lesson_component_observations",
+  );
+  const componentLock = save.indexOf("for update of component;");
+  const objectiveLock = save.indexOf("for key share of objective;");
+  const recordLock = save.indexOf("for update of record;");
+  const observedAt = save.indexOf("v_observed_at := clock_timestamp();");
+  const snapshotWrite = save.indexOf("learning_objective_id = v_objective.id");
+
+  assert.equal(
+    componentLock >= 0 &&
+      componentLock < objectiveLock &&
+      objectiveLock < recordLock &&
+      recordLock < observedAt &&
+      observedAt < snapshotWrite,
+    true,
+    "objective snapshot time must follow all lifecycle locks",
+  );
+  assert.match(
+    save,
+    /v_component\.primary_learning_objective_id[\s\S]*?where objective\.id = v_component\.primary_learning_objective_id/,
+  );
+  assert.match(
+    save,
+    /source_learning_objective_id_at_time = v_objective\.id[\s\S]*?learning_objective_title_at_time = btrim\(v_objective\.title\)/,
+  );
+  assert.doesNotMatch(save, /p_(?:learning|source)_objective/);
+  assert.doesNotMatch(
+    save,
+    /submitted\.value ->> '(?:learningObjectiveId|sourceLearningObjectiveIdAtTime|learningObjectiveTitleAtTime)'/,
+  );
+});
+
+test("LA-M2 component updates use the parent-first owner RPC while rolling grants remain compatible", () => {
+  const update = functionBodyIn(
+    objectiveMigration,
+    "update_lesson_component_v2",
+  );
+
+  assert.match(
+    update,
+    /p_component_id uuid,[\s\S]*?p_payload jsonb,[\s\S]*?p_update_payload boolean,[\s\S]*?p_placement_config jsonb,[\s\S]*?p_update_placement_config boolean,[\s\S]*?p_primary_learning_objective_id uuid,[\s\S]*?p_update_primary_learning_objective_id boolean,[\s\S]*?p_activity_role text,[\s\S]*?p_update_activity_role boolean/,
+  );
+  assert.match(update, /returns setof public\.lesson_component/);
+  assert.match(update, /security definer[\s\S]*?set search_path = ''/);
+  assert.match(update, /account\.auth_user_id = v_actor_user_id/);
+  assert.match(update, /jsonb_typeof\(p_payload\) <> 'object'/);
+  assert.match(update, /jsonb_typeof\(p_placement_config\) <> 'object'/);
+  assert.match(update, /lesson_component_learning_objective_cross_course/);
+  assert.match(update, /lesson_component_learning_objective_archived/);
+  assert.match(update, /lesson_component_activity_role_unsupported/);
+
+  const courseLock = update.indexOf("for update of course;");
+  const lessonLock = update.indexOf("for update of lesson;");
+  const componentLock = update.indexOf("for update of component;");
+  const objectiveLock = update.indexOf("for key share of objective;");
+  const mutation = update.indexOf(
+    "update public.lesson_component as component",
+  );
+  assert.equal(
+    courseLock >= 0 &&
+      courseLock < lessonLock &&
+      lessonLock < componentLock &&
+      componentLock < objectiveLock &&
+      objectiveLock < mutation,
+    true,
+    "component mutation must lock Course -> Lesson -> Component -> Objective",
+  );
+
+  assert.match(
+    objectiveMigration,
+    /revoke all on function public\.update_lesson_component_v2\([\s\S]*?from public, anon, authenticated, service_role;[\s\S]*?grant execute on function public\.update_lesson_component_v2\([\s\S]*?to postgres, authenticated;/,
+  );
+  assert.match(
+    objectiveMigration,
+    /grant insert\(primary_learning_objective_id\),[\s\S]*?update\(primary_learning_objective_id\),[\s\S]*?insert\(activity_role\),[\s\S]*?update\(activity_role\)[\s\S]*?to authenticated;/,
+  );
+  assert.doesNotMatch(
+    objectiveMigration,
+    /revoke update\([\s\S]*?payload[\s\S]*?lesson_component[\s\S]*?from authenticated/,
+  );
+  for (const marker of [
+    "learning_objective_postflight_rpc_acl_failed",
+    "learning_objective_postflight_component_rpc_failed",
+    "has_column_privilege",
+  ]) {
+    assert.equal(
+      objectiveMigration.includes(marker),
+      true,
+      `missing ${marker}`,
+    );
+  }
+});
+
+test("LA-M2 objective bounds match the author and publication contracts", () => {
+  assert.match(
+    objectiveMigration,
+    /constraint learning_objective_title_check check \([\s\S]*?char_length\(btrim\(title\)\) between 2 and 240/,
+  );
+  assert.equal(
+    (
+      objectiveMigration.match(
+        /char_length\(btrim\(p_title\)\) not between 2 and 240/g,
+      ) ?? []
+    ).length,
+    2,
+  );
+});
+
+test("LA-M2 keeps the observation table closed to direct browser mutations", () => {
+  assert.doesNotMatch(
+    objectiveMigration,
+    /(?:grant|revoke)[^;]*on table public\.lesson_component_observation/i,
+  );
+  assert.doesNotMatch(
+    objectiveMigration,
+    /(?:create|alter|drop) policy [^;]*lesson_component_observation/i,
+  );
+  assert.match(
+    objectiveMigration,
+    /revoke all on function public\.save_lesson_component_observations\([\s\S]*?from public, anon, authenticated, service_role;[\s\S]*?grant execute on function public\.save_lesson_component_observations\([\s\S]*?to postgres, authenticated;/,
   );
 });
 

@@ -147,3 +147,34 @@ test("bulk confirmation rejects duplicate records and unsupported values", () =>
     CourseBuilderValidationError,
   );
 });
+
+test("browser save input cannot supply objective provenance", () => {
+  for (const objectiveField of [
+    "learningObjectiveId",
+    "sourceLearningObjectiveIdAtTime",
+    "learningObjectiveTitleAtTime",
+  ]) {
+    assert.throws(
+      () =>
+        parseLearningActivitiesContract(
+          saveLessonComponentObservationsInputSchema,
+          {
+            lessonComponentId: uuid(1),
+            [objectiveField]:
+              objectiveField === "learningObjectiveTitleAtTime"
+                ? "Подменённая цель"
+                : uuid(3),
+            observableCriterionAtTime: "Отвечает на вопрос",
+            entryMethod: "direct",
+            entries: [
+              {
+                learningRecordId: uuid(2),
+                rating: "independent",
+              },
+            ],
+          },
+        ),
+      CourseBuilderValidationError,
+    );
+  }
+});

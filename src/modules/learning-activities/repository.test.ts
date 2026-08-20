@@ -16,6 +16,7 @@ const COMPONENT_ID = uuid(2);
 const RECORD_ID = uuid(3);
 const OBSERVATION_ID = uuid(4);
 const ACCOUNT_ID = uuid(5);
+const OBJECTIVE_ID = uuid(6);
 
 type CapturedRequest = {
   url: string;
@@ -37,6 +38,9 @@ function observationRow(overrides: Record<string, unknown> = {}) {
     learning_record_id: RECORD_ID,
     lesson_component_id: COMPONENT_ID,
     source_lesson_component_id_at_time: COMPONENT_ID,
+    learning_objective_id: OBJECTIVE_ID,
+    source_learning_objective_id_at_time: OBJECTIVE_ID,
+    learning_objective_title_at_time: "Выбирает столицу по названию страны",
     component_position_at_time: 2,
     component_type_key_at_time: "choice_quiz",
     component_label_at_time: "Тест с выбором ответа: Выберите столицу",
@@ -132,6 +136,9 @@ test("repository reads recorder-scoped observations by LearningRecord IDs", asyn
         learningRecordId: RECORD_ID,
         lessonComponentId: COMPONENT_ID,
         sourceComponentIdAtTime: COMPONENT_ID,
+        learningObjectiveId: OBJECTIVE_ID,
+        sourceLearningObjectiveIdAtTime: OBJECTIVE_ID,
+        learningObjectiveTitleAtTime: "Выбирает столицу по названию страны",
         componentPositionAtTime: 2,
         componentTypeAtTime: "choice_quiz",
         componentLabelAtTime: "Тест с выбором ответа: Выберите столицу",
@@ -144,10 +151,14 @@ test("repository reads recorder-scoped observations by LearningRecord IDs", asyn
         createdAt: NOW,
         updatedAt: NOW,
       });
-      assert.match(
-        requests[0]?.url ?? "",
-        /\/rest\/v1\/lesson_component_observation\?select=\*/,
+      const selectedColumns = new URL(requests[0]!.url).searchParams
+        .get("select")
+        ?.split(",");
+      assert.ok(selectedColumns?.includes("learning_objective_id"));
+      assert.ok(
+        selectedColumns?.includes("source_learning_objective_id_at_time"),
       );
+      assert.ok(selectedColumns?.includes("learning_objective_title_at_time"));
       assert.match(
         requests[0]?.url ?? "",
         new RegExp(`learning_record_id=in\\.\\(${RECORD_ID}\\)`),
@@ -297,11 +308,91 @@ test("repository sends one atomic save RPC and does not write the table directly
         },
       ],
     });
+    for (const parameter of [
+      "p_learning_objective_id",
+      "p_source_learning_objective_id_at_time",
+      "p_learning_objective_title_at_time",
+    ]) {
+      assert.equal(parameter in (requests[0]?.body ?? {}), false);
+    }
     assert.doesNotMatch(
       requests[0]?.url ?? "",
       /\/rest\/v1\/lesson_component_observation(?:\?|$)/,
     );
   });
+});
+
+test("repository keeps LA-M1 rows component-only without inventing objective provenance", async () => {
+  await withMockSupabase(
+    [
+      {
+        payload: [
+          observationRow({
+            learning_objective_id: null,
+            source_learning_objective_id_at_time: null,
+            learning_objective_title_at_time: null,
+          }),
+        ],
+        headers: { "Content-Range": "0-0/1" },
+      },
+    ],
+    async (repository) => {
+      const [observation] = await repository.listByLearningRecordIds([
+        RECORD_ID,
+      ]);
+      assert.equal(observation?.learningObjectiveId, null);
+      assert.equal(observation?.sourceLearningObjectiveIdAtTime, null);
+      assert.equal(observation?.learningObjectiveTitleAtTime, null);
+    },
+  );
+});
+
+test("repository retains objective-at-time after the live objective FK is nulled", async () => {
+  await withMockSupabase(
+    [
+      {
+        payload: [observationRow({ learning_objective_id: null })],
+        headers: { "Content-Range": "0-0/1" },
+      },
+    ],
+    async (repository) => {
+      const [observation] = await repository.listByLearningRecordIds([
+        RECORD_ID,
+      ]);
+      assert.equal(observation?.learningObjectiveId, null);
+      assert.equal(observation?.sourceLearningObjectiveIdAtTime, OBJECTIVE_ID);
+      assert.equal(
+        observation?.learningObjectiveTitleAtTime,
+        "Выбирает столицу по названию страны",
+      );
+    },
+  );
+});
+
+test("repository rejects partial or inconsistent objective-at-time projections", async () => {
+  const invalidRows = [
+    observationRow({ learning_objective_title_at_time: null }),
+    observationRow({ learning_objective_id: uuid(99) }),
+    observationRow({ learning_objective_title_at_time: "  Не обрезано  " }),
+    observationRow({
+      learning_objective_title_at_time: "x".repeat(241),
+    }),
+  ];
+
+  for (const row of invalidRows) {
+    await withMockSupabase(
+      [{ payload: [row], headers: { "Content-Range": "0-0/1" } }],
+      async (repository) => {
+        await assert.rejects(
+          repository.listByLearningRecordIds([RECORD_ID]),
+          (error: unknown) =>
+            error instanceof Error &&
+            "code" in error &&
+            error.code === "observation_projection_invalid",
+        );
+      },
+    );
+  }
 });
 
 test("repository avoids a PostgREST request for an empty record set", async () => {

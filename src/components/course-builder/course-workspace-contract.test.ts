@@ -1036,7 +1036,7 @@ test("component picker is registry-driven and grouped into Russian categories", 
   );
   assert.match(
     picker,
-    /useMemo<Pick<[\s\S]*?LessonComponent,[\s\S]*?"typeKey" \| "payload" \| "placement"[\s\S]*?> \| null>/,
+    /useMemo<Pick<[\s\S]*?LessonComponent,[\s\S]*?"typeKey"[\s\S]*?"payload"[\s\S]*?"placement"[\s\S]*?"primaryLearningObjectiveId"[\s\S]*?"activityRole"[\s\S]*?> \| null>/,
   );
   assert.match(picker, /typeKey: selectedTypeKey/);
   assert.match(
@@ -1047,6 +1047,8 @@ test("component picker is registry-driven and grouped into Russian categories", 
     picker,
     /placement: structuredClone\(selectedDefinition\.defaultPlacement\)/,
   );
+  assert.match(picker, /primaryLearningObjectiveId: null/);
+  assert.match(picker, /activityRole: null/);
   assert.doesNotMatch(
     picker.slice(
       picker.indexOf("const draftComponent"),
@@ -1142,6 +1144,37 @@ test("component picker is registry-driven and grouped into Russian categories", 
   assert.match(closeStyles, /width: 2\.5rem/);
   assert.match(closeStyles, /border: 0/);
   assert.match(closeStyles, /background: transparent/);
+});
+
+test("component editor creates, selects, archives, and reloads Course objectives", () => {
+  const editor = source(componentEditorPath);
+  const authoring = source(lessonAuthoringPath);
+  const workspace = source(workspacePath);
+
+  assert.match(editor, /aria-label="Учебная цель компонента"/);
+  assert.match(editor, /Чему помогает научиться/);
+  assert.match(editor, /Выберите одно проверяемое умение/);
+  assert.match(editor, /<option value="">Без цели<\/option>/);
+  assert.match(editor, /objective\.archivedAt === null/);
+  assert.match(editor, /objective\.id === primaryLearningObjectiveId/);
+  assert.match(editor, /Создать и выбрать/);
+  assert.match(editor, />\s*В архив\s*</);
+  assert.match(editor, /definition\.activityFacet\.supportedRoles\.map/);
+  assert.match(editor, /primaryLearningObjectiveId,[\s\S]*?activityRole,/);
+
+  assert.match(
+    authoring,
+    /`\/api\/v2\/courses\/\$\{courseId\}\/learning-objectives`[\s\S]*?"POST"/,
+  );
+  assert.match(
+    authoring,
+    /`\/api\/v2\/courses\/\$\{courseId\}\/learning-objectives\/\$\{objectiveId\}`,[\s\S]*?"DELETE"/,
+  );
+  assert.match(authoring, /learningObjectives=\{course\.learningObjectives\}/);
+  assert.match(
+    workspace,
+    /const reload = useCallback[\s\S]*?setCourse\(workspace\)[\s\S]*?await action\(\);[\s\S]*?await reload\(\)/,
+  );
 });
 
 test("component payload editor covers every active registry type without divider", () => {
@@ -1598,8 +1631,12 @@ test("Student Screen surfaces render one ordered slide without legacy step group
   assert.ok(inlineSurface, "inline Student Screen must remain discoverable");
   assert.match(authoring, /const components = lesson\.components/);
   assert.match(authoring, /\[\.\.\.lesson\.studentSlides\]/);
-  assert.match(authoring, /lesson\.components\.filter/);
+  assert.match(authoring, /lesson\.components[\s\S]*?\.filter/);
   assert.match(authoring, /component\.studentSlideId === slide\.id/);
+  assert.match(
+    inlineSurface,
+    /projectLearnerComponentPayload\([\s\S]*?component\.typeKey,[\s\S]*?component\.payload/,
+  );
   assert.match(preview, /\[\.\.\.activeLesson\.slides\]/);
   assert.match(combined, /activeSlide\.components\.map/);
   assert.match(combined, /mode="student"/);

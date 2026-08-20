@@ -7,19 +7,22 @@ import type {
   CourseStatus,
   CourseSummary,
   CourseWorkspace,
+  LearningObjective,
   LessonComponent,
   LessonStudentSlide,
   StoredFileStatus,
 } from "./domain";
 import type {
   AddLessonInput,
+  CreateLearningObjectiveInput,
   CourseDraftInput,
   CourseUpdateInput,
   PrepareCourseAttachmentInput,
   UpdateLessonInput,
+  UpdateLearningObjectiveInput,
   SetComponentStudentScreenInput,
 } from "./contracts";
-import type { ComponentTypeKey } from "./registry/contracts";
+import type { ActivityRole, ComponentTypeKey } from "./registry/contracts";
 import type { CourseLearningAudience } from "./learning-audience";
 
 type JsonObject = Record<string, unknown>;
@@ -69,6 +72,18 @@ type LessonComponentRow = {
   placement_config: JsonObject;
   visibility: "learner_visible" | "staff_only";
   student_slide_id: string | null;
+  primary_learning_objective_id: string | null;
+  activity_role: ActivityRole | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type LearningObjectiveRow = {
+  id: string;
+  course_id: string;
+  title: string;
+  description: string | null;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -139,6 +154,17 @@ export interface CourseBuilderRepository {
     input: CourseUpdateInput,
   ): Promise<CourseSummary | null>;
   archiveCourse(courseId: string): Promise<CourseArchiveOutcome>;
+  createLearningObjective(
+    courseId: string,
+    input: CreateLearningObjectiveInput,
+  ): Promise<LearningObjective>;
+  updateLearningObjective(
+    objectiveId: string,
+    input: UpdateLearningObjectiveInput,
+  ): Promise<LearningObjective | null>;
+  archiveLearningObjective(
+    objectiveId: string,
+  ): Promise<LearningObjective | null>;
   assembleDraft(input: CourseDraftAssemblyPlan): Promise<AssembleCourseResult>;
   addLesson(courseId: string, input: AddLessonInput): Promise<CourseLesson>;
   getLesson(lessonId: string): Promise<CourseLesson | null>;
@@ -153,12 +179,16 @@ export interface CourseBuilderRepository {
     schemaVersion: number;
     payload: JsonObject;
     placement: JsonObject;
+    primaryLearningObjectiveId: string | null;
+    activityRole: ActivityRole | null;
   }): Promise<LessonComponent>;
   getComponent(componentId: string): Promise<LessonComponent | null>;
   updateComponent(input: {
     componentId: string;
     payload?: JsonObject;
     placement?: JsonObject;
+    primaryLearningObjectiveId?: string | null;
+    activityRole?: ActivityRole | null;
   }): Promise<LessonComponent | null>;
   setComponentStudentScreen(
     componentId: string,
@@ -250,6 +280,20 @@ function mapComponent(row: LessonComponentRow): LessonComponent {
     placement: row.placement_config,
     visibility: row.visibility,
     studentSlideId: row.student_slide_id,
+    primaryLearningObjectiveId: row.primary_learning_objective_id,
+    activityRole: row.activity_role,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapLearningObjective(row: LearningObjectiveRow): LearningObjective {
+  return {
+    id: row.id,
+    courseId: row.course_id,
+    title: row.title,
+    description: row.description,
+    archivedAt: row.archived_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -388,6 +432,9 @@ export function createCourseBuilderRepository(
       const lessons = await request<LessonWorkspaceRow[]>(
         `/rest/v1/lesson?select=*,components:lesson_component(*),studentSlides:lesson_student_slide(*)&course_id=eq.${encodeFilter(courseId)}&order=position.asc&components.order=position.asc&studentSlides.order=position.asc`,
       );
+      const objectives = await request<LearningObjectiveRow[]>(
+        `/rest/v1/learning_objective?select=*&course_id=eq.${encodeFilter(courseId)}&order=created_at.asc,id.asc`,
+      );
       const links = await request<CourseAttachmentRow[]>(
         `/rest/v1/course_attachment?select=*&course_id=eq.${encodeFilter(courseId)}&order=created_at.asc`,
       );
@@ -411,6 +458,7 @@ export function createCourseBuilderRepository(
         ...mapCourse(course, mappedLessons.length),
         lessons: mappedLessons,
         attachments: assets.map(mapAsset),
+        learningObjectives: objectives.map(mapLearningObjective),
       };
     },
 
@@ -461,6 +509,51 @@ export function createCourseBuilderRepository(
         method: "POST",
         body: { p_course_id: courseId },
       });
+    },
+
+    async createLearningObjective(courseId, input) {
+      const rows = await request<LearningObjectiveRow[]>(
+        "/rest/v1/rpc/create_learning_objective",
+        {
+          method: "POST",
+          body: {
+            p_course_id: courseId,
+            p_title: input.title,
+            p_description: input.description,
+          },
+        },
+      );
+      const row = rows[0];
+      if (!row) throw new Error("Не удалось создать цель обучения.");
+      return mapLearningObjective(row);
+    },
+
+    async updateLearningObjective(objectiveId, input) {
+      const rows = await request<LearningObjectiveRow[]>(
+        "/rest/v1/rpc/update_learning_objective",
+        {
+          method: "POST",
+          body: {
+            p_objective_id: objectiveId,
+            p_title: input.title ?? null,
+            p_update_title: input.title !== undefined,
+            p_description: input.description ?? null,
+            p_update_description: input.description !== undefined,
+          },
+        },
+      );
+      return rows[0] ? mapLearningObjective(rows[0]) : null;
+    },
+
+    async archiveLearningObjective(objectiveId) {
+      const rows = await request<LearningObjectiveRow[]>(
+        "/rest/v1/rpc/archive_learning_objective",
+        {
+          method: "POST",
+          body: { p_objective_id: objectiveId },
+        },
+      );
+      return rows[0] ? mapLearningObjective(rows[0]) : null;
     },
 
     async assembleDraft(input) {
@@ -540,6 +633,8 @@ export function createCourseBuilderRepository(
             position,
             payload: input.payload,
             placement_config: input.placement,
+            primary_learning_objective_id: input.primaryLearningObjectiveId,
+            activity_role: input.activityRole,
           },
         },
       );
@@ -555,13 +650,24 @@ export function createCourseBuilderRepository(
     },
 
     async updateComponent(input) {
-      const body: JsonObject = {};
-      if (input.payload !== undefined) body.payload = input.payload;
-      if (input.placement !== undefined)
-        body.placement_config = input.placement;
       const rows = await request<LessonComponentRow[]>(
-        `/rest/v1/lesson_component?id=eq.${encodeFilter(input.componentId)}`,
-        { method: "PATCH", body },
+        "/rest/v1/rpc/update_lesson_component_v2",
+        {
+          method: "POST",
+          body: {
+            p_component_id: input.componentId,
+            p_payload: input.payload ?? null,
+            p_update_payload: input.payload !== undefined,
+            p_placement_config: input.placement ?? null,
+            p_update_placement_config: input.placement !== undefined,
+            p_primary_learning_objective_id:
+              input.primaryLearningObjectiveId ?? null,
+            p_update_primary_learning_objective_id:
+              input.primaryLearningObjectiveId !== undefined,
+            p_activity_role: input.activityRole ?? null,
+            p_update_activity_role: input.activityRole !== undefined,
+          },
+        },
       );
       return rows[0] ? mapComponent(rows[0]) : null;
     },

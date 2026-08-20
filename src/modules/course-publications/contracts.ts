@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { postgresUuidSchema } from "@/lib/postgres-uuid";
 import { componentVisibilitySchema } from "@/modules/course-builder/component-visibility";
-import { componentTypeKeySchema } from "@/modules/course-builder/registry/contracts";
+import {
+  activityRoleSchema,
+  componentTypeKeySchema,
+} from "@/modules/course-builder/registry/contracts";
 import {
   courseLearningAudienceSchema,
   DEFAULT_COURSE_LEARNING_AUDIENCE,
@@ -48,7 +51,7 @@ const snapshotSlideSchema = z
   })
   .strict();
 
-const snapshotComponentSchema = z
+const snapshotComponentV1Schema = z
   .object({
     ref: postgresUuidSchema,
     position: z.number().int().positive(),
@@ -61,35 +64,129 @@ const snapshotComponentSchema = z
   })
   .strict();
 
-const snapshotLessonSchema = z
+const snapshotComponentV2Schema = snapshotComponentV1Schema
+  .extend({
+    primaryObjectiveRef: postgresUuidSchema.nullable(),
+    activityRole: activityRoleSchema.nullable(),
+  })
+  .strict();
+
+const snapshotLessonV1Schema = z
   .object({
     ref: postgresUuidSchema,
     position: z.number().int().positive(),
     title: z.string().trim().min(1).max(180),
     summary: z.string().max(1_200),
     estimatedDurationMinutes: z.number().int().positive().nullable(),
-    components: z.array(snapshotComponentSchema),
+    components: z.array(snapshotComponentV1Schema),
     slides: z.array(snapshotSlideSchema),
   })
   .strict();
 
-export const coursePublicationSnapshotSchema = z
+const snapshotLessonV2Schema = snapshotLessonV1Schema
+  .omit({ components: true })
+  .extend({ components: z.array(snapshotComponentV2Schema) })
+  .strict();
+
+const snapshotObjectiveSchema = z
+  .object({
+    ref: postgresUuidSchema,
+    position: z.number().int().positive(),
+    title: z.string().trim().min(2).max(240),
+    description: z.string().trim().min(1).max(2_000).nullable(),
+    archivedAt: z.iso.datetime({ offset: true }).nullable(),
+  })
+  .strict();
+
+const snapshotCourseSchema = z
+  .object({
+    title: z.string().trim().min(2).max(160),
+    subject: z.string().trim().max(160),
+    goal: z.string().trim().max(1_200),
+    level: z.string().trim().max(240),
+    audienceDescription: z.string().trim().max(1_200),
+    targetLessonCount: z.number().int().positive(),
+  })
+  .strict();
+
+export const coursePublicationSnapshotV1Schema = z
   .object({
     schemaVersion: z.literal(1),
-    course: z
-      .object({
-        title: z.string().trim().min(2).max(160),
-        subject: z.string().trim().max(160),
-        goal: z.string().trim().max(1_200),
-        level: z.string().trim().max(240),
-        audienceDescription: z.string().trim().max(1_200),
-        targetLessonCount: z.number().int().positive(),
-      })
-      .strict(),
-    lessons: z.array(snapshotLessonSchema),
+    course: snapshotCourseSchema,
+    lessons: z.array(snapshotLessonV1Schema),
     materials: z.array(snapshotMaterialSchema),
   })
   .strict();
+
+export const coursePublicationSnapshotV2Schema = z
+  .object({
+    schemaVersion: z.literal(2),
+    course: snapshotCourseSchema,
+    objectives: z.array(snapshotObjectiveSchema),
+    lessons: z.array(snapshotLessonV2Schema),
+    materials: z.array(snapshotMaterialSchema),
+  })
+  .strict()
+  .superRefine((snapshot, context) => {
+    const objectiveRefs = new Set<string>();
+    const objectivePositions = new Set<number>();
+    for (const [index, objective] of snapshot.objectives.entries()) {
+      if (objectiveRefs.has(objective.ref)) {
+        context.addIssue({
+          code: "custom",
+          path: ["objectives", index, "ref"],
+          message: "Ссылки целей публикации не должны повторяться.",
+        });
+      }
+      objectiveRefs.add(objective.ref);
+      if (objectivePositions.has(objective.position)) {
+        context.addIssue({
+          code: "custom",
+          path: ["objectives", index, "position"],
+          message: "Позиции целей публикации не должны повторяться.",
+        });
+      }
+      objectivePositions.add(objective.position);
+    }
+    if (
+      snapshot.objectives.some(
+        (objective) => objective.position > snapshot.objectives.length,
+      )
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["objectives"],
+        message:
+          "Позиции целей публикации должны образовывать плотный порядок.",
+      });
+    }
+
+    for (const [lessonIndex, lesson] of snapshot.lessons.entries()) {
+      for (const [componentIndex, component] of lesson.components.entries()) {
+        if (
+          component.primaryObjectiveRef !== null &&
+          !objectiveRefs.has(component.primaryObjectiveRef)
+        ) {
+          context.addIssue({
+            code: "custom",
+            path: [
+              "lessons",
+              lessonIndex,
+              "components",
+              componentIndex,
+              "primaryObjectiveRef",
+            ],
+            message: "Компонент ссылается на неизвестную цель публикации.",
+          });
+        }
+      }
+    }
+  });
+
+export const coursePublicationSnapshotSchema = z.discriminatedUnion(
+  "schemaVersion",
+  [coursePublicationSnapshotV1Schema, coursePublicationSnapshotV2Schema],
+);
 
 export type RightsConfirmationInput = z.infer<
   typeof rightsConfirmationInputSchema

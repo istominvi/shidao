@@ -79,8 +79,8 @@ overlapping Group/Course links, finalized same-Run conflict, open/draft blocker
 и erasure всей lineage. Простая последовательная SQL transaction не заменяет
 multi-session race test.
 
-Для LA-M1 learning activities дополнительно обязательны isolated functional и
-multi-session checks на disposable database с exact именем
+Для LA-M1/LA-M2 learning activities дополнительно обязательны isolated
+functional и multi-session checks на disposable database с exact именем
 `shidao_learning_activity_test`:
 
 ```bash
@@ -90,9 +90,11 @@ DATABASE_URL='postgresql://...' ./scripts/db-learning-activity-concurrency-tests
 
 Оба scripts fail closed на другом database/schema identity. Первый выполняет
 contract/lifecycle/ACL workflow и завершает fixture transaction через
-`ROLLBACK`. Второй использует отдельные реальные `psql` sessions и доказывает
-оба порядка гонки: save ждёт completion или completion ждёт save; простая
-последовательная transaction этот gate не заменяет.
+`ROLLBACK`. Второй использует отдельные реальные `psql` sessions. Для LA-M1 он
+доказывает оба порядка гонки save/completion. Для LA-M2 обязательны восемь
+исходов: четыре LA-M1 races, оба alignment↔observation-save и оба
+publication↔objective-update. Простая последовательная transaction этот gate
+не заменяет.
 
 Provider tests в AI-release используют только fake credentials и локальный
 mock. CI/build не получают реальный `ROUTERAI_API_KEY`; если сборка требует
@@ -129,6 +131,105 @@ Worktree должен содержать только изменения тек�
 чужие локальные правки или `.local-backups`.
 
 ## 4. Если release содержит DB migration
+
+### LA-M2 Course objectives / Component alignment — DB execution complete, web pending
+
+**Current production DB / next web.** Source, две forward migrations и
+generated schema snapshot готовы; production physical head теперь LA-M2B.
+DB-first evidence ниже заполнено только измеренными значениями. Task
+commit/push, Coolify deployment и deployed-web smoke остаются `PENDING` до
+фактической операции.
+
+Готовые неизменяемые inputs:
+
+- `20260820085049_learning_objectives_component_alignment.sql`, SHA-256
+  `82734db13f473c011ae61b24fc67601ac84cca986bf64395ac9ddd98ce07988a`;
+- `20260820090529_course_publication_snapshot_v2.sql`, SHA-256
+  `19d4f9fddbed2beedd1b3ad60e0100e27d8d774852c4a4d95e23593fbf82e8f8`;
+- generated source-ready snapshot SHA-256
+  `46aabae2c1a00723c2c4a3322060cb49bd48f40a0ac23d7f8a294c64c630b8b3`;
+- production-derived PostgreSQL `15.8` clone прошёл exact rollback/apply,
+  functional harness и восемь multi-session races. Baseline counts
+  Account/Course/Lesson/Component/LessonRun/LearningRecord остались
+  `19/6/22/84/2/2`, objective/observation fixture rows — `0`, одна immutable
+  revision сохранила aggregate checksum
+  `2832fcf2ee1a4c3ccdf01501fc4f60f3`.
+
+Production DB execution evidence, 20 августа 2026 года:
+
+- project-local read-only identity/schema sanity подтвердил production ShiDao
+  PostgreSQL `15.8`, database/user `postgres`/`supabase_admin`, не recovery;
+  LA-M2 objects отсутствовали, pre-apply counts Account/Course/Lesson/
+  Component/LessonRun/LearningRecord/Observation/Revision были
+  `19/6/22/84/2/2/0/1`;
+- единственный legacy publication snapshot имел `schemaVersion=1`, `9056`
+  bytes и checksum `e77ac1abfa333856fcf9022ef7a0666f`;
+- verified full-format backup
+  `/root/shidao-db-backups/shidao-before-learning-objective-alignment-20260820T104240Z.dump`
+  имеет size `1507990`, mode `600`, `1771` restore-list entries и SHA-256
+  `d508626107c6dc5a4222a77c483db929778a06a1825b61ff3bd6d3df271743c1`;
+- exact objective/alignment migration owner apply завершился наблюдаемым
+  `COMMIT`; SHA-256
+  `82734db13f473c011ae61b24fc67601ac84cca986bf64395ac9ddd98ce07988a`;
+- exact publication V2 migration owner apply завершился наблюдаемым `COMMIT`;
+  SHA-256
+  `19d4f9fddbed2beedd1b3ad60e0100e27d8d774852c4a4d95e23593fbf82e8f8`;
+- read-only postflight подтвердил objective RLS/ACL, closed raw mutations,
+  narrow objective/Component RPC, FK/trigger, parent-first lock order,
+  observation retention и publication V2 contracts. Canonical counts не
+  изменились; objectives, Component alignment/activity и observation-objective
+  rows остались `0`;
+- legacy V1 revision сохранила `schemaVersion=1`, `9056` bytes и checksum
+  `e77ac1abfa333856fcf9022ef7a0666f`;
+- PostgREST service-role GET для objective, Component и observation surfaces
+  вернул `200`, anon objective GET — `401`; production mutation fixtures/probes
+  не создавались;
+- task commit, normal fast-forward push в `main` и exact source SHA:
+  **PENDING**;
+- Coolify deployment ID, matching `SOURCE_COMMIT`/image, image ID, restart
+  count и завершение rollout: **PENDING**;
+- HTTPS/API/CSRF и authenticated Course objective/Component editor smoke:
+  **PENDING**.
+
+Coupled DB-first порядок:
+
+1. Зафиксировать зелёные application, strict browser, schema-contract,
+   functional и восемь multi-session race scenarios на exact task tree;
+   проверить migration и snapshot checksums, format и `git diff --check`.
+2. Через project-local `.codex/ssh-db.local.toml` повторить read-only sanity и
+   положительно подтвердить именно ShiDao PostgreSQL, pre-apply production
+   LA-M1 head, canonical counts, legacy revision checksum и отсутствие LA-M2
+   objects.
+   Global/random database MCP запрещён.
+3. Создать timestamped full-format production backup с mode `600`; проверить
+   nonzero size, `pg_restore --list` и SHA-256. Restore не выполнять без
+   отдельного maintenance-решения.
+4. Применить unchanged objective/alignment migration owner connection через
+   `psql -X -v ON_ERROR_STOP=1`; принимать только наблюдаемый `COMMIT`.
+5. Затем тем же способом применить unchanged publication V2 migration. Нельзя
+   переставлять migrations или объединять их с непроверенным SQL.
+6. Read-only postflight обязан подтвердить objective table/RLS, закрытые raw
+   mutations, narrow objective и Component-update RPC с empty `search_path`,
+   same-Course/archive/role guards, observation objective-at-time retention,
+   publication V1/V2 constraint/functions/remap, неизменные legacy revision
+   bytes/checksum, canonical counts и отсутствие неожиданных rows.
+7. Перезагрузить PostgREST schema cache и проверить owner/cross-account/anon
+   границы и RPC visibility. Production fixtures не создавать: destructive и
+   concurrency cases уже доказаны на disposable clone.
+8. Только после успешного DB postflight создать task commit и выполнить
+   обычный fast-forward push `main`. Дождаться Coolify exact
+   `SOURCE_COMMIT`/matching image/healthy container и проверить restart count.
+9. Выполнить host/Auth/CSRF/API smoke и authenticated no-write/read-only
+   проверку Course objective UI, Component alignment/activity role и reload.
+   Learner-safe response отдельно проверяется на отсутствие answer keys,
+   evaluator config, objective IDs и activity role.
+
+DB-first compatibility односторонняя: старый web игнорирует additive LA-M2
+objects, а новый source требует обе migrations и publication V2 functions.
+Если sanity, backup, любой `COMMIT` или postflight нельзя положительно
+подтвердить, push/deploy останавливается. Старые migrations не переписываются;
+после частичного apply выпускается только новая forward correction либо
+отдельно согласованный restore.
 
 ### LA-M1 learning activity foundation — production execution record
 

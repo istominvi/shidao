@@ -5,6 +5,7 @@ export const OBSERVABLE_CRITERION_MAX_LENGTH = 500;
 export const OBSERVATION_PRIVATE_NOTE_MAX_LENGTH = 500;
 export const OBSERVATION_COMPONENT_LABEL_MAX_LENGTH = 500;
 export const OBSERVATION_COMPONENT_PROMPT_MAX_LENGTH = 240;
+export const OBSERVATION_OBJECTIVE_TITLE_AT_TIME_MAX_LENGTH = 240;
 // One history response can contain at most 100 Runs with the existing
 // 200-learner Run audience bound.
 export const HISTORY_OBSERVATION_LEARNING_RECORD_IDS_MAX = 20_000;

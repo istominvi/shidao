@@ -25,6 +25,10 @@ const format = source(
 const styles = source(
   "src/components/learning-activities/run-observation-workspace.module.css",
 );
+const runHistory = source("src/components/lesson-runs/run-history-list.tsx");
+const learnerHistory = source(
+  "src/components/lesson-runs/learner-history-dialog.tsx",
+);
 
 test("LessonRun route loads the teacher-only observation workspace", () => {
   assert.match(route, /className="app-page-shell pb-12"/);
@@ -102,6 +106,19 @@ test("criterion, direct saves, notes, and confirmed bulk draft are explicit", ()
   ]) {
     assert.match(format, new RegExp(rating));
   }
+});
+
+test("teacher workspace and histories expose objective context without trusting save input", () => {
+  assert.match(workspace, /workspace\.learningObjectives\.find/);
+  assert.match(workspace, /Учебная цель компонента/);
+  assert.match(workspace, /только в контексте компонента/);
+  assert.doesNotMatch(workspace, /learningObjectiveId:\s*activeComponent/);
+  assert.match(runHistory, /observationObjectiveTitleAtTime/);
+  assert.match(learnerHistory, /observationObjectiveTitleAtTime/);
+  assert.match(runHistory, /Учебная цель в момент наблюдения/);
+  assert.match(learnerHistory, /Учебная цель в момент наблюдения/);
+  assert.match(runHistory, /objectiveTitle \?/);
+  assert.match(learnerHistory, /objectiveTitle \?/);
 });
 
 test("summary precedes completion and the control surface remains tablet accessible", () => {

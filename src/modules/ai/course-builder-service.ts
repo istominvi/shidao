@@ -244,6 +244,7 @@ function coursePlanningFingerprint(
   return contextFingerprint({
     course: context.course,
     currentAudience: context.currentAudience,
+    learningObjectives: context.learningObjectives,
     attachmentMetadata: context.attachmentMetadata,
   });
 }

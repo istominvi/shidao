@@ -5,24 +5,49 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import type {
   CourseAsset,
+  LearningObjective,
   LessonComponent,
 } from "@/modules/course-builder/domain";
 import {
   getComponentDefinition,
+  type ActivityRole,
   type ComponentTypeKey,
 } from "@/modules/course-builder/registry/contracts";
 
 type ComponentPayloadEditorProps = {
-  component: Pick<LessonComponent, "typeKey" | "payload" | "placement">;
+  component: Pick<
+    LessonComponent,
+    | "typeKey"
+    | "payload"
+    | "placement"
+    | "primaryLearningObjectiveId"
+    | "activityRole"
+  >;
   assets: CourseAsset[];
+  learningObjectives: LearningObjective[];
   disabled?: boolean;
   saveError?: string | null;
   cancelLabel?: string;
   onSave: (input: {
     payload: Record<string, unknown>;
     placement: Record<string, unknown>;
+    primaryLearningObjectiveId: string | null;
+    activityRole: ActivityRole | null;
   }) => Promise<void>;
+  onCreateLearningObjective: (input: {
+    title: string;
+    description: string | null;
+  }) => Promise<LearningObjective | null>;
+  onArchiveLearningObjective: (
+    objectiveId: string,
+  ) => Promise<LearningObjective | null>;
   onCancel: () => void;
+};
+
+const activityRoleLabels: Record<ActivityRole, string> = {
+  practice: "Практика",
+  assessment: "Проверка",
+  survey: "Опрос",
 };
 
 function stringValue(value: unknown) {
@@ -1411,10 +1436,13 @@ function PlacementFields({
 export function ComponentPayloadEditor({
   component,
   assets,
+  learningObjectives,
   disabled,
   saveError,
   cancelLabel = "Отмена",
   onSave,
+  onCreateLearningObjective,
+  onArchiveLearningObjective,
   onCancel,
 }: ComponentPayloadEditorProps) {
   const [payload, setPayload] = useState<Record<string, unknown>>(() => ({
@@ -1423,6 +1451,20 @@ export function ComponentPayloadEditor({
   const [placement, setPlacement] = useState<Record<string, unknown>>(() => ({
     ...component.placement,
   }));
+  const [primaryLearningObjectiveId, setPrimaryLearningObjectiveId] = useState<
+    string | null
+  >(component.primaryLearningObjectiveId);
+  const [activityRole, setActivityRole] = useState<ActivityRole | null>(
+    component.activityRole,
+  );
+  const [objectives, setObjectives] =
+    useState<LearningObjective[]>(learningObjectives);
+  const [creatingObjective, setCreatingObjective] = useState(false);
+  const [objectiveTitle, setObjectiveTitle] = useState("");
+  const [objectiveDescription, setObjectiveDescription] = useState("");
+  const [objectiveMutationInFlight, setObjectiveMutationInFlight] =
+    useState(false);
+  const [objectiveError, setObjectiveError] = useState<string | null>(null);
   const [validationMessage, setValidationMessage] = useState<string | null>(
     null,
   );
@@ -1431,6 +1473,26 @@ export function ComponentPayloadEditor({
     () => getComponentDefinition(component.typeKey),
     [component.typeKey],
   );
+  const selectedObjective = objectives.find(
+    (objective) => objective.id === primaryLearningObjectiveId,
+  );
+  const selectableObjectives = objectives.filter(
+    (objective) =>
+      objective.archivedAt === null ||
+      objective.id === primaryLearningObjectiveId,
+  );
+
+  useEffect(() => {
+    setObjectives((current) => {
+      const received = new Map(
+        learningObjectives.map((objective) => [objective.id, objective]),
+      );
+      for (const objective of current) {
+        if (!received.has(objective.id)) received.set(objective.id, objective);
+      }
+      return [...received.values()];
+    });
+  }, [learningObjectives]);
 
   useEffect(() => {
     editorRef.current
@@ -1459,11 +1521,192 @@ export function ComponentPayloadEditor({
     await onSave({
       payload: parsedPayload.data as Record<string, unknown>,
       placement: parsedPlacement.data as Record<string, unknown>,
+      primaryLearningObjectiveId,
+      activityRole,
     });
+  }
+
+  async function createObjective() {
+    const title = objectiveTitle.trim();
+    if (title.length < 2 || title.length > 240) {
+      setObjectiveError("Сформулируйте цель от 2 до 240 символов.");
+      return;
+    }
+    const description = objectiveDescription.trim();
+    if (description.length > 2_000) {
+      setObjectiveError("Описание цели должно быть короче 2000 символов.");
+      return;
+    }
+    setObjectiveMutationInFlight(true);
+    setObjectiveError(null);
+    try {
+      const created = await onCreateLearningObjective({
+        title,
+        description: description || null,
+      });
+      if (!created) {
+        setObjectiveError("Не удалось создать цель. Попробуйте ещё раз.");
+        return;
+      }
+      setObjectives((current) => [
+        ...current.filter((objective) => objective.id !== created.id),
+        created,
+      ]);
+      setPrimaryLearningObjectiveId(created.id);
+      setObjectiveTitle("");
+      setObjectiveDescription("");
+      setCreatingObjective(false);
+    } finally {
+      setObjectiveMutationInFlight(false);
+    }
+  }
+
+  async function archiveSelectedObjective() {
+    if (!selectedObjective || selectedObjective.archivedAt !== null) return;
+    setObjectiveMutationInFlight(true);
+    setObjectiveError(null);
+    try {
+      const archived = await onArchiveLearningObjective(selectedObjective.id);
+      if (!archived) {
+        setObjectiveError("Не удалось отправить цель в архив.");
+        return;
+      }
+      setObjectives((current) =>
+        current.map((objective) =>
+          objective.id === archived.id ? archived : objective,
+        ),
+      );
+    } finally {
+      setObjectiveMutationInFlight(false);
+    }
   }
 
   return (
     <div ref={editorRef} className="component-payload-editor">
+      <section
+        className="grid gap-3 rounded-2xl border border-sky-200 bg-sky-50/70 p-4"
+        aria-label="Учебная цель компонента"
+      >
+        <div>
+          <p className="font-bold text-neutral-950">Чему помогает научиться</p>
+          <p className="mt-1 text-sm leading-5 text-neutral-600">
+            Выберите одно проверяемое умение или создайте новую цель курса.
+          </p>
+        </div>
+        <Field label="Цель обучения">
+          <select
+            className={selectClassName()}
+            value={primaryLearningObjectiveId ?? ""}
+            disabled={disabled || objectiveMutationInFlight}
+            onChange={(event) =>
+              setPrimaryLearningObjectiveId(event.target.value || null)
+            }
+          >
+            <option value="">Без цели</option>
+            {selectableObjectives.map((objective) => (
+              <option key={objective.id} value={objective.id}>
+                {objective.title}
+                {objective.archivedAt ? " (в архиве)" : ""}
+              </option>
+            ))}
+          </select>
+        </Field>
+        {selectedObjective?.description ? (
+          <p className="text-sm leading-5 text-neutral-600">
+            {selectedObjective.description}
+          </p>
+        ) : null}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={disabled || objectiveMutationInFlight}
+            onClick={() => setCreatingObjective((current) => !current)}
+          >
+            {creatingObjective ? "Скрыть форму" : "Создать цель"}
+          </Button>
+          {selectedObjective && selectedObjective.archivedAt === null ? (
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={disabled || objectiveMutationInFlight}
+              onClick={() => void archiveSelectedObjective()}
+            >
+              В архив
+            </Button>
+          ) : null}
+        </div>
+        {creatingObjective ? (
+          <div className="grid gap-3 rounded-xl bg-white p-3">
+            <Field label="Что ученик сможет делать">
+              <input
+                className="field-input"
+                value={objectiveTitle}
+                maxLength={240}
+                disabled={disabled || objectiveMutationInFlight}
+                placeholder="Например: различает второй и третий тон"
+                onChange={(event) => setObjectiveTitle(event.target.value)}
+              />
+            </Field>
+            <Field
+              label="Пояснение"
+              hint="Необязательно. Добавьте контекст, понятный преподавателю."
+            >
+              <textarea
+                className={textareaClassName()}
+                value={objectiveDescription}
+                maxLength={2_000}
+                disabled={disabled || objectiveMutationInFlight}
+                onChange={(event) =>
+                  setObjectiveDescription(event.target.value)
+                }
+              />
+            </Field>
+            <div>
+              <Button
+                type="button"
+                disabled={
+                  disabled ||
+                  objectiveMutationInFlight ||
+                  objectiveTitle.trim().length < 2
+                }
+                onClick={() => void createObjective()}
+              >
+                Создать и выбрать
+              </Button>
+            </div>
+          </div>
+        ) : null}
+        {definition.activityFacet ? (
+          <Field
+            label="Как используется задание"
+            hint="Роль доступна только для подходящих интерактивных компонентов."
+          >
+            <select
+              className={selectClassName()}
+              value={activityRole ?? ""}
+              disabled={disabled}
+              onChange={(event) =>
+                setActivityRole(
+                  (event.target.value || null) as ActivityRole | null,
+                )
+              }
+            >
+              <option value="">Не указано</option>
+              {definition.activityFacet.supportedRoles.map((role) => (
+                <option key={role} value={role}>
+                  {activityRoleLabels[role]}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : null}
+        {objectiveError ? (
+          <p className="text-sm font-medium text-rose-700" role="alert">
+            {objectiveError}
+          </p>
+        ) : null}
+      </section>
       <PayloadFields
         typeKey={component.typeKey}
         payload={payload}

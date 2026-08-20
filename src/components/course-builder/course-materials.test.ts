@@ -27,6 +27,7 @@ function workspace(): CourseWorkspace {
     createdAt: timestamp,
     updatedAt: timestamp,
     publicationContentUpdatedAt: timestamp,
+    learningObjectives: [],
     attachments: [
       {
         id: USED_ASSET_ID,
@@ -84,6 +85,8 @@ function workspace(): CourseWorkspace {
             placement: {},
             visibility: "learner_visible",
             studentSlideId: "99999999-9999-4999-8999-999999999999",
+            primaryLearningObjectiveId: null,
+            activityRole: null,
             createdAt: timestamp,
             updatedAt: timestamp,
           },
