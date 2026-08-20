@@ -1325,12 +1325,12 @@ source `25d7855831273ff5feea14473c2870b729ac39b3` развёрнут Coolify dep
 Полный LA-M1 scope и DoD:
 [`docs/plans/learning-activity-system-implementation.md`](./plans/learning-activity-system-implementation.md).
 
-## P1.2: Course objectives и activity foundation (**CURRENT DB / NEXT WEB**)
+## P1.2: Course objectives и activity foundation (**CURRENT**)
 
-Source/schema vertical slice реализован, а production DB rollout завершён с
-verified backup, двумя exact `COMMIT` и read-only postflight. Task commit,
-dependent web rollout и deployed-SHA smoke остаются **NEXT**, поэтому capability
-ещё не заявляется как current deployed application:
+Source/schema vertical slice и production DB/web rollout завершены: verified
+backup, два exact `COMMIT`, read-only DB/PostgREST postflight, normal
+fast-forward source `014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0`, Coolify deployment `1003` и
+deployed-SHA HTTP/API/CSRF/browser guest smoke подтверждены:
 
 - плоские Course-scoped Learning Objectives;
 - одна optional primary objective на Component;
@@ -1341,7 +1341,7 @@ dependent web rollout и deployed-SHA smoke остаются **NEXT**, поэт�
 - старые component-only observations остаются историей и автоматически не
   переосмысливаются.
 
-Также current source обеспечивает:
+Current production обеспечивает:
 
 - owner-scoped objective API/RPC/RLS, cross-Course denial и запрет нового
   назначения archived objective при сохранении существующих alignment/history;
@@ -1360,8 +1360,10 @@ Applied production migrations:
 `20260820090529_course_publication_snapshot_v2.sql`. Production DB postflight
 подтвердил unchanged canonical counts, legacy V1 bytes/checksum,
 RLS/ACL/RPC/FK/trigger/lock-order, publication V2 и PostgREST visibility без
-production fixtures. До normal fast-forward rollout и deployed-SHA smoke
-capability остаётся source-ready web, а не current deployed UI/API.
+production fixtures. Exact local strict production-mode browser suite прошёл
+`30/30`, в том числе LA-M2 scenario `#29`. Authenticated production no-write
+editor smoke не был выполнен из-за отсутствия authenticated browser session и
+не подменяется guest smoke.
 
 Rebuildable objective state и прозрачные recommendations остаются LA-M3
 после objective alignment; один score, completion или eligible observation не

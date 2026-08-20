@@ -27,12 +27,15 @@ DB-first migration, dependent source
 доставлены и прошли production DB/HTTP/API/CSRF/browser postflight 20 августа
 2026 года.
 
-Current production DB и ready source дополнительно реализуют LA-M2: flat
+Current production дополнительно реализует LA-M2: flat
 Course-scoped objectives, одну optional primary objective и activity role на
 Component, objective-at-time provenance наблюдений, optional registry
 `activityFacet`, learner-safe delivery/evaluator split и publication snapshot
-V2. DB-first apply/postflight завершён; task commit, dependent web rollout и
-deployed-SHA smoke ещё не выполнены и здесь не заявляются.
+V2. DB-first apply/postflight и dependent source
+`014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0` в Coolify deployment `1003`
+завершены; HTTP/API/CSRF/browser guest postflight и exact local strict
+production-mode browser suite `30/30` прошли. Authenticated production no-write
+editor smoke не заявляется из-за отсутствия authenticated browser session.
 
 Этот документ владеет authored hierarchy, Slides projection, Homework
 separation и compact LessonRun/LearningRecord boundary. Учебные цели, ответы,
@@ -343,7 +346,7 @@ authored-create projection генерирует JSON Schema только для 
 Добавление типа компонента не требует новой таблицы и не создаёт отдельную
 React-страницу для конкретной Lesson.
 
-Current LA-M2 source добавляет optional `activityFacet` в этот же registry:
+Current production LA-M2 добавляет optional `activityFacet` в этот же registry:
 supported roles, response/evaluator modes, learner-safe delivery,
 server-private evaluator projection и evidence policy. Passive content не
 получает facet; `single_choice_poll` является survey с policy `never`, а
@@ -655,7 +658,7 @@ allowlisted immutable snapshot текущей authored-редакции:
 - source Course/Lesson/Component/Slide/StoredFile IDs заменяются
   publication-local keys.
 
-Current LA-M2 DB/source contract создаёт новые revisions только как snapshot
+Current production LA-M2 contract создаёт новые revisions только как snapshot
 schema V2:
 в него входят Course objective definitions с archive state, Component
 `primaryObjectiveRef` и `activityRole`; clone/duplicate детерминированно создают
@@ -664,8 +667,8 @@ shape: старые revisions читаются и копируются без re
 publish запрещён, если он отбросил бы существующие objectives/alignment.
 Catalog detail строит learner-safe Component payload на server boundary;
 snapshot сохраняет полный immutable author payload для воспроизводимости, но
-answer keys/evaluator config не выдаются learner. Production DB contract уже
-current; rollout зависимого application code ещё pending.
+answer keys/evaluator config не выдаются learner. DB и зависимый application
+contract являются current production.
 
 Перед первой публикацией и обновлением есть один confirmation dialog с
 обязательным подтверждением прав на материалы. Для детского Course consent
@@ -1651,10 +1654,9 @@ Learner-identity consent/audit schema входит в отдельные M2–M3
 ## Runtime and future live mode
 
 Current repository реализует appointment/completion history, LA-M1 teacher
-observation workspace и LA-M2 source objective provenance/eligibility; LA-M2
-physical DB contract уже current production, но dependent web пока не
-развёрнут. Система по-прежнему не реализует
-learner live sync, attempts или objective state.
+observation workspace и LA-M2 objective provenance/eligibility в current
+production. Система по-прежнему не реализует learner live sync, attempts или
+objective state.
 Открытый LessonRun уже является конкретным проведением; второй content-bearing
 `LessonSession` не нужен. Будущий operational presentation cursor может быть
 связан с открытым Run и текущим Student Screen Slide, не меняя authored
@@ -1713,9 +1715,8 @@ application services и MCP не импортируют demo fixtures; все н
 - live Student Screen sync, realtime presence и runtime cursor;
 - versioned learner activity attempts, server-side evaluation, durable typed
   learning evidence, rebuildable objective state и deterministic adaptation;
-  LA-M2 Course objectives/alignment уже current production DB / ready source,
-  но ещё не deployed web capability, а `LearningRecord` не является
-  metrics/event container;
+  LA-M2 Course objectives/alignment уже current production, а `LearningRecord`
+  не является metrics/event container;
 - enrollment/consumption детских Course через LearnerProfile и live Student
   Screen access; Account-scoped self-learning educator publications уже
   реализован;

@@ -1,8 +1,7 @@
 # План реализации Learning Activity System
 
-**Статус:** LA-M0 — CURRENT architecture; LA-M1 — CURRENT production; LA-M2 —
-CURRENT PRODUCTION DB / READY SOURCE / NEXT WEB; LA-M3–LA-M6 — NEXT;
-LA-M7–LA-M9 — LATER.
+**Статус:** LA-M0 — CURRENT architecture; LA-M1–LA-M2 — CURRENT production;
+LA-M3–LA-M6 — NEXT; LA-M7–LA-M9 — LATER.
 **Актуально на:** 20 августа 2026 года
 **Архитектура:**
 [`learning-activity-system.md`](../architecture/learning-activity-system.md)
@@ -198,11 +197,11 @@ save-versus-completion проверяется отдельным
 доказывают оба lock order исхода, а не имитируют race последовательными
 statements одной transaction.
 
-## LA-M2 — Course objectives и Component alignment (**CURRENT DB / NEXT WEB**)
+## LA-M2 — Course objectives и Component alignment (**CURRENT**)
 
-**Статус:** законченный source/schema vertical slice; production DB rollout
-завершён, application source готов. Task commit, dependent web rollout и
-deployed-SHA smoke остаются **NEXT**.
+**Статус:** законченный production vertical slice. DB-first apply/postflight,
+exact source `014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0`, Coolify deployment `1003` и
+deployed-SHA HTTP/API/CSRF/browser guest smoke завершены.
 
 Текущий implementation map:
 
@@ -277,15 +276,17 @@ objective state, mastery percentage или recommendations. Evidence eligibility
   learner-safe projection и не содержат objective IDs, role metadata,
   evaluator config или answer keys.
 
-### Production gate (**DB COMPLETE / WEB NEXT**)
+### Production gate (**COMPLETE**)
 
 DB-first часть выполнена: повторный read-only identity/schema sanity подтвердил
 ShiDao PostgreSQL `15.8`, verified backup создан и проверен, обе exact
 migrations завершились `COMMIT`, а RLS/ACL/RPC/FK/trigger/lock-order,
 PostgREST visibility и unchanged legacy V1 snapshot прошли postflight без
-production fixtures. Остаются normal fast-forward `main` rollout, Coolify
-exact-image verification и deployed-SHA HTTP/API/CSRF/browser smoke. До их
-завершения документация не утверждает, что LA-M2 доступен в deployed web.
+production fixtures. Normal fast-forward `main` rollout, Coolify exact-image
+verification и deployed-SHA HTTP/API/CSRF/browser guest smoke также завершены;
+exact local strict production-mode suite прошёл `30/30`, включая mandatory
+scenario `#29`. Authenticated production no-write editor smoke не выполнен из-за
+отсутствия authenticated browser session и остаётся явно не заявленным.
 
 ## LA-M3 — учебный профиль: история, навыки, рекомендации (**NEXT**)
 

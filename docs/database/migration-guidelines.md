@@ -18,18 +18,21 @@ Production-derived clone прошёл exact rollback/apply, functional harness �
 Обе migrations завершились наблюдаемым `COMMIT`; RLS/ACL/RPC/FK/trigger,
 lock-order, publication V2, PostgREST visibility, unchanged canonical counts и
 legacy V1 bytes/checksum прошли postflight без production fixtures. Task
-commit/dependent web rollout ещё pending; clone provenance по-прежнему
-отделена от production execution record.
+commit и dependent web rollout exact source
+`014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0` завершены; clone provenance
+по-прежнему отделена от production execution record.
 **Последняя применённая authored-data-only migration:**
 exact tracked `20260813063716_unify_heading_rich_text_components.sql` применён
 production; `psql` зафиксировал `COMMIT`, а maximum `updated_at`
 преобразованных строк — `2026-08-13T07:05:50.169297Z`. Она не меняла
-physical schema; последующие E2A, AV1, CC1, A2 и LA-M1 schema rollout отражены в
-production contract и execution record выше.
+physical schema; последующие E2A, AV1, CC1, A2, LA-M1 и LA-M2 schema rollout
+отражены в production contract и execution record выше.
 **Последний документированный coupled application rollout source:**
-`25d7855831273ff5feea14473c2870b729ac39b3`; Coolify deployment `1001`
-завершён с exact source/image, restart count `0` и зелёным
-HTTPS/API/CSRF/browser guest postflight.
+`014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0`; Coolify deployment `1003`
+(`f93pn3ifoq4cehouec41793m`) завершён с exact source/image, restart count `0` и
+зелёным HTTPS/API/CSRF/browser guest postflight. Exact local strict
+production-mode browser suite прошёл `30/30`; authenticated production no-write
+editor smoke не заявляется из-за отсутствия authenticated browser session.
 
 Исторический U1-compatible source
 `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da` был развёрнут и проверен до U1

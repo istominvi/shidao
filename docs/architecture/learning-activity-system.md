@@ -94,7 +94,7 @@ structured observation учитель сначала подтверждает к
 
 ## CURRENT: что уже существует
 
-В подтверждённом current deployed application baseline LA-M1:
+В подтверждённом current production application baseline LA-M1/LA-M2:
 
 - Course напрямую владеет Lessons, а Lesson — одним ordered списком Components;
 - Student Screen Slides являются только learner-facing presentation projection;
@@ -116,8 +116,7 @@ structured observation учитель сначала подтверждает к
   payload;
 - persisted Homework и детский learner runtime ещё не реализованы.
 
-В current production DB и ready application source LA-M2, dependent web
-rollout которого ещё предстоит:
+Current production LA-M2 дополнительно реализует:
 
 - Course владеет плоским списком `LearningObjective` с title, optional
   description и archive state;
@@ -149,7 +148,11 @@ LA-M2 production DB migrations:
 `supabase_admin` к production PostgreSQL `15.8` с наблюдаемыми `COMMIT` после
 verified backup; read-only postflight подтвердил schema/RLS/ACL/RPC/FK/trigger,
 lock-order, publication V2, PostgREST visibility и неизменность legacy V1
-revision. Task commit и dependent web rollout пока не заявляются завершёнными.
+revision. Exact source `014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0`
+развёрнут Coolify deployment `1003`; HTTP/API/CSRF/browser guest postflight и
+exact local strict production-mode browser suite `30/30` прошли.
+Authenticated production no-write editor smoke не заявляется из-за отсутствия
+authenticated browser session.
 
 LA-M1 доставлен DB-first 20 августа 2026 года: exact migration применена с
 `COMMIT`, dependent source `25d7855831273ff5feea14473c2870b729ac39b3`
@@ -214,7 +217,7 @@ Facet ещё не означает наличие learner execution runtime ил
 Конкретный Component в Lesson: вопрос, варианты, контент, primary objective,
 роль активности, feedback и optional authored difficulty metadata. Авторская
 сложность не становится multiplier evidence без item calibration. В current
-LA-M2 source у одного Component не больше одной primary Course objective.
+production LA-M2 у одного Component не больше одной primary Course objective.
 Поддержку
 нескольких целей нельзя добавлять, пока реальный workflow не докажет
 необходимость.
@@ -270,10 +273,10 @@ delayed feedback в review или withheld feedback до завершения as
 
 Структурированная отметка преподавателя во время очного или online занятия.
 Она имеет learner, LessonRun, Component context, значение, время и автора.
-Current LA-M2 source сохраняет у новых наблюдений objective context: nullable
-live FK, стабильный source objective UUID-at-time и title-at-time. Старые
-component-only наблюдения остаются честной историей с `NULL`, не получают
-backfill и автоматически в evidence/mastery не переосмысливаются.
+Current production LA-M2 сохраняет у новых наблюдений objective context:
+nullable live FK, стабильный source objective UUID-at-time и title-at-time.
+Старые component-only наблюдения остаются честной историей с `NULL`, не
+получают backfill и автоматически в evidence/mastery не переосмысливаются.
 
 Bulk entry остаётся способом создать draft, а не автоматической гарантией
 evidence. Для влияния на objective state должны быть зафиксированы
@@ -283,8 +286,7 @@ learners действительно наблюдались. LA-M1 сохраня
 становится отдельным signal только если будущий evidence policy объяснит его
 шкалу и назначение.
 
-Current production LA-M1, current production DB LA-M2 и ready source вместе
-реализуют только
+Current production LA-M1 и LA-M2 вместе реализуют только
 component-level history и objective provenance:
 
 - ровно одна текущая строка на `LearningRecord + source Component`;
@@ -525,8 +527,8 @@ component-level teacher observations, но ещё не объявляет их o
 
 Минимальный UX:
 
-1. текущая Lesson и Component; ready source LA-M2 дополнительно показывает
-   optional primary objective, но deployed web rollout этой части ещё pending;
+1. текущая Lesson и Component; LA-M2 дополнительно показывает optional primary
+   objective;
 2. короткий общий observable criterion-at-time; passive Component остаётся в
    navigator, но без критерия structured rating не создаётся; UI может
    предложить editable draft из Component instruction, но teacher явно его
@@ -707,9 +709,9 @@ contract tests, а не финальной косметической прове
 
 1. **CURRENT:** быстрые component-level teacher observations поверх
    существующего LessonRun, без заявления mastery;
-2. **CURRENT SOURCE / NEXT PRODUCTION:** Course objectives, одна optional
-   primary objective на Component, activity role и optional registry
-   `activityFacet` с learner-safe/evaluator projections;
+2. **CURRENT:** Course objectives, одна optional primary objective на Component,
+   activity role и optional registry `activityFacet` с learner-safe/evaluator
+   projections;
 3. **NEXT:** history/objective-state projection для objective-aligned
    observations;
 4. **NEXT:** learner authorization и teacher-controlled live delivery;

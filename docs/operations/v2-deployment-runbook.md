@@ -132,13 +132,12 @@ Worktree должен содержать только изменения тек�
 
 ## 4. Если release содержит DB migration
 
-### LA-M2 Course objectives / Component alignment — DB execution complete, web pending
+### LA-M2 Course objectives / Component alignment — production execution record
 
-**Current production DB / next web.** Source, две forward migrations и
-generated schema snapshot готовы; production physical head теперь LA-M2B.
-DB-first evidence ниже заполнено только измеренными значениями. Task
-commit/push, Coolify deployment и deployed-web smoke остаются `PENDING` до
-фактической операции.
+**Current production DB + web/source.** Две forward migrations, generated
+schema snapshot и exact dependent source доставлены. Evidence ниже заполнено
+только измеренными значениями; отдельно сохранено единственное ограничение
+authenticated production browser coverage.
 
 Готовые неизменяемые inputs:
 
@@ -184,12 +183,43 @@ Production DB execution evidence, 20 августа 2026 года:
 - PostgREST service-role GET для objective, Component и observation surfaces
   вернул `200`, anon objective GET — `401`; production mutation fixtures/probes
   не создавались;
-- task commit, normal fast-forward push в `main` и exact source SHA:
-  **PENDING**;
-- Coolify deployment ID, matching `SOURCE_COMMIT`/image, image ID, restart
-  count и завершение rollout: **PENDING**;
-- HTTPS/API/CSRF и authenticated Course objective/Component editor smoke:
-  **PENDING**.
+- task commit `014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0` доставлен normal fast-forward
+  push в `main`;
+- Coolify deployment `1003` (`f93pn3ifoq4cehouec41793m`) создан
+  `2026-08-20T10:56:59.000Z` и завершён `2026-08-20T10:59:56.000Z` со status
+  `finished`. Production container
+  `g9x4d9zn60jv35r7zf0xl6xj-105659651506` имеет matching image
+  tag/`SOURCE_COMMIT`, image ID
+  `sha256:90bce8c473fc38bf0a562b888f360cd7d8d52a8f70ef0998c63b9d13b058d04c`,
+  `StartedAt=2026-08-20T10:59:55.126498669Z`, state `running` и restart count
+  `0`. Docker healthcheck не настроен; 12 log lines после `StartedAt` не
+  содержали error/exception/unhandled/fatal/panic matches. Единственный
+  замеченный startup warning — benign npm config notice
+  `Use --omit=dev instead.`;
+- HTTP postflight `2026-08-20T11:03:41Z–11:04:36Z` подтвердил TLS, V2 `/login`
+  `200` с `X-Robots-Tag: noindex, nofollow, noarchive`, `robots.txt` `200` и
+  guest `/courses` `307` с literal relative `Location: /login`, корректно
+  разрешаемым в `https://v2.shidao.ru/login`. Landing `/` вернул `200`, а
+  landing `/login` и objective API — `503`;
+- objective `POST` с fake UUID и без cookies при missing/wrong Origin вернул
+  `403`, при exact `https://v2.shidao.ru` Origin — `401`; guest GET
+  `/api/v2/courses` и `/api/v2/course-catalog` вернули `401`, а
+  неподдерживаемый objective collection GET — `405`. Mutation не выполнялась;
+- in-app browser guest session подтвердила redirect `/courses → /login`.
+  Chrome был недоступен; exact local strict production-mode browser suite
+  прошёл `30/30`, включая mandatory real LA-M2 scenario `#29`;
+- authenticated production no-write Course objective/Component editor smoke:
+  **PENDING / не заявляется**, потому что доступная in-app browser session была
+  guest. Этот пробел не подменяется local suite или guest smoke;
+- disposable remote database `shidao_learning_activity_test` перед cleanup был
+  read-only проверен: size `19305263` bytes, active sessions `0`; database
+  успешно удалена, post-check `pg_database` count — `0`. Host-path
+  `/tmp/shidao-schema-refresh-20260820` уже отсутствовал; внутри `supabase-db`
+  exact temp-path содержал четыре snapshot-файла (`1108` KiB), был удалён, и
+  final host/container post-check подтвердил отсутствие обоих paths. Verified
+  production backup
+  `/root/shidao-db-backups/shidao-before-learning-objective-alignment-20260820T104240Z.dump`
+  сохранён и не удалялся.
 
 Coupled DB-first порядок:
 
@@ -218,7 +248,8 @@ Coupled DB-first порядок:
    concurrency cases уже доказаны на disposable clone.
 8. Только после успешного DB postflight создать task commit и выполнить
    обычный fast-forward push `main`. Дождаться Coolify exact
-   `SOURCE_COMMIT`/matching image/healthy container и проверить restart count.
+   `SOURCE_COMMIT`/matching image/running container и проверить restart count;
+   отсутствие Docker healthcheck фиксировать явно.
 9. Выполнить host/Auth/CSRF/API smoke и authenticated no-write/read-only
    проверку Course objective UI, Component alignment/activity role и reload.
    Learner-safe response отдельно проверяется на отсутствие answer keys,

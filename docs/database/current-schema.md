@@ -7,9 +7,9 @@ content-guard correction + U1 unified Text authored data + AV1 Account avatars
 и CC1 Communication Center database contract + A2 atomic Assistant schedule
 guard + LA-M1 learning activity foundation + LA-M2 Course objectives,
 Component alignment и publication snapshot V2. CC1, A2, LA-M1 и LA-M2
-DB-first contracts применены; последний dependent functional application
-rollout пока остаётся exact source
-`25d7855831273ff5feea14473c2870b729ac39b3`, а LA-M2 web rollout pending.
+DB-first contracts применены; dependent functional application source
+`014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0` развёрнут Coolify deployment
+`1003` и прошёл deployed-SHA HTTP/API/CSRF/browser guest postflight.
 
 **Production schema head:**
 `20260820090529_course_publication_snapshot_v2.sql`, применённая после
@@ -27,8 +27,7 @@ verified backup.
 
 Обе migrations отрепетированы на production-derived disposable clone с exact
 rollback/apply, functional harness и восемью multi-session races. Verified
-backup и production apply/postflight выполнены; dependent web rollout ещё не
-выполнялся.
+backup, production apply/postflight и dependent web rollout выполнены.
 
 **Последняя применённая authored-data-only migration:**
 exact tracked `20260813063716_unify_heading_rich_text_components.sql` применён
@@ -50,16 +49,15 @@ Admin create/delete probe
 **SQL snapshot:**
 [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
 содержит LA-M2 contract, соответствующий current production physical head. Он
-снят
-штатным script в `2026-08-20T09:54:46Z` из изолированного PostgreSQL `15.8`
-production-derived clone после exact rollback/apply обеих migrations,
+снят штатным script в `2026-08-20T09:54:46Z` из изолированного PostgreSQL
+`15.8` production-derived clone после exact rollback/apply обеих migrations,
 functional harness и восьми multi-session race checks. Strict signature —
 `shidao-v2-contract`, SHA-256 snapshot —
 `46aabae2c1a00723c2c4a3322060cb49bd48f40a0ac23d7f8a294c64c630b8b3`.
 
 Clone provenance snapshot не подменяет production execution evidence. Exact
-LA-M2 production backup/apply/postflight зафиксированы ниже; task commit и
-dependent deployed-source verification остаются отдельным pending web record.
+LA-M2 production backup/apply/postflight и dependent deployed-source
+verification зафиксированы ниже.
 
 ## Read order для DB-задач
 
@@ -177,7 +175,7 @@ Production execution evidence, 20 августа 2026 года:
   `95c09811ffbc3f12971494e4ad150313c2151e01e6936afb73279baab5a8001f`,
   restart count `0`, HTTPS/API/CSRF/browser guest postflight прошёл.
 
-### Production LA-M2 objective/alignment contract — web rollout pending
+### Production LA-M2 objective/alignment and web contract
 
 Первая forward migration добавляет:
 
@@ -268,8 +266,24 @@ Production execution evidence, 20 августа 2026 года:
 - canonical counts не изменились, objectives, Component alignment/activity и
   observation-objective rows остались `0`; legacy V1 сохранил прежние bytes и
   checksum;
-- production mutation fixtures/probes не создавались. Task commit, Coolify
-  rollout и deployed-web smoke остаются pending.
+- production mutation fixtures/probes не создавались;
+- exact source `014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0` доставлен normal fast-forward
+  push и Coolify deployment `1003` (`f93pn3ifoq4cehouec41793m`). Running
+  container `g9x4d9zn60jv35r7zf0xl6xj-105659651506` имеет matching image
+  tag/`SOURCE_COMMIT`, image ID
+  `sha256:90bce8c473fc38bf0a562b888f360cd7d8d52a8f70ef0998c63b9d13b058d04c`
+  и restart count `0`;
+- deployed HTTP/API/CSRF/browser guest postflight прошёл без mutation, а exact
+  local strict production-mode suite — `30/30`, включая LA-M2 scenario `#29`.
+  Authenticated production no-write editor smoke не заявляется из-за
+  отсутствия authenticated browser session;
+- disposable `shidao_learning_activity_test` перед cleanup был read-only
+  проверен: size `19305263` bytes, active sessions `0`; database успешно
+  удалена, post-check `pg_database` count — `0`. Host-path
+  `/tmp/shidao-schema-refresh-20260820` уже отсутствовал; внутри `supabase-db`
+  exact temp-path содержал четыре snapshot-файла (`1108` KiB), был удалён, и
+  final host/container post-check подтвердил отсутствие обоих paths. Verified
+  production backup выше сохранён и не удалялся.
 
 ### Production CC1 Communication Center
 
@@ -1181,7 +1195,7 @@ contacts, exact timestamps, foreign titles и private comments не возвра
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | Course/Lesson                                  | owner `SELECT/INSERT` + allowlisted authored-column `UPDATE`; no direct `DELETE`, `archived_at` или `course_id` update после A1 | RLS + owner service, `archive_course` и Lesson lifecycle RPC |
 | Component/Slide/File                           | existing owner-scoped permissions                                                                                               | RLS + owner service/RPC                                      |
-| `learning_objective` (LA-M2 production)        | owner-scoped `SELECT`; raw mutations closed                                                                                     | authenticated objective RPC; dependent web pending           |
+| `learning_objective` (LA-M2 production)        | owner-scoped `SELECT`; raw mutations closed                                                                                     | authenticated objective RPC + deployed API/service           |
 | Publication/revision/asset/origin              | none                                                                                                                            | server-only service-role adapter + closed admin RPC          |
 | Attestation definition/attempt/award           | none; `course.learning_audience` задаётся при create и затем immutable                                                          | owner/self aggregate RPC + service-only publication wrappers |
 | `learner_profile`                              | own canonical row `SELECT`; no direct mutation                                                                                  | supported identity workflows                                 |
@@ -1246,7 +1260,7 @@ guard.
 status, Homework persistence, parsing/RAG, learner enrollment/consumption
 детского Course, live Student Screen, learner attempts, durable typed evidence
 или mastery/objective-state persistence. LA-M2 Course objectives/alignment
-существуют в current production DB и ready source, но ещё не в deployed web.
+существуют в current production DB/source/web.
 E2 educator self-learning progress —
 отдельный Account-scoped contract без roster/Run. Observer capability не
 является Parent/Guardian role, а
@@ -1326,5 +1340,5 @@ total `17` authenticated user RPC; SHA-256
 После exact LA-M2 production-derived clone rehearsal contract
 snapshot снят `2026-08-20T09:54:46Z`; SHA-256
 `46aabae2c1a00723c2c4a3322060cb49bd48f40a0ac23d7f8a294c64c630b8b3`.
-LA-M2 production apply/postflight завершены и зафиксированы выше; dependent
-web execution record пока отсутствует.
+LA-M2 production apply/postflight и dependent web execution record завершены и
+зафиксированы выше.

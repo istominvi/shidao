@@ -13,12 +13,12 @@ typecheck, lint, repository-wide format check и production build)
 **Исторический functional E2 baseline:**
 `22b486a7163453019d9720cb4fe0f36ed7c0228d`
 
-**Current production DB / next web — LA-M2 Course objectives:** flat Course
-objectives, Component alignment/activity role, observation objective provenance
-и publication snapshot V2 уже применены к production DB. Learner-safe activity
-projection и application workflow готовы в repository; task commit, dependent
-web rollout и deployed-SHA smoke ещё не выполнены и ниже не выдаются за current
-deployed application.
+**Current production DB + web/source — LA-M2 Course objectives:** flat Course
+objectives, Component alignment/activity role, observation objective provenance,
+publication snapshot V2 и learner-safe application workflow доставлены exact
+source `014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0`. Coolify deployment `1003`
+завершён с matching image/`SOURCE_COMMIT`, running container и restart
+count `0`; HTTP/API/CSRF/browser guest postflight прошёл без mutation.
 
 **Current source / next production — единый Auth и registration entry UI:**
 `/login`, `/join`, `/join/check-email`, `/forgot-password` и
@@ -1397,8 +1397,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   Component, compact position/type/label/criterion-at-time, rating, entry method,
   private note и recorder. Отсутствие строки означает «не наблюдал»;
   полного Component/Lesson snapshot нет.
-- Current production DB и ready source LA-M2 добавляют плоские Course-scoped
-  objectives, одну
+- Current production LA-M2 добавляет плоские Course-scoped objectives, одну
   optional primary objective и activity role на Component, а новым
   observations — nullable live objective FK и стабильные ID/title-at-time.
   Старые rows остаются с `NULL` без backfill; eligible observation ещё не
@@ -1419,8 +1418,8 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 Полные Lesson/Run invariants зафиксированы в
 [`docs/architecture/lesson-workflow-model.md`](./architecture/lesson-workflow-model.md),
-канонический contract учебных активностей, current production LA-M1 и current
-production DB / ready source LA-M2 — в
+канонический contract учебных активностей, current production LA-M1 и LA-M2 —
+в
 [`docs/architecture/learning-activity-system.md`](./architecture/learning-activity-system.md),
 а identity/access boundary — в
 [`docs/architecture/learner-identity-access-model.md`](./architecture/learner-identity-access-model.md).
@@ -2001,11 +2000,12 @@ postflight завершены без создания observation fixtures.
 - LA-M1 является историей component-level observation, а не Course
   objective, evidence/mastery, learner attempt или adaptive decision.
 
-### Course objectives и activity foundation — current production DB / next web LA-M2
+### Course objectives и activity foundation — current production LA-M2
 
-Production DB rollout LA-M2 завершён 20 августа 2026 года. В текущем
-repository реализован законченный application/source contract, однако task
-commit, push, Coolify rollout и deployed-web smoke ещё pending:
+Production DB и dependent web rollout LA-M2 завершены 20 августа 2026 года.
+Exact source `014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0` развёрнут Coolify deployment
+`1003`; current repository и running application реализуют законченный
+vertical contract:
 
 - `LearningObjective` принадлежит одному Course, содержит title, optional
   description и archive state; owner читает строки через RLS, а
@@ -2049,8 +2049,12 @@ Forward migrations:
 `d508626107c6dc5a4222a77c483db929778a06a1825b61ff3bd6d3df271743c1`).
 Postflight подтвердил RLS/ACL/RPC/FK/trigger/lock-order и publication V2
 contracts, PostgREST visibility и неизменность canonical counts и legacy V1
-revision; production fixtures не создавались. Dependent web delivery остаётся
-следующим шагом.
+revision; production fixtures не создавались. Exact local strict
+production-mode browser suite прошёл `30/30`, включая mandatory LA-M2 scenario
+`#29`. Production HTTP postflight подтвердил host/Auth/CSRF boundaries и guest
+browser redirect без mutation. Authenticated production no-write editor smoke
+не заявляется: в доступной in-app browser session был только guest, а Chrome
+был недоступен.
 
 ### Экран ученика
 
@@ -2106,7 +2110,7 @@ Zod payload/placement schemas, defaults и capabilities. Текущий payload 
 renderers — отдельную exhaustive typed map. JSON Schema для MCP генерируется из
 registry contracts.
 
-Current LA-M2 source сохраняет этот registry единственным: optional
+Current production LA-M2 сохраняет этот registry единственным: optional
 `activityFacet` задаёт supported roles, response/evaluator modes, evidence
 policy, learner delivery schema и отдельный server-private evaluator config.
 `single_choice_poll` поддерживает только `survey`; восемь deterministic/manual
@@ -2571,7 +2575,7 @@ Current production LA-M2 schema и matching verified-clone snapshot
 `activity_role`, observation objective-at-time columns и publication snapshot
 V2 function definitions. Verified-clone reference остаётся независимым
 rehearsal artifact; production physical head теперь LA-M2B, а dependent web
-остаётся на предыдущем deployed source до отдельного rollout.
+работает на exact source `014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0`.
 
 Current Communication Center читает bounded finalized history и сохраняет
 несколько AI conversations/turns/read cursors; human threads/messages и system
@@ -2736,7 +2740,9 @@ payloads, отдельный quota/billing ledger и durable action/job ledger �
   pre/post counts Account/Course/Lesson/Component/LessonRun/LearningRecord/
   Observation/Revision остались `19/6/22/84/2/2/0/1`, LA-M2 rows отсутствуют,
   а legacy V1 snapshot сохранил `9056` bytes и checksum
-  `e77ac1abfa333856fcf9022ef7a0666f`. Task commit/web rollout ещё pending.
+  `e77ac1abfa333856fcf9022ef7a0666f`. Exact source
+  `014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0` доставлен normal fast-forward
+  push и Coolify deployment `1003` с restart count `0`.
 
 Источники истины для текущего состояния:
 
@@ -2851,11 +2857,12 @@ slice сохраняет эти URL и product RPC names, меняя их backin
 JWT/RLS; старые dashboard/methodology/group/scheduled-lesson routes не
 поддерживаются как compatibility URL.
 
-Current source LA-M2 дополнительно добавляет Course-owned
+Current production LA-M2 дополнительно добавляет Course-owned
 `/api/v2/courses/[courseId]/learning-objectives` и
-`.../learning-objectives/[objectiveId]`; DB contract уже current production,
-но availability этих routes в deployed application остаётся pending до
-dependent web rollout.
+`.../learning-objectives/[objectiveId]`: collection поддерживает `POST`, item —
+`PATCH`/`DELETE`, а неподдерживаемый objective `GET` возвращает `405`. Guest
+objective `POST` с exact V2 Origin возвращает `401`, без/wrong Origin — `403`;
+authenticated UI/API остаются под обычной Account/session ownership boundary.
 
 Current identity API добавляет namespaces `me/learning-profile`,
 `learner-directory`, `learner-connections`, `identity-invitations`,
