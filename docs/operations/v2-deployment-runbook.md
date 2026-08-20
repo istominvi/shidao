@@ -130,13 +130,32 @@ Worktree должен содержать только изменения тек�
 
 ## 4. Если release содержит DB migration
 
-### LA-M1 learning activity foundation — DB-first delivery contract
+### LA-M1 learning activity foundation — production execution record
 
-Это порядок доставки current source migration
-`20260819142602_learning_activity_foundation.sql`, а не production execution
-record. Пока exact apply/postflight/deploy фактически не выполнены, не добавлять
-сюда придуманные checksum, backup path, `COMMIT`, snapshot SHA, Coolify
-deployment ID или application SHA.
+DB-first delivery завершена 20 августа 2026 года:
+
+- read-only sanity подтвердил production ShiDao PostgreSQL `15.8`, owner
+  `supabase_admin`, canonical counts
+  Account/Course/Lesson/Component/LessonRun/LearningRecord `19/6/22/84/2/2` и
+  отсутствие LA-M1 objects;
+- exact migration SHA-256 —
+  `07884719180adf23309ad8253dc286e7a3621797789a50fe37a69020fe0ebde5`;
+- verified full-format backup
+  `/root/shidao-db-backups/shidao-before-learning-activity-foundation-20260820T074402Z.dump`
+  имеет size `1485143`, mode `600`, `1753` restore-list entries и SHA-256
+  `e967840e88a9a6d4a1dd397ffc27ff7e420350f23b225df2f2d18191099560e7`;
+- production-derived isolated clone прошёл rollback/apply, functional harness и
+  четыре multi-session race проверки;
+- unchanged tracked SQL завершился наблюдаемым `COMMIT`; RLS/ACL/PostgREST
+  postflight прошёл, counts остались `19/6/22/84/2/2`, observation rows — `0`;
+- source `25d7855831273ff5feea14473c2870b729ac39b3` доставлен fast-forward push в
+  `main`; Coolify deployment `1001` (`iavrlqr5x8m5xl8mqcj3r8fy`) завершён
+  `2026-08-20 08:06:43` с exact source/image, image SHA-256
+  `95c09811ffbc3f12971494e4ad150313c2151e01e6936afb73279baab5a8001f`,
+  restart count `0`; HTTPS/API/CSRF/browser guest smoke прошёл.
+
+Ниже сохранён обязательный порядок, которым выполнена эта coupled delivery;
+уже применённую migration повторно запускать нельзя.
 
 Совместимость односторонняя: старый web игнорирует additive observation table и
 RPC, а зависимый LA-M1 web требует их. Поэтому порядок обязателен:

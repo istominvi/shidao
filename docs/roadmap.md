@@ -1293,12 +1293,13 @@ Definition of Done текущего demo:
 Полный контракт:
 [`docs/product/store-demo.md`](./product/store-demo.md).
 
-## P1.1: очные teacher observations (**CURRENT SOURCE**)
+## P1.1: очные teacher observations (**CURRENT**)
 
 Первый Learning Activity vertical slice использует уже существующий LessonRun и
-roster, не ожидая детского learner runtime. LA-M1 реализован в current source
-как additive DB-first slice; этот статус сам по себе не является production
-execution record:
+roster, не ожидая детского learner runtime. LA-M1 реализован и доставлен как
+additive DB-first production slice: migration применена с `COMMIT`, dependent
+source `25d7855831273ff5feea14473c2870b729ac39b3` развёрнут Coolify deployment
+`1001`, production postflight завершён:
 
 - scheduled Run сначала явно запускается; до `started_at` observation writes
   запрещены;

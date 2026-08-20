@@ -1403,7 +1403,7 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 Полные Lesson/Run invariants зафиксированы в
 [`docs/architecture/lesson-workflow-model.md`](./architecture/lesson-workflow-model.md),
-канонический contract учебных активностей и current source LA-M1 — в
+канонический contract учебных активностей и current production LA-M1 — в
 [`docs/architecture/learning-activity-system.md`](./architecture/learning-activity-system.md),
 а identity/access boundary — в
 [`docs/architecture/learner-identity-access-model.md`](./architecture/learner-identity-access-model.md).
@@ -1945,11 +1945,14 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 - Новый Component всегда создаётся `staff_only` и не показывается ученику,
   пока преподаватель явно не назначит его на Slide.
 
-### Проведение и teacher observations — current source LA-M1
+### Проведение и teacher observations — current production LA-M1
 
-Этот раздел фиксирует реализованный source contract. Он не является записью о
-production DB apply, Coolify exact SHA или production postflight; такие факты
-фиксируются только после фактического DB-first rollout.
+DB-first rollout завершён 20 августа 2026 года. Exact migration с SHA-256
+`07884719180adf23309ad8253dc286e7a3621797789a50fe37a69020fe0ebde5`
+применена с `COMMIT`; dependent source
+`25d7855831273ff5feea14473c2870b729ac39b3` развёрнут Coolify deployment
+`1001`. Production DB/RLS/ACL/PostgREST и HTTPS/API/CSRF/browser guest
+postflight завершены без создания observation fixtures.
 
 - Existing schedule/Course/Lesson entry points запускают scheduled Run через
   канонический `start_lesson_run` либо открывают focused workspace уже
@@ -2476,7 +2479,7 @@ comment timestamp, actual duration at time и superseded merge provenance.
 Recorder immutable; subject reset использует explicit erasure workflow вместо
 случайного cascade.
 
-Current source `lesson_component_observation` — отдельный LA-M1 contract поверх
+Current production `lesson_component_observation` — отдельный LA-M1 contract поверх
 draft/final lifecycle родительского LearningRecord. Composite FK физически связывает
 recorder с record; cancel cascade удаляет drafts, а nullable live Component FK
 `ON DELETE SET NULL` сохраняет finalized at-time history. Raw browser writes
@@ -2622,6 +2625,16 @@ payloads, отдельный quota/billing ledger и durable action/job ledger �
   `a91aefb693fc5857e1ae921e7226bc688230d0dd3c7e9373197c1006b4314a7d`,
   authenticated user RPC total — `17`. Dependent Communication Center web/API
   rollout и production boundary postflight завершены exact source `2efaa86`.
+- `20260819142602_learning_activity_foundation.sql` — current production LA-M1
+  schema head. Exact SHA-256
+  `07884719180adf23309ad8253dc286e7a3621797789a50fe37a69020fe0ebde5`
+  применён owner `supabase_admin` с `COMMIT` после read-only PostgreSQL `15.8`
+  sanity, verified backup и production-derived clone rehearsal. Pre/post counts
+  Account/Course/Lesson/Component/LessonRun/LearningRecord остались
+  `19/6/22/84/2/2`, observation rows — `0`; RLS/ACL/PostgREST postflight
+  прошёл. Dependent source `25d7855831273ff5feea14473c2870b729ac39b3`
+  развёрнут Coolify deployment `1001` с restart count `0`; HTTPS/API/CSRF и
+  browser guest smoke прошли.
 
 Источники истины для текущего состояния:
 

@@ -20,10 +20,12 @@ production. Homework, enrollment/consumption детских Course через
 LearnerProfile и live Student Screen sync не реализованы; их sequencing
 зафиксирован в roadmap.
 
-Current source дополнительно реализует LA-M1: focused teacher workspace и
+Current production дополнительно реализует LA-M1: focused teacher workspace и
 recorder-owned component observations поверх фактически started LessonRun.
-Это описание source contract, а не утверждение о production DB apply, Coolify
-exact SHA или production postflight.
+DB-first migration, dependent source
+`25d7855831273ff5feea14473c2870b729ac39b3` и Coolify deployment `1001`
+доставлены и прошли production DB/HTTP/API/CSRF/browser postflight 20 августа
+2026 года.
 
 Этот документ владеет authored hierarchy, Slides projection, Homework
 separation и compact LessonRun/LearningRecord boundary. Учебные цели, ответы,

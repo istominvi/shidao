@@ -2,26 +2,25 @@
 
 **Статус:** обязательная политика для всех новых DB changes
 **Последний подтверждённый production schema head:**
-`20260816072345_atomic_assistant_lesson_run_schedule.sql`; generated snapshot
-снят `2026-08-16T07:42:38Z`, SHA-256
-`a91aefb693fc5857e1ae921e7226bc688230d0dd3c7e9373197c1006b4314a7d`.
-**Current source migration / pending DB-first production delivery:**
-`20260819142602_learning_activity_foundation.sql`. Source contract не является
-execution evidence; production head меняется только после read-only identity,
-rollback rehearsal, verified backup, observed `COMMIT` и postflight.
-Current source snapshot снят из verified migrated clone
+`20260819142602_learning_activity_foundation.sql`; exact migration SHA-256 —
+`07884719180adf23309ad8253dc286e7a3621797789a50fe37a69020fe0ebde5`.
+Migration применена к production с `COMMIT` 20 августа 2026 года после
+read-only identity, production-derived clone rehearsal и verified backup;
+RLS/ACL/PostgREST postflight прошёл. Contract snapshot снят из verified
+migrated clone
 `2026-08-20T07:17:17Z`; SHA-256
 `4e04a6f7ee6ffe3c925e9d225534fca75c3316bc5671ad072dad7f91740ad037`.
-Он подтверждает source parity, а не production apply.
+Его clone provenance отделена от production execution record.
 **Последняя применённая authored-data-only migration:**
 exact tracked `20260813063716_unify_heading_rich_text_components.sql` применён
 production; `psql` зафиксировал `COMMIT`, а maximum `updated_at`
 преобразованных строк — `2026-08-13T07:05:50.169297Z`. Она не меняла
-physical schema; последующие E2A, AV1, CC1 и A2 schema rollout отражены в
-последнем подтверждённом production snapshot выше.
-**Последний документированный coupled A2 application rollout source:**
-`2efaa86851fffc7e444af904fb900d9984caa6a8`. LA-M1 dependent web SHA до
-фактического production rollout здесь не заявляется.
+physical schema; последующие E2A, AV1, CC1, A2 и LA-M1 schema rollout отражены в
+production contract и execution record выше.
+**Последний документированный coupled application rollout source:**
+`25d7855831273ff5feea14473c2870b729ac39b3`; Coolify deployment `1001`
+завершён с exact source/image, restart count `0` и зелёным
+HTTPS/API/CSRF/browser guest postflight.
 
 Исторический U1-compatible source
 `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da` был развёрнут и проверен до U1

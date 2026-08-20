@@ -94,7 +94,7 @@ structured observation учитель сначала подтверждает к
 
 ## CURRENT: что уже существует
 
-В подтверждённом production baseline и current source:
+В подтверждённом current production baseline:
 
 - Course напрямую владеет Lessons, а Lesson — одним ordered списком Components;
 - Student Screen Slides являются только learner-facing presentation projection;
@@ -110,7 +110,7 @@ structured observation учитель сначала подтверждает к
 - LessonRun и compact LearningRecord уже сохраняют факт занятия, посещаемость,
   teacher comment и рекомендацию повторения;
 - learner-safe history/progress уже отделены от teacher-private raw history;
-- current source LA-M1 добавляет recorder-owned component-level observations
+- current production LA-M1 добавляет recorder-owned component-level observations
   открытого фактически started LessonRun, focused teacher workspace и
   read-only Lesson/Course/Learner history;
 - observation хранится отдельной строкой на LearningRecord + source Component
@@ -118,9 +118,10 @@ structured observation учитель сначала подтверждает к
   payload;
 - persisted Homework и детский learner runtime ещё не реализованы.
 
-Здесь `current source` означает реализованный repository contract, а не
-утверждение о production DB apply, Coolify exact SHA или production
-postflight. Эти факты подтверждаются отдельно по deployment runbook.
+LA-M1 доставлен DB-first 20 августа 2026 года: exact migration применена с
+`COMMIT`, dependent source `25d7855831273ff5feea14473c2870b729ac39b3`
+развёрнут Coolify deployment `1001`, а DB/HTTP/API/CSRF/browser postflight
+завершён. Полный execution record находится в deployment runbook.
 
 Поэтому ни локально правильный ответ в preview, ни просмотр видео сейчас не
 изменяют учебный профиль. Нельзя показывать выдуманный mastery на основании
@@ -467,7 +468,7 @@ AI inference маркируется как предложение, содерж�
 
 ## Очное проведение как первый runtime
 
-### Первый полезный runtime — current source LA-M1
+### Первый полезный runtime — current production LA-M1
 
 Первый implementation slice использует существующий started LessonRun и его
 конкретный roster. Scheduled Run сначала запускается, а started Run можно
@@ -659,7 +660,7 @@ contract tests, а не финальной косметической прове
 [`learning-activity-system-implementation.md`](../plans/learning-activity-system-implementation.md).
 Коротко:
 
-1. **CURRENT SOURCE:** быстрые component-level teacher observations поверх
+1. **CURRENT:** быстрые component-level teacher observations поверх
    существующего LessonRun, без заявления mastery;
 2. **NEXT:** Course objectives, один primary objective на Component и optional registry
    activity facet;

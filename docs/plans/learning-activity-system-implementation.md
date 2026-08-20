@@ -1,6 +1,6 @@
 # План реализации Learning Activity System
 
-**Статус:** LA-M0–LA-M1 CURRENT SOURCE; LA-M2–LA-M6 NEXT; LA-M7–LA-M9 LATER
+**Статус:** LA-M0–LA-M1 CURRENT; LA-M2–LA-M6 NEXT; LA-M7–LA-M9 LATER
 **Актуально на:** 20 августа 2026 года
 **Архитектура:**
 [`learning-activity-system.md`](../architecture/learning-activity-system.md)
@@ -38,11 +38,13 @@
 
 Schema и runtime в LA-M0 не меняются.
 
-## LA-M1 — очное проведение и быстрые наблюдения (**CURRENT SOURCE**)
+## LA-M1 — очное проведение и быстрые наблюдения (**CURRENT**)
 
-**Статус:** реализован как законченный source vertical slice. Production DB
-apply, dependent Coolify exact SHA и production postflight не следуют из этого
-документа и считаются завершёнными только по фактическому execution evidence.
+**Статус:** законченный production vertical slice. DB-first migration применена
+с `COMMIT`; dependent source
+`25d7855831273ff5feea14473c2870b729ac39b3` развёрнут Coolify deployment
+`1001`; DB/HTTP/API/CSRF/browser postflight завершён 20 августа 2026 года.
+Подробный execution record находится в deployment runbook.
 
 Текущий implementation map:
 
