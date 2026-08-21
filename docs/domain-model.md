@@ -1,7 +1,7 @@
 # ShiDao V2 domain model
 
 **Статус:** current implemented domain
-**Актуально на:** 19 августа 2026 года
+**Актуально на:** 22 августа 2026 года
 
 ## Active product hierarchy
 
@@ -16,14 +16,21 @@ Account
 │   ├── children-only direct audience → CourseLearner 0..N → LearnerProfile
 │   ├── children-only group audience → CourseLearnerGroup 0..N → LearnerGroup
 │   ├── children-only effective audience = unique(direct ∪ group members)
+│   ├── explicit live enrollment 0..N → LearnerProfile
+│   ├── LearningObjective 0..N
 │   ├── CourseAttachment → StoredFile → private Storage object
 │   ├── educator-only CourseAttestation → authored assessment definition
 │   └── Lesson 0..N
 │       ├── LessonComponent 0..N
 │       ├── StudentScreenSlide 0..N → component assignments
 │       └── children-only LessonRun 0..N
-│           └── LearningRecord 0..N → LearnerProfile
-│               └── recorded_by_account_id → Account
+│           ├── presentation cursor 0..1 → StudentScreenSlide | waiting
+│           ├── execution capability 0..N → enrolled LearnerProfile
+│           ├── LearningRecord 0..N → LearnerProfile
+│           │   ├── recorded_by_account_id → Account
+│           │   └── LessonComponentObservation 0..N
+│           └── ChoiceQuizIssue 0..N
+│               └── Attempt → Response + Evaluation → Feedback Delivery
 ├── CoursePublication 0..N
 │   ├── current_revision_id → latest submitted immutable revision
 │   ├── approved_revision_id → approved immutable revision visible in catalog
@@ -193,8 +200,10 @@ under concurrency is a documented next integrity hardening task.
 
 The canonical details and invariants live in
 `docs/architecture/lesson-workflow-model.md`.
-The target execution/evidence model lives in
-`docs/architecture/learning-activity-system.md`; it is not current persistence.
+The current LA-M1–LA-M5 execution/evidence model lives in
+`docs/architecture/learning-activity-system.md`. Durable online execution is
+implemented only for LA-M5 `choice_quiz`; other activity engines and
+Homework/`free_response` are not current persistence.
 
 ## Component registry
 
@@ -235,16 +244,18 @@ payload where both are empty. This does not change the physical JSONB schema or
 require a migration.
 
 `divider` is not an authored component type. The media/link types added in this
-slice accept HTTPS URLs only. Interactive checks, including `free_response`,
-keep answer state only inside the current preview; learner answer persistence,
-attempts, scoring and teacher review are not part of this slice. Voice
-recording, arbitrary third-party embeds and image matching remain later work.
+slice accept HTTPS URLs only. Current production LA-M5 persists learner answer,
+attempt/evaluation/feedback and teacher correction/history only for issued
+`practice | assessment` `choice_quiz`. Other interactive checks, including
+`free_response`, keep answer state only inside preview; voice recording,
+arbitrary third-party embeds and image matching remain later work.
 The product comparison and rationale live in
 [`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
 
 The current RouterAI source contract validates generated Lesson content against
-the deliberately limited `rich_text`, `callout`, `single_choice_poll` and
-`matching_game` subset of these same registry contracts before explicit Apply.
+the deliberately limited `rich_text`, `callout`, `single_choice_poll`,
+`matching_game` and LA-M5 `choice_quiz` subset of these same registry contracts
+before explicit Apply.
 Its provider-compatible flat transport schema is converted to a
 canonical typed plan and then validated again by registry payload contracts and
 `lessonAddComponentInputSchema`. It introduces no new domain entity, second
@@ -262,9 +273,9 @@ learners across that teacher's courses. Names come from TeacherLearner, overlap
 between audience sources is deduplicated, and another teacher's observations
 are not included merely because the canonical LearnerProfile is the same.
 Absence is marked as absence, not interpreted as lack of understanding.
-Component observations, activity evidence and derived objective state are not
-implemented; they remain a separate domain and do not extend attendance/repeat
-semantics.
+Current component observations, typed activity evidence, derived objective
+state/recommendations and LA-M5 `choice_quiz` attempts/evaluations remain a
+separate domain and do not extend attendance/repeat semantics.
 
 Registry definitions own keys/schemas/defaults/capabilities. The current
 payload editor is one switch over `ComponentTypeKey`; renderers use an
@@ -335,11 +346,9 @@ The following are not current tables or product capabilities; their sequencing
 lives in `docs/roadmap.md`:
 
 - persisted Homework;
-- live Student Screen synchronization/runtime cursor for an open LessonRun;
-- component-level teacher observations during LessonRun;
-- Course objectives and Component alignment;
-- versioned activity execution/evaluation/evidence and derived
-  learner-objective state alongside LearningRecord; LearningRecord remains the
+- Realtime/presence transport for the current persisted Student Screen cursor;
+- activity execution/evaluation beyond current production LA-M5 `choice_quiz`,
+  including LA-M6 Homework/`free_response`; LearningRecord remains the
   LessonRun attendance/teacher-outcome summary;
 - persistent AI quotas/usage ledger and AI change sets/undo;
 - parsing/RAG sources;
@@ -347,7 +356,8 @@ lives in `docs/roadmap.md`:
   revision appears;
 - organization moderation UI, ratings and additional official ShiDao catalog
   courses beyond the current educator review flow;
-- LearnerProfile-scoped enrollment/consumption of child Course; current
+- generalized LearnerProfile-scoped child Course consumption beyond current
+  explicit enrollment/per-Run capability and teacher-controlled live boundary;
   educator self-learning is Account-scoped and does not imply this access;
 - Product/Order/Inventory, persisted cart/checkout, payment and delivery;
   current `/store` is a client-state UI demo and adds no commerce domain tables;

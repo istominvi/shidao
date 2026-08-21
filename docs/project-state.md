@@ -1,11 +1,11 @@
 # Текущее состояние ShiDao V2
 
 **Статус:** главный входной документ для разработки
-**Актуально на:** 21 августа 2026 года
+**Актуально на:** 22 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
 **Current deployed functional source:**
-`e09631d2fa00ad1c4b91ad0584392efb748cf235`
+`b8f62a635ad3bd77933e71decffe2a5616de26d5`
 **Initial Communication Center functional application source (historical):**
 `2efaa86851fffc7e444af904fb900d9984caa6a8`
 (`704/704` unit/API, `27/27` strict production-mode browser scenarios,
@@ -234,18 +234,15 @@ Projection fail closed при неизвестной версии/невалид
 другие Slides, Lesson summary/
 teacher comments, answer keys/evaluator config, objective/activity metadata,
 private data, authority IDs и raw unsafe JSON не выдаются. Presentation cursor
-не хранит response state и не расширяет compact `LearningRecord`; deployed web
-runtime по-прежнему не выполняет attempts/evaluation. CURRENT production DB
-LA-M5 описана ниже, Homework и `free_response` остаются LA-M6.
+не хранит response state и не расширяет compact `LearningRecord`. LA-M4 сама
+по себе не выполняет attempts/evaluation; current production LA-M5 добавляет
+их только для issued `choice_quiz`. Homework и `free_response` остаются LA-M6.
 
-**CURRENT production DB + snapshot / NEXT application source+web rollout —
-LA-M5 `choice_quiz`:** production DB уже содержит полный additive online
-activity contract поверх неизменённой LA-M4 authorization/cursor boundary, а
-generated snapshot отражает этот head. Dependent application пока существует
-только в рабочем дереве: он не входит в deployed functional source
-`e09631d2fa00ad1c4b91ad0584392efb748cf235`. Current container source
-`df230d185532429b14080d8859438c197f63e66b` — docs-only deployment `1008` и
-runtime LA-M5 не добавляет.
+**CURRENT production DB/source/web — LA-M5 `choice_quiz`:** production DB и
+generated snapshot содержат полный additive online activity contract поверх
+неизменённой LA-M4 authorization/cursor boundary. Application/API/UI доставлены
+release commit `b8f62a635ad3bd77933e71decffe2a5616de26d5` в `main`, который уже
+normal fast-forward pushed в `origin/main`.
 
 Exact migration `20260821100000_choice_quiz_activity.sql` имеет `6372` строки и
 SHA-256
@@ -264,7 +261,7 @@ Post-apply inventory — `74` public tables и `275` functions, включая `
 SHA-256 без generated timestamp line —
 `063ca4be6c0f76f9c2b95133763d39acfe932b5de84e64fd8c37942678333b44`.
 
-Dependent application worktree добавляет:
+Deployed application slice добавляет:
 
 - immutable learner-specific `choice_quiz_issue` с persisted learner-safe
   definition и private evaluator-at-time; append-only Attempt/Response/
@@ -327,10 +324,27 @@ Focused source coverage находится в `src/modules/choice-quiz/*.test.ts
 `src/components/learning-activities/*choice-quiz*.test.ts` /
 `evidence-history-format.test.ts`. Final local application gate прошёл
 `991/991` unit/API, production build `73/73` и `31/31` strict production-mode
-Chromium scenarios. Это local evidence, а не deployed authenticated production
-flow. Exact release commit, normal push, matching Coolify image/source и web
-postflight остаются NEXT; authenticated production flow не выполнялся и не
-заявляется.
+Chromium scenarios; typecheck, lint, repository-wide format check и
+`git diff --check` также green.
+
+Основной Coolify rollout — deployment `1009`
+(`cpeh1gokla9hpng8z57woj96`). После обнаружения отсутствующего
+`www.shidao.ru` в Coolify Domains конфигурация исправлена и выполнен config
+redeploy `1010` (`m7depyulpqt0ka943ewajt10`). Final production container
+`g9x4d9zn60jv35r7zf0xl6xj-162236082905` использует image ID
+`sha256:1458de67a667584f4863ad712ed25d64bb59ede12faba9f52959fe4424ce9045`
+и matching `SOURCE_COMMIT`; container running, restart count `0`, проверенные
+логи не содержат `error`/`exception`/`unhandled`/`fatal`/`panic`.
+`www.shidao.ru` имеет валидный TLS и отвечает `302` на
+`https://shidao.ru/login`; external и container-local host/API/CSRF/guest
+probes прошли.
+
+Authenticated production teacher/learner lifecycle **NOT RUN**: безопасной
+existing session и подходящего Run не было, а production credentials или
+fixtures только ради smoke не создавались. Это не failure и не blocker;
+локальный Chromium `31/31` не подменяет отсутствующее authenticated production
+evidence. Disposable clone и временные файлы удалены, production backups
+сохранены.
 
 **Current source / next production — единый Auth и registration entry UI:**
 `/login`, `/join`, `/join/check-email`, `/forgot-password` и
@@ -2440,12 +2454,11 @@ REST `POST`, development MCP, AI и deterministic assembler. Payload `rich_text`
 непустое значение.
 
 `video`, `audio` и `external_link` в этом срезе принимают только прямые
-HTTPS URL; upload/transcoding медиа не заявлены. Dependent application LA-M5 является
-ровно одним исключением из preview-only activity behavior: только
+HTTPS URL; upload/transcoding медиа не заявлены. Current production LA-M5
+является ровно одним исключением из preview-only activity behavior: только
 `choice_quiz` с persisted `practice | assessment` issue получает learner-safe
-delivery, server evaluation, attempts/evidence и teacher history после
-dependent application rollout. Physical production DB contract и generated
-snapshot уже current; deployed web пока LA-M4. `activity_role=NULL`, остальные
+delivery, server evaluation, attempts/evidence и teacher history. Physical
+production DB, source и deployed web current. `activity_role=NULL`, остальные
 interactive types и `free_response` по-прежнему остаются
 presentation/preview-only без durable learner response или teacher review.
 Отдельных voice-recording, arbitrary embed и image-match типов в active
@@ -2454,8 +2467,7 @@ ProgressMe и границы этого среза зафиксированы в
 [`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
 Frozen LA-M5 execution/evaluation/evidence contract описан в
 [`docs/architecture/learning-activity-system.md`](./architecture/learning-activity-system.md):
-он current production DB только для `choice_quiz`, но ещё не deployed
-application runtime.
+он current production DB/source/web только для `choice_quiz`.
 
 ### Development MCP
 
@@ -2742,13 +2754,14 @@ History-aware context развёрнут в release `9393080`; production provid
 - persisted Homework editor;
 - Realtime/presence для live Student Screen; current production LA-M4 намеренно
   использует reload/reconnect и bounded request polling;
-- dependent application rollout versioned learner activity attempts и
-  server-side evaluation: production DB/snapshot LA-M5 current только для
-  `choice_quiz`, но web rollout и authenticated production evidence ещё
-  pending; остальные deterministic types и `free_response` остаются
-  последующими slices. Online evidence не подменяет LA-M3 teacher observations,
-  а `LearningRecord` остаётся compact LessonRun outcome, не metrics/event
-  container;
+- остальные deterministic activity engines и `free_response`: current
+  production LA-M5 выполняет только `choice_quiz`; authenticated production
+  teacher/learner lifecycle для его release **NOT RUN** без safe existing
+  session/Run, но это evidence limitation, а не незавершённый rollout.
+  Следующий продуктовый этап — P1.3 persisted Homework authoring, затем LA-M6
+  Homework/`free_response`. Online evidence не подменяет LA-M3 teacher
+  observations, а `LearningRecord` остаётся compact LessonRun outcome, не
+  metrics/event container;
 - Realtime/presence для messaging, push/email delivery, attachments,
   moderation и reliable background notification/AI workers;
 - реальные Product/Order/Inventory, admin catalog, persisted cart/checkout,
@@ -2903,7 +2916,7 @@ service-only learner resolver с exact authenticated
 Account/profile/session/capability проверками. Current snapshot содержит этот
 contract и exact совпадает с clean production-derived replay. Deployed
 functional web работает на exact source
-`e09631d2fa00ad1c4b91ad0584392efb748cf235`.
+`b8f62a635ad3bd77933e71decffe2a5616de26d5`.
 
 Current production LA-M5 migration
 `supabase/migrations/20260821100000_choice_quiz_activity.sql` является
@@ -2916,7 +2929,9 @@ guards и narrow issue/submit/history/correction functions. Measured inventory
 равен `74` public tables / `275` functions; snapshot содержит `35466` строк и
 имеет SHA-256
 `acd73762c061de56a4ae39ec81c25c0b2ce243d2000f04f877e952e2df67473e`.
-Dependent application commit/push/Coolify rollout остаётся NEXT.
+Dependent application доставлена release commit
+`b8f62a635ad3bd77933e71decffe2a5616de26d5`; Coolify deployment `1009` и
+config redeploy `1010` подтверждают current production source/web.
 
 Current Communication Center читает bounded finalized history и сохраняет
 несколько AI conversations/turns/read cursors; human threads/messages и system
@@ -3108,14 +3123,16 @@ payloads, отдельный quota/billing ledger и durable action/job ledger �
   и Coolify deployment `1007`; exact image/`SOURCE_COMMIT`, guest/host/CSRF
   postflight, cleanup и retained backup подтверждены. Authenticated production
   UI smoke не выполнялся без безопасной existing session/Run и не заявляется.
-- `20260821100000_choice_quiz_activity.sql` — **CURRENT production DB +
-  snapshot / NEXT application rollout** LA-M5 head. Он содержит один
+- `20260821100000_choice_quiz_activity.sql` — **CURRENT production
+  DB/source/web** LA-M5 head. Он содержит один
   complete `choice_quiz` issue/attempt/response/evaluation/feedback engine,
   teacher correction/history, exact-source evidence integration и lifecycle
   cleanup поверх LA-M4 authority. Exact migration checksum, verified backup,
   owner `COMMIT`, postflight и refreshed `74/275` snapshot recorded выше.
-  Deployed SHA/image и authenticated production flow должны быть записаны
-  только после dependent application rollout и пока не заявляются.
+  Deployed commit `b8f62a635ad3bd77933e71decffe2a5616de26d5`, deployments
+  `1009`/`1010`, final image/`SOURCE_COMMIT`, guest boundary postflight и
+  cleanup recorded выше. Authenticated production teacher/learner lifecycle
+  отдельно **NOT RUN** без safe existing session/Run и не заявляется.
 
 Источники истины для текущего состояния:
 

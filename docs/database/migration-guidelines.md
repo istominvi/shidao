@@ -49,15 +49,21 @@ physical schema; последующие E2A, AV1, CC1, A2 и LA-M1–LA-M3 schem
 отражены в production contract и execution record выше.
 **Текущий deployed coupled application rollout source:**
 deployed functional source
-`e09631d2fa00ad1c4b91ad0584392efb748cf235`; Coolify deployment `1007`
-(`flg9786e15llusgj6kgz7pwk`) завершён `finished` с exact source/image/
-`SOURCE_COMMIT`, running container и restart count `0`. Local gates `936/936`,
-browser `31/31`, build `73/73`; production guest HTTP/API/CSRF/host postflight
-зелёный. LA-M5 dependent application commit/push/Coolify rollout остаётся
-NEXT; authenticated production smoke без safe existing session/Run не
-заявляется. Current container source
-`df230d185532429b14080d8859438c197f63e66b` из docs-only deployment `1008` не
-меняет этот functional LA-M4 baseline.
+`b8f62a635ad3bd77933e71decffe2a5616de26d5` доставлен normal fast-forward push в
+`origin/main`. Local gates: `991/991` tests, strict Chromium `31/31`, production
+build `73/73`, typecheck/lint/format/diff-check green. Основной Coolify
+deployment `1009` (`cpeh1gokla9hpng8z57woj96`) доставил LA-M5 application;
+после исправления отсутствующего Coolify Domains entry для `www.shidao.ru`
+выполнен config redeploy `1010` (`m7depyulpqt0ka943ewajt10`). Final container
+`g9x4d9zn60jv35r7zf0xl6xj-162236082905` использует image
+`sha256:1458de67a667584f4863ad712ed25d64bb59ede12faba9f52959fe4424ce9045`
+и matching `SOURCE_COMMIT`, running с restart count `0`; проверенные логи не
+содержат error/exception/unhandled/fatal/panic. `www.shidao.ru` имеет valid TLS
+и отвечает `302` на `https://shidao.ru/login`; external/container-local
+host/API/CSRF/guest probes прошли. Authenticated production teacher/learner
+lifecycle **NOT RUN**: safe existing session/Run отсутствовали, credentials и
+fixtures не создавались. Disposable clone и временные файлы удалены, verified
+production backups сохранены.
 
 **LA-M3 delivery boundary:** physical production DB, functional source/web и
 release postflight current. Последующий execution-record docs-only commit не

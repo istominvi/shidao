@@ -1,7 +1,7 @@
 # Learning Activity System
 
 **Статус:** каноническое архитектурное решение; CURRENT / NEXT / LATER
-**Актуально на:** 21 августа 2026 года
+**Актуально на:** 22 августа 2026 года
 **Область:** Course components, учебные цели, ответы, наблюдения, evidence,
 учебный профиль, адаптивность, offline/live и языковые активности
 
@@ -94,7 +94,7 @@ structured observation учитель сначала подтверждает к
 
 ## CURRENT: что уже существует
 
-В подтверждённом deployed production application baseline LA-M1–LA-M3:
+В подтверждённом deployed production application baseline LA-M1–LA-M5:
 
 - Course напрямую владеет Lessons, а Lesson — одним ordered списком Components;
 - Student Screen Slides являются только learner-facing presentation projection;
@@ -102,11 +102,11 @@ structured observation учитель сначала подтверждает к
   ручного создания;
 - payload, placement, defaults и capabilities валидируются общими Zod
   contracts;
-- ответы интерактивных renderer сейчас живут только в локальном preview state;
-- deployed LA-M4 web ещё не создаёт learner attempts и online evaluations;
-  production DB уже содержит закрытый LA-M5 `choice_quiz` engine, но dependent
-  application rollout фиксируется отдельно. LA-M3 по-прежнему создаёт durable
-  typed evidence/state из eligible finalized teacher observations;
+- `choice_quiz` в current production LA-M5 имеет persisted issued learner
+  delivery, attempts, server evaluation, feedback, correction и exact-source
+  evidence; ответы остальных interactive renderer живут только в preview/
+  presentation state. LA-M3 также создаёт durable typed evidence/state из
+  eligible finalized teacher observations;
 - LessonRun и compact LearningRecord уже сохраняют факт занятия, посещаемость,
   teacher comment и рекомендацию повторения;
 - learner-safe history/progress уже отделены от teacher-private raw history;
@@ -117,7 +117,7 @@ structured observation учитель сначала подтверждает к
   и не расширяет compact LearningRecord, learner-safe history или Component
   payload;
 - persisted Homework ещё не реализован; child live runtime current production
-  в DB/source/web LA-M4.
+  в DB/source/web включает LA-M4 delivery и узкий LA-M5 `choice_quiz` engine.
 
 Current production LA-M2 дополнительно реализует:
 
@@ -311,17 +311,20 @@ generated artifacts. Безопасной existing authenticated production sess
 локальный strict production-mode Chromium `31/31` покрывает live states,
 privacy/mobile/accessibility, но не подменяет этот smoke.
 
-Ни локально правильный ответ в preview, ни просмотр видео в deployed web сейчас
-не изменяют учебный профиль. Нельзя показывать выдуманный mastery на основании
-этих сигналов.
+Ни локально правильный ответ в preview, ни просмотр видео в deployed web не
+изменяют учебный профиль. Только eligible persisted LA-M5 `choice_quiz`
+evaluation может создать online evidence; один correct result всё равно не
+является mastery.
 
-## LA-M5 FROZEN contract — **CURRENT production DB / current-source; NEXT web**
+## LA-M5 FROZEN contract — **CURRENT production DB/source/web**
 
 **Статус:** frozen migration применена к production DB с проверенным `COMMIT`,
-postflight и production-generated snapshot. Application slice остаётся
-**current-source**, а dependent web deployment — **NEXT** до exact
-commit/image/`SOURCE_COMMIT` и deployed postflight. Полный статус **CURRENT
-production DB/source/web** до этого не заявляется.
+postflight и production-generated snapshot. Application slice доставлена exact
+release commit `b8f62a635ad3bd77933e71decffe2a5616de26d5` через Coolify deployment
+`1009` и config redeploy `1010`; final image/`SOURCE_COMMIT`, guest boundaries,
+logs и cleanup подтверждены. Authenticated production teacher/learner lifecycle
+**NOT RUN** без safe existing session/Run; credentials/fixtures ради smoke не
+создавались, и это не failure или blocker.
 
 LA-M5 реализует только существующий `choice_quiz` в child live LessonRun. Он не
 создаёт generic activity framework для остальных типов и не меняет
@@ -1014,7 +1017,7 @@ contract tests, а не финальной косметической прове
    recommendations для objective-aligned observations;
 4. **CURRENT production DB/source/web:** learner authorization и
    teacher-controlled live delivery;
-5. **CURRENT production DB / current-source; NEXT web:** один полный
+5. **CURRENT production DB/source/web:** один полный
    `choice_quiz` через learner-safe delivery и server evaluation;
 6. **NEXT:** Homework/free-response review;
 7. **LATER:** reference audio, learner recording и teacher review;

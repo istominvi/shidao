@@ -3,7 +3,7 @@
 **Статус:** canonical contract для deployed Course AI, backend signed
 conversational System Assistant и current persisted Communication Center UI
 
-**Актуально на:** 18 августа 2026 года
+**Актуально на:** 22 августа 2026 года
 
 **Deployment state:** AI application slice развёрнут на `v2.shidao.ru` в release
 `0276aed`; server runtime получает `ROUTERAI_API_KEY` из production secret
@@ -14,6 +14,15 @@ schema и read-only UI postflight завершены. Provider smoke с непу
 историей ещё не выполнялся. Consent-gated cross-provider projection развёрнута
 в roleless functional release `01aa88a` после M1–M6 и identity/browser
 postflight.
+
+LA-M5 расширяет current lesson-generation allowlist ровно одним типом —
+`choice_quiz`. Functional release
+`b8f62a635ad3bd77933e71decffe2a5616de26d5` pushed в `origin/main` и доставлен
+Coolify deployment `1009` (`cpeh1gokla9hpng8z57woj96`); после исправления
+Coolify Domains выполнен config redeploy `1010`
+(`m7depyulpqt0ka943ewajt10`). Authenticated teacher/learner lifecycle этого
+release **NOT RUN**: safe existing session/Run отсутствовали, credentials и
+fixtures не создавались.
 
 Historical Global System Assistant, его прежний protected floating UI и routes
 `/api/v2/assistant*` были развёрнуты в exact functional release `b7c6cfe`.
@@ -191,6 +200,7 @@ rich_text
 callout
 single_choice_poll
 matching_game
+choice_quiz
 ```
 
 `rich_text` schema version `1` позволяет модели заполнить `title`, `content`
@@ -199,10 +209,11 @@ matching_game
 и immutable publication revisions; AI provider schema и Apply больше не могут
 создать его.
 
-Provider allowlist намеренно не расширяется вместе с ручным registry:
-`quote`, `image`, `video`, `audio`, `slideshow`, `choice_quiz`, `fill_blanks`,
-`word_bank`, `sequence`, `categorize`, `free_response`, `external_link`,
-`word_builder`, `vocabulary_list` и `file` не выдаются модели в этом срезе.
+LA-M5 точечно добавляет `choice_quiz`, но provider allowlist по-прежнему не
+расширяется вместе со всем ручным registry: `quote`, `image`, `video`, `audio`,
+`slideshow`, `fill_blanks`, `word_bank`, `sequence`, `categorize`,
+`free_response`, `external_link`, `word_builder`, `vocabulary_list` и `file` не
+выдаются модели.
 План использует каноническую иерархию `Course → Lesson → ordered
 Components`; Step, root Step и Methodology не создаются.
 

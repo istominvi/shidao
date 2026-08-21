@@ -9,24 +9,28 @@ guard + LA-M1 learning activity foundation + LA-M2 Course objectives,
 Component alignment/publication snapshot V2 + LA-M3 correction/evidence/
 objective-state/recommendation contract + LA-M4 explicit Course/Run live
 authority и presentation cursor + LA-M5 durable `choice_quiz`. CC1, A2 и
-LA-M1–LA-M5 DB-first contracts применены. Current deployed functional
-application source `e09631d2fa00ad1c4b91ad0584392efb748cf235` включает LA-M4;
-Coolify deployment `1007` (`flg9786e15llusgj6kgz7pwk`) прошёл
-exact-source/image и production guest HTTP/API/CSRF/host postflight. Dependent
-LA-M5 source/web deployment пока не заявляется. Current running container
-source `df230d185532429b14080d8859438c197f63e66b` из docs-only deployment `1008`
-не меняет functional LA-M4 payload.
+LA-M1–LA-M5 contracts применены. Current deployed functional application source
+`b8f62a635ad3bd77933e71decffe2a5616de26d5` включает LA-M4 authority/live
+delivery и LA-M5 `choice_quiz`; commit уже pushed в `origin/main`. Coolify
+deployment `1009` (`cpeh1gokla9hpng8z57woj96`) и config redeploy `1010`
+(`m7depyulpqt0ka943ewajt10`) после исправления отсутствующего `www.shidao.ru`
+Domain доставили exact source/image и production guest host/API/CSRF boundary.
+Final container `g9x4d9zn60jv35r7zf0xl6xj-162236082905` running с restart
+count `0`, matching `SOURCE_COMMIT` и image ID
+`sha256:1458de67a667584f4863ad712ed25d64bb59ede12faba9f52959fe4424ce9045`.
 
 **CURRENT deployed source/web authority layer — LA-M4:** forward migration
 `20260821093000_lesson_run_live_delivery.sql` реализует explicit Course
 enrollment, per-Run execution capability и CAS presentation cursor. Она
 обслуживает current deployed application; production schema head уже LA-M5.
 
-**CURRENT production DB / NEXT source+web — LA-M5:** forward migration
+**CURRENT production DB/source/web — LA-M5:** forward migration
 `20260821100000_choice_quiz_activity.sql` применена к production с наблюдаемым
-`COMMIT` и отражена в `supabase/schema/current-schema.sql`. Dependent application
-code остаётся в рабочем дереве; его production deployment и authenticated
-production smoke пока не выполнены и не заявляются.
+`COMMIT` и отражена в `supabase/schema/current-schema.sql`. Dependent
+application/API/UI current в release commit
+`b8f62a635ad3bd77933e71decffe2a5616de26d5`. Authenticated production
+teacher/learner lifecycle **NOT RUN** без safe existing session/Run; production
+credentials/fixtures ради smoke не создавались.
 
 **Production schema head:**
 `20260821100000_choice_quiz_activity.sql`, exact SHA-256
@@ -46,8 +50,8 @@ tuple `1/9056` с MD5 `4235054d4453665bfb804b089173b8b6`, увеличив inven
 раз, а все проверенные LA/quiz relation counts остались `0`. Пять quiz tables
 имеют RLS, `0` policies, `0` raw grants и exact `10` triggers. PostgREST probes
 вернули anon raw/RPC `401/42501` и service raw `403/42501`; `PGRST202` не
-возникал. Dependent source/web deployment и authenticated production smoke
-пока не заявляются.
+возникал. Source/web rollout current; authenticated production teacher/learner
+lifecycle остаётся **NOT RUN** и не заявляется как пройденный.
 
 **Previous LA-M4 production execution record:**
 
@@ -177,7 +181,7 @@ normalized public body SHA-256
 | LA-M2A | `20260820085049_learning_objectives_component_alignment.sql`           | applied production: flat Course objectives, Component alignment/activity role и observation objective-at-time provenance                       |
 | LA-M2B | `20260820090529_course_publication_snapshot_v2.sql`                    | applied production: immutable publication V2 objectives/remap при exact V1 compatibility                                                       |
 | LA-M4  | `20260821093000_lesson_run_live_delivery.sql`                          | applied production DB/source/web: explicit Course/Run learner authority, persisted CAS Student Screen cursor и closed safe projections         |
-| LA-M5  | `20260821100000_choice_quiz_activity.sql`                              | **applied production DB; source/web pending:** immutable `choice_quiz` issue/attempt/evaluation/feedback/history/evidence contract             |
+| LA-M5  | `20260821100000_choice_quiz_activity.sql`                              | **current production DB/source/web:** immutable `choice_quiz` issue/attempt/evaluation/feedback/history/evidence contract                      |
 
 M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
 первого deploy и применена только после доказательства, что running и rollback
@@ -945,15 +949,15 @@ boundary.
 LA-M4 не создаёт attempt/response/evaluation tables, Homework persistence,
 second component order, Lesson Step или расширение `LearningRecord`.
 
-### CURRENT production DB / NEXT source+web — LA-M5 `choice_quiz` contract
+### CURRENT production DB/source/web — LA-M5 `choice_quiz` contract
 
 Exact migration
 `supabase/migrations/20260821100000_choice_quiz_activity.sql` (`6372` строки,
 SHA-256
 `32e860c8d56e299a19c7a5a4d05103df008935ff9814c6d6c206c39f68242d44`)
 применена к production с наблюдаемым `COMMIT` и добавляет пять закрытых
-append-only relations. Dependent application source/web deployment пока не
-выполнен и не заявляется.
+append-only relations. Dependent application source/web current в exact release
+commit `b8f62a635ad3bd77933e71decffe2a5616de26d5`.
 
 | Relation                        | Назначение                                                                                                       |
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -1009,8 +1013,8 @@ Schema/application coverage находится в
 `src/modules/choice-quiz/*.test.ts`, `src/modules/live-delivery/*.test.ts` и
 `scripts/db-learning-activity-tests.sh` /
 `scripts/db-learning-activity-concurrency-tests.sh`. Эти application files
-находятся в current working tree; production source/web deployment и
-authenticated activity smoke ещё не выполнены и не заявляются.
+deployed в current production source/web. Authenticated production
+teacher/learner lifecycle **NOT RUN** и не заявляется как пройденный.
 
 Measured production DB execution record:
 
@@ -1033,9 +1037,10 @@ Measured production DB execution record:
   `063ca4be6c0f76f9c2b95133763d39acfe932b5de84e64fd8c37942678333b44`;
   clean replay equality — `PASS`.
 
-Этот record подтверждает CURRENT production DB, но не dependent source/web
-deployment. Authenticated production UI/activity smoke **NOT RUN** и не
-заявляется.
+Этот record вместе с deployments `1009`/`1010`, matching final
+image/`SOURCE_COMMIT` и guest boundary postflight подтверждает CURRENT
+production DB/source/web. Authenticated production teacher/learner lifecycle
+**NOT RUN** и не заявляется как пройденный.
 
 ## Current repository tables
 
@@ -1515,7 +1520,7 @@ contacts, exact timestamps, foreign titles и private comments не возвра
 | Account credential/identity/observer/AI tables | none for `anon/authenticated`                                                                                                   | narrow RPC/server adapter                                    |
 | learner-safe self/observer history             | no raw table access                                                                                                             | safe projection RPC                                          |
 | LA-M4 live tables (current production DB)      | none for `anon/authenticated`; RLS enabled, policies absent                                                                     | owner narrow RPC + service-only exact learner resolver       |
-| LA-M5 quiz tables (current production DB)      | none for `anon/authenticated`; RLS enabled, policies absent                                                                     | owner/service narrow RPC; source/web deployment pending      |
+| LA-M5 quiz tables (current production DB)      | none for `anon/authenticated`; RLS enabled, policies absent                                                                     | deployed owner/service narrow application RPC                |
 
 E2A устранила прежнюю техническую блокировку owner-scoped
 Course/Component/Slide/File mutations nested helper ACL, не расширив целевую
@@ -1571,16 +1576,15 @@ guard.
 `lesson_run_participant`, operational LessonRun snapshot, persisted Run/Record
 status, Homework persistence, parsing/RAG, generalized learner consumption
 детского Course, generic multi-activity attempt engine или mastery percentage.
-Current deployed source/web остаётся на LA-M4 teacher-controlled live contract;
-его rollout current. Current production DB дополнительно содержит узкий LA-M5
-`choice_quiz` attempt/evaluation contract, но dependent source/web deployment
-ещё не заявляется. В contract по-прежнему нет generalized child Course
-consumption, других online activity engines, Homework или mastery percentage.
+Current deployed source/web содержит LA-M4 teacher-controlled live contract и
+узкий LA-M5 `choice_quiz` attempt/evaluation engine. В contract по-прежнему нет
+generalized child Course consumption, других online activity engines, Homework
+или mastery percentage.
 LA-M2 Course objectives/alignment существуют в current production DB/source/web.
 LA-M3 typed evidence/objective state/recommendation contract существует в
 current production DB/source/web. Проверенные LA-M3/LA-M4/LA-M5 relation counts
-были `0` на DB postflight; authenticated production activity smoke **NOT RUN**
-и не заявляется.
+были `0` на DB postflight; authenticated production teacher/learner lifecycle
+**NOT RUN** и не заявляется.
 E2 educator self-learning progress —
 отдельный Account-scoped contract без roster/Run. Observer capability не
 является Parent/Guardian role, а
@@ -1712,6 +1716,8 @@ service raw — `403/42501`, без `PGRST202`. Verified backup
 `/root/shidao-db-backups/shidao-before-choice-quiz-20260821T153411Z.dump`
 сохранён с mode `600`, size `1804381`, `1985` restore-list entries и SHA-256
 `bb4dcc56b379f5ef2f105478f426a2e05eb5e17100c08c0656967c3acf855211`.
-Этот execution record подтверждает CURRENT production DB; dependent source/web
-deployment и authenticated production activity smoke пока не выполнены и не
-заявляются.
+Этот execution record вместе с release commit
+`b8f62a635ad3bd77933e71decffe2a5616de26d5`, deployments `1009`/`1010` и
+matching final image/`SOURCE_COMMIT` подтверждает CURRENT production
+DB/source/web. Authenticated production teacher/learner lifecycle **NOT RUN**
+без safe existing session/Run и не заявляется как пройденный.

@@ -3,7 +3,7 @@
 **Формат:** стратегическое видение и основа для презентации
 **Аудитория:** команда, партнёры, преподаватели, родители, потенциальные инвесторы
 **Версия:** 2.0
-**Актуально на:** 19 августа 2026 года
+**Актуально на:** 22 августа 2026 года
 **Статус:** целевая продуктовая модель; не является перечнем уже запущенных функций
 
 ## Как читать этот документ
@@ -30,16 +30,20 @@ self/observer history/progress и subject-controlled AI consent. M1–M6, чет
 verified backup, DB/API postflight, реальный GoTrue Admin create/delete probe,
 identity completion release `01aa88a` и его authenticated production browser
 acceptance завершены. Current functional source
-`1d4e5deff83cbdc1b479b16e4220cf799327009f` прошёл `640/640` unit/API tests,
-`24/24` strict production-mode browser scenarios, typecheck, test compile,
-repository format check и production build; exact Profile/avatar
-matching-container rollout зафиксирован отдельно для `4462da2`. Current
+`b8f62a635ad3bd77933e71decffe2a5616de26d5` доставляет LA-M5 `choice_quiz` и
+прошёл `991/991` unit/API, `31/31` strict Chromium, build `73/73`,
+typecheck/lint/format/diff-check; Coolify deployments `1009`/`1010`, matching
+final image/`SOURCE_COMMIT` и guest boundary postflight зафиксированы в
+project-state/runbook. Authenticated production teacher/learner lifecycle
+**NOT RUN** без safe existing session/Run и не является release blocker.
+Exact Profile/avatar matching-container rollout зафиксирован отдельно для
+`4462da2`. Current
 production также включает governed official educator
 publications: trusted-author capability, admin review exact revision,
 learner-safe read-only workspace, Account-scoped progress и аттестацию после
-`100%` уроков. Enrollment/consumption детских Course через LearnerProfile,
-teacher observations, activity attempts/evidence, live-проведение, persisted
-Homework, parsing/RAG,
+`100%` уроков. Teacher observations, Course objectives/profile, explicit child
+live authority/delivery и первый `choice_quiz` attempt/evidence engine current
+production. Persisted Homework, другие activity engines, parsing/RAG,
 подписки, billing и внешний MCP/API не реализованы. Их точный NEXT/LATER status
 находится в roadmap; настоящее время в стратегических разделах не заменяет
 implementation/deployment evidence.
@@ -1039,11 +1043,11 @@ roleless deployments, dependency audit, production DB/API postflight и реал
 GoTrue Admin lifecycle probe. M5 закрывает deferred exactly-one Auth boundary,
 а M6 безопасно поддерживает двухфазную запись provisional metadata без позднего
 downgrade. Historical identity release `01aa88a` имеет authenticated production
-browser postflight. Current functional source
+browser postflight. Historical Profile/avatar functional source
 `1d4e5deff83cbdc1b479b16e4220cf799327009f` прошёл `640/640` unit/API tests,
 `24/24` strict production-mode browser scenarios, typecheck, test compile,
-repository format check и production build; evidence зафиксирован в
-project-state.
+repository format check и production build; current application source и
+LA-M5 release evidence зафиксированы выше и в project-state.
 
 ## Current production Course и Store contracts
 
@@ -1064,14 +1068,16 @@ project-state.
 
 ## Следующие продуктовые срезы
 
-1. Добавить быстрые teacher observations во время очного LessonRun.
-2. Добавить Course objectives, Component alignment и rebuildable skill profile.
-3. Реализовать persisted common Homework authoring как отдельную Lesson surface.
-4. Создать learner authorization и teacher-controlled live delivery.
-5. Провести первый learner-safe `choice_quiz` через persisted attempt и server
-   evaluation.
-6. Добавить Homework issuance и `free_response` review поверх общего activity
-   runtime.
+1. **CURRENT:** быстрые teacher observations во время очного LessonRun.
+2. **CURRENT:** Course objectives, Component alignment и rebuildable skill
+   profile.
+3. **NEXT:** реализовать P1.3 persisted common Homework authoring как отдельную
+   Lesson surface.
+4. **CURRENT:** learner authorization и teacher-controlled live delivery.
+5. **CURRENT production DB/source/web:** первый learner-safe `choice_quiz`
+   через persisted attempt и server evaluation.
+6. **NEXT после P1.3:** LA-M6 Homework issuance и `free_response` review поверх
+   общего activity runtime.
 7. Завершить ручной teacher authoring: upload из существующего Course,
    accessibility и UX polish.
 8. Добавить parsing статуса/текста загруженных источников; RAG — только после
@@ -1082,13 +1088,13 @@ project-state.
 
 ## Позднее
 
-- enrollment/consumption детских Course через LearnerProfile и live Student
-  Screen access поверх явных enrollment/capability boundaries; Account-scoped
-  educator self-learning уже current;
+- расширение current LearnerProfile/live enrollment-capability runtime за
+  пределы teacher-controlled LessonRun и единственного `choice_quiz` engine;
 - live sync и AI-conducted lesson поверх LessonRun;
 - individual Homework assignments и immutable snapshots;
-- learner-safe activity attempts/evidence, objective state, deterministic
-  recommendations, chat/notifications и vocabulary progress;
+- другие learner-safe activity attempts/evidence engines, Homework review,
+  chat/notifications и vocabulary progress; objective state и deterministic
+  recommendations уже current;
 - subscriptions, billing, quota ledger и дополнительные AI-пакеты;
 - external MCP/API security layer;
 - школы/организации, shared ownership, marketplace, voice AI teacher и

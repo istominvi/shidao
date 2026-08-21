@@ -1,9 +1,9 @@
 # План реализации Learning Activity System
 
 **Статус:** LA-M0 — CURRENT architecture; LA-M1–LA-M3 — CURRENT production;
-LA-M4 — CURRENT production DB/source/web; LA-M5 — CURRENT production DB/
-current-source, NEXT web; LA-M6 — NEXT; LA-M7–LA-M9 — LATER.
-**Актуально на:** 21 августа 2026 года
+LA-M4–LA-M5 — CURRENT production DB/source/web; LA-M6 — NEXT; LA-M7–LA-M9 —
+LATER.
+**Актуально на:** 22 августа 2026 года
 **Архитектура:**
 [`learning-activity-system.md`](../architecture/learning-activity-system.md)
 
@@ -233,7 +233,8 @@ deployed-SHA HTTP/API/CSRF/browser guest smoke завершены.
   типов;
 - definition-level contracts разделяют author/evaluator payload и learner-safe
   delivery shape; read-only learner runtime реализован в current production LA-M4,
-  а response persistence/server evaluation остаются LA-M5;
+  а current production LA-M5 добавляет response persistence/server evaluation
+  только для `choice_quiz`;
 - manual и AI используют один application contract;
 - новая publication snapshot version копирует objective definitions и
   Component alignments с remap IDs; старые immutable revisions продолжают
@@ -550,8 +551,8 @@ Pre-rollout application gate прошёл: typecheck, lint без warnings/error
 authenticated production UI smoke **NOT RUN** и не заявляется; credentials,
 learners, Runs и fixtures не создавались. Локальный `31/31` покрывает
 waiting/live/reload/reconnect/revoke/ended/privacy/mobile/accessibility, но не
-подменяет этот production smoke. LA-M4 current; LA-M5 от этого автоматически
-не становится current.
+подменяет этот production smoke. Это execution record LA-M4; LA-M5 стал current
+только после собственного отдельного release ниже.
 
 ### Цель
 
@@ -679,13 +680,32 @@ NEXT.
 
 ## LA-M5 — первый полный online activity: `choice_quiz`
 
-(**FROZEN CONTRACT; CURRENT production DB / current-source; NEXT web**)
+(**FROZEN CONTRACT; CURRENT production DB/source/web**)
 
 **Статус:** implementation contract заморожен, production DB apply/postflight и
-production-generated snapshot завершены. Application slice остаётся
-**current-source**, а web deployment — **NEXT** до exact commit/image и
-deployed postflight; полный статус **CURRENT production DB/source/web** пока не
-заявляется.
+production-generated snapshot завершены. Application/API/UI доставлены exact
+release commit `b8f62a635ad3bd77933e71decffe2a5616de26d5` в `main` и
+`origin/main`; LA-M5 является **CURRENT production DB/source/web**.
+
+Production execution record:
+
+- migration применена с наблюдаемым `COMMIT`; snapshot PostgreSQL `15.8`
+  содержит `74` public tables, `275` functions, пять quiz tables и `35466`
+  строк, file/normalized SHA-256 зафиксированы в current-schema/runbook;
+- final gate: `991/991` unit/API, `31/31` strict Chromium, build `73/73`,
+  typecheck/lint/format/diff-check green;
+- основной Coolify deployment `1009` (`cpeh1gokla9hpng8z57woj96`); после
+  исправления отсутствующего `www.shidao.ru` в Coolify Domains выполнен config
+  redeploy `1010` (`m7depyulpqt0ka943ewajt10`);
+- final container `g9x4d9zn60jv35r7zf0xl6xj-162236082905` running с restart
+  count `0`, matching `SOURCE_COMMIT` и image ID
+  `sha256:1458de67a667584f4863ad712ed25d64bb59ede12faba9f52959fe4424ce9045`;
+  checked logs и external/container-local host/API/CSRF/guest probes green,
+  `www.shidao.ru` имеет valid TLS и `302` на `https://shidao.ru/login`;
+- authenticated production teacher/learner lifecycle **NOT RUN**: safe existing
+  session/Run не было, production credentials/fixtures не создавались. Это не
+  failure/blocker, local Chromium не подменяет этот evidence;
+- disposable clone/temp files удалены, production backups сохранены.
 
 ### Цель
 
@@ -850,8 +870,10 @@ policy данные хранятся вместе с learner history.
 learner. Изменение teacher question после попытки не делает старый результат
 непонятным.
 
-После `choice_quiz` shared deterministic engine доказывается на `fill_blanks`,
-затем на matching/sequence/categorize/word-bank/word-builder.
+Следующий продуктовый этап — P1.3 persisted Homework authoring, затем LA-M6
+Homework/`free_response`. Shared deterministic engine для `fill_blanks`,
+matching/sequence/categorize/word-bank/word-builder относится к более позднему
+расширению activity catalog.
 
 ## LA-M6 — Homework и `free_response` (**NEXT**)
 

@@ -4,7 +4,7 @@
 
 **Дата решения:** 5 августа 2026 года
 
-**Актуально на:** 21 августа 2026 года
+**Актуально на:** 22 августа 2026 года
 
 **Область:** Course Builder / Lesson / Components / Student Screen / audience / scheduling / learning history / teacher observations / course materials / homework
 
@@ -16,9 +16,10 @@ history/progress, explicit shared comments, actual duration и consented
 cross-provider AI. Phased M1–M6 migrations, exact Coolify deploy и postflight
 завершены. Account-scoped самостоятельное прохождение approved educator
 publications с revision progress и аттестацией также является current
-production. Homework не реализован. LA-M4 Course enrollment и live Student
-Screen current production в DB/source/web; sequencing следующих activity
-slices зафиксирован в roadmap.
+production. Homework не реализован. LA-M4 Course enrollment/live Student Screen
+и LA-M5 `choice_quiz` execution являются current production в DB/source/web.
+Durable attempts/server evaluation реализованы только для `choice_quiz`;
+Homework и `free_response` остаются LA-M6 NEXT.
 
 Current production дополнительно реализует LA-M1: focused teacher workspace и
 recorder-owned component observations поверх фактически started LessonRun.
@@ -81,6 +82,19 @@ backup подтверждены; independent final audit зелёный. Authent
 UI smoke **NOT RUN** без safe existing session/Run и не заявляется. Local strict
 Chromium `31/31` подтверждает live-state/privacy/mobile/accessibility contract,
 но не является authenticated production evidence.
+
+CURRENT production DB/source/web LA-M5 добавляет поверх этой authority только
+один durable execution engine — `choice_quiz`. Functional release
+`b8f62a635ad3bd77933e71decffe2a5616de26d5` доставлен normal fast-forward push в
+`origin/main` и Coolify deployment `1009` (`cpeh1gokla9hpng8z57woj96`). После
+исправления отсутствующего Coolify Domains entry для `www.shidao.ru` выполнен
+config redeploy `1010` (`m7depyulpqt0ka943ewajt10`). Final container
+`g9x4d9zn60jv35r7zf0xl6xj-162236082905` использует image
+`sha256:1458de67a667584f4863ad712ed25d64bb59ede12faba9f52959fe4424ce9045`
+и matching `SOURCE_COMMIT`, работает с restart count `0`; проверенные логи и
+external/container-local guest host/API/CSRF probes чистые. Authenticated
+teacher/learner lifecycle **NOT RUN**: safe existing session/Run отсутствовали,
+credentials и fixtures не создавались.
 
 Этот документ владеет authored hierarchy, Slides projection, Homework
 separation и compact LessonRun/LearningRecord boundary. Учебные цели, ответы,
@@ -404,9 +418,9 @@ canonical activity-type registry запрещён; полный contract нах�
 
 `projectLearnerComponentPayload` валидирует author payload и projected shape и
 fail closed при ошибке; evaluator config извлекается отдельно и не пересекает
-learner-facing Student Screen/catalog boundary. Это current delivery contract,
-но не learner execution: attempts и server evaluation остаются следующими
-slices.
+learner-facing Student Screen/catalog boundary. Current LA-M5 использует это
+разделение для persisted `choice_quiz` issue/attempt и server evaluation.
+Generic execution для остальных activity types не заявлен.
 
 Текущий production registry содержит 20 активных типов:
 
@@ -436,8 +450,9 @@ file
 Layout-only `divider` не входит в registry: порядок и группировку задают
 Lesson/Slides, а визуальное разделение не требует самостоятельного authored
 content. `video`, `audio` и `external_link` принимают только HTTPS URL.
-Интерактивные renderers в этом срезе дают preview-local самопроверку;
-ответ `free_response`, попытки, scoring и teacher review не хранятся.
+Кроме current production LA-M5 `choice_quiz`, интерактивные renderers дают
+preview-local самопроверку; ответ `free_response`, его attempts, scoring и
+teacher review не хранятся.
 Voice recording, arbitrary third-party embed и image matching отложены до
 отдельных Storage/CSP/persistence контрактов. Матрица выбора описана в
 [`docs/product/course-component-catalog.md`](../product/course-component-catalog.md).
@@ -625,6 +640,16 @@ cancel дают terminal ended state только ранее авторизов�
 scheduled/not-actual-started Run не отдаёт learner content. Free learner
 navigation, Realtime/presence, attempts/evaluation и Homework в LA-M4
 отсутствуют.
+
+### LA-M5 `choice_quiz` execution (CURRENT production DB/source/web)
+
+LA-M5 сохраняет immutable learner-specific issue, append-only Attempt/Response/
+Evaluation/Feedback Delivery, exact-set server evaluation, допустимый feedback
+и teacher correction/history только для persisted `practice | assessment`
+`choice_quiz`. `activity_role = NULL` остаётся presentation-only; остальные
+activity types продолжают использовать LA-M4 presentation/preview boundary.
+Execution state не меняет authored Component order, Slide membership или compact
+`LearningRecord`; eligible online evidence использует отдельный typed source.
 
 ## Course workspace navigation
 
@@ -1535,8 +1560,9 @@ adapter и не получает параллельный доступ к таб
 
 Current component observations обслуживает отдельный
 `LearningActivitiesApplicationService`: API route остаётся adapter над
-service/repository, а React не пишет в observation table напрямую. Будущие
-responses/evaluations/evidence расширят activity boundary отдельными slices.
+service/repository, а React не пишет в observation table напрямую. Current
+`choice_quiz` responses/evaluations/evidence расширяют тот же activity boundary;
+будущие activity types добавляются отдельными slices.
 Он переиспользует registry contracts, но не превращает
 `CourseBuilderApplicationService` или MCP в универсальный learner runtime.
 
@@ -1742,8 +1768,9 @@ Learner-identity consent/audit schema входит в отдельные M2–M3
 Current production application реализует appointment/completion history, LA-M1
 teacher observation workspace, LA-M2 objective provenance/eligibility и LA-M3
 objective-state/profile workflow. Current production DB/source/web LA-M4
-дополнительно реализует learner live delivery. Attempts по-прежнему не
-реализованы.
+реализует learner live delivery, а LA-M5 — durable attempts и server evaluation
+ровно для `choice_quiz`. Homework/`free_response` и generic execution остальных
+activity types не реализованы.
 
 Открытый LessonRun уже является конкретным проведением; второй content-bearing
 `LessonSession` не нужен. Operational presentation cursor связан с
@@ -1751,9 +1778,10 @@ actual-started open Run и текущим Student Screen Slide, не меняя 
 hierarchy и не создавая Step entity.
 
 Presentation cursor отвечает только за то, что показывается. Current teacher
-observations и будущие responses/evaluations хранятся отдельно по Learning
-Activity contract. Ни observation, ни cursor, ни адаптивная рекомендация не
-меняют authored Component order или Slide membership.
+observations и LA-M5 `choice_quiz` responses/evaluations хранятся отдельно по
+Learning Activity contract. Ни observation, ни attempt/evaluation, ни cursor,
+ни адаптивная рекомендация не меняют authored Component order или Slide
+membership.
 
 В live mode по умолчанию teacher управляет learner surface; свободная
 предыдущая/следующая навигация учащегося не включается автоматически. Review
@@ -1811,13 +1839,11 @@ application services и MCP не импортируют demo fixtures; все н
 - persisted homework editor;
 - Realtime/presence transport поверх current production request/polling LA-M4
   live cursor;
-- versioned learner activity attempts и server-side evaluation; current
-  production DB/source/web LA-M3 уже отделяет durable typed evidence, rebuildable
-  objective state и transparent recommendations от compact `LearningRecord`,
-  а attempts/evaluation остаются LA-M5–LA-M6;
-- learner attempts/evaluation и generalized child Course consumption за
-  пределами current-source teacher-controlled LA-M4; Account-scoped
-  self-learning educator publications уже реализован;
+- durable learner attempts/server evaluation для activity types кроме current
+  production LA-M5 `choice_quiz`; Homework/`free_response` остаются LA-M6 NEXT;
+- generalized child Course consumption за пределами current teacher-controlled
+  LA-M4/LA-M5 live boundary; Account-scoped self-learning educator publications
+  уже реализован;
 - cross-provider history без явного subject grant (намеренно запрещена);
 - drag-and-drop, если надёжные кнопки «выше/ниже» уже обеспечивают reorder;
 - автоматическая адаптация каталожного Course под группу, merge новых
@@ -1830,9 +1856,11 @@ Roleless Account bootstrap, invitation/claim, physical profile merge,
 self/observer history, real-record progress и consented cross-provider AI уже
 реализованы в current production и не меняют authored hierarchy Lesson. Phased
 release/postflight завершены. Explicit enrollment + per-Run learner live
-Student Screen являются CURRENT production DB/source/web LA-M4; broader child
-Course consumption и attempts находятся в roadmap. Educator self-learning
-является current production.
+Student Screen являются CURRENT production DB/source/web LA-M4; единственный
+durable `choice_quiz` execution engine является CURRENT production
+DB/source/web LA-M5. Broader child Course consumption, persisted Homework и
+`free_response` находятся в roadmap. Educator self-learning является current
+production.
 
 ## Shipped acceptance baseline
 

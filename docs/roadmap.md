@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
 **Статус:** current / next / later priorities после production identity release
-**Актуально на:** 21 августа 2026 года
+**Актуально на:** 22 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -701,10 +701,9 @@ view-sort, начиная с `position ASC`. В action-cell остаётся о�
 слов, порядок, категории, свободный ответ, HTTPS-ссылка, сборка слова и
 словарь; layout-only `divider` исключён. Current deployed web самопроверка живёт
 только в preview state, а LA-M4 доставляет только authorization/read-only live
-projection. Current production DB/snapshot LA-M5 уже содержит learner answer
-persistence и server scoring ровно для `choice_quiz`; dependent application
-rollout этого исключения остаётся NEXT, остальные interactive types остаются
-preview-only.
+projection. Current production LA-M5 доставляет learner answer persistence,
+server scoring и web execution ровно для `choice_quiz`; остальные interactive
+types остаются preview/presentation-only.
 Продуктовый выбор и границы зафиксированы в
 [`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
 Current production palette больше не меняет размер между категориями: responsive
@@ -1422,11 +1421,10 @@ Functional task commit `6e3f97c230f688663abaa06a126a56d0d0e2c9c6` прошёл
 `SOURCE_COMMIT`, running container и restart count `0`. Production
 HTTP/API/CSRF/host guest postflight прошёл; authenticated production no-write
 LA-M3 smoke не выполнен из-за guest-only browser session и не заявляется.
-Последующий execution-record docs commit runtime не меняет. LA-M4 имеет статус
-**CURRENT PRODUCTION DB/SOURCE/WEB**. LA-M5 имеет статус **CURRENT production
-DB + snapshot / NEXT application source+web rollout**; LA-M6 остаётся **NEXT**.
+Последующий execution-record docs commit runtime не меняет. LA-M4 и LA-M5
+имеют статус **CURRENT PRODUCTION DB/SOURCE/WEB**; LA-M6 остаётся **NEXT**.
 
-## P1.3: persisted Homework authoring
+## P1.3: persisted Homework authoring (**NEXT**)
 
 Цель первого slice — заменить текущую заглушку отдельным Lesson-owned
 редактором. Learner assignment, выдача и attempts идут позже вместе с
@@ -1596,12 +1594,12 @@ evidence. Disposable DB/container/local LA-M4 temp counts равны `0`.
   `LearningRecord`; LA-M4 не добавляет attempts, scoring, Homework или
   `free_response`.
 
-### LA-M5: первый full online `choice_quiz` (**CURRENT DB + snapshot / NEXT application rollout**)
+### LA-M5: первый full online `choice_quiz` (**CURRENT PRODUCTION DB/SOURCE/WEB**)
 
-Frozen vertical slice реализован в рабочем дереве, а его physical contract уже
-применён к production DB и отражён в generated snapshot. Deployed application
-всё ещё LA-M4, поэтому следующий release milestone — не новый activity type, а
-commit/push/Coolify rollout уже реализованного LA-M5 web/API/UI.
+Frozen vertical slice полностью выпущен: physical contract применён к
+production DB и отражён в generated snapshot, а application/API/UI доставлены
+release commit `b8f62a635ad3bd77933e71decffe2a5616de26d5` в `main` и
+`origin/main`.
 
 Exact migration `20260821100000_choice_quiz_activity.sql` имеет `6372` строки,
 SHA-256
@@ -1621,7 +1619,7 @@ timestamp-normalized SHA-256
 Final local application gate прошёл `991/991` unit/API, production build
 `73/73` и `31/31` strict production-mode Chromium scenarios.
 
-Dependent application доставляет:
+Current production application доставляет:
 
 - immutable issued learner definition и opaque learner reference поверх exact
   current Component revision;
@@ -1645,24 +1643,34 @@ Dependent application доставляет:
   и service-only трёхаргументный RPC; прежний двухаргументный overload в
   rolling deploy только fail closed и не возвращает learner projection.
 
-DB/snapshot часть DoD закрыта measured production evidence выше. Application
-DoD остаётся незакрытым до exact release commit, normal fast-forward push,
-matching Coolify image/`SOURCE_COMMIT` и deployed guest boundary postflight.
-Authenticated production flow не выполнялся и не заявляется; local Chromium
-не подменяет его. До dependent rollout LA-M5 можно называть CURRENT production
-DB, но не CURRENT production source/web. LA-M6 остаётся следующим отдельным
-slice и не расширяется этим rollout.
+Application gate прошёл `991/991` unit/API, `31/31` strict Chromium, build
+`73/73`, typecheck/lint/format/diff-check green. Основной Coolify deployment —
+`1009` (`cpeh1gokla9hpng8z57woj96`). После исправления отсутствующего
+`www.shidao.ru` в Coolify Domains выполнен config redeploy `1010`
+(`m7depyulpqt0ka943ewajt10`). Final container
+`g9x4d9zn60jv35r7zf0xl6xj-162236082905` running с restart count `0`, exact
+`SOURCE_COMMIT` и image ID
+`sha256:1458de67a667584f4863ad712ed25d64bb59ede12faba9f52959fe4424ce9045`;
+проверенные логи и external/container-local host/API/CSRF/guest probes green.
+`www.shidao.ru` имеет valid TLS и отвечает `302` на
+`https://shidao.ru/login`. Disposable clone/temp files удалены, production
+backups сохранены.
 
-**Later transport после LA-M5 rollout:** Realtime/presence может заменить
+Authenticated production teacher/learner lifecycle **NOT RUN**: safe existing
+session/Run отсутствовали, credentials и fixtures ради smoke не создавались.
+Это не failure и не blocker; local Chromium не подменяет authenticated
+production evidence. Следующий продуктовый этап — P1.3 persisted Homework
+authoring, затем отдельный LA-M6 Homework/`free_response`.
+
+**Later transport поверх current LA-M5:** Realtime/presence может заменить
 polling, не меняя authorization/cursor contract и не создавая content-bearing
 `LessonSession`.
 
 ## P3: online activities, adaptive learning и product scale
 
-- доставить dependent LA-M5 `choice_quiz` application из уже current DB в
-  production web и закрыть release evidence до расширения activity catalog;
-- затем shared deterministic engine для fill/matching/sequence/categorize и
-  отдельный manual-review flow для `free_response`;
+- после P1.3 persisted Homework authoring выполнить отдельный LA-M6
+  Homework/`free_response`; не смешивать его state machine с current LA-M5;
+- затем shared deterministic engine для fill/matching/sequence/categorize;
 - history остаётся source of truth, а objective state — rebuildable projection
   рядом с compact LearningRecord, не внутри него;
 - transparent rules и spaced review предшествуют statistical models;

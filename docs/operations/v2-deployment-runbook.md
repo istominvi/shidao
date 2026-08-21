@@ -387,19 +387,16 @@ LA-M4 production execution record complete: DB/source/web current. Skipped
 authenticated UI smoke remains explicitly unclaimed and не подменяется local
 Chromium evidence.
 
-### LA-M5 `choice_quiz` — production DB/snapshot execution record; web pending
+### LA-M5 `choice_quiz` — production execution record
 
-**Статус: CURRENT production DB/snapshot; CURRENT-SOURCE / NEXT deployed
-web.** Production PostgreSQL и generated schema snapshot содержат LA-M5, но
-dependent application source ещё не закоммичен и не доставлен. Current running
-container получен docs-only deployment `1008`
-(`jzli0zrpcghoailqq22y17l0`) из exact source
-`df230d185532429b14080d8859438c197f63e66b`; его functional payload остаётся
-LA-M4 source `e09631d2fa00ad1c4b91ad0584392efb748cf235`.
-Поэтому clone/application evidence ниже не выдаётся за deployed behavior, а
-authenticated production Choice Quiz flow остаётся явно pending.
+**Статус: CURRENT production DB/source/web.** Production PostgreSQL, generated
+schema snapshot и application/API/UI содержат LA-M5. Exact release commit
+`b8f62a635ad3bd77933e71decffe2a5616de26d5` находится в `main` и уже pushed в
+`origin/main`. Authenticated production teacher/learner lifecycle **NOT RUN**:
+safe existing session/Run не было, credentials и fixtures ради smoke не
+создавались. Это не failure и не blocker.
 
-Frozen inputs:
+Frozen inputs и pre-rollout baseline:
 
 - исходный local `HEAD` и verified `origin/main`:
   `df230d185532429b14080d8859438c197f63e66b`;
@@ -407,7 +404,7 @@ Frozen inputs:
   `1` / `g9x4d9zn60jv35r7zf0xl6xj`, repository/branch
   `istominvi/shidao` / `main`; deployment `1008`
   (`jzli0zrpcghoailqq22y17l0`) имеет PR `0`, status `finished` и exact commit
-  `df230d185532429b14080d8859438c197f63e66b`. Production container
+  `df230d185532429b14080d8859438c197f63e66b`. Pre-rollout container
   `g9x4d9zn60jv35r7zf0xl6xj-083843668768` использует matching tag и
   `SOURCE_COMMIT`, image ID
   `sha256:508b412910234ace64da13f66db62fb5da61679c2f0ffae31aca49671ac8f569`,
@@ -534,32 +531,41 @@ Production-head snapshot:
   сохраняет reviewed cross-schema Auth/Storage section и не заменяет migration
   history.
 
-#### Remaining delivery and deployed postflight — PENDING
+#### Delivery, production postflight and cleanup — COMPLETE
 
-- [ ] Stage только LA-M5 task files, создать один descriptive commit и выполнить
-      normal fast-forward push `main`; записать exact commit/push result и clean
-      worktree. Не force-push/amend/rebase.
-- [ ] Дождаться exact Coolify deployment; записать deployment ID/status/times,
-      container/tag/image ID, matching `SOURCE_COMMIT`, running/restart/health и
-      bounded log evidence.
-- [ ] Выполнить external/in-container host/Origin/CSRF/guest probes, включая
-      unauthenticated learner submit и teacher history/correction denial с
-      private/no-store response headers.
-- [ ] На safe existing authenticated teacher/learner/Run выполнить controlled
-      no-write/read flow и, только при явно разрешённом disposable activity
-      data, submit/history/correction lifecycle с supported cleanup. Не создавать
-      credentials/learners/Runs только ради smoke; при отсутствии safe context
-      записать **NOT RUN**, не заменяя local Chromium evidence.
-- [ ] Проверить deployed learner privacy/UI и teacher history на desktop/mobile,
-      browser console и service logs; записать exact results.
-- [ ] После deployed checks повторить final DB postflight, reverify retained
-      backup, удалить exact disposable/temp artifacts и записать measured zero
-      counts.
+- Release commit `b8f62a635ad3bd77933e71decffe2a5616de26d5` создан в `main` и
+  normal fast-forward pushed в `origin/main`.
+- Final gates: `npm test` — `991/991`, strict Chromium — `31/31`, build —
+  `73/73`; typecheck, lint, format и `git diff --check` green.
+- Основной Coolify deployment — id `1009`, UUID
+  `cpeh1gokla9hpng8z57woj96`. После первого postflight обнаружено, что
+  `www.shidao.ru` отсутствовал в Coolify Domains. Domains исправлены, затем
+  выполнен config redeploy id `1010`, UUID
+  `m7depyulpqt0ka943ewajt10`.
+- Final production container
+  `g9x4d9zn60jv35r7zf0xl6xj-162236082905` использует image ID
+  `sha256:1458de67a667584f4863ad712ed25d64bb59ede12faba9f52959fe4424ce9045`
+  и matching `SOURCE_COMMIT`
+  `b8f62a635ad3bd77933e71decffe2a5616de26d5`; status running, restart count
+  `0`. Проверенные logs не содержат
+  `error`/`exception`/`unhandled`/`fatal`/`panic`.
+- External и container-local host/API/CSRF/guest probes прошли.
+  `www.shidao.ru` имеет валидный TLS и отвечает `302` на
+  `https://shidao.ru/login`.
+- Authenticated production teacher/learner lifecycle **NOT RUN**: безопасной
+  existing session и подходящего Run не было; production credentials,
+  learners, Runs и fixtures ради smoke не создавались. Authenticated learner
+  UI/privacy и teacher history/correction поэтому также не заявляются как
+  production evidence; local strict Chromium `31/31` их не подменяет. Это не
+  failure и не blocker release.
+- Disposable clone и временные файлы удалены. Production backups, включая
+  verified pre-LA-M5 backup с зафиксированными выше mode/size/TOC/SHA-256,
+  сохранены.
 
 Stop-on-failure остаётся в силе: уже применённую migration не переписывать,
-partial/unknown result не считать успехом, dependent web rollout остановить при
-failed delivery gate и выпускать только compatible forward fix. До exact
-commit/push/Coolify/postflight LA-M5 не является current deployed web behavior.
+partial/unknown result не считать успехом, будущий dependent web rollout
+останавливать при failed delivery gate и выпускать только compatible forward
+fix. Этот LA-M5 release завершён и является current deployed web behavior.
 
 ### LA-M3 profile/evidence/recommendations — production execution record
 
@@ -1845,9 +1851,13 @@ ShiDao V2 application:
   records только ради postflight. При отсутствии безопасных existing sessions
   записать authenticated smoke как непройденный, не заменяя его guest smoke.
 
-### LA-M5 `choice_quiz` smoke — выполнять только после rollout
+### LA-M5 `choice_quiz` smoke contract
 
-Этот список пока pending и не доказывает deployed behavior:
+Current release evidence записан в LA-M5 execution record выше: external и
+container-local host/API/CSRF/guest probes и checked service logs прошли.
+Ниже — повторяемый checklist для будущих releases. Его authenticated
+teacher/learner/Run пункты в current release **NOT RUN** без safe existing
+context и не подменяются local Chromium `31/31`:
 
 - guest learner submit, teacher history и correction routes получают `401` с
   private/no-store headers; wrong Course/Run/issue/evaluation не раскрывает
@@ -1877,8 +1887,9 @@ ShiDao V2 application:
   `choice_quiz_evaluation`, policy v2 и rebuildable profile effect; raw response
   и score не появляются в compact `LearningRecord`. Один correct result не
   заявляется mastery;
-- keyboard/focus/screen-reader/touch/zoom/reduced-motion/forced-colors states,
-  browser console и server logs проходят на deployed image;
+- проверить keyboard/focus/screen-reader/touch/zoom/reduced-motion/forced-colors
+  states, browser console и server logs на deployed image; в current release
+  authenticated browser часть **NOT RUN**, а checked server logs прошли;
 - production data не создавать только для smoke. Без безопасного existing
   context authenticated result записывается **NOT RUN**.
 

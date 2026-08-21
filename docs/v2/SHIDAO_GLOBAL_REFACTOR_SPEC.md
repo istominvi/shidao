@@ -1,7 +1,7 @@
 # ShiDao V2 — актуальная глобальная спецификация
 
 **Статус:** нормативные границы текущей архитектуры и будущего развития
-**Актуально на:** 19 августа 2026 года
+**Актуально на:** 22 августа 2026 года
 **Repository/branch:** `istominvi/shidao`, `main`
 **Рабочее приложение:** `v2.shidao.ru`
 **Публичный домен:** `shidao.ru` — landing-only
@@ -344,9 +344,11 @@ UI / route handler / internal MCP
 → RLS + explicit ownership boundaries
 ```
 
-Future learner responses, evaluations и evidence проходят через отдельный
-activity application service над теми же registry contracts. Они не делают
-Course Builder service универсальным runtime и не дают MCP direct table access.
+Current production LA-M5 learner responses, evaluations и evidence для
+`choice_quiz` проходят через отдельный activity application service над теми
+же registry contracts. Другие activity engines остаются future slices. Этот
+boundary не делает Course Builder service универсальным runtime и не даёт MCP
+direct table access.
 
 Запрещено:
 
@@ -587,8 +589,8 @@ Lesson одновременно является editable content и точко�
 Открытый/завершённый Run имеет хотя бы одну LearningRecord; отменённый Run
 может иметь ноль, потому что cancellation удаляет draft rows.
 
-Live runtime пока не реализован; его sequencing фиксируют roadmap и Learning
-Activity plan:
+Current production LA-M4/LA-M5 live runtime следует контракту, sequencing
+дальнейших activity engines фиксируют roadmap и Learning Activity plan:
 
 - runtime cursor ориентирован на Student Screen Slide;
 - teacher управляет learner screen по умолчанию;
@@ -599,27 +601,30 @@ Cursor отвечает только за presentation. Activity responses/evalu
 teacher observations хранятся отдельно и не меняют authored Component order
 или Slide membership.
 
-## 25. NEXT Learning Activity foundation
+## 25. CURRENT Learning Activity foundation; NEXT Homework/free-response
 
 Learning Activity execution ортогонален authored hierarchy. Не каждый Component
 является Activity; assessable types получают optional facet в существующем
 registry.
 
-Порядок ближайших срезов:
+Статус последовательных срезов:
 
-1. component-level teacher observations во время LessonRun без заявления
-   mastery;
-2. Course objectives и один optional primary objective на Component;
-3. rebuildable objective state и transparent recommendations;
-4. learner-safe runtime и один полный `choice_quiz`;
-5. Homework/free-response review, voice и adaptivity позднее.
+1. **CURRENT:** component-level teacher observations во время LessonRun без
+   заявления mastery;
+2. **CURRENT:** Course objectives и один optional primary objective на
+   Component;
+3. **CURRENT:** rebuildable objective state и transparent recommendations;
+4. **CURRENT production DB/source/web:** learner authorization,
+   teacher-controlled live delivery и один полный `choice_quiz`;
+5. **NEXT:** P1.3 persisted Homework authoring, затем LA-M6
+   Homework/`free_response`; voice и advanced adaptivity позднее.
 
 Подробная модель и поэтапный DoD находятся в
 [`docs/architecture/learning-activity-system.md`](../architecture/learning-activity-system.md)
 и
 [`docs/plans/learning-activity-system-implementation.md`](../plans/learning-activity-system-implementation.md).
 
-## 26. CURRENT base history/progress; NEXT activity evidence
+## 26. CURRENT history/progress and activity evidence
 
 Learning history относится к canonical LearnerProfile и переживает удаление
 Lesson. `learning_record` хранит recorder Account, attendance, comment,
@@ -640,9 +645,10 @@ unknown не превращаются в ноль. Subject erasure/reset уже 
 решениями остаются Account/Auth deletion и legal retention.
 
 `LearningRecord` не получает generic metrics JSON и не становится event store.
-Teacher observations, versioned attempts/evaluations, typed evidence и derived
-learner-objective state являются отдельными logical layers. Конкретные table
-names утверждаются только вместе с milestone migration.
+Teacher observations, LA-M5 `choice_quiz` attempts/evaluations, typed evidence
+и derived learner-objective state являются отдельными current logical layers.
+Другие activity engines и LA-M6 review получают собственные contracts только с
+соответствующим milestone.
 
 Полный snapshot Lesson/Components не добавляется в LearningRecord. Это не
 запрещает compact prompt/response-at-time envelope или ссылку на immutable
