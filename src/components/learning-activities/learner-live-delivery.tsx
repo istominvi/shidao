@@ -8,10 +8,20 @@ import {
 } from "@/components/course-builder/component-renderers";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/auth";
+import { choiceQuizLearnerExecutionSchema } from "@/modules/choice-quiz/contracts";
 import {
   learnerLiveDeliveryResponseSchema,
   type LearnerLiveState,
 } from "@/modules/live-delivery/contracts";
+import { LearnerChoiceQuiz } from "./learner-choice-quiz";
+import {
+  learnerChoiceQuizDraftFromExecution,
+  learnerChoiceQuizExecutionAdvancesDraft,
+  retainLearnerChoiceQuizDrafts,
+  setLearnerChoiceQuizDraft,
+  type LearnerChoiceQuizDraft,
+  type LearnerChoiceQuizDrafts,
+} from "./learner-choice-quiz-draft";
 import styles from "./learner-live-delivery.module.css";
 
 type ViewState =
@@ -69,11 +79,45 @@ function deniedMessage(payload: unknown) {
 
 export function LearnerLiveDelivery({ lessonRunId }: { lessonRunId: string }) {
   const [view, setView] = useState<ViewState>({ kind: "loading" });
+  const [choiceQuizDrafts, setChoiceQuizDrafts] =
+    useState<LearnerChoiceQuizDrafts>({});
   const generationRef = useRef(0);
+  const forceRefreshRef = useRef<() => void>(() => undefined);
 
   const pollUrl = useMemo(
     () => `/api/v2/me/live-runs/${encodeURIComponent(lessonRunId)}`,
     [lessonRunId],
+  );
+
+  const activeChoiceQuizIssueRefs = useMemo<readonly string[] | null>(() => {
+    if (view.kind === "loading" || view.kind === "reconnecting") return null;
+    if (view.kind !== "ready" || view.value.kind !== "active") return [];
+    return view.value.slide.components.flatMap((component) => {
+      if (component.typeKey !== "choice_quiz") return [];
+      const execution = choiceQuizLearnerExecutionSchema.safeParse(
+        component.execution,
+      );
+      return execution.success ? [execution.data.issueRef] : [];
+    });
+  }, [view]);
+
+  useEffect(() => {
+    setChoiceQuizDrafts((current) =>
+      retainLearnerChoiceQuizDrafts(current, activeChoiceQuizIssueRefs),
+    );
+  }, [activeChoiceQuizIssueRefs]);
+
+  useEffect(() => {
+    setChoiceQuizDrafts({});
+  }, [lessonRunId]);
+
+  const updateChoiceQuizDraft = useCallback(
+    (issueRef: string, draft: LearnerChoiceQuizDraft) => {
+      setChoiceQuizDrafts((current) =>
+        setLearnerChoiceQuizDraft(current, issueRef, draft),
+      );
+    },
+    [],
   );
 
   const pollOnce = useCallback(
@@ -172,6 +216,8 @@ export function LearnerLiveDelivery({ lessonRunId }: { lessonRunId: string }) {
       void run();
     };
 
+    forceRefreshRef.current = refreshNow;
+
     void run();
     window.addEventListener("focus", refreshNow);
     document.addEventListener("visibilitychange", refreshNow);
@@ -181,6 +227,7 @@ export function LearnerLiveDelivery({ lessonRunId }: { lessonRunId: string }) {
       if (timer) clearTimeout(timer);
       if (requestTimeout) clearTimeout(requestTimeout);
       controller?.abort();
+      forceRefreshRef.current = () => undefined;
       window.removeEventListener("focus", refreshNow);
       document.removeEventListener("visibilitychange", refreshNow);
     };
@@ -266,6 +313,7 @@ export function LearnerLiveDelivery({ lessonRunId }: { lessonRunId: string }) {
       },
     ]),
   );
+  const activeCursorRevision = view.value.cursorRevision;
 
   return (
     <LiveFrame
@@ -284,15 +332,47 @@ export function LearnerLiveDelivery({ lessonRunId }: { lessonRunId: string }) {
           aria-label={`Текущий слайд ${view.value.slide.position}`}
         >
           {view.value.slide.components.length > 0 ? (
-            view.value.slide.components.map((component) => (
-              <CourseComponentRenderer
-                key={component.key}
-                component={{ ...component, id: component.key }}
-                assets={assets}
-                mode="student"
-                interaction="presentation"
-              />
-            ))
+            view.value.slide.components.map((component) => {
+              const execution =
+                component.typeKey === "choice_quiz"
+                  ? choiceQuizLearnerExecutionSchema.safeParse(
+                      component.execution,
+                    )
+                  : null;
+              if (execution?.success) {
+                const storedDraft =
+                  choiceQuizDrafts[execution.data.issueRef] ?? null;
+                const draft =
+                  storedDraft &&
+                  !learnerChoiceQuizExecutionAdvancesDraft(
+                    execution.data,
+                    storedDraft,
+                  )
+                    ? storedDraft
+                    : learnerChoiceQuizDraftFromExecution(execution.data);
+                return (
+                  <LearnerChoiceQuiz
+                    key={`${component.key}:${execution.data.issueRef}`}
+                    lessonRunId={lessonRunId}
+                    cursorRevision={activeCursorRevision}
+                    component={component}
+                    execution={execution.data}
+                    draft={draft}
+                    onDraftChange={updateChoiceQuizDraft}
+                    onLiveStateInvalidated={() => forceRefreshRef.current()}
+                  />
+                );
+              }
+              return (
+                <CourseComponentRenderer
+                  key={component.key}
+                  component={{ ...component, id: component.key }}
+                  assets={assets}
+                  mode="student"
+                  interaction="presentation"
+                />
+              );
+            })
           ) : (
             <p className={styles.emptySlide}>
               На выбранном слайде пока нет доступного содержимого.

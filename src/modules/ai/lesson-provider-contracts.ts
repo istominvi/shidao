@@ -11,6 +11,7 @@ const aiLessonProviderBlockKindSchema = z.enum([
   "callout",
   "single_choice_poll",
   "matching_game",
+  "choice_quiz",
 ]);
 
 const aiLessonProviderMatchSchema = z
@@ -37,6 +38,9 @@ export const aiLessonProviderPlanSchema = z
             title: z.string().trim().max(160),
             body: z.string().trim().max(4_000),
             choices: z.array(z.string().trim().min(1).max(500)).max(8),
+            correctChoices: z.array(z.string().trim().min(1).max(500)).max(8),
+            allowMultiple: z.boolean(),
+            explanation: z.string().trim().max(4_000),
             matches: z.array(aiLessonProviderMatchSchema).max(8),
           })
           .strict(),
@@ -190,6 +194,44 @@ export function toCanonicalAiLessonPlan(
                   left,
                   right,
                 })),
+                shuffle: true,
+              },
+            };
+          }
+          case "choice_quiz": {
+            const question = firstContent(block.title, block.body);
+            const choices = uniqueStrings(block.choices);
+            const correctChoices = uniqueStrings(block.correctChoices);
+            const correctChoiceKeys = new Set(
+              correctChoices.map((choice) => choice.toLocaleLowerCase("ru-RU")),
+            );
+            const matchedCorrectChoices = choices.filter((choice) =>
+              correctChoiceKeys.has(choice.toLocaleLowerCase("ru-RU")),
+            );
+            if (
+              !question ||
+              choices.length < 2 ||
+              correctChoices.length < 1 ||
+              matchedCorrectChoices.length !== correctChoices.length ||
+              (!block.allowMultiple && matchedCorrectChoices.length !== 1)
+            ) {
+              return invalidProviderOutput(requestId);
+            }
+            return {
+              typeKey: "choice_quiz",
+              payload: {
+                question,
+                options: choices.map((label) => ({
+                  id: randomUUID(),
+                  label,
+                  isCorrect: correctChoiceKeys.has(
+                    label.toLocaleLowerCase("ru-RU"),
+                  ),
+                })),
+                allowMultiple: block.allowMultiple,
+                ...(block.explanation
+                  ? { explanation: block.explanation }
+                  : {}),
                 shuffle: true,
               },
             };

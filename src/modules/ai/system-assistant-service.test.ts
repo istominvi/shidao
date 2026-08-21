@@ -23,6 +23,7 @@ import type { SystemAssistantProviderTurn } from "./system-assistant-contracts";
 
 const ACTOR: CourseBuilderActor = {
   authUserId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  supabaseSessionId: "99999999-9999-4999-8999-999999999999",
   accessToken: "user-jwt-must-not-reach-provider",
 };
 const ACCOUNT_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -601,6 +602,7 @@ test("provider receives bounded context without technical or Storage secrets", a
   assert.match(serializedMessages, new RegExp(injection));
   for (const secret of [
     ACTOR.authUserId,
+    ACTOR.supabaseSessionId,
     ACTOR.accessToken,
     ACCOUNT_ID,
     COURSE_ID,
@@ -626,8 +628,9 @@ test("system assistant receives the separate safe learning-activity projection",
     actor: ACTOR,
     courseService: state.service,
     learningActivityContextProvider: {
-      async load(actorAuthUserId, courseId) {
+      async load(actorAuthUserId, sessionId, courseId) {
         assert.equal(actorAuthUserId, ACTOR.authUserId);
+        assert.equal(sessionId, ACTOR.supabaseSessionId);
         assert.equal(courseId, COURSE_ID);
         return {
           used: true,

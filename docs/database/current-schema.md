@@ -8,26 +8,48 @@ content-guard correction + U1 unified Text authored data + AV1 Account avatars
 guard + LA-M1 learning activity foundation + LA-M2 Course objectives,
 Component alignment/publication snapshot V2 + LA-M3 correction/evidence/
 objective-state/recommendation contract + LA-M4 explicit Course/Run live
-authority и presentation cursor. CC1, A2 и LA-M1–LA-M4 DB-first contracts
-применены. Current deployed functional application source
-`e09631d2fa00ad1c4b91ad0584392efb748cf235` включает LA-M4; Coolify deployment
-`1007` (`flg9786e15llusgj6kgz7pwk`) прошёл exact-source/image и production guest
-HTTP/API/CSRF/host postflight.
+authority и presentation cursor + LA-M5 durable `choice_quiz`. CC1, A2 и
+LA-M1–LA-M5 DB-first contracts применены. Current deployed functional
+application source `e09631d2fa00ad1c4b91ad0584392efb748cf235` включает LA-M4;
+Coolify deployment `1007` (`flg9786e15llusgj6kgz7pwk`) прошёл
+exact-source/image и production guest HTTP/API/CSRF/host postflight. Dependent
+LA-M5 source/web deployment пока не заявляется. Current running container
+source `df230d185532429b14080d8859438c197f63e66b` из docs-only deployment `1008`
+не меняет functional LA-M4 payload.
 
-**CURRENT production DB/source/web — LA-M4:** forward migration
+**CURRENT deployed source/web authority layer — LA-M4:** forward migration
 `20260821093000_lesson_run_live_delivery.sql` реализует explicit Course
-enrollment, per-Run execution capability и CAS presentation cursor. Она current
-production schema head и обслуживается current deployed application.
+enrollment, per-Run execution capability и CAS presentation cursor. Она
+обслуживает current deployed application; production schema head уже LA-M5.
+
+**CURRENT production DB / NEXT source+web — LA-M5:** forward migration
+`20260821100000_choice_quiz_activity.sql` применена к production с наблюдаемым
+`COMMIT` и отражена в `supabase/schema/current-schema.sql`. Dependent application
+code остаётся в рабочем дереве; его production deployment и authenticated
+production smoke пока не выполнены и не заявляются.
 
 **Production schema head:**
-`20260821093000_lesson_run_live_delivery.sql`,
-exact SHA-256
-`7fb531bc199b8d6a24afeb1e01ff2730c8e5388a0cbbd233e2679d8e7825319c`,
-`2535` строк. Migration применена owner `supabase_admin` к production
-PostgreSQL `15.8` с наблюдаемым `COMMIT` 21 августа 2026 года после read-only
-sanity, production-derived clone rehearsal и verified backup. LA-M3 migration
-`20260820132725_learning_activity_profile_history_skills_recommendations.sql`
-остаётся предыдущим production head.
+`20260821100000_choice_quiz_activity.sql`, exact SHA-256
+`32e860c8d56e299a19c7a5a4d05103df008935ff9814c6d6c206c39f68242d44`,
+`6372` строки. Migration применена к production PostgreSQL `15.8` с наблюдаемым
+`COMMIT` после production-derived rehearsal и read-only identity/schema sanity.
+Verified pre-mutation backup
+`/root/shidao-db-backups/shidao-before-choice-quiz-20260821T153411Z.dump` имеет
+mode `600`, size `1804381`, `1985` restore-list entries и SHA-256
+`bb4dcc56b379f5ef2f105478f426a2e05eb5e17100c08c0656967c3acf855211`;
+он сохранён.
+
+Production apply сохранил canonical tuple `19/6/22/84/2/2/0/0` и publication
+tuple `1/9056` с MD5 `4235054d4453665bfb804b089173b8b6`, увеличив inventory
+`69/248 → 74/275`. Все пять `choice_quiz_*` tables присутствуют, колонка
+`learning_evidence.source_choice_quiz_evaluation_id` присутствует ровно один
+раз, а все проверенные LA/quiz relation counts остались `0`. Пять quiz tables
+имеют RLS, `0` policies, `0` raw grants и exact `10` triggers. PostgREST probes
+вернули anon raw/RPC `401/42501` и service raw `403/42501`; `PGRST202` не
+возникал. Dependent source/web deployment и authenticated production smoke
+пока не заявляются.
+
+**Previous LA-M4 production execution record:**
 
 Production-derived source dump
 `/tmp/shidao-learning-activity-m4-production-source.dump` имеет size `1726769`,
@@ -103,15 +125,16 @@ Admin create/delete probe
 
 **SQL snapshot:**
 [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
-содержит current production-head LA-M4 public contract со strict signature
-`shidao-v2-contract`. Он снят штатным script
-`2026-08-21T07:56:01Z` из production-head PostgreSQL `15.8`; SHA-256 snapshot —
-`15d4a432edf4737c189ab444699b15482c7dbb90b85eab4e1b6043f843b79f52`,
-длина — `31440` строк. Inventory содержит `69` public tables и `248` functions;
-public body SHA-256
-`a40e247a8b72ba61e42d2ec376be870f264df3648dabec3869bc20ccae76be8d`
-побайтово совпадает с clean replayed production-derived clone snapshot.
-Reviewed cross-schema Auth/Storage section сохранён script без изменения.
+содержит current production-head LA-M5 public contract со strict signature
+`shidao-v2-contract`. Он снят штатным script `2026-08-21T15:43:37Z` из
+production-head PostgreSQL `15.8`; SHA-256 snapshot —
+`acd73762c061de56a4ae39ec81c25c0b2ce243d2000f04f877e952e2df67473e`,
+длина — `35466` строк. Inventory содержит `74` public tables и `275` functions;
+normalized public body SHA-256
+`063ca4be6c0f76f9c2b95133763d39acfe932b5de84e64fd8c37942678333b44`
+побайтово совпадает с clean replayed production-derived clone snapshot
+(`PASS`). Reviewed cross-schema Auth/Storage section сохранён script без
+изменения.
 
 ## Read order для DB-задач
 
@@ -121,7 +144,10 @@ Reviewed cross-schema Auth/Storage section сохранён script без изм
    rollout/backfill, compatibility или contract cleanup;
 4. `20260821093000_lesson_run_live_delivery.sql`, если задача касается current
    production LA-M4 contract;
-5. остальные `supabase/migrations/*` только для compatibility, rollback или
+5. `20260821100000_choice_quiz_activity.sql`, если задача касается current
+   production LA-M5 contract, rollout/replay или compatibility; migration file
+   сам по себе не заменяет current snapshot и production execution record;
+6. остальные `supabase/migrations/*` только для compatibility, rollback или
    debugging history.
 
 Политика изменений:
@@ -151,6 +177,7 @@ Reviewed cross-schema Auth/Storage section сохранён script без изм
 | LA-M2A | `20260820085049_learning_objectives_component_alignment.sql`           | applied production: flat Course objectives, Component alignment/activity role и observation objective-at-time provenance                       |
 | LA-M2B | `20260820090529_course_publication_snapshot_v2.sql`                    | applied production: immutable publication V2 objectives/remap при exact V1 compatibility                                                       |
 | LA-M4  | `20260821093000_lesson_run_live_delivery.sql`                          | applied production DB/source/web: explicit Course/Run learner authority, persisted CAS Student Screen cursor и closed safe projections         |
+| LA-M5  | `20260821100000_choice_quiz_activity.sql`                              | **applied production DB; source/web pending:** immutable `choice_quiz` issue/attempt/evaluation/feedback/history/evidence contract             |
 
 M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
 первого deploy и применена только после доказательства, что running и rollback
@@ -918,6 +945,98 @@ boundary.
 LA-M4 не создаёт attempt/response/evaluation tables, Homework persistence,
 second component order, Lesson Step или расширение `LearningRecord`.
 
+### CURRENT production DB / NEXT source+web — LA-M5 `choice_quiz` contract
+
+Exact migration
+`supabase/migrations/20260821100000_choice_quiz_activity.sql` (`6372` строки,
+SHA-256
+`32e860c8d56e299a19c7a5a4d05103df008935ff9814c6d6c206c39f68242d44`)
+применена к production с наблюдаемым `COMMIT` и добавляет пять закрытых
+append-only relations. Dependent application source/web deployment пока не
+выполнен и не заявляется.
+
+| Relation                        | Назначение                                                                                                       |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `choice_quiz_issue`             | immutable issued learner definition, private evaluator/policy-at-time и stable Run/Component context             |
+| `choice_quiz_attempt`           | per-issue numbered Attempt, cursor/idempotency fingerprint, support и frozen zero-hint state                     |
+| `choice_quiz_response`          | selected option IDs и server-resolved selected option text                                                       |
+| `choice_quiz_evaluation`        | binary exact-set result и append-only correction/supersession chain                                              |
+| `choice_quiz_feedback_delivery` | immutable policy envelope сделанных устойчиво доступными correctness/score/reveal/explanation; не client receipt |
+
+Все пять tables включают RLS без browser policies и закрытый raw access.
+Issue/Attempt/Response/Feedback immutable; correction не обновляет Evaluation
+result in place, а добавляет superseding Evaluation с reason и idempotency key.
+Exact CHECK/FK/unique/index/trigger/ACL definitions подтверждены refreshed
+production snapshot и postflight.
+
+Migration также расширяет `learning_evidence` exact-source union:
+добавляет nullable `source_choice_quiz_evaluation_id`, но constraint требует
+ровно один источник — observation либо choice-quiz evaluation. Online evidence
+использует eligibility policy version `2` и отдельные reason codes; observation
+policy v1 остаётся отдельной. Raw selected options, score и evaluator config не
+копируются в `LearningRecord` или compact evidence row. Objective state остаётся
+rebuildable projection.
+
+Supported current SQL boundary:
+
+- internal validation/projection/history helpers закрыты от browser и service
+  direct execution там, где они не являются adapter boundary;
+- service-role application RPC: `issue_choice_quiz_definition_admin` и
+  `submit_choice_quiz_attempt_admin` повторно проверяют trusted learner actor,
+  LA-M4 capabilities, current cursor/source definition и idempotency;
+- teacher actor RPC: `list_choice_quiz_run_history_admin` и
+  `correct_choice_quiz_evaluation_admin` выводят authority из trusted session
+  Account и exact owned Run/evaluation;
+- live resolver выдаёт execution только для current persisted
+  `choice_quiz` с `practice | assessment`; roleless и другие types остаются
+  presentation-only;
+- bounded Course AI projection использует service-only
+  `build_course_learning_activity_context(uuid,uuid,uuid)` с explicit Auth
+  user/exact Supabase session и retained learner → Session → active
+  Account/security → Course/Profile/state locks; rolling two-argument overload
+  существует только как deterministic `42501` stub;
+- erasure/merge/profile projection functions учитывают choice-quiz lineage и
+  exact-source evidence без переноса live authority.
+
+Application locations: `src/modules/choice-quiz/`,
+`src/modules/live-delivery/`, learner submit route
+`src/app/api/v2/me/live-runs/[lessonRunId]/activities/[issueRef]/attempts/`,
+teacher history/correction routes
+`src/app/api/v2/lesson-runs/[lessonRunId]/choice-quiz-history/` и
+`src/app/api/v2/choice-quiz-evaluations/[evaluationId]/corrections/`.
+Schema/application coverage находится в
+`src/modules/learning-activities/schema-contract.test.ts`,
+`src/modules/choice-quiz/*.test.ts`, `src/modules/live-delivery/*.test.ts` и
+`scripts/db-learning-activity-tests.sh` /
+`scripts/db-learning-activity-concurrency-tests.sh`. Эти application files
+находятся в current working tree; production source/web deployment и
+authenticated activity smoke ещё не выполнены и не заявляются.
+
+Measured production DB execution record:
+
+- verified pre-mutation backup
+  `/root/shidao-db-backups/shidao-before-choice-quiz-20260821T153411Z.dump`:
+  mode `600`, size `1804381`, `1985` restore-list entries, SHA-256
+  `bb4dcc56b379f5ef2f105478f426a2e05eb5e17100c08c0656967c3acf855211`;
+- production apply завершился наблюдаемым `COMMIT`; canonical tuple
+  `19/6/22/84/2/2/0/0` и publication tuple `1/9056` / MD5
+  `4235054d4453665bfb804b089173b8b6` не изменились;
+- inventory изменился `69` tables / `248` functions → `74` / `275`; все пять
+  quiz tables и одна `learning_evidence.source_choice_quiz_evaluation_id`
+  column присутствуют, а все проверенные LA/quiz relation counts равны `0`;
+- quiz raw contract: RLS `5`, policies `0`, raw grants `0`, exact triggers `10`;
+- PostgREST anon raw/RPC probes вернули `401/42501`, service raw — `403/42501`;
+  schema-cache error `PGRST202` не возникал;
+- refreshed production snapshot имеет `35466` строк, SHA-256
+  `acd73762c061de56a4ae39ec81c25c0b2ce243d2000f04f877e952e2df67473e`
+  и normalized public body SHA-256
+  `063ca4be6c0f76f9c2b95133763d39acfe932b5de84e64fd8c37942678333b44`;
+  clean replay equality — `PASS`.
+
+Этот record подтверждает CURRENT production DB, но не dependent source/web
+deployment. Authenticated production UI/activity smoke **NOT RUN** и не
+заявляется.
+
 ## Current repository tables
 
 ### Communication Center (current CC1 + A2 database contract)
@@ -1396,6 +1515,7 @@ contacts, exact timestamps, foreign titles и private comments не возвра
 | Account credential/identity/observer/AI tables | none for `anon/authenticated`                                                                                                   | narrow RPC/server adapter                                    |
 | learner-safe self/observer history             | no raw table access                                                                                                             | safe projection RPC                                          |
 | LA-M4 live tables (current production DB)      | none for `anon/authenticated`; RLS enabled, policies absent                                                                     | owner narrow RPC + service-only exact learner resolver       |
+| LA-M5 quiz tables (current production DB)      | none for `anon/authenticated`; RLS enabled, policies absent                                                                     | owner/service narrow RPC; source/web deployment pending      |
 
 E2A устранила прежнюю техническую блокировку owner-scoped
 Course/Component/Slide/File mutations nested helper ACL, не расширив целевую
@@ -1450,14 +1570,17 @@ guard.
 В current production model по-прежнему нет Methodology, Lesson Step/root Step,
 `lesson_run_participant`, operational LessonRun snapshot, persisted Run/Record
 status, Homework persistence, parsing/RAG, generalized learner consumption
-детского Course, learner attempts или mastery percentage. Current production DB
-LA-M4 содержит только узкий teacher-controlled live contract, описанный выше;
-его source/web rollout current. В contract по-прежнему нет generalized child
-Course consumption, attempts/evaluation, Homework или mastery percentage.
+детского Course, generic multi-activity attempt engine или mastery percentage.
+Current deployed source/web остаётся на LA-M4 teacher-controlled live contract;
+его rollout current. Current production DB дополнительно содержит узкий LA-M5
+`choice_quiz` attempt/evaluation contract, но dependent source/web deployment
+ещё не заявляется. В contract по-прежнему нет generalized child Course
+consumption, других online activity engines, Homework или mastery percentage.
 LA-M2 Course objectives/alignment существуют в current production DB/source/web.
 LA-M3 typed evidence/objective state/recommendation contract существует в
-current production DB/source/web. Четыре новые relation были пусты на DB
-postflight; production authenticated no-write smoke не создавал fixtures.
+current production DB/source/web. Проверенные LA-M3/LA-M4/LA-M5 relation counts
+были `0` на DB postflight; authenticated production activity smoke **NOT RUN**
+и не заявляется.
 E2 educator self-learning progress —
 отдельный Account-scoped contract без roster/Run. Observer capability не
 является Parent/Guardian role, а
@@ -1473,7 +1596,7 @@ provider-backed explicit action executor доступны в current application
 stage: `expand` сохраняет полный legacy compatibility contract, `contract`
 требует завершённый M4 cleanup. Current production script дополнительно требует
 полный M1–M3 identity contract, M5/M6 Auth hardening, A1/E1/E2/CC1/A2 и
-LA-M1–LA-M4 database contracts. Contract snapshot сохраняет verified clone
+LA-M1–LA-M5 database contracts. Contract snapshot сохраняет verified clone
 provenance; отдельный production execution record подтверждает exact
 apply/postflight уже применённого production head. Current snapshot снят из
 production-head PostgreSQL `15.8`, а его public body побайтово совпадает с
@@ -1507,6 +1630,9 @@ clean replayed production-derived clone snapshot.
 - LA-M4 closed enrollment/capability/presentation relations, exact trigger set,
   owner/service RPC ACL, session/profile/capability predicates и canonical lock
   order;
+- LA-M5 closed quiz relations, exact-source evidence column, immutable/
+  supersession triggers, owner/service RPC ACL, exact session predicates и
+  fail-closed legacy overloads;
 - сохранность cross-schema Auth/Storage section.
 
 Перед refresh выполнить read-only ShiDao identity/schema sanity check:
@@ -1570,3 +1696,22 @@ canonical tuple `19/6/22/84/2/2/0/0`, LA-M4 rows `0/0/0`, RLS `3`, policies
 session/profile/capability negative boundary прошли. Backup retained и повторно
 verified. Authenticated production UI smoke **NOT RUN** без safe existing
 session/Run и не заявляется.
+
+После LA-M5 production-derived rehearsal, clean replay proof, verified backup и
+production `COMMIT` current snapshot снят `2026-08-21T15:43:37Z`; SHA-256
+`acd73762c061de56a4ae39ec81c25c0b2ce243d2000f04f877e952e2df67473e`,
+`35466` строк, `74` public tables и `275` functions. Normalized public body
+SHA-256
+`063ca4be6c0f76f9c2b95133763d39acfe932b5de84e64fd8c37942678333b44`
+exact совпадает с clean replay (`PASS`). Production postflight сохранил
+canonical tuple `19/6/22/84/2/2/0/0` и publication tuple `1/9056` / MD5
+`4235054d4453665bfb804b089173b8b6`; все проверенные LA/quiz rows — `0`. LA-M5
+contract имеет quiz tables `5`, evidence column `1`, RLS `5`, policies `0`, raw
+grants `0` и exact triggers `10`. PostgREST anon raw/RPC вернул `401/42501`,
+service raw — `403/42501`, без `PGRST202`. Verified backup
+`/root/shidao-db-backups/shidao-before-choice-quiz-20260821T153411Z.dump`
+сохранён с mode `600`, size `1804381`, `1985` restore-list entries и SHA-256
+`bb4dcc56b379f5ef2f105478f426a2e05eb5e17100c08c0656967c3acf855211`.
+Этот execution record подтверждает CURRENT production DB; dependent source/web
+deployment и authenticated production activity smoke пока не выполнены и не
+заявляются.

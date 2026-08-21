@@ -1,7 +1,11 @@
 import { z } from "zod";
 import { postgresUuidSchema } from "@/lib/postgres-uuid";
 import { courseAssetMimeTypeSchema } from "@/modules/course-builder/contracts";
-import { componentTypeKeySchema } from "@/modules/course-builder/registry/contracts";
+import {
+  activityRoleSchema,
+  componentTypeKeySchema,
+} from "@/modules/course-builder/registry/contracts";
+import { choiceQuizLearnerExecutionSchema } from "@/modules/choice-quiz/contracts";
 
 export const LIVE_DELIVERY_LEARNER_LIMIT = 200;
 export const LIVE_DELIVERY_SLIDE_LIMIT = 500;
@@ -180,8 +184,19 @@ export const learnerLiveComponentSchema = z
     position: positivePositionSchema,
     payload: jsonObjectSchema,
     placement: jsonObjectSchema,
+    /** Present only for a persisted practice/assessment choice_quiz issue. */
+    execution: choiceQuizLearnerExecutionSchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((component, context) => {
+    if (component.execution && component.typeKey !== "choice_quiz") {
+      context.addIssue({
+        code: "custom",
+        path: ["execution"],
+        message: "Only choice_quiz may expose an issued execution.",
+      });
+    }
+  });
 
 export type LearnerLiveComponent = z.infer<typeof learnerLiveComponentSchema>;
 
@@ -288,9 +303,14 @@ export const learnerLiveDeliveryResponseSchema = z
 
 const sourceComponentSchema = z
   .object({
+    /** Server-only authority/context fields. They are removed by projection. */
+    id: postgresUuidSchema,
     typeKey: componentTypeKeySchema,
     schemaVersion: z.number().int().positive().max(100_000),
     position: positivePositionSchema,
+    updatedAt: z.iso.datetime({ offset: true }),
+    primaryLearningObjectiveId: postgresUuidSchema.nullable(),
+    activityRole: activityRoleSchema.nullable(),
     payload: z.unknown(),
     placement: z.unknown(),
   })

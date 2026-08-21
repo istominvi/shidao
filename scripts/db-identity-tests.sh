@@ -96,9 +96,12 @@ select pg_temp.assert_true(
 select pg_temp.assert_true(
   not has_function_privilege(
     'authenticated',
-    'public.confirm_my_learning_data_erasure(uuid,text)',
+    'public.confirm_my_learning_data_erasure(uuid,uuid,text)',
     'EXECUTE'
-  ),
+  )
+  and to_regprocedure(
+    'public.confirm_my_learning_data_erasure(uuid,text)'
+  ) is null,
   'erasure confirm is browser executable'
 );
 select pg_temp.assert_true(
@@ -235,6 +238,14 @@ insert into auth.users (
   ('f1000000-0000-0000-0000-000000000002', 'subject@test.invalid', now(), '{"full_name":"Subject"}', '{}'),
   ('f1000000-0000-0000-0000-000000000003', 'observer@test.invalid', now(), '{"full_name":"Observer"}', '{}'),
   ('f1000000-0000-0000-0000-000000000004', 'outsider@test.invalid', now(), '{"full_name":"Outsider"}', '{}');
+
+insert into auth.sessions (
+  id, user_id, created_at, updated_at, not_after
+) values (
+  'f1100000-0000-4000-8000-000000000002',
+  'f1000000-0000-0000-0000-000000000002',
+  clock_timestamp(), clock_timestamp(), null
+);
 
 select pg_temp.assert_true(
   not exists (
@@ -1410,6 +1421,123 @@ select pg_temp.assert_true(
   'restore silently recreated teacher audience links'
 );
 
+-- The service-only confirm boundary is bound to the exact Supabase session,
+-- not just an app-supplied actor UUID. Use an isolated Account with no Course
+-- authority so cutoff/deactivation coverage cannot perturb the erasure matrix.
+insert into auth.users (
+  id, email, email_confirmed_at, raw_user_meta_data, raw_app_meta_data
+) values (
+  'f1000000-0000-0000-0000-000000000006',
+  'erasure-session-boundary@test.invalid',
+  now(),
+  '{"full_name":"Erasure Session Boundary"}',
+  '{}'
+);
+insert into auth.sessions (
+  id, user_id, created_at, updated_at, not_after
+) values (
+  'f1100000-0000-4000-8000-000000000006',
+  'f1000000-0000-0000-0000-000000000006',
+  clock_timestamp(), clock_timestamp(), null
+);
+select set_config(
+  'request.jwt.claim.sub',
+  'f1000000-0000-0000-0000-000000000006',
+  true
+);
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object(
+    'sub', 'f1000000-0000-0000-0000-000000000006',
+    'session_id', 'f1100000-0000-4000-8000-000000000006',
+    'role', 'authenticated'
+  )::text,
+  true
+);
+select public.preview_my_learning_data_erasure();
+
+update public.account_security as security
+set sessions_invalid_before = (
+  select session.created_at + interval '1 microsecond'
+  from auth.sessions as session
+  where session.id = 'f1100000-0000-4000-8000-000000000006'
+)
+where security.account_id = public.account_id_for_auth_user(
+  'f1000000-0000-0000-0000-000000000006'
+);
+do $cutoff$
+begin
+  begin
+    perform public.confirm_my_learning_data_erasure(
+      'f1000000-0000-0000-0000-000000000006',
+      'f1100000-0000-4000-8000-000000000006',
+      (
+        select encode(request.preview_fingerprint, 'hex')
+        from public.learner_erasure_request as request
+        where request.account_id = public.account_id_for_auth_user(
+          'f1000000-0000-0000-0000-000000000006'
+        )
+          and request.consumed_at is null
+        order by request.created_at desc
+        limit 1
+      )
+    );
+    raise exception 'cut-off session erased learning data';
+  exception when sqlstate '42501' then
+    if sqlerrm <> 'learning_data_erasure_session_revoked' then
+      raise;
+    end if;
+  end;
+  begin
+    perform public.preview_my_learning_data_erasure();
+    raise exception 'cut-off session created erasure preview';
+  exception when sqlstate 'P0002' then
+    if sqlerrm <> 'learner_profile_not_found' then
+      raise;
+    end if;
+  end;
+end
+$cutoff$;
+update public.account_security
+set sessions_invalid_before = null
+where account_id = public.account_id_for_auth_user(
+  'f1000000-0000-0000-0000-000000000006'
+);
+
+update public.account
+set status = 'suspended'
+where auth_user_id = 'f1000000-0000-0000-0000-000000000006';
+do $deactivated$
+begin
+  begin
+    perform public.confirm_my_learning_data_erasure(
+      'f1000000-0000-0000-0000-000000000006',
+      'f1100000-0000-4000-8000-000000000006',
+      (
+        select encode(request.preview_fingerprint, 'hex')
+        from public.learner_erasure_request as request
+        where request.account_id = public.account_id_for_auth_user(
+          'f1000000-0000-0000-0000-000000000006'
+        )
+          and request.consumed_at is null
+        order by request.created_at desc
+        limit 1
+      )
+    );
+    raise exception 'deactivated Account erased learning data';
+  exception when sqlstate 'P0002' then
+    -- account_id_for_auth_user intentionally hides suspended identities before
+    -- the confirmation boundary can inspect the retained preview request.
+    if sqlerrm <> 'learning_data_erasure_not_found' then
+      raise;
+    end if;
+  end;
+end
+$deactivated$;
+update public.account
+set status = 'active'
+where auth_user_id = 'f1000000-0000-0000-0000-000000000006';
+
 -- Erasure spans merged lineage, leaves no alias backdoor, creates exactly one
 -- fresh profile, and does not delete records merely authored by the Account for
 -- another learner.
@@ -1432,7 +1560,20 @@ join public.learner_profile as child_profile on child_profile.account_id = child
 where recorder.auth_user_id = 'f1000000-0000-0000-0000-000000000002'
   and child.auth_user_id = 'f1000000-0000-0000-0000-000000000005';
 
-select set_config('request.jwt.claim.sub', 'f1000000-0000-0000-0000-000000000002', true);
+select set_config(
+  'request.jwt.claim.sub',
+  'f1000000-0000-0000-0000-000000000002',
+  true
+);
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object(
+    'sub', 'f1000000-0000-0000-0000-000000000002',
+    'session_id', 'f1100000-0000-4000-8000-000000000002',
+    'role', 'authenticated'
+  )::text,
+  true
+);
 select public.preview_my_learning_data_erasure() as stale_erase_preview \gset stale_erase_
 insert into public.learner_profile_share_code (
   learner_profile_id, code_digest, expires_at
@@ -1446,6 +1587,7 @@ begin
   begin
     perform public.confirm_my_learning_data_erasure(
       'f1000000-0000-0000-0000-000000000002',
+      'f1100000-0000-4000-8000-000000000002',
       (select encode(request.preview_fingerprint, 'hex')
        from public.learner_erasure_request as request
        where request.account_id = public.account_id_for_auth_user(
@@ -1461,6 +1603,7 @@ $$;
 select public.preview_my_learning_data_erasure() as erase_preview \gset erase_
 select public.confirm_my_learning_data_erasure(
   'f1000000-0000-0000-0000-000000000002',
+  'f1100000-0000-4000-8000-000000000002',
   :'erase_erase_preview'::jsonb ->> 'previewFingerprint'
 );
 select pg_temp.assert_true(

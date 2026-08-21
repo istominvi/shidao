@@ -5,7 +5,9 @@ export function currentEvidenceByObservation(
 ): Map<string, LearningEvidence[]> {
   const grouped = new Map<string, LearningEvidence[]>();
   for (const item of evidence) {
-    if (item.supersededByEvidenceId) continue;
+    if (item.sourceKind !== "observation" || item.supersededByEvidenceId) {
+      continue;
+    }
     const current = grouped.get(item.sourceObservationId) ?? [];
     current.push(item);
     grouped.set(item.sourceObservationId, current);

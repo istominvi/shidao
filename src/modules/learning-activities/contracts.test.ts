@@ -473,13 +473,15 @@ test("learner-safe profile is strict, bounded and contains only opaque reference
   );
 });
 
-test("typed LearningEvidence rejects inconsistent support and private/evaluator payloads", () => {
+test("typed observation LearningEvidence preserves v1 and rejects private payloads", () => {
   const value = {
     id: uuid(1),
     learnerProfileId: uuid(2),
     recordedByAccountId: uuid(3),
     learningRecordId: uuid(4),
+    sourceKind: "observation",
     sourceObservationId: uuid(5),
+    sourceChoiceQuizEvaluationId: null,
     sourceCourseIdAtTime: uuid(6),
     sourceLessonIdAtTime: uuid(7),
     sourceLessonRunIdAtTime: uuid(8),
@@ -520,5 +522,76 @@ test("typed LearningEvidence rejects inconsistent support and private/evaluator 
     learningEvidenceSchema.safeParse({ ...value, evaluatorPayload: {} })
       .success,
     false,
+  );
+});
+
+test("typed choice-quiz LearningEvidence requires exactly one v2 source", () => {
+  const value = {
+    id: uuid(21),
+    learnerProfileId: uuid(22),
+    recordedByAccountId: uuid(23),
+    learningRecordId: null,
+    sourceKind: "choice_quiz_evaluation",
+    sourceObservationId: null,
+    sourceChoiceQuizEvaluationId: uuid(25),
+    sourceCourseIdAtTime: uuid(26),
+    sourceLessonIdAtTime: uuid(27),
+    sourceLessonRunIdAtTime: uuid(28),
+    sourceComponentIdAtTime: uuid(29),
+    sourceLearningObjectiveIdAtTime: uuid(30),
+    lessonComponentId: uuid(29),
+    learningObjectiveId: uuid(30),
+    courseTitleAtTime: "Китайский с нуля",
+    lessonTitleAtTime: "Знакомство",
+    subjectAtTime: "Китайский язык",
+    componentTypeAtTime: "choice_quiz",
+    componentLabelAtTime: "Выберите правильный перевод",
+    objectiveTitleAtTime: "Различает значения слов",
+    criterionAtTime: "Выбирает точный перевод",
+    direction: "positive",
+    support: "independent",
+    observedAt: "2026-08-21T00:00:00.000Z",
+    finalizedAt: "2026-08-21T00:00:00.000Z",
+    materializedAt: "2026-08-21T00:00:00.000Z",
+    evidenceVersion: 1,
+    eligibilityPolicyVersion: 2,
+    reasonCode: "choice_quiz_independent_positive_evidence",
+    supersedesEvidenceId: null,
+    supersededByEvidenceId: null,
+  };
+
+  assert.equal(learningEvidenceSchema.safeParse(value).success, true);
+  for (const invalid of [
+    { ...value, learningRecordId: uuid(24) },
+    { ...value, sourceObservationId: uuid(31) },
+    {
+      ...value,
+      sourceKind: "observation",
+      sourceObservationId: uuid(31),
+    },
+    { ...value, sourceChoiceQuizEvaluationId: null },
+    { ...value, eligibilityPolicyVersion: 1 },
+    { ...value, reasonCode: "independent_positive_evidence" },
+    { ...value, support: "with_support" },
+  ]) {
+    assert.equal(learningEvidenceSchema.safeParse(invalid).success, false);
+  }
+
+  assert.equal(
+    learningEvidenceSchema.safeParse({
+      ...value,
+      support: "with_support",
+      reasonCode: "choice_quiz_supported_positive_evidence",
+    }).success,
+    true,
+  );
+  assert.equal(
+    learningEvidenceSchema.safeParse({
+      ...value,
+      direction: "negative",
+      support: null,
+      reasonCode: "choice_quiz_not_yet_negative_evidence",
+    }).success,
+    true,
   );
 });

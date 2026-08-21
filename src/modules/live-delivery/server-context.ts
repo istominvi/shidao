@@ -2,11 +2,17 @@ import { NextResponse } from "next/server";
 import { clearAppSession } from "@/lib/server/app-session";
 import { getActiveCourseBuilderContext } from "@/modules/course-builder/server-context";
 import {
+  decodeTrustedSupabaseSessionClaims,
   isSupabaseUserReauthenticationRequiredError,
   requireSupabaseUserSession,
   SupabaseUserReauthenticationRequiredError,
 } from "@/lib/server/supabase-user-session";
-import { postgresUuidSchema } from "@/lib/postgres-uuid";
+import {
+  ChoiceQuizProjectionError,
+  ChoiceQuizRepositoryError,
+} from "@/modules/choice-quiz/errors";
+import { createChoiceQuizLearnerRepository } from "@/modules/choice-quiz/repository";
+import { createChoiceQuizService } from "@/modules/choice-quiz/service";
 import { LiveDeliveryValidationError } from "./contracts";
 import type { LearnerLiveActor } from "./domain";
 import {
@@ -22,37 +28,7 @@ import {
 import { createLiveDeliveryService } from "./service";
 import type { LearnerLiveAssetDelivery } from "./service";
 
-type TrustedSupabaseSessionClaims = {
-  authUserId: string;
-  sessionId: string;
-};
-
-/**
- * Decodes only identity hints from the access JWT kept in the encrypted app
- * cookie. Authority is established later by the service-role-only resolver,
- * which checks both values against auth.sessions and the canonical Account.
- */
-export function decodeTrustedSupabaseSessionClaims(
-  accessToken: string,
-): TrustedSupabaseSessionClaims | null {
-  const payloadSegment = accessToken.split(".")[1];
-  if (!payloadSegment) return null;
-  try {
-    const payload = JSON.parse(
-      Buffer.from(payloadSegment, "base64url").toString("utf8"),
-    ) as unknown;
-    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-      return null;
-    }
-    const candidate = payload as Record<string, unknown>;
-    const authUserId = postgresUuidSchema.safeParse(candidate.sub);
-    const sessionId = postgresUuidSchema.safeParse(candidate.session_id);
-    if (!authUserId.success || !sessionId.success) return null;
-    return { authUserId: authUserId.data, sessionId: sessionId.data };
-  } catch {
-    return null;
-  }
-}
+export { decodeTrustedSupabaseSessionClaims };
 
 export async function getTeacherLiveDeliveryContext() {
   const { actor } = await getActiveCourseBuilderContext();
@@ -63,7 +39,7 @@ export async function getTeacherLiveDeliveryContext() {
   };
 }
 
-export async function getLearnerLiveDeliveryContext() {
+export async function getLearnerLiveActor() {
   const { accessToken, session } = await requireSupabaseUserSession();
   const claims = decodeTrustedSupabaseSessionClaims(accessToken);
   if (!claims || claims.authUserId !== session.uid) {
@@ -73,10 +49,18 @@ export async function getLearnerLiveDeliveryContext() {
     authUserId: session.uid,
     supabaseSessionId: claims.sessionId,
   };
+  return actor;
+}
+
+export async function getLearnerLiveDeliveryContext() {
+  const actor = await getLearnerLiveActor();
   return {
     actor,
     service: createLiveDeliveryService({
       learnerRepository: createLearnerLiveDeliveryRepository(),
+      choiceQuizService: createChoiceQuizService({
+        learnerRepository: createChoiceQuizLearnerRepository(),
+      }),
     }),
   };
 }
@@ -161,7 +145,8 @@ export async function liveDeliveryAssetError(error: unknown) {
 export async function liveDeliveryApiError(error: unknown) {
   if (
     isSupabaseUserReauthenticationRequiredError(error) ||
-    (error instanceof LiveDeliveryRepositoryError && error.status === 401)
+    (error instanceof LiveDeliveryRepositoryError && error.status === 401) ||
+    (error instanceof ChoiceQuizRepositoryError && error.status === 401)
   ) {
     await clearAppSession();
     return liveDeliveryJson(
@@ -233,7 +218,30 @@ export async function liveDeliveryApiError(error: unknown) {
       );
     }
   }
-  if (error instanceof LiveDeliveryProjectionError) {
+  if (error instanceof ChoiceQuizRepositoryError) {
+    if (error.status === 404) {
+      return liveDeliveryJson(
+        {
+          error: "Live-занятие не найдено или недоступно.",
+          code: "live_delivery_not_found",
+        },
+        { status: 404 },
+      );
+    }
+    if (error.status === 409) {
+      return liveDeliveryJson(
+        {
+          error: "Live-вопрос уже изменился. Обновите состояние.",
+          code: "live_delivery_cursor_conflict",
+        },
+        { status: 409 },
+      );
+    }
+  }
+  if (
+    error instanceof LiveDeliveryProjectionError ||
+    error instanceof ChoiceQuizProjectionError
+  ) {
     return liveDeliveryJson(
       {
         error: "Live-слайд временно недоступен.",

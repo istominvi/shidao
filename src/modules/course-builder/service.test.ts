@@ -51,10 +51,12 @@ const BOB_ACCOUNT_ID = uuid(102);
 
 const alice: CourseBuilderActor = {
   authUserId: ALICE_USER_ID,
+  supabaseSessionId: uuid(11),
   accessToken: "alice-access-token",
 };
 const bob: CourseBuilderActor = {
   authUserId: BOB_USER_ID,
+  supabaseSessionId: uuid(12),
   accessToken: "bob-access-token",
 };
 
@@ -623,7 +625,11 @@ test("create/get enforce Account ownership and preserve normalized Course data",
   await assert.rejects(
     () =>
       harness.service.createDraft(
-        { authUserId: UNKNOWN_USER_ID, accessToken: "unknown" },
+        {
+          authUserId: UNKNOWN_USER_ID,
+          supabaseSessionId: uuid(13),
+          accessToken: "unknown",
+        },
         courseInput(),
       ),
     (error: unknown) =>

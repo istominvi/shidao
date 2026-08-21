@@ -19,6 +19,7 @@ import type { AiLessonPlan } from "./course-builder-contracts";
 
 const ACTOR: CourseBuilderActor = {
   authUserId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  supabaseSessionId: "99999999-9999-4999-8999-999999999999",
   accessToken: "test-user-token",
 };
 const COURSE_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -231,6 +232,9 @@ const LESSON_PROVIDER_PLAN = {
       title: "Приветствие",
       body: "Разберите короткий диалог знакомства.",
       choices: [],
+      correctChoices: [],
+      allowMultiple: false,
+      explanation: "",
       matches: [],
     },
     {
@@ -238,6 +242,9 @@ const LESSON_PROVIDER_PLAN = {
       title: "Подсказка",
       body: "Сначала произнесите фразу медленно.",
       choices: [],
+      correctChoices: [],
+      allowMultiple: false,
+      explanation: "",
       matches: [],
     },
     {
@@ -245,6 +252,9 @@ const LESSON_PROVIDER_PLAN = {
       title: "",
       body: "Потренируйтесь представляться в парах.",
       choices: [],
+      correctChoices: [],
+      allowMultiple: false,
+      explanation: "",
       matches: [],
     },
   ],
@@ -486,7 +496,10 @@ test("lesson apply is stale when the bounded learning-activity revision changes"
   });
   let revision = "c".repeat(64);
   const learningActivityContextProvider = {
-    async load() {
+    async load(actorAuthUserId: string, sessionId: string, courseId: string) {
+      assert.equal(actorAuthUserId, ACTOR.authUserId);
+      assert.equal(sessionId, ACTOR.supabaseSessionId);
+      assert.equal(courseId, COURSE_ID);
       return {
         used: true,
         revision,
@@ -565,6 +578,7 @@ test("lesson planning degrades to a fingerprinted empty activity projection", as
   assert.match(providerInput, /learningActivityProfile/);
   assert.equal(providerInput.includes("0".repeat(64)), true);
   assert.equal(providerInput.includes('\\"used\\":false'), true);
+  assert.equal(providerInput.includes(ACTOR.supabaseSessionId), false);
 });
 
 test("teacher-facing AI output cannot quote a shared learner comment", async () => {
@@ -846,6 +860,10 @@ test("AI Course Builder is an adapter over the application service only", () => 
   );
   assert.match(source, /CourseBuilderApplicationService/);
   assert.match(source, /service\.addComponent\(/);
+  assert.match(source, /actor\.supabaseSessionId/);
   assert.doesNotMatch(source, /from ["'][^"']*repository["']/);
-  assert.doesNotMatch(source, /supabase|postgres|fetch\(/i);
+  assert.doesNotMatch(
+    source,
+    /from ["'][^"']*(?:supabase|postgres)|createClient\(|fetch\(/i,
+  );
 });

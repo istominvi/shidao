@@ -453,6 +453,13 @@ insert into auth.users (
 ) values
   ('d1000000-0000-0000-0000-000000000040','erase-subject@test.invalid',now(),'{"full_name":"Erase Subject"}','{}'),
   ('d1000000-0000-0000-0000-000000000041','erase-observer@test.invalid',now(),'{"full_name":"Erase Observer"}','{}');
+insert into auth.sessions (
+  id, user_id, created_at, updated_at, not_after
+) values (
+  'd1100000-0000-4000-8000-000000000040',
+  'd1000000-0000-0000-0000-000000000040',
+  clock_timestamp(), clock_timestamp(), null
+);
 insert into public.learner_observer_grant (
   id, learner_profile_id, subject_account_id, observer_account_id,
   relationship_label
@@ -475,8 +482,13 @@ erasure_old_profile="$("${psql_base[@]}" -c "
 erasure_fingerprint="$("${psql_base[@]}" -c "
   with configured as materialized (
     select set_config(
-      'request.jwt.claim.sub',
-      'd1000000-0000-0000-0000-000000000040', false
+      'request.jwt.claims',
+      jsonb_build_object(
+        'sub', 'd1000000-0000-0000-0000-000000000040',
+        'session_id', 'd1100000-0000-4000-8000-000000000040',
+        'role', 'authenticated'
+      )::text,
+      false
     )
   )
   select public.preview_my_learning_data_erasure()
@@ -529,7 +541,9 @@ fi
   begin;
   set local application_name = 'identity_erasure_confirm_race';
   select public.confirm_my_learning_data_erasure(
-    'd1000000-0000-0000-0000-000000000040', '$erasure_fingerprint'
+    'd1000000-0000-0000-0000-000000000040',
+    'd1100000-0000-4000-8000-000000000040',
+    '$erasure_fingerprint'
   );
   commit;
 " >"$task_tmp_dir/b.out" 2>&1 &

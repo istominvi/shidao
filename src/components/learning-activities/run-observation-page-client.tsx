@@ -19,6 +19,7 @@ import {
   RunObservationWorkspace,
   type RunObservationWorkspaceHandle,
 } from "./run-observation-workspace";
+import { RunChoiceQuizHistoryPanel } from "./run-choice-quiz-history-panel";
 import { RunLiveDeliveryPanel } from "./run-live-delivery-panel";
 import styles from "./run-observation-workspace.module.css";
 
@@ -200,6 +201,8 @@ export function RunObservationPageClient({
         key={`${lessonRunId}:${workspace.run.updatedAt}`}
         lessonRunId={lessonRunId}
       />
+
+      <RunChoiceQuizHistoryPanel lessonRunId={lessonRunId} />
 
       <RunObservationWorkspace
         ref={workspaceRef}

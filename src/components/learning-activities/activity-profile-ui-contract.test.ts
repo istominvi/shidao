@@ -149,7 +149,7 @@ test("teacher Course, Lesson and Learner histories consume durable evidence", ()
   );
   assert.match(
     evidenceHistoryFormat,
-    /if \(item\.supersededByEvidenceId\) continue/,
+    /item\.sourceKind !== "observation" \|\| item\.supersededByEvidenceId/,
   );
   assert.match(evidenceHistoryFormat, /item\.sourceObservationId/);
 });

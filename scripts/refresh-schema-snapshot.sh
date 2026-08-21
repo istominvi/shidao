@@ -11,7 +11,7 @@ set -euo pipefail
 # The signature accepts exactly two learner-identity compatibility stages. Both
 # must contain every learner-identity M1-M3 object/invariant plus the M5/M6
 # Auth hardening. The generated snapshot must also contain the current
-# Learning Activity System schema through LA-M4. The expand stage requires the
+# Learning Activity System schema through LA-M5. The expand stage requires the
 # complete, known legacy compatibility contract; the final stage requires the
 # complete M4 helper/type/ACL cleanup. A partial stage is rejected.
 
@@ -47,7 +47,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
     --no-align \
     --set=ON_ERROR_STOP=1 \
     "${DATABASE_URL}" \
-    --command="
+    --file=/dev/stdin <<'SQL'
       with legacy_helper(signature) as (
         select unnest(array[
           'public.can_read_class(uuid)',
@@ -254,6 +254,293 @@ SHIDAO_SCHEMA_SIGNATURE="$({
             array['status']::text[],
             true
           )
+      ), choice_quiz_table(table_name) as (
+        values
+          ('choice_quiz_issue'),
+          ('choice_quiz_attempt'),
+          ('choice_quiz_response'),
+          ('choice_quiz_evaluation'),
+          ('choice_quiz_feedback_delivery')
+      ), choice_quiz_service_rpc(signature) as (
+        values
+          ('public.issue_choice_quiz_definition_admin(uuid,uuid,uuid,uuid,bigint,timestamp with time zone,jsonb,jsonb)'),
+          ('public.submit_choice_quiz_attempt_admin(uuid,uuid,uuid,text,bigint,uuid,uuid[])'),
+          ('public.correct_choice_quiz_evaluation_admin(uuid,uuid,uuid,boolean,text,uuid)'),
+          ('public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)'),
+          ('public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)')
+      ), choice_quiz_teacher_rpc(signature) as (
+        values
+          ('public.get_my_learning_activity_profile()'),
+          ('public.get_observed_learner_activity_profile(uuid)'),
+          ('public.get_teacher_learner_activity_profile(uuid)'),
+          ('public.get_teacher_learner_activity_profile_v2(uuid)'),
+          ('public.current_active_session_account_id()')
+      ), choice_quiz_internal_helper(signature) as (
+        values
+          ('public.choice_quiz_learner_definition_is_valid(jsonb)'),
+          ('public.choice_quiz_evaluator_config_is_valid(jsonb,jsonb)'),
+          ('public.guard_choice_quiz_issue_immutable()'),
+          ('public.guard_choice_quiz_attempt_immutable()'),
+          ('public.guard_choice_quiz_strictly_immutable()'),
+          ('public.guard_choice_quiz_evaluation_immutable()'),
+          ('public.assert_choice_quiz_evaluation_supersession_chain()'),
+          ('public.choice_quiz_projection_matches_payload(jsonb,jsonb,jsonb)'),
+          ('public.choice_quiz_execution_payload_at_attempt(uuid,integer)'),
+          ('public.choice_quiz_execution_payload(uuid)'),
+          ('public.choice_quiz_history_item(uuid)'),
+          ('public.detach_choice_quiz_history_from_learning_records(uuid[])'),
+          ('public.delete_draft_learning_records_for_lesson_run()'),
+          ('public.guard_learning_record_choice_quiz_presence()'),
+          ('public.transfer_detached_choice_quiz_history_on_profile_merge()'),
+          ('public.guard_choice_quiz_profile_unlink()'),
+          ('public.guard_learning_evidence_immutable()'),
+          ('public.rebuild_learner_objective_state_for_actor(uuid,uuid,uuid,timestamp with time zone)'),
+          ('public.learning_activity_scope_fingerprint(uuid[])'),
+          ('public.execute_learner_profile_merge_for_actor(uuid,uuid,text)'),
+          ('public.lock_current_account_session_authority(uuid)'),
+          ('public.learner_erasure_state_for_actor(uuid,uuid)'),
+          ('public.learner_safe_unlink_preview_for_actor(uuid)'),
+          ('public.teacher_learning_activity_legacy_observation_state(uuid,uuid,uuid,timestamp with time zone,jsonb)'),
+          ('public.teacher_learning_activity_legacy_override_token_is_valid(uuid,uuid,uuid,timestamp with time zone,timestamp with time zone)'),
+          ('public.teacher_learning_activity_profile_projection(uuid,uuid,timestamp with time zone)'),
+          ('public.teacher_learning_activity_profile_projection_v2(uuid,uuid,timestamp with time zone)')
+      ), choice_quiz_function(signature) as (
+        select signature from choice_quiz_service_rpc
+        union all
+        select signature from choice_quiz_teacher_rpc
+        union all
+        select signature from choice_quiz_internal_helper
+      ), choice_quiz_trigger(
+        table_name,
+        trigger_name,
+        function_signature,
+        trigger_type,
+        column_names,
+        is_constraint,
+        is_deferrable,
+        is_initially_deferred
+      ) as (
+        values
+          (
+            'choice_quiz_issue',
+            'trg_choice_quiz_issue_immutable',
+            'public.guard_choice_quiz_issue_immutable()',
+            27::smallint,
+            array[]::text[],
+            false,
+            false,
+            false
+          ),
+          (
+            'choice_quiz_attempt',
+            'trg_choice_quiz_attempt_immutable',
+            'public.guard_choice_quiz_attempt_immutable()',
+            27::smallint,
+            array[]::text[],
+            false,
+            false,
+            false
+          ),
+          (
+            'choice_quiz_response',
+            'trg_choice_quiz_response_immutable',
+            'public.guard_choice_quiz_strictly_immutable()',
+            27::smallint,
+            array[]::text[],
+            false,
+            false,
+            false
+          ),
+          (
+            'choice_quiz_evaluation',
+            'trg_choice_quiz_evaluation_immutable',
+            'public.guard_choice_quiz_evaluation_immutable()',
+            27::smallint,
+            array[]::text[],
+            false,
+            false,
+            false
+          ),
+          (
+            'choice_quiz_feedback_delivery',
+            'trg_choice_quiz_feedback_immutable',
+            'public.guard_choice_quiz_strictly_immutable()',
+            27::smallint,
+            array[]::text[],
+            false,
+            false,
+            false
+          ),
+          (
+            'choice_quiz_evaluation',
+            'trg_choice_quiz_evaluation_supersession_chain',
+            'public.assert_choice_quiz_evaluation_supersession_chain()',
+            21::smallint,
+            array[
+              'attempt_id',
+              'issue_id',
+              'superseded_by_evaluation_id',
+              'supersedes_evaluation_id'
+            ]::text[],
+            true,
+            true,
+            true
+          ),
+          (
+            'learning_record',
+            'trg_learning_record_choice_quiz_presence',
+            'public.guard_learning_record_choice_quiz_presence()',
+            23::smallint,
+            array[
+              'learner_profile_id',
+              'lesson_run_id',
+              'occurred_at',
+              'source_lesson_run_id_at_time',
+              'was_present'
+            ]::text[],
+            false,
+            false,
+            false
+          ),
+          (
+            'learner_profile',
+            'trg_learner_profile_transfer_detached_choice_quiz',
+            'public.transfer_detached_choice_quiz_history_on_profile_merge()',
+            11::smallint,
+            array[]::text[],
+            false,
+            false,
+            false
+          ),
+          (
+            'learner_profile',
+            'trg_learner_profile_choice_quiz_unlink_guard',
+            'public.guard_choice_quiz_profile_unlink()',
+            19::smallint,
+            array['account_id']::text[],
+            false,
+            false,
+            false
+          ),
+          (
+            'learner_profile',
+            'trg_learner_profile_choice_quiz_delete_guard',
+            'public.guard_choice_quiz_profile_unlink()',
+            11::smallint,
+            array[]::text[],
+            false,
+            false,
+            false
+          )
+      ), choice_quiz_function_marker(signature, marker) as (
+        values
+          ('public.choice_quiz_learner_definition_is_valid(jsonb)', 'count(distinct lower(option.value ->> ''id''))'),
+          ('public.choice_quiz_evaluator_config_is_valid(jsonb,jsonb)', 'count(distinct lower(answer.value #>> ''{}''))'),
+          ('public.choice_quiz_projection_matches_payload(jsonb,jsonb,jsonb)', 'lower(authored.value ->> ''id'')'),
+          ('public.choice_quiz_projection_matches_payload(jsonb,jsonb,jsonb)', 'lower(delivered.value ->> ''id'')'),
+          ('public.choice_quiz_projection_matches_payload(jsonb,jsonb,jsonb)', 'lower(answer.value #>> ''{}'')'),
+          ('public.submit_choice_quiz_attempt_admin(uuid,uuid,uuid,text,bigint,uuid,uuid[])', 'order by (answer.value #>> ''{}'')::uuid'),
+          ('public.submit_choice_quiz_attempt_admin(uuid,uuid,uuid,text,bigint,uuid,uuid[])', 'choice_quiz_execution_payload_at_attempt'),
+          ('public.choice_quiz_execution_payload_at_attempt(uuid,integer)', 'attempt.attempt_number = p_attempt_count'),
+          ('public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)', '''primaryLearningObjectiveId'''),
+          ('public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)', 'component.primary_learning_objective_id'),
+          ('public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)', '''activityRole'''),
+          ('public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)', 'component.activity_role'),
+          ('public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)', '''updatedAt'''),
+          ('public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)', 'component.updated_at'),
+          ('public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)', 'lock_learning_activity_learners'),
+          ('public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)', 'resolve_lesson_run_live_source_choice_quiz_admin'),
+          ('public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)', 'component.value - array'),
+          ('public.cancel_lesson_run(uuid,timestamp with time zone)', 'lock_current_account_session_authority'),
+          ('public.cancel_lesson_run(uuid,timestamp with time zone)', 'detach_choice_quiz_history_from_learning_records'),
+          ('public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)', 'auth.sessions'),
+          ('public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)', 'security.sessions_invalid_before'),
+          ('public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)', 'lock_learning_activity_learners'),
+          ('public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)', 'from public.learning_record as record'),
+          ('public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)', 'choice_quiz_history_stale'),
+          ('public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)', 'limit 5001'),
+          ('public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)', 'evaluation.evaluated_at desc'),
+          ('public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)', '''truncated'''),
+          ('public.correct_choice_quiz_evaluation_admin(uuid,uuid,uuid,boolean,text,uuid)', 'auth.sessions'),
+          ('public.correct_choice_quiz_evaluation_admin(uuid,uuid,uuid,boolean,text,uuid)', 'security.sessions_invalid_before'),
+          ('public.correct_choice_quiz_evaluation_admin(uuid,uuid,uuid,boolean,text,uuid)', 'course.owner_account_id = v_actor_account_id'),
+          ('public.correct_choice_quiz_evaluation_admin(uuid,uuid,uuid,boolean,text,uuid)', 'for share of course'),
+          ('public.detach_choice_quiz_history_from_learning_records(uuid[])', 'app.choice_quiz_record_detach'),
+          ('public.detach_choice_quiz_history_from_learning_records(uuid[])', 'lesson_component_id = null'),
+          ('public.delete_draft_learning_records_for_lesson_run()', 'detach_choice_quiz_history_from_learning_records'),
+          ('public.delete_lesson_component(uuid)', 'lock_current_account_session_authority'),
+          ('public.delete_lesson_component(uuid)', 'for update of course'),
+          ('public.delete_lesson_component(uuid)', 'for update of evidence'),
+          ('public.delete_lesson_component(uuid)', 'for update of issue'),
+          ('public.delete_lesson_with_history(uuid)', 'lock_current_account_session_authority'),
+          ('public.delete_lesson_with_history(uuid)', 'for update of course'),
+          ('public.delete_lesson_with_history(uuid)', 'for update of evidence'),
+          ('public.delete_lesson_with_history(uuid)', 'for update of issue'),
+          ('public.guard_learning_record_choice_quiz_presence()', 'learning_record_absent_has_choice_quiz_attempt'),
+          ('public.transfer_detached_choice_quiz_history_on_profile_merge()', 'app.learner_identity_merge'),
+          ('public.guard_choice_quiz_profile_unlink()', 'learner_profile_not_empty'),
+          ('public.learning_activity_scope_fingerprint(uuid[])', '''quiz-issue:'''),
+          ('public.learning_activity_scope_fingerprint(uuid[])', '''quiz-attempt:'''),
+          ('public.learning_activity_scope_fingerprint(uuid[])', '''quiz-response:'''),
+          ('public.learning_activity_scope_fingerprint(uuid[])', '''quiz-evaluation:'''),
+          ('public.learning_activity_scope_fingerprint(uuid[])', '''quiz-feedback:'''),
+          ('public.learning_activity_scope_fingerprint(uuid[])', 'evidence.source_choice_quiz_evaluation_id'),
+          ('public.execute_learner_profile_merge_for_actor(uuid,uuid,text)', 'learning_activity_scope_fingerprint'),
+          ('public.execute_learner_profile_merge_for_actor(uuid,uuid,text)', 'app.learner_identity_merge'),
+          ('public.guard_choice_quiz_issue_immutable()', 'app.learner_identity_merge'),
+          ('public.guard_choice_quiz_attempt_immutable()', 'app.learner_identity_merge'),
+          ('public.learner_erasure_state_for_actor(uuid,uuid)', '''choiceQuizIssueCount'''),
+          ('public.learner_erasure_state_for_actor(uuid,uuid)', '''choiceQuizAttemptCount'''),
+          ('public.learner_erasure_state_for_actor(uuid,uuid)', '''choiceQuizResponseCount'''),
+          ('public.learner_erasure_state_for_actor(uuid,uuid)', '''choiceQuizEvaluationCount'''),
+          ('public.learner_erasure_state_for_actor(uuid,uuid)', '''choiceQuizFeedbackDeliveryCount'''),
+          ('public.current_active_session_account_id()', 'auth.jwt() ->> ''session_id'''),
+          ('public.current_active_session_account_id()', 'join auth.sessions as session'),
+          ('public.current_active_session_account_id()', 'account.status in (''active'', ''provisional'')'),
+          ('public.current_active_session_account_id()', 'session.created_at >= security.sessions_invalid_before'),
+          ('public.issue_choice_quiz_definition_admin(uuid,uuid,uuid,uuid,bigint,timestamp with time zone,jsonb,jsonb)', 'for share of session'),
+          ('public.issue_choice_quiz_definition_admin(uuid,uuid,uuid,uuid,bigint,timestamp with time zone,jsonb,jsonb)', 'for share of security'),
+          ('public.lock_current_account_session_authority(uuid)', 'auth.jwt() ->> ''session_id'''),
+          ('public.lock_current_account_session_authority(uuid)', 'for share of session'),
+          ('public.lock_current_account_session_authority(uuid)', 'for share of account, security'),
+          ('public.set_learner_recommendation_override(uuid,uuid,text,text,text,timestamp with time zone)', 'lock_current_account_session_authority'),
+          ('public.get_my_learning_activity_profile()', 'lock_current_account_session_authority'),
+          ('public.get_observed_learner_activity_profile(uuid)', 'lock_current_account_session_authority'),
+          ('public.get_teacher_learner_activity_profile(uuid)', 'lock_current_account_session_authority'),
+          ('public.get_teacher_learner_activity_profile_v2(uuid)', 'lock_current_account_session_authority'),
+          ('public.confirm_my_learning_data_erasure(uuid,uuid,text)', 'learning_activity_scope_fingerprint'),
+          ('public.confirm_my_learning_data_erasure(uuid,uuid,text)', 'app.learner_identity_erasure'),
+          ('public.confirm_my_learning_data_erasure(uuid,uuid,text)', '''choiceQuizFeedbackDeliveryCount'''),
+          ('public.confirm_my_learning_data_erasure(uuid,uuid,text)', 'v_counts := v_current_base'),
+          ('public.confirm_my_learning_data_erasure(uuid,uuid,text)', 'delete from public.choice_quiz_issue'),
+          ('public.confirm_my_learning_data_erasure(uuid,uuid,text)', 'for share of session'),
+          ('public.confirm_my_learning_data_erasure(uuid,uuid,text)', 'for update of account'),
+          ('public.confirm_my_learning_data_erasure(uuid,uuid,text)', 'for share of security'),
+          ('public.confirm_my_learning_data_erasure(uuid,uuid,text)', 'learning_data_erasure_session_revoked'),
+          ('public.preview_my_learning_data_erasure()', 'lock_current_account_session_authority'),
+          ('public.preview_my_learning_data_erasure()', 'for share of profile'),
+          ('public.preview_my_learning_data_erasure()', '- ''choiceQuizIssueCount'''),
+          ('public.learner_safe_unlink_preview_for_actor(uuid)', 'learning_record_id is null'),
+          ('public.rebuild_learner_objective_state_for_actor(uuid,uuid,uuid,timestamp with time zone)', 'evidence.source_choice_quiz_evaluation_id is not null'),
+          ('public.teacher_learning_activity_profile_projection_v2(uuid,uuid,timestamp with time zone)', '''sourceKind'''),
+          ('public.teacher_learning_activity_profile_projection_v2(uuid,uuid,timestamp with time zone)', '''choice_quiz_evaluation'''),
+          ('public.teacher_learning_activity_profile_projection_v2(uuid,uuid,timestamp with time zone)', '''sourceChoiceQuizEvaluationId'''),
+          ('public.teacher_learning_activity_profile_projection_v2(uuid,uuid,timestamp with time zone)', 'evidence.source_choice_quiz_evaluation_id'),
+          ('public.teacher_learning_activity_legacy_observation_state(uuid,uuid,uuid,timestamp with time zone,jsonb)', 'evidence.source_observation_id is not null'),
+          ('public.teacher_learning_activity_legacy_observation_state(uuid,uuid,uuid,timestamp with time zone,jsonb)', 'evidence.source_choice_quiz_evaluation_id is null'),
+          ('public.teacher_learning_activity_legacy_observation_state(uuid,uuid,uuid,timestamp with time zone,jsonb)', 'evidence.eligibility_policy_version = 1'),
+          ('public.teacher_learning_activity_legacy_observation_state(uuid,uuid,uuid,timestamp with time zone,jsonb)', 'record.was_present'),
+          ('public.teacher_learning_activity_legacy_observation_state(uuid,uuid,uuid,timestamp with time zone,jsonb)', '''sourceObservationId'''),
+          ('public.teacher_learning_activity_legacy_observation_state(uuid,uuid,uuid,timestamp with time zone,jsonb)', 'p_fallback_state ->> ''evaluatedAt'''),
+          ('public.teacher_learning_activity_legacy_observation_state(uuid,uuid,uuid,timestamp with time zone,jsonb)', 'greatest(v_state_evaluated_at, v_freshness_due_at)'),
+          ('public.teacher_learning_activity_legacy_observation_state(uuid,uuid,uuid,timestamp with time zone,jsonb)', '''status'', ''no_data'''),
+          ('public.teacher_learning_activity_legacy_override_token_is_valid(uuid,uuid,uuid,timestamp with time zone,timestamp with time zone)', 'latest.observed_at + interval ''90 days'''),
+          ('public.set_learner_recommendation_override(uuid,uuid,text,text,text,timestamp with time zone)', 'teacher_learning_activity_legacy_override_token_is_valid'),
+          ('public.teacher_learning_activity_profile_projection(uuid,uuid,timestamp with time zone)', 'teacher_learning_activity_legacy_observation_state'),
+          ('public.teacher_learning_activity_profile_projection(uuid,uuid,timestamp with time zone)', 'candidate.has_observation desc'),
+          ('public.teacher_learning_activity_profile_projection(uuid,uuid,timestamp with time zone)', 'limit 200'),
+          ('public.teacher_learning_activity_profile_projection(uuid,uuid,timestamp with time zone)', 'evidence.source_observation_id is not null'),
+          ('public.teacher_learning_activity_profile_projection(uuid,uuid,timestamp with time zone)', 'evidence.source_choice_quiz_evaluation_id is null')
       ), communication_table(table_name) as (
         values
           ('communication_thread'),
@@ -457,7 +744,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            where procedure.oid is null
               or not procedure.prosecdef
               or procedure.proconfig is null
-              or not (procedure.proconfig @> array['search_path=\"\"'])
+              or not (procedure.proconfig @> array['search_path=""'])
          )
          and not exists (
            select 1
@@ -496,7 +783,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            where procedure.oid is null
               or not procedure.prosecdef
               or procedure.proconfig is null
-              or not (procedure.proconfig @> array['search_path=\"\"'])
+              or not (procedure.proconfig @> array['search_path=""'])
          )
          and not exists (
            select 1
@@ -535,7 +822,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            where procedure.oid is null
               or not procedure.prosecdef
               or procedure.proconfig is null
-              or not (procedure.proconfig @> array['search_path=\"\"'])
+              or not (procedure.proconfig @> array['search_path=""'])
          )
          and not exists (
            select 1
@@ -569,7 +856,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            where procedure.oid is null
               or not procedure.prosecdef
               or procedure.proconfig is null
-              or not (procedure.proconfig @> array['search_path=\"\"'])
+              or not (procedure.proconfig @> array['search_path=""'])
               or not has_function_privilege(
                 'postgres',
                 procedure.oid,
@@ -625,6 +912,505 @@ SHIDAO_SCHEMA_SIGNATURE="$({
               or (database_trigger.tgqual is not null) is distinct from
                 required_trigger.has_when_clause
          )
+         and (
+           select count(*)
+           from pg_class as relation
+           join pg_namespace as namespace
+             on namespace.oid = relation.relnamespace
+           where namespace.nspname = 'public'
+             and relation.relkind = 'r'
+             and left(relation.relname, 12) = 'choice_quiz_'
+         ) = 5
+         and not exists (
+           select 1
+           from choice_quiz_table as required_table
+           left join pg_class as relation
+             on relation.oid = to_regclass(
+               'public.' || required_table.table_name
+             )
+           where relation.oid is null
+              or relation.relkind <> 'r'
+              or not relation.relrowsecurity
+              or pg_get_userbyid(relation.relowner) <> 'supabase_admin'
+         )
+         and not exists (
+           select 1
+           from choice_quiz_table as required_table
+           join pg_policy as policy
+             on policy.polrelid = to_regclass(
+               'public.' || required_table.table_name
+             )
+         )
+         and not exists (
+           select 1
+           from choice_quiz_table as required_table
+           join pg_class as relation
+             on relation.oid = to_regclass(
+               'public.' || required_table.table_name
+             )
+           cross join unnest(array['anon', 'authenticated', 'service_role'])
+             as actor(role_name)
+           cross join checked_table_privilege
+           where has_table_privilege(
+             actor.role_name,
+             relation.oid,
+             checked_table_privilege.privilege_name
+           )
+         )
+         and not exists (
+           select 1
+           from choice_quiz_table as required_table
+           join pg_class as relation
+             on relation.oid = to_regclass(
+               'public.' || required_table.table_name
+             )
+           cross join lateral aclexplode(
+             coalesce(relation.relacl, acldefault('r', relation.relowner))
+           ) as acl_entry
+           where acl_entry.grantee = 0
+         )
+         and not exists (
+           select 1
+           from choice_quiz_service_rpc as required_rpc
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           where procedure.oid is null
+              or not procedure.prosecdef
+              or procedure.proconfig is null
+              or not (procedure.proconfig @> array['search_path=""'])
+              or pg_get_userbyid(procedure.proowner) <> 'supabase_admin'
+         )
+         and not exists (
+           select 1
+           from choice_quiz_service_rpc as required_rpc
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           where not has_function_privilege(
+             'service_role', procedure.oid, 'EXECUTE'
+           )
+              or not has_function_privilege(
+                'postgres', procedure.oid, 'EXECUTE'
+              )
+         )
+         and not exists (
+           select 1
+           from choice_quiz_service_rpc as required_rpc
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           cross join unnest(array['anon', 'authenticated'])
+             as actor(role_name)
+           where has_function_privilege(
+             actor.role_name, procedure.oid, 'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from choice_quiz_service_rpc as required_rpc
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           cross join lateral aclexplode(
+             coalesce(procedure.proacl, acldefault('f', procedure.proowner))
+           ) as acl_entry
+           left join pg_roles as grantee on grantee.oid = acl_entry.grantee
+           where acl_entry.privilege_type = 'EXECUTE'
+             and coalesce(grantee.rolname, 'PUBLIC') not in (
+             'supabase_admin', 'service_role', 'postgres'
+           )
+         )
+         and not exists (
+           select 1
+           from choice_quiz_teacher_rpc as required_rpc
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           where procedure.oid is null
+              or not procedure.prosecdef
+              or procedure.proconfig is null
+              or not (procedure.proconfig @> array['search_path=""'])
+              or pg_get_userbyid(procedure.proowner) <> 'supabase_admin'
+         )
+         and not exists (
+           select 1
+           from choice_quiz_teacher_rpc as required_rpc
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           where not has_function_privilege(
+             'authenticated', procedure.oid, 'EXECUTE'
+           )
+              or not has_function_privilege(
+                'postgres', procedure.oid, 'EXECUTE'
+              )
+              or has_function_privilege(
+                'anon', procedure.oid, 'EXECUTE'
+              )
+              or has_function_privilege(
+                'service_role', procedure.oid, 'EXECUTE'
+              )
+         )
+         and not exists (
+           select 1
+           from choice_quiz_teacher_rpc as required_rpc
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           cross join lateral aclexplode(
+             coalesce(procedure.proacl, acldefault('f', procedure.proowner))
+           ) as acl_entry
+           left join pg_roles as grantee on grantee.oid = acl_entry.grantee
+           where acl_entry.privilege_type = 'EXECUTE'
+             and coalesce(grantee.rolname, 'PUBLIC') not in (
+               'supabase_admin', 'authenticated', 'postgres'
+             )
+         )
+         and not exists (
+           select 1
+           from choice_quiz_internal_helper as required_helper
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_helper.signature)
+           where procedure.oid is null
+              or procedure.proconfig is null
+              or not (procedure.proconfig @> array['search_path=""'])
+              or pg_get_userbyid(procedure.proowner) <> 'supabase_admin'
+              or not has_function_privilege(
+                'postgres', procedure.oid, 'EXECUTE'
+              )
+         )
+         and not exists (
+           select 1
+           from choice_quiz_internal_helper as required_helper
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_helper.signature)
+           cross join unnest(array['anon', 'authenticated', 'service_role'])
+             as actor(role_name)
+           where has_function_privilege(
+             actor.role_name, procedure.oid, 'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from choice_quiz_internal_helper as required_helper
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_helper.signature)
+           cross join lateral aclexplode(
+             coalesce(procedure.proacl, acldefault('f', procedure.proowner))
+           ) as acl_entry
+           left join pg_roles as grantee on grantee.oid = acl_entry.grantee
+           where acl_entry.privilege_type = 'EXECUTE'
+             and coalesce(grantee.rolname, 'PUBLIC') not in (
+               'supabase_admin', 'postgres'
+             )
+         )
+         and not exists (
+           select 1
+           from choice_quiz_function as required_function
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_function.signature)
+           where procedure.oid is null
+              or pg_get_userbyid(procedure.proowner) <> 'supabase_admin'
+         )
+         and (
+           select count(*)
+           from pg_trigger as database_trigger
+           join pg_class as relation
+             on relation.oid = database_trigger.tgrelid
+           join pg_namespace as namespace
+             on namespace.oid = relation.relnamespace
+           where namespace.nspname = 'public'
+             and not database_trigger.tgisinternal
+             and left(database_trigger.tgname, 16) = 'trg_choice_quiz_'
+         ) = 6
+         and not exists (
+           select 1
+           from choice_quiz_trigger as required_trigger
+           left join pg_trigger as database_trigger
+             on database_trigger.tgrelid = to_regclass(
+               'public.' || required_trigger.table_name
+             )
+            and database_trigger.tgname = required_trigger.trigger_name
+            and not database_trigger.tgisinternal
+           where database_trigger.oid is null
+              or database_trigger.tgenabled <> 'O'
+              or database_trigger.tgfoid <>
+                to_regprocedure(required_trigger.function_signature)
+              or database_trigger.tgtype <> required_trigger.trigger_type
+              or coalesce((
+                select array_agg(
+                  attribute.attname::text
+                  order by attribute.attname::text
+                )
+                from unnest(database_trigger.tgattr::smallint[])
+                  as column_ref(attnum)
+                join pg_attribute as attribute
+                  on attribute.attrelid = database_trigger.tgrelid
+                 and attribute.attnum = column_ref.attnum
+              ), array[]::text[]) <> required_trigger.column_names
+              or (database_trigger.tgconstraint <> 0) is distinct from
+                required_trigger.is_constraint
+              or database_trigger.tgdeferrable is distinct from
+                required_trigger.is_deferrable
+              or database_trigger.tginitdeferred is distinct from
+                required_trigger.is_initially_deferred
+              or database_trigger.tgqual is not null
+         )
+         and (
+           select count(*)
+           from information_schema.columns
+           where table_schema = 'public'
+             and table_name = 'learning_evidence'
+             and column_name in (
+               'learning_record_id',
+               'source_observation_id',
+               'source_choice_quiz_evaluation_id'
+             )
+             and data_type = 'uuid'
+             and is_nullable = 'YES'
+         ) = 3
+         and exists (
+           select 1
+           from pg_constraint as constraint_row
+           where constraint_row.conrelid = 'public.learning_evidence'::regclass
+             and constraint_row.conname =
+               'learning_evidence_choice_quiz_evaluation_id_key'
+             and constraint_row.contype = 'u'
+             and constraint_row.convalidated
+             and position(
+               'source_choice_quiz_evaluation_id'
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+         )
+         and exists (
+           select 1
+           from pg_policies as policy
+           where policy.schemaname = 'public'
+             and policy.tablename = 'learning_evidence'
+             and policy.policyname = 'learning_evidence_recorder_select'
+             and policy.cmd = 'SELECT'
+             and policy.roles = array['authenticated'::name]
+             and policy.qual like '%current_active_session_account_id()%'
+             and policy.qual not like '%current_account_id()%'
+         )
+         and exists (
+           select 1
+           from pg_policies as policy
+           where policy.schemaname = 'public'
+             and policy.tablename = 'learner_objective_state'
+             and policy.policyname = 'learner_objective_state_recorder_select'
+             and policy.cmd = 'SELECT'
+             and policy.roles = array['authenticated'::name]
+             and policy.qual like '%current_active_session_account_id()%'
+             and policy.qual not like '%current_account_id()%'
+         )
+         and exists (
+           select 1
+           from pg_policies as policy
+           where policy.schemaname = 'public'
+             and policy.tablename = 'learner_objective_state_evidence'
+             and policy.policyname =
+               'learner_objective_state_evidence_recorder_select'
+             and policy.cmd = 'SELECT'
+             and policy.roles = array['authenticated'::name]
+             and policy.qual like '%current_active_session_account_id()%'
+             and policy.qual not like '%current_account_id()%'
+         )
+         and exists (
+           select 1
+           from pg_policies as policy
+           where policy.schemaname = 'public'
+             and policy.tablename = 'learner_recommendation_override'
+             and policy.policyname =
+               'learner_recommendation_override_recorder_select'
+             and policy.cmd = 'SELECT'
+             and policy.roles = array['authenticated'::name]
+             and policy.qual like '%current_active_session_account_id()%'
+             and policy.qual not like '%current_account_id()%'
+         )
+         and exists (
+           select 1
+           from pg_constraint as constraint_row
+           where constraint_row.conrelid = 'public.learning_evidence'::regclass
+             and constraint_row.conname =
+               'learning_evidence_choice_quiz_evaluation_fkey'
+             and constraint_row.contype = 'f'
+             and constraint_row.confrelid =
+               'public.choice_quiz_evaluation'::regclass
+             and constraint_row.confdeltype = 'c'
+             and constraint_row.convalidated
+             and position(
+               'source_choice_quiz_evaluation_id'
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+         )
+         and exists (
+           select 1
+           from pg_constraint as constraint_row
+           where constraint_row.conrelid = 'public.learning_evidence'::regclass
+             and constraint_row.conname = 'learning_evidence_exact_source_check'
+             and constraint_row.contype = 'c'
+             and constraint_row.convalidated
+             and position(
+               'source_observation_id'
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+             and position(
+               'source_choice_quiz_evaluation_id'
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+             and position(
+               'learning_record_id is not null'
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+             and position(
+               'learning_record_id is null'
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+         )
+         and exists (
+           select 1
+           from information_schema.columns
+           where table_schema = 'public'
+             and table_name = 'choice_quiz_issue'
+             and column_name = 'learning_record_id'
+             and data_type = 'uuid'
+             and is_nullable = 'YES'
+         )
+         and exists (
+           select 1
+           from pg_constraint as constraint_row
+           where constraint_row.conrelid = 'public.learning_evidence'::regclass
+             and constraint_row.conname = 'learning_evidence_semantics_check'
+             and constraint_row.contype = 'c'
+             and constraint_row.convalidated
+             and position(
+               '''independent_positive_evidence'''
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+             and position(
+               '''supported_positive_evidence'''
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+             and position(
+               '''not_yet_negative_evidence'''
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+             and position(
+               '''choice_quiz_independent_positive_evidence'''
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+             and position(
+               '''choice_quiz_supported_positive_evidence'''
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+             and position(
+               '''choice_quiz_not_yet_negative_evidence'''
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+         )
+         and exists (
+           select 1
+           from pg_constraint as constraint_row
+           where constraint_row.conrelid = 'public.learning_evidence'::regclass
+             and constraint_row.conname = 'learning_evidence_version_check'
+             and constraint_row.contype = 'c'
+             and constraint_row.convalidated
+             and position(
+               'evidence_version = 1'
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+             and position(
+               'source_observation_id is not null'
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+             and position(
+               'eligibility_policy_version = 1'
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+             and position(
+               'source_choice_quiz_evaluation_id is not null'
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+             and position(
+               'eligibility_policy_version = 2'
+               in lower(pg_get_constraintdef(constraint_row.oid))
+             ) > 0
+         )
+         and exists (
+           select 1
+           from pg_constraint as constraint_row
+           where constraint_row.conrelid = 'public.choice_quiz_issue'::regclass
+             and constraint_row.conname =
+               'choice_quiz_issue_record_identity_fkey'
+             and constraint_row.contype = 'f'
+             and constraint_row.confrelid = 'public.learning_record'::regclass
+             and constraint_row.confupdtype = 'c'
+             and constraint_row.confdeltype = 'c'
+             and constraint_row.convalidated
+         )
+         and exists (
+           select 1
+           from pg_constraint as constraint_row
+           where constraint_row.conrelid =
+               'public.choice_quiz_attempt'::regclass
+             and constraint_row.conname =
+               'choice_quiz_attempt_issue_learner_fkey'
+             and constraint_row.contype = 'f'
+             and constraint_row.confrelid = 'public.choice_quiz_issue'::regclass
+             and constraint_row.confupdtype = 'c'
+             and constraint_row.confdeltype = 'c'
+             and constraint_row.convalidated
+         )
+         and not exists (
+           select 1
+           from choice_quiz_function_marker as required_marker
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_marker.signature)
+           where procedure.oid is null
+              or position(
+                lower(required_marker.marker)
+                in lower(pg_get_functiondef(procedure.oid))
+              ) = 0
+         )
+         and exists (
+           select 1
+           from pg_proc as procedure
+           where procedure.oid = to_regprocedure(
+             'public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)'
+           )
+             and procedure.provolatile = 'v'
+         )
+         and position(
+           'component.value - array['
+           in pg_get_functiondef(to_regprocedure(
+             'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+           ))
+         ) > 0
+         and position(
+           '''primaryLearningObjectiveId'''
+           in pg_get_functiondef(to_regprocedure(
+             'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+           ))
+         ) > 0
+         and position(
+           'resolve_lesson_run_live_source_choice_quiz_admin'
+           in pg_get_functiondef(to_regprocedure(
+             'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+           ))
+         ) > 0
+         and position(
+           'sourcechoicequizevaluationid'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.teacher_learning_activity_profile_projection(uuid,uuid,timestamp with time zone)'
+           )))
+         ) = 0
+         and position(
+           'choice_quiz_evaluation'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.teacher_learning_activity_profile_projection(uuid,uuid,timestamp with time zone)'
+           )))
+         ) > 0
+         and position(
+           '''no_data'''
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.teacher_learning_activity_legacy_observation_state(uuid,uuid,uuid,timestamp with time zone,jsonb)'
+           )))
+         ) > 0
          and exists (
            select 1
            from pg_proc as procedure
@@ -632,7 +1418,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
              'public.cleanup_empty_lesson_student_slide()'
            )
              and not procedure.prosecdef
-             and procedure.proconfig @> array['search_path=\"\"']::text[]
+             and procedure.proconfig @> array['search_path=""']::text[]
              and pg_get_userbyid(procedure.proowner) = 'supabase_admin'
          )
          and exists (
@@ -680,19 +1466,19 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and position(
            'session.not_after'
            in lower(pg_get_functiondef(to_regprocedure(
-             'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+             'public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)'
            )))
          ) > 0
          and position(
            'lock_learning_activity_learners'
            in lower(pg_get_functiondef(to_regprocedure(
-             'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+             'public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)'
            )))
          ) > 0
          and position(
            'owner_account.status = ''active'''
            in lower(pg_get_functiondef(to_regprocedure(
-             'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+             'public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)'
            )))
          ) > 0
          and position(
@@ -709,31 +1495,31 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          ) > 0
          and regexp_count(
            lower(pg_get_functiondef(to_regprocedure(
-             'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+             'public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)'
            ))),
            'for share of session'
-         ) = 2
+         ) = 1
          and position(
            'for share of account, profile'
            in lower(pg_get_functiondef(to_regprocedure(
-             'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+             'public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)'
            )))
          ) > 0
          and position(
            'for share of security'
            in lower(pg_get_functiondef(to_regprocedure(
-             'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+             'public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)'
            )))
          ) > 0
          and lower(pg_get_functiondef(to_regprocedure(
-           'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+           'public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)'
          ))) ~ (
            'for share of security;[[:space:]]+if not found then'
            || '[[:space:]]+raise exception '
            || '''live_delivery_session_revoked'''
          )
          and lower(pg_get_functiondef(to_regprocedure(
-           'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+           'public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)'
          ))) ~ (
            'for share of[[:space:]]+owner_account,'
            || '[[:space:]]+course,[[:space:]]+run,'
@@ -883,7 +1669,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            where procedure.oid is null
               or not procedure.prosecdef
               or procedure.proconfig is null
-              or not (procedure.proconfig @> array['search_path=\"\"'])
+              or not (procedure.proconfig @> array['search_path=""'])
          )
          and not exists (
            select 1
@@ -917,7 +1703,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            where procedure.oid is null
               or not procedure.prosecdef
               or procedure.proconfig is null
-              or not (procedure.proconfig @> array['search_path=\"\"'])
+              or not (procedure.proconfig @> array['search_path=""'])
          )
          and not exists (
            select 1
@@ -966,7 +1752,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
               or procedure.oid is null
               or not procedure.prosecdef
               or procedure.proconfig is null
-              or not (procedure.proconfig @> array['search_path=\"\"'])
+              or not (procedure.proconfig @> array['search_path=""'])
          )
          and to_regclass('public.methodology') is null
          and to_regclass('public.lesson_step') is null
@@ -1057,7 +1843,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
              'public.set_current_account_avatar(uuid,text,text,text,integer)'
            )
              and procedure.prosecdef
-             and procedure.proconfig @> array['search_path=\"\"']
+             and procedure.proconfig @> array['search_path=""']
              and procedure.proowner = (
                select relation.relowner
                from pg_class as relation
@@ -1130,7 +1916,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
              'public.guard_educator_course_content_mutation()'
            )
              and not procedure.prosecdef
-             and procedure.proconfig @> array['search_path=\"\"']
+             and procedure.proconfig @> array['search_path=""']
              and position(
                'educator_course_author_can_mutate'
                in pg_get_functiondef(procedure.oid)
@@ -1206,7 +1992,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
              and trigger.tgenabled = 'O'
              and trigger.tgtype = 7
              and not procedure.prosecdef
-             and procedure.proconfig @> array['search_path=\"\"']
+             and procedure.proconfig @> array['search_path=""']
          )
          and exists (
            select 1
@@ -1276,7 +2062,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            where procedure.oid is null
               or not procedure.prosecdef
               or procedure.proconfig is null
-              or not (procedure.proconfig @> array['search_path=\"\"'])
+              or not (procedure.proconfig @> array['search_path=""'])
          )
          and not exists (
            select 1
@@ -1310,7 +2096,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            where procedure.oid is null
               or procedure.prosecdef
               or procedure.proconfig is null
-              or not (procedure.proconfig @> array['search_path=\"\"'])
+              or not (procedure.proconfig @> array['search_path=""'])
          )
          and not exists (
            select 1
@@ -1333,7 +2119,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            where procedure.oid is null
               or not procedure.prosecdef
               or procedure.proconfig is null
-              or not (procedure.proconfig @> array['search_path=\"\"'])
+              or not (procedure.proconfig @> array['search_path=""'])
          )
          and not exists (
            select 1
@@ -1418,7 +2204,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            where procedure.oid is null
               or not procedure.prosecdef
               or procedure.proconfig is null
-              or not (procedure.proconfig @> array['search_path=\"\"'])
+              or not (procedure.proconfig @> array['search_path=""'])
          )
          and not exists (
            select 1
@@ -1452,7 +2238,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            where procedure.oid is null
               or procedure.prosecdef
               or procedure.proconfig is null
-              or not (procedure.proconfig @> array['search_path=\"\"'])
+              or not (procedure.proconfig @> array['search_path=""'])
          )
          and not exists (
            select 1
@@ -1519,6 +2305,9 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          ) is not null
          and to_regprocedure(
            'public.build_course_learning_activity_context(uuid,uuid)'
+         ) is not null
+         and to_regprocedure(
+           'public.build_course_learning_activity_context(uuid,uuid,uuid)'
          ) is not null
          and to_regprocedure(
            'public.build_cross_provider_learning_activity_context(uuid,uuid)'
@@ -1593,8 +2382,31 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            'public.preview_my_learning_data_erasure()'
          ) is not null
          and to_regprocedure(
-           'public.confirm_my_learning_data_erasure(uuid,text)'
+           'public.confirm_my_learning_data_erasure(uuid,uuid,text)'
          ) is not null
+         and to_regprocedure(
+           'public.confirm_my_learning_data_erasure(uuid,text)'
+         ) is null
+         and has_function_privilege(
+           'service_role',
+           'public.confirm_my_learning_data_erasure(uuid,uuid,text)',
+           'EXECUTE'
+         )
+         and has_function_privilege(
+           'postgres',
+           'public.confirm_my_learning_data_erasure(uuid,uuid,text)',
+           'EXECUTE'
+         )
+         and not has_function_privilege(
+           'anon',
+           'public.confirm_my_learning_data_erasure(uuid,uuid,text)',
+           'EXECUTE'
+         )
+         and not has_function_privilege(
+           'authenticated',
+           'public.confirm_my_learning_data_erasure(uuid,uuid,text)',
+           'EXECUTE'
+         )
          and to_regprocedure(
            'public.list_my_learner_observer_overview()'
          ) is not null
@@ -1767,7 +2579,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
              'public.archive_course(uuid)'
            )
              and procedure.prosecdef
-             and procedure.proconfig @> array['search_path=\"\"']
+             and procedure.proconfig @> array['search_path=""']
              and procedure.proowner = (
                select relation.relowner
                from pg_class as relation
@@ -1811,7 +2623,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
              and (
                procedure.prosecdef
                or procedure.proconfig is null
-               or not (procedure.proconfig @> array['search_path=\"\"'])
+               or not (procedure.proconfig @> array['search_path=""'])
                or procedure.proowner <> (
                  select relation.relowner
                  from pg_class as relation
@@ -1845,7 +2657,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
              and (
                not procedure.prosecdef
                or procedure.proconfig is null
-               or not (procedure.proconfig @> array['search_path=\"\"'])
+               or not (procedure.proconfig @> array['search_path=""'])
                or procedure.proowner <> (
                  select relation.relowner
                  from pg_class as relation
@@ -2076,7 +2888,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
              'public.enforce_account_exactly_one_learner_profile()'
            )
              and procedure.prosecdef
-             and procedure.proconfig @> array['search_path=\"\"']
+             and procedure.proconfig @> array['search_path=""']
              and not exists (
                select 1
                from pg_class as relation
@@ -2172,19 +2984,25 @@ SHIDAO_SCHEMA_SIGNATURE="$({
              'public.get_teacher_learner_activity_profile(uuid)',
              'public.get_my_learning_activity_profile()',
              'public.get_observed_learner_activity_profile(uuid)',
-             'public.build_course_learning_activity_context(uuid,uuid)'
+             'public.build_course_learning_activity_context(uuid,uuid)',
+             'public.build_course_learning_activity_context(uuid,uuid,uuid)'
            ]) as required(signature)
            left join pg_proc as procedure
              on procedure.oid = to_regprocedure(required.signature)
            where procedure.oid is null
               or not procedure.prosecdef
               or not (
-                procedure.proconfig @> array['search_path=\"\"']::text[]
+                procedure.proconfig @> array['search_path=""']::text[]
               )
          )
          and has_function_privilege(
            'service_role',
            'public.build_course_learning_activity_context(uuid,uuid)',
+           'EXECUTE'
+         )
+         and has_function_privilege(
+           'service_role',
+           'public.build_course_learning_activity_context(uuid,uuid,uuid)',
            'EXECUTE'
          )
          and has_function_privilege(
@@ -2205,9 +3023,13 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and not exists (
            select 1
            from unnest(array['anon', 'authenticated']) as actor(role_name)
+           cross join unnest(array[
+             'public.build_course_learning_activity_context(uuid,uuid)',
+             'public.build_course_learning_activity_context(uuid,uuid,uuid)'
+           ]) as context_rpc(signature)
            where has_function_privilege(
              actor.role_name,
-             'public.build_course_learning_activity_context(uuid,uuid)',
+             context_rpc.signature,
              'EXECUTE'
            )
          )
@@ -2264,9 +3086,48 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and position(
            'learner_ai_consent'
            in lower(pg_get_functiondef(to_regprocedure(
-             'public.build_course_learning_activity_context(uuid,uuid)'
+             'public.build_course_learning_activity_context(uuid,uuid,uuid)'
            )))
          ) = 0
+         and position(
+           'learning_activity_context_session_required'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.build_course_learning_activity_context(uuid,uuid)'
+           )))
+         ) > 0
+         and position(
+           'from auth.sessions as session'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.build_course_learning_activity_context(uuid,uuid,uuid)'
+           )))
+         ) > position(
+           'perform public.lock_learning_activity_learners'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.build_course_learning_activity_context(uuid,uuid,uuid)'
+           )))
+         )
+         and position(
+           'for share of account, security'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.build_course_learning_activity_context(uuid,uuid,uuid)'
+           )))
+         ) > position(
+           'from auth.sessions as session'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.build_course_learning_activity_context(uuid,uuid,uuid)'
+           )))
+         )
+         and position(
+           'from public.course as course'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.build_course_learning_activity_context(uuid,uuid,uuid)'
+           )))
+         ) > position(
+           'for share of account, security'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.build_course_learning_activity_context(uuid,uuid,uuid)'
+           )))
+         )
          and position(
            'state.recorded_by_account_id = p_recorded_by_account_id'
            in pg_get_functiondef(to_regprocedure(
@@ -2354,7 +3215,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and position(
            'delete from public.learning_evidence'
            in pg_get_functiondef(to_regprocedure(
-             'public.confirm_my_learning_data_erasure(uuid,text)'
+             'public.confirm_my_learning_data_erasure(uuid,uuid,text)'
            ))
          ) > 0
          and exists (
@@ -2365,7 +3226,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
              'public.sync_provisional_account_from_auth_metadata()'
            )
              and procedure.prosecdef
-             and procedure.proconfig @> array['search_path=\"\"']
+             and procedure.proconfig @> array['search_path=""']
              and has_table_privilege(owner.rolname, 'auth.users', 'SELECT')
              and (
                owner.rolsuper
@@ -2602,7 +3463,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
            )
              and procedure.prosecdef
              and procedure.proretset
-             and procedure.proconfig @> array['search_path=\"\"']
+             and procedure.proconfig @> array['search_path=""']
              and not exists (
                select 1
                from aclexplode(
@@ -2658,7 +3519,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
              'public.delete_draft_observations_for_lesson_component()'
            )
              and procedure.prosecdef
-             and procedure.proconfig @> array['search_path=\"\"']
+             and procedure.proconfig @> array['search_path=""']
              and position(
                'delete from public.lesson_component_observation'
                in lower(pg_get_functiondef(procedure.oid))
@@ -2956,7 +3817,7 @@ SHIDAO_SCHEMA_SIGNATURE="$({
         end
         else 'schema-mismatch'
       end;
-    "
+SQL
 } | tr -d '[:space:]')"
 
 if [[ "${SHIDAO_SCHEMA_SIGNATURE}" != "shidao-v2-expand" \
@@ -3133,6 +3994,21 @@ for required in \
   "ALTER TABLE public.course_learner_enrollment ENABLE ROW LEVEL SECURITY;" \
   "ALTER TABLE public.lesson_run_execution_capability ENABLE ROW LEVEL SECURITY;" \
   "ALTER TABLE public.lesson_run_presentation_state ENABLE ROW LEVEL SECURITY;" \
+  "CREATE TABLE public.choice_quiz_issue" \
+  "CREATE TABLE public.choice_quiz_attempt" \
+  "CREATE TABLE public.choice_quiz_response" \
+  "CREATE TABLE public.choice_quiz_evaluation" \
+  "CREATE TABLE public.choice_quiz_feedback_delivery" \
+  "ALTER TABLE public.choice_quiz_issue ENABLE ROW LEVEL SECURITY;" \
+  "ALTER TABLE public.choice_quiz_attempt ENABLE ROW LEVEL SECURITY;" \
+  "ALTER TABLE public.choice_quiz_response ENABLE ROW LEVEL SECURITY;" \
+  "ALTER TABLE public.choice_quiz_evaluation ENABLE ROW LEVEL SECURITY;" \
+  "ALTER TABLE public.choice_quiz_feedback_delivery ENABLE ROW LEVEL SECURITY;" \
+  "GRANT ALL ON TABLE public.choice_quiz_issue TO postgres;" \
+  "GRANT ALL ON TABLE public.choice_quiz_attempt TO postgres;" \
+  "GRANT ALL ON TABLE public.choice_quiz_response TO postgres;" \
+  "GRANT ALL ON TABLE public.choice_quiz_evaluation TO postgres;" \
+  "GRANT ALL ON TABLE public.choice_quiz_feedback_delivery TO postgres;" \
   "CREATE TABLE public.learning_record" \
   "CREATE TABLE public.lesson_component_observation" \
   "CREATE TABLE public.learning_objective" \
@@ -3145,7 +4021,17 @@ for required in \
   "source_lesson_run_id_at_time uuid" \
   "corrected_from_record_id uuid" \
   "corrected_from_observation_id uuid" \
+  "source_choice_quiz_evaluation_id uuid" \
   "component_visibility_at_time text" \
+  "learning_evidence_choice_quiz_evaluation_id_key" \
+  "learning_evidence_choice_quiz_evaluation_fkey" \
+  "learning_evidence_exact_source_check" \
+  "learning_evidence_version_check" \
+  "choice_quiz_independent_positive_evidence" \
+  "choice_quiz_supported_positive_evidence" \
+  "choice_quiz_not_yet_negative_evidence" \
+  "choice_quiz_issue_record_identity_fkey" \
+  "choice_quiz_attempt_issue_learner_fkey" \
   "learning_evidence_record_identity_fkey" \
   "learner_objective_state_evidence_state_identity_fkey" \
   "learner_objective_state_evidence_fact_identity_fkey" \
@@ -3254,6 +4140,62 @@ for required in \
   "CREATE FUNCTION public.set_lesson_run_live_access" \
   "CREATE FUNCTION public.set_lesson_run_presentation_cursor" \
   "CREATE FUNCTION public.resolve_lesson_run_live_source_admin" \
+  "CREATE FUNCTION public.resolve_lesson_run_live_source_choice_quiz_admin" \
+  "CREATE FUNCTION public.choice_quiz_learner_definition_is_valid" \
+  "CREATE FUNCTION public.choice_quiz_evaluator_config_is_valid" \
+  "CREATE FUNCTION public.guard_choice_quiz_issue_immutable" \
+  "CREATE FUNCTION public.guard_choice_quiz_attempt_immutable" \
+  "CREATE FUNCTION public.guard_choice_quiz_strictly_immutable" \
+  "CREATE FUNCTION public.guard_choice_quiz_evaluation_immutable" \
+  "CREATE FUNCTION public.assert_choice_quiz_evaluation_supersession_chain" \
+  "CREATE FUNCTION public.choice_quiz_projection_matches_payload" \
+  "CREATE FUNCTION public.choice_quiz_execution_payload_at_attempt" \
+  "CREATE FUNCTION public.choice_quiz_execution_payload" \
+  "CREATE FUNCTION public.choice_quiz_history_item" \
+  "CREATE FUNCTION public.detach_choice_quiz_history_from_learning_records" \
+  "CREATE FUNCTION public.delete_draft_learning_records_for_lesson_run" \
+  "CREATE FUNCTION public.guard_learning_record_choice_quiz_presence" \
+  "CREATE FUNCTION public.transfer_detached_choice_quiz_history_on_profile_merge" \
+  "CREATE FUNCTION public.guard_choice_quiz_profile_unlink" \
+  "CREATE FUNCTION public.issue_choice_quiz_definition_admin" \
+  "CREATE FUNCTION public.submit_choice_quiz_attempt_admin" \
+  "CREATE FUNCTION public.correct_choice_quiz_evaluation_admin" \
+  "CREATE FUNCTION public.list_choice_quiz_run_history_admin" \
+  "CREATE FUNCTION public.get_teacher_learner_activity_profile_v2" \
+  "CREATE FUNCTION public.teacher_learning_activity_profile_projection_v2" \
+  "CREATE FUNCTION public.teacher_learning_activity_legacy_observation_state" \
+  "CREATE FUNCTION public.teacher_learning_activity_legacy_override_token_is_valid" \
+  "GRANT ALL ON FUNCTION public.issue_choice_quiz_definition_admin" \
+  "GRANT ALL ON FUNCTION public.submit_choice_quiz_attempt_admin" \
+  "GRANT ALL ON FUNCTION public.correct_choice_quiz_evaluation_admin" \
+  "GRANT ALL ON FUNCTION public.list_choice_quiz_run_history_admin" \
+  "GRANT ALL ON FUNCTION public.resolve_lesson_run_live_source_choice_quiz_admin" \
+  "GRANT ALL ON FUNCTION public.get_teacher_learner_activity_profile_v2" \
+  "GRANT ALL ON FUNCTION public.choice_quiz_execution_payload" \
+  "GRANT ALL ON FUNCTION public.choice_quiz_execution_payload_at_attempt" \
+  "GRANT ALL ON FUNCTION public.choice_quiz_history_item" \
+  "CREATE FUNCTION public.learning_activity_scope_fingerprint" \
+  "CREATE FUNCTION public.learner_erasure_state_for_actor" \
+  "CREATE FUNCTION public.teacher_learning_activity_profile_projection" \
+  "CREATE FUNCTION public.learner_safe_unlink_preview_for_actor" \
+  "primaryLearningObjectiveId" \
+  "activityRole" \
+  "updatedAt" \
+  "quiz-issue:" \
+  "quiz-attempt:" \
+  "quiz-response:" \
+  "quiz-evaluation:" \
+  "quiz-feedback:" \
+  "choiceQuizIssueCount" \
+  "choiceQuizAttemptCount" \
+  "choiceQuizResponseCount" \
+  "choiceQuizEvaluationCount" \
+  "choiceQuizFeedbackDeliveryCount" \
+  "sourceKind" \
+  "choice_quiz_evaluation" \
+  "sourceChoiceQuizEvaluationId" \
+  "teacher_learning_activity_legacy_observation_state" \
+  "teacher_learning_activity_legacy_override_token_is_valid" \
   "CREATE FUNCTION public.start_lesson_run" \
   "session.not_after" \
   "lock_learning_activity_learners" \
@@ -3290,6 +4232,16 @@ for required in \
   "CREATE TRIGGER trg_account_revoke_live_access_on_deactivation" \
   "CREATE TRIGGER trg_lesson_student_slide_clear_live_cursor" \
   "CREATE TRIGGER trg_lesson_component_cleanup_empty_student_slide" \
+  "CREATE TRIGGER trg_choice_quiz_issue_immutable" \
+  "CREATE TRIGGER trg_choice_quiz_attempt_immutable" \
+  "CREATE TRIGGER trg_choice_quiz_response_immutable" \
+  "CREATE TRIGGER trg_choice_quiz_evaluation_immutable" \
+  "CREATE TRIGGER trg_choice_quiz_feedback_immutable" \
+  "CREATE CONSTRAINT TRIGGER trg_choice_quiz_evaluation_supersession_chain" \
+  "CREATE TRIGGER trg_learning_record_choice_quiz_presence" \
+  "CREATE TRIGGER trg_learner_profile_transfer_detached_choice_quiz" \
+  "CREATE TRIGGER trg_learner_profile_choice_quiz_unlink_guard" \
+  "CREATE TRIGGER trg_learner_profile_choice_quiz_delete_guard" \
   "CREATE FUNCTION public.materialize_learning_evidence_for_records" \
   "CREATE FUNCTION public.capture_observation_component_visibility" \
   "CREATE FUNCTION public.rebuild_learner_objective_state_for_actor" \
@@ -3336,6 +4288,89 @@ for required in \
     exit 1
   fi
 done
+
+for choice_quiz_service_rpc_name in \
+  issue_choice_quiz_definition_admin \
+  submit_choice_quiz_attempt_admin \
+  correct_choice_quiz_evaluation_admin \
+  list_choice_quiz_run_history_admin \
+  resolve_lesson_run_live_source_choice_quiz_admin; do
+  if [[ "$(grep -Ec -- "^REVOKE ALL ON FUNCTION public[.]${choice_quiz_service_rpc_name}[(].*[)] FROM PUBLIC;$" "${TMP_RESULT}")" -ne 1 \
+    || "$(grep -Ec -- "^GRANT ALL ON FUNCTION public[.]${choice_quiz_service_rpc_name}[(].*[)] TO postgres;$" "${TMP_RESULT}")" -ne 1 \
+    || "$(grep -Ec -- "^GRANT ALL ON FUNCTION public[.]${choice_quiz_service_rpc_name}[(].*[)] TO service_role;$" "${TMP_RESULT}")" -ne 1 ]]; then
+    echo "Refusing to replace snapshot: generated result has incomplete service-only ACL for ${choice_quiz_service_rpc_name}." >&2
+    exit 1
+  fi
+done
+
+if [[ "$(grep -Ec -- '^REVOKE ALL ON FUNCTION public[.]get_teacher_learner_activity_profile_v2[(].*[)] FROM PUBLIC;$' "${TMP_RESULT}")" -ne 1 \
+  || "$(grep -Ec -- '^GRANT ALL ON FUNCTION public[.]get_teacher_learner_activity_profile_v2[(].*[)] TO postgres;$' "${TMP_RESULT}")" -ne 1 \
+  || "$(grep -Ec -- '^GRANT ALL ON FUNCTION public[.]get_teacher_learner_activity_profile_v2[(].*[)] TO authenticated;$' "${TMP_RESULT}")" -ne 1 ]]; then
+  echo "Refusing to replace snapshot: generated result has incomplete authenticated ACL for get_teacher_learner_activity_profile_v2." >&2
+  exit 1
+fi
+
+for choice_quiz_internal_helper_name in \
+  choice_quiz_learner_definition_is_valid \
+  choice_quiz_evaluator_config_is_valid \
+  guard_choice_quiz_issue_immutable \
+  guard_choice_quiz_attempt_immutable \
+  guard_choice_quiz_strictly_immutable \
+  guard_choice_quiz_evaluation_immutable \
+  assert_choice_quiz_evaluation_supersession_chain \
+  choice_quiz_projection_matches_payload \
+  choice_quiz_execution_payload_at_attempt \
+  choice_quiz_execution_payload \
+  choice_quiz_history_item \
+  detach_choice_quiz_history_from_learning_records \
+  delete_draft_learning_records_for_lesson_run \
+  guard_learning_record_choice_quiz_presence \
+  transfer_detached_choice_quiz_history_on_profile_merge \
+  guard_choice_quiz_profile_unlink \
+  guard_learning_evidence_immutable \
+  rebuild_learner_objective_state_for_actor \
+  learning_activity_scope_fingerprint \
+  execute_learner_profile_merge_for_actor \
+  learner_erasure_state_for_actor \
+  learner_safe_unlink_preview_for_actor \
+  teacher_learning_activity_legacy_observation_state \
+  teacher_learning_activity_legacy_override_token_is_valid \
+  teacher_learning_activity_profile_projection \
+  teacher_learning_activity_profile_projection_v2; do
+  if [[ "$(grep -Ec -- "^REVOKE ALL ON FUNCTION public[.]${choice_quiz_internal_helper_name}[(].*[)] FROM PUBLIC;$" "${TMP_RESULT}")" -ne 1 \
+    || "$(grep -Ec -- "^GRANT ALL ON FUNCTION public[.]${choice_quiz_internal_helper_name}[(].*[)] TO postgres;$" "${TMP_RESULT}")" -ne 1 ]]; then
+    echo "Refusing to replace snapshot: generated result has incomplete closed helper ACL for ${choice_quiz_internal_helper_name}." >&2
+    exit 1
+  fi
+done
+
+if grep -Eq \
+  '^CREATE POLICY .* ON public[.]choice_quiz_' \
+  "${TMP_RESULT}"; then
+  echo "Refusing to replace snapshot: generated result exposes a choice_quiz table through a policy." >&2
+  exit 1
+fi
+
+if grep -Eq \
+  '^GRANT .* ON FUNCTION public[.](choice_quiz_learner_definition_is_valid|choice_quiz_evaluator_config_is_valid|guard_choice_quiz_issue_immutable|guard_choice_quiz_attempt_immutable|guard_choice_quiz_strictly_immutable|guard_choice_quiz_evaluation_immutable|assert_choice_quiz_evaluation_supersession_chain|choice_quiz_projection_matches_payload|choice_quiz_execution_payload_at_attempt|choice_quiz_execution_payload|choice_quiz_history_item|detach_choice_quiz_history_from_learning_records|delete_draft_learning_records_for_lesson_run|guard_learning_record_choice_quiz_presence|transfer_detached_choice_quiz_history_on_profile_merge|guard_choice_quiz_profile_unlink|guard_learning_evidence_immutable|rebuild_learner_objective_state_for_actor|learning_activity_scope_fingerprint|execute_learner_profile_merge_for_actor|learner_erasure_state_for_actor|learner_safe_unlink_preview_for_actor|teacher_learning_activity_legacy_observation_state|teacher_learning_activity_legacy_override_token_is_valid|teacher_learning_activity_profile_projection).* TO (anon|authenticated|service_role);' \
+  "${TMP_RESULT}"; then
+  echo "Refusing to replace snapshot: generated result exposes a choice_quiz internal helper." >&2
+  exit 1
+fi
+
+if grep -Eq \
+  '^GRANT .* ON TABLE public[.]choice_quiz_.* TO (anon|authenticated|service_role);' \
+  "${TMP_RESULT}"; then
+  echo "Refusing to replace snapshot: generated result exposes raw choice_quiz table privileges." >&2
+  exit 1
+fi
+
+if grep -Eq \
+  '^GRANT .* ON FUNCTION public[.](issue_choice_quiz_definition_admin|submit_choice_quiz_attempt_admin|correct_choice_quiz_evaluation_admin|list_choice_quiz_run_history_admin).* TO (anon|authenticated);' \
+  "${TMP_RESULT}"; then
+  echo "Refusing to replace snapshot: generated result exposes a choice_quiz service RPC to a browser role." >&2
+  exit 1
+fi
 
 if grep -Eq 'CREATE TABLE public[.]lesson_step([ (]|$)' "${TMP_RESULT}"; then
   echo "Refusing to replace snapshot: generated result restores forbidden Lesson Step storage." >&2

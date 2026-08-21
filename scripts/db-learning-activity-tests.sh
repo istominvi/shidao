@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Transactional acceptance harness through LA-M4 learning activities.
+# Transactional acceptance harness through LA-M5 learning activities.
 #
 # This script is deliberately impossible to point at the live ShiDao database:
 # the connected database name must be exactly `shidao_learning_activity_test`.
@@ -24,7 +24,7 @@ db_name="$(
     'select current_database()'
 )"
 if [[ "$db_name" != "shidao_learning_activity_test" ]]; then
-  echo "Refusing LA-M4 fixtures for database '$db_name'; expected exactly 'shidao_learning_activity_test'." >&2
+  echo "Refusing LA-M5 fixtures for database '$db_name'; expected exactly 'shidao_learning_activity_test'." >&2
   exit 2
 fi
 
@@ -46,6 +46,11 @@ schema_marker="$(
        and to_regclass('public.course_learner_enrollment') is not null
        and to_regclass('public.lesson_run_execution_capability') is not null
        and to_regclass('public.lesson_run_presentation_state') is not null
+       and to_regclass('public.choice_quiz_issue') is not null
+       and to_regclass('public.choice_quiz_attempt') is not null
+       and to_regclass('public.choice_quiz_response') is not null
+       and to_regclass('public.choice_quiz_evaluation') is not null
+       and to_regclass('public.choice_quiz_feedback_delivery') is not null
        and to_regclass('auth.sessions') is not null
        and exists (
          select 1
@@ -82,6 +87,13 @@ schema_marker="$(
          where table_schema = 'public'
            and table_name = 'lesson_component'
            and column_name = 'activity_role'
+       )
+       and exists (
+         select 1
+         from information_schema.columns
+         where table_schema = 'public'
+           and table_name = 'learning_evidence'
+           and column_name = 'source_choice_quiz_evaluation_id'
        )
        and (
          select count(*)
@@ -131,6 +143,9 @@ schema_marker="$(
          'public.build_course_learning_activity_context(uuid,uuid)'
        ) is not null
        and to_regprocedure(
+         'public.build_course_learning_activity_context(uuid,uuid,uuid)'
+       ) is not null
+       and to_regprocedure(
          'public.build_cross_provider_learner_context(uuid,uuid)'
        ) is not null
        and to_regprocedure(
@@ -144,6 +159,31 @@ schema_marker="$(
        ) is not null
        and to_regprocedure(
          'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+       ) is not null
+       and to_regprocedure(
+         'public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)'
+       ) is not null
+       and to_regprocedure(
+         'public.get_teacher_learner_activity_profile_v2(uuid)'
+       ) is not null
+       and to_regprocedure(
+         'public.issue_choice_quiz_definition_admin(uuid,uuid,uuid,uuid,bigint,timestamp with time zone,jsonb,jsonb)'
+       ) is not null
+       and to_regprocedure(
+         'public.submit_choice_quiz_attempt_admin(uuid,uuid,uuid,text,bigint,uuid,uuid[])'
+       ) is not null
+       and to_regprocedure(
+         'public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)'
+       ) is not null
+       and (
+         select procedure.provolatile = 'v'
+         from pg_proc as procedure
+         where procedure.oid = to_regprocedure(
+           'public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)'
+         )
+       )
+       and to_regprocedure(
+         'public.correct_choice_quiz_evaluation_admin(uuid,uuid,uuid,boolean,text,uuid)'
        ) is not null
        and to_regprocedure(
          'public.revoke_live_access_after_account_deactivation()'
@@ -183,10 +223,10 @@ schema_marker="$(
            'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
          )))
        )
-     then 'shidao-learning-activity-la-m4' else '' end"
+     then 'shidao-learning-activity-la-m5' else '' end"
 )"
-if [[ "$schema_marker" != "shidao-learning-activity-la-m4" ]]; then
-  echo "Refusing fixtures: '$db_name' is not a fully migrated ShiDao LA-M4 test database." >&2
+if [[ "$schema_marker" != "shidao-learning-activity-la-m5" ]]; then
+  echo "Refusing fixtures: '$db_name' is not a fully migrated ShiDao LA-M5 test database." >&2
   exit 2
 fi
 
@@ -224,6 +264,11 @@ begin
     or to_regclass('public.course_learner_enrollment') is null
     or to_regclass('public.lesson_run_execution_capability') is null
     or to_regclass('public.lesson_run_presentation_state') is null
+    or to_regclass('public.choice_quiz_issue') is null
+    or to_regclass('public.choice_quiz_attempt') is null
+    or to_regclass('public.choice_quiz_response') is null
+    or to_regclass('public.choice_quiz_evaluation') is null
+    or to_regclass('public.choice_quiz_feedback_delivery') is null
     or to_regclass('auth.sessions') is null
     or not exists (
       select 1
@@ -246,6 +291,13 @@ begin
       where table_schema = 'public'
         and table_name = 'lesson_component'
         and column_name = 'activity_role'
+    )
+    or not exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'learning_evidence'
+        and column_name = 'source_choice_quiz_evaluation_id'
     )
     or (
       select count(*)
@@ -292,6 +344,9 @@ begin
       'public.build_course_learning_activity_context(uuid,uuid)'
     ) is null
     or to_regprocedure(
+      'public.build_course_learning_activity_context(uuid,uuid,uuid)'
+    ) is null
+    or to_regprocedure(
       'public.get_lesson_run_live_delivery_admin(uuid)'
     ) is null
     or to_regprocedure(
@@ -302,6 +357,31 @@ begin
     ) is null
     or to_regprocedure(
       'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+    ) is null
+    or to_regprocedure(
+      'public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)'
+    ) is null
+    or to_regprocedure(
+      'public.get_teacher_learner_activity_profile_v2(uuid)'
+    ) is null
+    or to_regprocedure(
+      'public.issue_choice_quiz_definition_admin(uuid,uuid,uuid,uuid,bigint,timestamp with time zone,jsonb,jsonb)'
+    ) is null
+    or to_regprocedure(
+      'public.submit_choice_quiz_attempt_admin(uuid,uuid,uuid,text,bigint,uuid,uuid[])'
+    ) is null
+    or to_regprocedure(
+      'public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)'
+    ) is null
+    or not (
+      select procedure.provolatile = 'v'
+      from pg_proc as procedure
+      where procedure.oid = to_regprocedure(
+        'public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)'
+      )
+    )
+    or to_regprocedure(
+      'public.correct_choice_quiz_evaluation_admin(uuid,uuid,uuid,boolean,text,uuid)'
     ) is null
     or to_regprocedure(
       'public.revoke_live_access_after_account_deactivation()'
@@ -383,6 +463,31 @@ begin
 end
 $$;
 
+create function pg_temp.set_authenticated_session(
+  p_auth_user_id uuid,
+  p_session_id uuid
+)
+returns void
+language plpgsql
+as $$
+begin
+  perform set_config(
+    'request.jwt.claim.sub',
+    p_auth_user_id::text,
+    true
+  );
+  perform set_config(
+    'request.jwt.claims',
+    jsonb_build_object(
+      'sub', p_auth_user_id,
+      'session_id', p_session_id,
+      'role', 'authenticated'
+    )::text,
+    true
+  );
+end
+$$;
+
 select pg_temp.assert_true(
   current_database() = 'shidao_learning_activity_test',
   'database identity changed after the shell guard'
@@ -399,7 +504,12 @@ select pg_temp.assert_true(
       values
         ('course_learner_enrollment'),
         ('lesson_run_execution_capability'),
-        ('lesson_run_presentation_state')
+        ('lesson_run_presentation_state'),
+        ('choice_quiz_issue'),
+        ('choice_quiz_attempt'),
+        ('choice_quiz_response'),
+        ('choice_quiz_evaluation'),
+        ('choice_quiz_feedback_delivery')
     ) as expected(table_name)
     where not exists (
       select 1
@@ -415,23 +525,23 @@ select pg_temp.assert_true(
         where policy.schemaname = 'public'
           and policy.tablename = expected.table_name
       )
-      or has_table_privilege(
-        'anon', 'public.' || expected.table_name, 'SELECT'
-      )
-      or has_table_privilege(
-        'authenticated', 'public.' || expected.table_name, 'SELECT'
-      )
-      or has_table_privilege(
-        'service_role', 'public.' || expected.table_name, 'SELECT'
-      )
-      or has_table_privilege(
-        'authenticated', 'public.' || expected.table_name, 'INSERT'
-      )
-      or has_table_privilege(
-        'service_role', 'public.' || expected.table_name, 'UPDATE'
+      or exists (
+        select 1
+        from unnest(array['anon', 'authenticated', 'service_role'])
+          as actor(role_name)
+        cross join unnest(array[
+          'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE',
+          'REFERENCES', 'TRIGGER'
+        ])
+          as privilege(name)
+        where has_table_privilege(
+          actor.role_name,
+          'public.' || expected.table_name,
+          privilege.name
+        )
       )
   ),
-  'LA-M4 raw table RLS/ACL is not closed'
+  'LA-M5 raw live/activity table RLS/ACL is not closed'
 );
 
 select pg_temp.assert_true(
@@ -471,6 +581,170 @@ select pg_temp.assert_true(
       'EXECUTE'
     ),
   'LA-M4 teacher/service resolver RPC ACL is wrong'
+);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from unnest(array[
+      'public.issue_choice_quiz_definition_admin(uuid,uuid,uuid,uuid,bigint,timestamp with time zone,jsonb,jsonb)',
+      'public.submit_choice_quiz_attempt_admin(uuid,uuid,uuid,text,bigint,uuid,uuid[])',
+      'public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)',
+      'public.correct_choice_quiz_evaluation_admin(uuid,uuid,uuid,boolean,text,uuid)',
+      'public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)'
+    ]) as rpc(signature)
+    where has_function_privilege('anon', rpc.signature, 'EXECUTE')
+      or has_function_privilege(
+        'authenticated', rpc.signature, 'EXECUTE'
+      )
+      or not has_function_privilege(
+        'service_role', rpc.signature, 'EXECUTE'
+      )
+  ),
+  'LA-M5 choice_quiz service RPC ACL is wrong'
+);
+
+select pg_temp.assert_true(
+  has_function_privilege(
+    'authenticated',
+    'public.get_teacher_learner_activity_profile_v2(uuid)',
+    'EXECUTE'
+  )
+  and has_function_privilege(
+    'postgres',
+    'public.get_teacher_learner_activity_profile_v2(uuid)',
+    'EXECUTE'
+  )
+  and not has_function_privilege(
+    'anon',
+    'public.get_teacher_learner_activity_profile_v2(uuid)',
+    'EXECUTE'
+  )
+  and not has_function_privilege(
+    'service_role',
+    'public.get_teacher_learner_activity_profile_v2(uuid)',
+    'EXECUTE'
+  ),
+  'LA-M5 teacher profile V2 RPC ACL is wrong'
+);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from unnest(array[
+      'public.choice_quiz_learner_definition_is_valid(jsonb)',
+      'public.choice_quiz_evaluator_config_is_valid(jsonb,jsonb)',
+      'public.choice_quiz_projection_matches_payload(jsonb,jsonb,jsonb)',
+      'public.choice_quiz_execution_payload(uuid)',
+      'public.choice_quiz_history_item(uuid)',
+      'public.teacher_learning_activity_profile_projection_v2(uuid,uuid,timestamp with time zone)',
+      'public.guard_choice_quiz_issue_immutable()',
+      'public.guard_choice_quiz_attempt_immutable()',
+      'public.guard_choice_quiz_strictly_immutable()',
+      'public.guard_choice_quiz_evaluation_immutable()',
+      'public.assert_choice_quiz_evaluation_supersession_chain()'
+    ]) as helper(signature)
+    cross join unnest(array['anon', 'authenticated', 'service_role'])
+      as actor(role_name)
+    where has_function_privilege(
+      actor.role_name,
+      helper.signature,
+      'EXECUTE'
+    )
+  ),
+  'LA-M5 choice_quiz internal helper EXECUTE ACL is open'
+);
+
+select pg_temp.assert_true(
+  (
+    select count(*) = 5
+      and bool_and(procedure.prosecdef)
+      and bool_and(
+        procedure.proconfig @> array['search_path=""']::text[]
+      )
+    from pg_proc as procedure
+    where procedure.oid in (
+      to_regprocedure(
+        'public.issue_choice_quiz_definition_admin(uuid,uuid,uuid,uuid,bigint,timestamp with time zone,jsonb,jsonb)'
+      ),
+      to_regprocedure(
+        'public.submit_choice_quiz_attempt_admin(uuid,uuid,uuid,text,bigint,uuid,uuid[])'
+      ),
+      to_regprocedure(
+        'public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)'
+      ),
+      to_regprocedure(
+        'public.correct_choice_quiz_evaluation_admin(uuid,uuid,uuid,boolean,text,uuid)'
+      ),
+      to_regprocedure(
+        'public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)'
+      )
+    )
+  ),
+  'LA-M5 choice_quiz RPC SECURITY DEFINER/search_path contract is wrong'
+);
+
+select pg_temp.assert_true(
+  position(
+    'resolve_lesson_run_live_source_choice_quiz_admin'
+    in lower(pg_get_functiondef(to_regprocedure(
+      'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+    )))
+  ) > 0
+  and position(
+    'component.value - array'
+    in lower(pg_get_functiondef(to_regprocedure(
+      'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+    )))
+  ) > 0
+  and position(
+    '''primarylearningobjectiveid'''
+    in lower(pg_get_functiondef(to_regprocedure(
+      'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+    )))
+  ) > 0
+  and position(
+    'for share of session'
+    in lower(pg_get_functiondef(to_regprocedure(
+      'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+    )))
+  ) = 0
+  and position(
+    '''primarylearningobjectiveid'''
+    in lower(pg_get_functiondef(to_regprocedure(
+      'public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)'
+    )))
+  ) > 0
+  and position(
+    'perform public.lock_learning_activity_learners'
+    in lower(pg_get_functiondef(to_regprocedure(
+      'public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)'
+    )))
+  ) > 0
+  and position(
+    'for share of session'
+    in lower(pg_get_functiondef(to_regprocedure(
+      'public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)'
+    )))
+  ) > position(
+    'perform public.lock_learning_activity_learners'
+    in lower(pg_get_functiondef(to_regprocedure(
+      'public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)'
+    )))
+  )
+  and position(
+    '''sourcekind'''
+    in lower(pg_get_functiondef(to_regprocedure(
+      'public.teacher_learning_activity_profile_projection(uuid,uuid,timestamp with time zone)'
+    )))
+  ) = 0
+  and position(
+    '''sourcekind'''
+    in lower(pg_get_functiondef(to_regprocedure(
+      'public.teacher_learning_activity_profile_projection_v2(uuid,uuid,timestamp with time zone)'
+    )))
+  ) > 0,
+  'LA-M5 resolver delegation/lock order or strict profile boundary is wrong'
 );
 
 select pg_temp.assert_true(
@@ -688,9 +962,29 @@ select pg_temp.assert_true(
       'public.build_course_learning_activity_context(uuid,uuid)',
       'EXECUTE'
     )
+    and not has_function_privilege(
+      'anon',
+      'public.build_course_learning_activity_context(uuid,uuid)',
+      'EXECUTE'
+    )
+    and not has_function_privilege(
+      'authenticated',
+      'public.build_course_learning_activity_context(uuid,uuid,uuid)',
+      'EXECUTE'
+    )
+    and not has_function_privilege(
+      'anon',
+      'public.build_course_learning_activity_context(uuid,uuid,uuid)',
+      'EXECUTE'
+    )
     and has_function_privilege(
       'service_role',
       'public.build_course_learning_activity_context(uuid,uuid)',
+      'EXECUTE'
+    )
+    and has_function_privilege(
+      'service_role',
+      'public.build_course_learning_activity_context(uuid,uuid,uuid)',
       'EXECUTE'
     )
     and has_function_privilege(
@@ -1451,6 +1745,10 @@ insert into public.account_security (
   sessions_invalid_before
 ) values
   (
+    'b2000000-0000-4000-8000-000000000001',
+    null
+  ),
+  (
     'b2000000-0000-4000-8000-000000000002',
     null
   ),
@@ -1486,6 +1784,20 @@ values
   (
     'bf100000-0000-4000-8000-000000000003',
     'b1000000-0000-4000-8000-000000000003',
+    '2026-08-19 08:00:00+09',
+    '2026-08-19 08:00:00+09',
+    '2026-08-19 08:30:00+09'
+  ),
+  (
+    'bf100000-0000-4000-8000-000000000004',
+    'b1000000-0000-4000-8000-000000000001',
+    '2026-08-19 09:00:00+09',
+    '2026-08-19 09:00:00+09',
+    null
+  ),
+  (
+    'bf100000-0000-4000-8000-000000000005',
+    'b1000000-0000-4000-8000-000000000001',
     '2026-08-19 08:00:00+09',
     '2026-08-19 08:00:00+09',
     '2026-08-19 08:30:00+09'
@@ -1657,10 +1969,9 @@ insert into public.learning_record (
 
 set local session_replication_role = origin;
 
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 
@@ -2009,10 +2320,9 @@ where learning_record_id in (
 );
 
 reset role;
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000002',
-  true
+  'bf100000-0000-4000-8000-000000000002'
 );
 set local role authenticated;
 
@@ -2122,10 +2432,9 @@ select pg_temp.assert_raises(
 );
 
 reset role;
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 
@@ -2156,10 +2465,9 @@ reset role;
 delete from public.learning_objective
 where id = :'active_objective_id'::uuid;
 
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 
@@ -2501,10 +2809,9 @@ select pg_temp.assert_raises(
   'learning_evidence_immutable',
   'materialized evidence accepted an in-place semantic rewrite'
 );
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 
@@ -2797,10 +3104,9 @@ select
 from generate_series(1, 202) as generated(ordinal);
 
 set local session_replication_role = origin;
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 
@@ -3128,18 +3434,56 @@ select public.rebuild_learner_objective_state_for_actor(
 );
 
 set local role service_role;
+select pg_temp.assert_raises(
+  $sql$
+    select public.build_course_learning_activity_context(
+      'b1000000-0000-4000-8000-000000000001',
+      'b4000000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  '42501',
+  'learning_activity_context_session_required',
+  'rolling two-argument AI context boundary remained authoritative'
+);
+select pg_temp.assert_raises(
+  $sql$
+    select public.build_course_learning_activity_context(
+      'b1000000-0000-4000-8000-000000000001',
+      'bf100000-0000-4000-8000-000000000001',
+      'b4000000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  '42501',
+  'learning_activity_context_session_revoked',
+  'AI context accepted another Auth user''s Supabase session'
+);
+select pg_temp.assert_raises(
+  $sql$
+    select public.build_course_learning_activity_context(
+      'b1000000-0000-4000-8000-000000000001',
+      'bf100000-0000-4000-8000-000000000005',
+      'b4000000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  '42501',
+  'learning_activity_context_session_revoked',
+  'AI context accepted an expired exact Supabase session'
+);
 select public.build_course_learning_activity_context(
   'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004',
   'b4000000-0000-4000-8000-000000000001'
 )::text as m3_course_context
 \gset
 select public.build_course_learning_activity_context(
   'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004',
   'b4000000-0000-4000-8000-000000000001'
 )::text as m3_course_context_repeat
 \gset
 select public.build_course_learning_activity_context(
   'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004',
   'b4000000-0000-4000-8000-000000000002'
 )::text as m3_course_context_unused
 \gset
@@ -3281,17 +3625,58 @@ select pg_temp.assert_true(
   'empty effective audience did not return the canonical unused payload'
 );
 
-select set_config(
-  'request.jwt.claim.sub',
-  'b1000000-0000-4000-8000-000000000001',
-  true
-);
-set local role authenticated;
+update public.account_security as security
+set sessions_invalid_before = (
+  select session.created_at + interval '1 microsecond'
+  from auth.sessions as session
+  where session.id = 'bf100000-0000-4000-8000-000000000004'
+)
+where security.account_id = 'b2000000-0000-4000-8000-000000000001';
 
-select set_config(
-  'request.jwt.claim.sub',
+set local role service_role;
+select pg_temp.assert_raises(
+  $sql$
+    select public.build_course_learning_activity_context(
+      'b1000000-0000-4000-8000-000000000001',
+      'bf100000-0000-4000-8000-000000000004',
+      'b4000000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  '42501',
+  'learning_activity_context_session_revoked',
+  'AI context accepted an exact session issued before Account cutoff'
+);
+reset role;
+
+update public.account_security
+set sessions_invalid_before = null
+where account_id = 'b2000000-0000-4000-8000-000000000001';
+update public.account
+set status = 'suspended'
+where id = 'b2000000-0000-4000-8000-000000000001';
+
+set local role service_role;
+select pg_temp.assert_raises(
+  $sql$
+    select public.build_course_learning_activity_context(
+      'b1000000-0000-4000-8000-000000000001',
+      'bf100000-0000-4000-8000-000000000004',
+      'b4000000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  '42501',
+  'learning_activity_context_session_revoked',
+  'AI context accepted a suspended Account'
+);
+reset role;
+
+update public.account
+set status = 'active'
+where id = 'b2000000-0000-4000-8000-000000000001';
+
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 
@@ -3315,10 +3700,9 @@ select public.complete_lesson_run_v2(
 
 reset role;
 
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000003',
-  true
+  'bf100000-0000-4000-8000-000000000001'
 );
 set local role authenticated;
 
@@ -3381,10 +3765,9 @@ select pg_temp.assert_true(
 );
 
 reset role;
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000002',
-  true
+  'bf100000-0000-4000-8000-000000000002'
 );
 set local role authenticated;
 
@@ -3432,18 +3815,41 @@ select pg_temp.assert_true(
   'observer profile diverged from safe self projection or missed audit'
 );
 
+update public.account_security as security
+set sessions_invalid_before = (
+  select session.created_at + interval '1 microsecond'
+  from auth.sessions as session
+  where session.id = 'bf100000-0000-4000-8000-000000000002'
+)
+where security.account_id = 'b2000000-0000-4000-8000-000000000002';
+set local role authenticated;
+select pg_temp.assert_raises(
+  $sql$
+    select public.get_observed_learner_activity_profile(
+      'b3000000-0000-4000-8000-000000000003'
+    )
+  $sql$,
+  'P0002',
+  'observed_learner_profile_not_found',
+  'cut-off observer JWT retained the unified activity profile'
+);
+reset role;
+update public.account_security
+set sessions_invalid_before = null
+where account_id = 'b2000000-0000-4000-8000-000000000002';
+
 do $erasure$
 declare
   v_preview jsonb;
 begin
-  perform set_config(
-    'request.jwt.claim.sub',
+  perform pg_temp.set_authenticated_session(
     'b1000000-0000-4000-8000-000000000003',
-    true
+    'bf100000-0000-4000-8000-000000000001'
   );
   v_preview := public.preview_my_learning_data_erasure();
   perform public.confirm_my_learning_data_erasure(
     'b1000000-0000-4000-8000-000000000003',
+    'bf100000-0000-4000-8000-000000000001',
     v_preview ->> 'previewFingerprint'
   );
 end
@@ -3773,6 +4179,16 @@ update public.learner_profile
 set id = 'b3000000-0000-4000-8000-000000000003'
 where account_id = 'b2000000-0000-4000-8000-000000000003';
 
+insert into public.teacher_learner (
+  teacher_account_id,
+  learner_profile_id,
+  display_name
+) values (
+  'b2000000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003',
+  'LA Subject'
+);
+
 -- Isolated lifecycle fixture: an actual Run cancellation removes its draft
 -- LearningRecord, while the exact capability row must retain enough bounded
 -- membership for the owner to perform a full Course revoke and unblock owner
@@ -3934,10 +4350,9 @@ select pg_temp.assert_raises(
 );
 reset role;
 
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000002',
-  true
+  'bf100000-0000-4000-8000-000000000002'
 );
 set local role authenticated;
 select pg_temp.assert_raises(
@@ -3977,10 +4392,9 @@ select pg_temp.assert_raises(
 );
 reset role;
 
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 
@@ -4114,10 +4528,9 @@ select pg_temp.assert_true(
   'scheduled Course grant did not persist an exact revoked membership tombstone'
 );
 
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 select public.start_lesson_run(
@@ -4166,10 +4579,9 @@ select pg_temp.assert_true(
 );
 
 -- A repeated actual start must not reset the cursor or duplicate capability.
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 select public.start_lesson_run(
@@ -4222,10 +4634,9 @@ select pg_temp.assert_true(
 -- Cancel is a close transition, not an authorization revoke. The frozen Run
 -- capability survives cancellation even though canonical cancellation removes
 -- its draft LearningRecord, so the learner receives only the safe ended DTO.
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 select public.start_lesson_run(
@@ -4261,10 +4672,9 @@ select pg_temp.assert_true(
 -- Cancellation removes the draft LearningRecord, but the exact capability
 -- remains a bounded membership record for the teacher workspace. It must not
 -- permit any post-cancellation re-grant.
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 select public.get_lesson_run_live_delivery_admin(
@@ -4365,10 +4775,9 @@ select pg_temp.assert_true(
   'scheduled cancellation deleted its exact membership tombstone'
 );
 
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 select public.set_lesson_run_live_access(
@@ -4420,10 +4829,9 @@ update public.course
 set owner_account_id = 'b2000000-0000-4000-8000-000000000001'
 where id = 'bf400000-0000-4000-8000-000000000002';
 
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 select public.set_lesson_run_presentation_cursor(
@@ -4460,6 +4868,12 @@ select public.resolve_lesson_run_live_source_admin(
   'b1000000-0000-4000-8000-000000000003',
   'bf100000-0000-4000-8000-000000000001',
   'bf700000-0000-4000-8000-000000000001'
+)::text as m4_legacy_live_source
+\gset
+select public.resolve_lesson_run_live_source_choice_quiz_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001'
 )::text as m4_live_source
 \gset
 reset role;
@@ -4477,18 +4891,2803 @@ select pg_temp.assert_true(
     and jsonb_array_length(
       :'m4_live_source'::jsonb -> 'slide' -> 'components'
     ) = 1
+    and (
+      select count(*) = 9
+        and bool_and(key in (
+          'id', 'typeKey', 'schemaVersion', 'position', 'payload',
+          'placement', 'primaryLearningObjectiveId', 'activityRole',
+          'updatedAt'
+        ))
+      from jsonb_object_keys(
+        :'m4_live_source'::jsonb -> 'slide' -> 'components' -> 0
+      ) as component_key(key)
+    )
+    and :'m4_live_source'::jsonb -> 'slide' -> 'components' -> 0
+      ->> 'id' = 'bf600000-0000-4000-8000-000000000001'
     and :'m4_live_source'::jsonb -> 'slide' -> 'components' -> 0
       ->> 'typeKey' = 'rich_text'
     and :'m4_live_source'::jsonb -> 'slide' -> 'components' -> 0
       -> 'payload' ->> 'content' = 'LA_M4_LEARNER_LIVE_SENTINEL'
     and :'m4_live_source'::jsonb -> 'assets' = '[]'::jsonb
+    and :'m4_legacy_live_source'::jsonb = jsonb_set(
+      :'m4_live_source'::jsonb,
+      '{slide,components}',
+      jsonb_build_array(
+        (:'m4_live_source'::jsonb #> '{slide,components,0}') - array[
+          'id', 'primaryLearningObjectiveId', 'activityRole', 'updatedAt'
+        ]
+      ),
+      false
+    )
+    and (
+      select count(*) = 5
+        and bool_and(key in (
+          'typeKey', 'schemaVersion', 'position', 'payload', 'placement'
+        ))
+      from jsonb_object_keys(
+        :'m4_legacy_live_source'::jsonb -> 'slide' -> 'components' -> 0
+      ) as legacy_component_key(key)
+    )
     and position('bf600000-0000-4000-8000-000000000001'
-      in :'m4_live_source') = 0
+      in :'m4_legacy_live_source') = 0
     and position('bf550000-0000-4000-8000-000000000001'
       in :'m4_live_source') = 0
     and position('LA_M4_STAFF_ONLY_SENTINEL'
       in :'m4_live_source') = 0,
-  'learner resolver leaked IDs/staff content or violated current-Slide DTO'
+  'new resolver or byte-compatible legacy stripping wrapper violated its DTO'
+);
+
+-- -------------------------------------------------------------------------
+-- LA-M5 persisted choice_quiz issue, execution, evaluation and history.
+-- -------------------------------------------------------------------------
+
+insert into public.learning_objective (
+  id,
+  course_id,
+  title,
+  description
+) values
+  (
+    'cf500000-0000-4000-8000-000000000001',
+    'bf400000-0000-4000-8000-000000000001',
+    'LA-M5 exact-set objective',
+    'Disposable objective for persisted choice_quiz acceptance.'
+  ),
+  (
+    'cf500000-0000-4000-8000-000000000002',
+    'bf400000-0000-4000-8000-000000000001',
+    'LA-M5 quiz-only legacy boundary objective',
+    'Disposable objective proving the frozen LA-M4 profile boundary.'
+  );
+
+insert into public.lesson_component (
+  id,
+  lesson_id,
+  position,
+  type_key,
+  payload,
+  placement_config,
+  visibility,
+  student_slide_id,
+  primary_learning_objective_id,
+  activity_role
+) values
+  (
+    'cf600000-0000-4000-8000-000000000010',
+    'bf500000-0000-4000-8000-000000000001',
+    10,
+    'choice_quiz',
+    '{"question":"LA-M5 single practice","options":[{"id":"cf910000-0000-4000-8000-000000000001","label":"Single correct","isCorrect":true},{"id":"cf910000-0000-4000-8000-000000000002","label":"Single wrong","isCorrect":false}],"allowMultiple":false,"explanation":"LA_M5_SINGLE_SECRET_EXPLANATION"}'::jsonb,
+    '{}'::jsonb,
+    'learner_visible',
+    'bf550000-0000-4000-8000-000000000001',
+    'cf500000-0000-4000-8000-000000000001',
+    'practice'
+  ),
+  (
+    'cf600000-0000-4000-8000-000000000011',
+    'bf500000-0000-4000-8000-000000000001',
+    11,
+    'choice_quiz',
+    '{"question":"LA-M5 multiple practice","options":[{"id":"cf920000-0000-4000-8000-000000000001","label":"Multiple correct one","isCorrect":true},{"id":"cf920000-0000-4000-8000-000000000002","label":"Multiple wrong","isCorrect":false},{"id":"cf920000-0000-4000-8000-000000000003","label":"Multiple correct two","isCorrect":true}],"allowMultiple":true,"explanation":"LA_M5_MULTIPLE_SECRET_EXPLANATION"}'::jsonb,
+    '{}'::jsonb,
+    'learner_visible',
+    'bf550000-0000-4000-8000-000000000001',
+    'cf500000-0000-4000-8000-000000000001',
+    'practice'
+  ),
+  (
+    'cf600000-0000-4000-8000-000000000012',
+    'bf500000-0000-4000-8000-000000000001',
+    12,
+    'choice_quiz',
+    '{"question":"LA-M5 assessment","options":[{"id":"cf930000-0000-4000-8000-000000000001","label":"Assessment correct","isCorrect":true},{"id":"cf930000-0000-4000-8000-000000000002","label":"Assessment wrong","isCorrect":false}],"allowMultiple":false,"explanation":"LA_M5_ASSESSMENT_SECRET_EXPLANATION"}'::jsonb,
+    '{}'::jsonb,
+    'learner_visible',
+    'bf550000-0000-4000-8000-000000000001',
+    'cf500000-0000-4000-8000-000000000001',
+    'assessment'
+  ),
+  (
+    'cf600000-0000-4000-8000-000000000013',
+    'bf500000-0000-4000-8000-000000000001',
+    13,
+    'choice_quiz',
+    '{"question":"LA-M5 practice exhaustion without objective","options":[{"id":"cf940000-0000-4000-8000-000000000001","label":"Exhaust correct","isCorrect":true},{"id":"cf940000-0000-4000-8000-000000000002","label":"Exhaust wrong","isCorrect":false}],"allowMultiple":false,"explanation":"LA_M5_EXHAUST_SECRET_EXPLANATION"}'::jsonb,
+    '{}'::jsonb,
+    'learner_visible',
+    'bf550000-0000-4000-8000-000000000001',
+    null,
+    'practice'
+  ),
+  (
+    'cf600000-0000-4000-8000-000000000014',
+    'bf500000-0000-4000-8000-000000000001',
+    14,
+    'choice_quiz',
+    '{"question":"LA-M5 presentation only","options":[{"id":"cf950000-0000-4000-8000-000000000001","label":"Presentation one","isCorrect":true},{"id":"cf950000-0000-4000-8000-000000000002","label":"Presentation two","isCorrect":false}],"allowMultiple":false}'::jsonb,
+    '{}'::jsonb,
+    'learner_visible',
+    'bf550000-0000-4000-8000-000000000001',
+    null,
+    null
+  ),
+  (
+    'cf600000-0000-4000-8000-000000000015',
+    'bf500000-0000-4000-8000-000000000001',
+    15,
+    'choice_quiz',
+    '{"question":"LA-M5 quiz-only legacy boundary","options":[{"id":"CF960000-0000-4000-8000-000000000001","label":"Legacy boundary correct","isCorrect":true},{"id":"CF960000-0000-4000-8000-000000000002","label":"Legacy boundary wrong","isCorrect":false}],"allowMultiple":false}'::jsonb,
+    '{}'::jsonb,
+    'learner_visible',
+    'bf550000-0000-4000-8000-000000000001',
+    'cf500000-0000-4000-8000-000000000002',
+    'practice'
+  );
+
+select
+  (max(updated_at) filter (
+    where id = 'cf600000-0000-4000-8000-000000000010'
+  ))::text as cq_single_updated_at,
+  (max(updated_at) filter (
+    where id = 'cf600000-0000-4000-8000-000000000011'
+  ))::text as cq_multiple_updated_at,
+  (max(updated_at) filter (
+    where id = 'cf600000-0000-4000-8000-000000000012'
+  ))::text as cq_assessment_updated_at,
+  (max(updated_at) filter (
+    where id = 'cf600000-0000-4000-8000-000000000013'
+  ))::text as cq_exhaust_updated_at,
+  (max(updated_at) filter (
+    where id = 'cf600000-0000-4000-8000-000000000014'
+  ))::text as cq_role_null_updated_at,
+  (max(updated_at) filter (
+    where id = 'cf600000-0000-4000-8000-000000000015'
+  ))::text as cq_legacy_quiz_only_updated_at
+from public.lesson_component
+where id in (
+  'cf600000-0000-4000-8000-000000000010',
+  'cf600000-0000-4000-8000-000000000011',
+  'cf600000-0000-4000-8000-000000000012',
+  'cf600000-0000-4000-8000-000000000013',
+  'cf600000-0000-4000-8000-000000000014',
+  'cf600000-0000-4000-8000-000000000015'
+)
+\gset
+
+-- Seed one finalized observation-backed fact for the first objective. The
+-- same objective also receives real quiz evaluations below, while the second
+-- objective remains quiz-only. This lets the legacy LA-M4 projection prove
+-- both mixed-source and quiz-only compatibility without changing its shape.
+set local session_replication_role = replica;
+insert into public.learning_record (
+  id,
+  learner_profile_id,
+  lesson_run_id,
+  source_course_id,
+  source_lesson_id,
+  occurred_at,
+  was_present,
+  needs_repeat,
+  course_title_at_time,
+  lesson_title_at_time,
+  subject_at_time,
+  recorded_by_account_id,
+  source_course_id_at_time,
+  source_lesson_id_at_time,
+  source_lesson_run_id_at_time
+) values (
+  'cf8b0000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003',
+  null,
+  'bf400000-0000-4000-8000-000000000001',
+  'bf500000-0000-4000-8000-000000000001',
+  '2026-08-19 10:30:00+09',
+  true,
+  false,
+  'LA-M4 no-audience live-delivery fixture',
+  'LA-M4 live delivery',
+  'Русский язык',
+  'b2000000-0000-4000-8000-000000000001',
+  'bf400000-0000-4000-8000-000000000001',
+  'bf500000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001'
+);
+
+insert into public.lesson_component_observation (
+  id,
+  learning_record_id,
+  lesson_component_id,
+  source_lesson_component_id_at_time,
+  component_position_at_time,
+  component_type_key_at_time,
+  component_label_at_time,
+  observable_criterion_at_time,
+  rating,
+  entry_method,
+  observed_at,
+  recorded_by_account_id,
+  learning_objective_id,
+  source_learning_objective_id_at_time,
+  learning_objective_title_at_time,
+  component_visibility_at_time
+) values (
+  'cf9b0000-0000-4000-8000-000000000001',
+  'cf8b0000-0000-4000-8000-000000000001',
+  null,
+  'bf600000-0000-4000-8000-000000000003',
+  2,
+  'discussion',
+  'LA-M5 mixed-source compatibility observation',
+  'Proves observation and quiz evidence coexist',
+  'independent',
+  'direct',
+  '2026-08-19 10:20:00+09',
+  'b2000000-0000-4000-8000-000000000001',
+  'cf500000-0000-4000-8000-000000000001',
+  'cf500000-0000-4000-8000-000000000001',
+  'LA-M5 exact-set objective',
+  'staff_only'
+);
+set local session_replication_role = origin;
+
+select public.materialize_learning_evidence_for_records(
+  array['cf8b0000-0000-4000-8000-000000000001'::uuid],
+  '2026-08-19 10:31:00+09'::timestamptz
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.learning_evidence
+    where source_observation_id =
+        'cf9b0000-0000-4000-8000-000000000001'
+      and source_choice_quiz_evaluation_id is null
+      and source_learning_objective_id_at_time =
+        'cf500000-0000-4000-8000-000000000001'
+  ),
+  'mixed-source compatibility fixture did not materialize observation evidence'
+);
+
+set local role service_role;
+select pg_temp.assert_raises(
+  $sql$
+    select public.issue_choice_quiz_definition_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001',
+      'cf600000-0000-4000-8000-000000000010',
+      1,
+      (select updated_at from public.lesson_component
+       where id = 'cf600000-0000-4000-8000-000000000010'),
+      '{"question":"LA-M5 single practice","options":[{"id":"cf910000-0000-4000-8000-000000000001","label":"Single correct"},{"id":"CF910000-0000-4000-8000-000000000001","label":"Case duplicate"}],"allowMultiple":false}'::jsonb,
+      '{"correctOptionIds":["cf910000-0000-4000-8000-000000000001"],"allowMultiple":false}'::jsonb
+    )
+  $sql$,
+  '22023',
+  'choice_quiz_issue_invalid',
+  'learner definition accepted option UUIDs duplicated only by letter case'
+);
+
+select pg_temp.assert_raises(
+  $sql$
+    select public.issue_choice_quiz_definition_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001',
+      'cf600000-0000-4000-8000-000000000011',
+      1,
+      (select updated_at from public.lesson_component
+       where id = 'cf600000-0000-4000-8000-000000000011'),
+      '{"question":"LA-M5 multiple practice","options":[{"id":"cf920000-0000-4000-8000-000000000001","label":"Multiple correct one"},{"id":"cf920000-0000-4000-8000-000000000002","label":"Multiple wrong"},{"id":"cf920000-0000-4000-8000-000000000003","label":"Multiple correct two"}],"allowMultiple":true}'::jsonb,
+      '{"correctOptionIds":["cf920000-0000-4000-8000-000000000001","CF920000-0000-4000-8000-000000000001"],"allowMultiple":true}'::jsonb
+    )
+  $sql$,
+  '22023',
+  'choice_quiz_issue_invalid',
+  'evaluator accepted correctOptionIds duplicated only by letter case'
+);
+reset role;
+
+set local role service_role;
+select public.issue_choice_quiz_definition_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  'cf600000-0000-4000-8000-000000000010',
+  1,
+  :'cq_single_updated_at'::timestamptz,
+  '{"question":"LA-M5 single practice","options":[{"id":"cf910000-0000-4000-8000-000000000001","label":"Single correct"},{"id":"cf910000-0000-4000-8000-000000000002","label":"Single wrong"}],"allowMultiple":false}'::jsonb,
+  '{"correctOptionIds":["cf910000-0000-4000-8000-000000000001"],"allowMultiple":false,"explanation":"LA_M5_SINGLE_SECRET_EXPLANATION"}'::jsonb
+)::text as cq_single_issue
+\gset
+reset role;
+
+select (:'cq_single_issue'::jsonb #>> '{execution,issueRef}')::text
+  as cq_single_ref
+\gset
+
+select pg_temp.assert_true(
+  (
+    select count(*) = 2
+      and bool_and(key in ('learnerDefinition', 'execution'))
+    from jsonb_object_keys(:'cq_single_issue'::jsonb) as root(key)
+  )
+    and :'cq_single_issue'::jsonb -> 'learnerDefinition' =
+      '{"question":"LA-M5 single practice","options":[{"id":"cf910000-0000-4000-8000-000000000001","label":"Single correct"},{"id":"cf910000-0000-4000-8000-000000000002","label":"Single wrong"}],"allowMultiple":false}'::jsonb
+    and :'cq_single_ref' ~ '^cqi_[0-9a-f]{64}$'
+    and :'cq_single_ref' !~
+      '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    and :'cq_single_issue'::jsonb #>> '{execution,definitionRevision}'
+      ~ '^cqd_v1_[0-9a-f]{64}$'
+    and (:'cq_single_issue'::jsonb #>> '{execution,attemptCount}')::int = 0
+    and (:'cq_single_issue'::jsonb #>> '{execution,maxAttempts}')::int = 3
+    and (:'cq_single_issue'::jsonb #>> '{execution,remainingAttempts}')::int = 3
+    and (:'cq_single_issue'::jsonb #>> '{execution,canSubmit}')::boolean
+    and not (:'cq_single_issue'::jsonb #>>
+      '{execution,hintAvailable}')::boolean
+    and (:'cq_single_issue'::jsonb #>> '{execution,hintCount}')::int = 0
+    and :'cq_single_issue'::jsonb #> '{execution,latestFeedback}' =
+      'null'::jsonb
+    and position('correctOptionIds' in :'cq_single_issue') = 0
+    and position('isCorrect' in :'cq_single_issue') = 0
+    and position('evaluatorConfig' in :'cq_single_issue') = 0
+    and position('activityRole' in :'cq_single_issue') = 0
+    and position('primaryLearningObjectiveId'
+      in :'cq_single_issue') = 0
+    and position('LA_M5_SINGLE_SECRET_EXPLANATION'
+      in :'cq_single_issue') = 0
+    and position('cf600000-0000-4000-8000-000000000010'
+      in :'cq_single_issue') = 0
+    and position('cf500000-0000-4000-8000-000000000001'
+      in :'cq_single_issue') = 0,
+  'single-choice issuance leaked evaluator/activity/objective/component data or violated its strict execution policy'
+);
+
+set local role service_role;
+select public.issue_choice_quiz_definition_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  'cf600000-0000-4000-8000-000000000010',
+  1,
+  :'cq_single_updated_at'::timestamptz,
+  '{"question":"LA-M5 single practice","options":[{"id":"cf910000-0000-4000-8000-000000000001","label":"Single correct"},{"id":"cf910000-0000-4000-8000-000000000002","label":"Single wrong"}],"allowMultiple":false}'::jsonb,
+  '{"correctOptionIds":["cf910000-0000-4000-8000-000000000001"],"allowMultiple":false,"explanation":"LA_M5_SINGLE_SECRET_EXPLANATION"}'::jsonb
+)::text as cq_single_reload
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  :'cq_single_reload'::jsonb = :'cq_single_issue'::jsonb
+    and (
+      select count(*) = 1
+      from public.choice_quiz_issue
+      where source_component_id_at_time =
+        'cf600000-0000-4000-8000-000000000010'
+    )
+    and exists (
+      select 1
+      from public.choice_quiz_issue
+      where learner_ref = :'cq_single_ref'
+        and definition_revision ~ '^cqd_v1_[0-9a-f]{64}$'
+        and evaluator_version = 'choice_quiz_exact_set_v1'
+        and evaluator_fingerprint ~ '^cqef_v1_[0-9a-f]{64}$'
+        and execution_policy_version = 1
+        and evidence_policy_version = 2
+    ),
+  'issuance reload was not stable/idempotent or lost evaluator revision markers'
+);
+
+select pg_temp.assert_raises(
+  format(
+    'update public.choice_quiz_issue set cursor_revision = 2 where learner_ref = %L',
+    :'cq_single_ref'
+  ),
+  '55000',
+  'choice_quiz_issue_immutable',
+  'issued evaluator/context snapshot was mutable'
+);
+
+select pg_temp.assert_raises(
+  $sql$
+    select public.issue_choice_quiz_definition_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001',
+      'cf600000-0000-4000-8000-000000000010',
+      1,
+      (select updated_at - interval '1 microsecond'
+       from public.lesson_component
+       where id = 'cf600000-0000-4000-8000-000000000010'),
+      '{"question":"LA-M5 single practice","options":[{"id":"cf910000-0000-4000-8000-000000000001","label":"Single correct"},{"id":"cf910000-0000-4000-8000-000000000002","label":"Single wrong"}],"allowMultiple":false}'::jsonb,
+      '{"correctOptionIds":["cf910000-0000-4000-8000-000000000001"],"allowMultiple":false}'::jsonb
+    )
+  $sql$,
+  '40001',
+  'choice_quiz_issue_stale',
+  'issuance accepted a stale component updated_at marker'
+);
+
+select pg_temp.assert_raises(
+  $sql$
+    select public.issue_choice_quiz_definition_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001',
+      'cf600000-0000-4000-8000-000000000010',
+      1,
+      (select updated_at from public.lesson_component
+       where id = 'cf600000-0000-4000-8000-000000000010'),
+      '{"question":"LA-M5 single practice","options":[{"id":"cf910000-0000-4000-8000-000000000001","label":"Tampered label"},{"id":"cf910000-0000-4000-8000-000000000002","label":"Single wrong"}],"allowMultiple":false}'::jsonb,
+      '{"correctOptionIds":["cf910000-0000-4000-8000-000000000001"],"allowMultiple":false,"explanation":"LA_M5_SINGLE_SECRET_EXPLANATION"}'::jsonb
+    )
+  $sql$,
+  '23514',
+  'choice_quiz_issue_projection_invalid',
+  'issuance accepted a learner projection that did not match authored payload'
+);
+
+select pg_temp.assert_raises(
+  $sql$
+    select public.issue_choice_quiz_definition_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001',
+      'cf600000-0000-4000-8000-000000000010',
+      1,
+      (select updated_at from public.lesson_component
+       where id = 'cf600000-0000-4000-8000-000000000010'),
+      '{"question":"LA-M5 single practice","options":[{"id":"cf910000-0000-4000-8000-000000000001","label":"Single correct"},{"id":"cf910000-0000-4000-8000-000000000002","label":"Single wrong"}],"allowMultiple":false,"correctOptionIds":["cf910000-0000-4000-8000-000000000001"]}'::jsonb,
+      '{"correctOptionIds":["cf910000-0000-4000-8000-000000000001"],"allowMultiple":false}'::jsonb
+    )
+  $sql$,
+  '22023',
+  'choice_quiz_issue_invalid',
+  'issuance accepted evaluator data inside the learner definition'
+);
+
+select pg_temp.assert_raises(
+  $sql$
+    select public.issue_choice_quiz_definition_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001',
+      'cf600000-0000-4000-8000-000000000014',
+      1,
+      (select updated_at from public.lesson_component
+       where id = 'cf600000-0000-4000-8000-000000000014'),
+      '{"question":"LA-M5 presentation only","options":[{"id":"cf950000-0000-4000-8000-000000000001","label":"Presentation one"},{"id":"cf950000-0000-4000-8000-000000000002","label":"Presentation two"}],"allowMultiple":false}'::jsonb,
+      '{"correctOptionIds":["cf950000-0000-4000-8000-000000000001"],"allowMultiple":false}'::jsonb
+    )
+  $sql$,
+  '40001',
+  'choice_quiz_issue_stale',
+  'presentation-only role-null quiz became executable'
+);
+
+set local role service_role;
+select public.issue_choice_quiz_definition_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  'cf600000-0000-4000-8000-000000000011',
+  1,
+  :'cq_multiple_updated_at'::timestamptz,
+  '{"question":"LA-M5 multiple practice","options":[{"id":"cf920000-0000-4000-8000-000000000001","label":"Multiple correct one"},{"id":"cf920000-0000-4000-8000-000000000002","label":"Multiple wrong"},{"id":"cf920000-0000-4000-8000-000000000003","label":"Multiple correct two"}],"allowMultiple":true}'::jsonb,
+  '{"correctOptionIds":["cf920000-0000-4000-8000-000000000001","cf920000-0000-4000-8000-000000000003"],"allowMultiple":true,"explanation":"LA_M5_MULTIPLE_SECRET_EXPLANATION"}'::jsonb
+)::text as cq_multiple_issue
+\gset
+select (:'cq_multiple_issue'::jsonb #>> '{execution,issueRef}')::text
+  as cq_multiple_ref
+\gset
+
+select public.issue_choice_quiz_definition_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  'cf600000-0000-4000-8000-000000000012',
+  1,
+  :'cq_assessment_updated_at'::timestamptz,
+  '{"question":"LA-M5 assessment","options":[{"id":"cf930000-0000-4000-8000-000000000001","label":"Assessment correct"},{"id":"cf930000-0000-4000-8000-000000000002","label":"Assessment wrong"}],"allowMultiple":false}'::jsonb,
+  '{"correctOptionIds":["cf930000-0000-4000-8000-000000000001"],"allowMultiple":false,"explanation":"LA_M5_ASSESSMENT_SECRET_EXPLANATION"}'::jsonb
+)::text as cq_assessment_issue
+\gset
+select (:'cq_assessment_issue'::jsonb #>> '{execution,issueRef}')::text
+  as cq_assessment_ref
+\gset
+
+select public.issue_choice_quiz_definition_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  'cf600000-0000-4000-8000-000000000013',
+  1,
+  :'cq_exhaust_updated_at'::timestamptz,
+  '{"question":"LA-M5 practice exhaustion without objective","options":[{"id":"cf940000-0000-4000-8000-000000000001","label":"Exhaust correct"},{"id":"cf940000-0000-4000-8000-000000000002","label":"Exhaust wrong"}],"allowMultiple":false}'::jsonb,
+  '{"correctOptionIds":["cf940000-0000-4000-8000-000000000001"],"allowMultiple":false,"explanation":"LA_M5_EXHAUST_SECRET_EXPLANATION"}'::jsonb
+)::text as cq_exhaust_issue
+\gset
+select (:'cq_exhaust_issue'::jsonb #>> '{execution,issueRef}')::text
+  as cq_exhaust_ref
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  (:'cq_multiple_issue'::jsonb #>> '{execution,maxAttempts}')::int = 3
+    and (:'cq_assessment_issue'::jsonb #>>
+      '{execution,maxAttempts}')::int = 1
+    and (:'cq_exhaust_issue'::jsonb #>> '{execution,maxAttempts}')::int = 3
+    and position('correctOptionIds' in :'cq_multiple_issue') = 0
+    and position('correctOptionIds' in :'cq_assessment_issue') = 0
+    and position('LA_M5_ASSESSMENT_SECRET_EXPLANATION'
+      in :'cq_assessment_issue') = 0,
+  'practice/assessment issue policies or initial privacy differed from the frozen contract'
+);
+
+set local role service_role;
+select pg_temp.assert_raises(
+  format($sql$
+    select public.submit_choice_quiz_attempt_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001',
+      %L, 1, 'cfa00000-0000-4000-8000-000000000090',
+      array['cf910000-0000-4000-8000-000000000002'::uuid,
+            'cf910000-0000-4000-8000-000000000002'::uuid]
+    )
+  $sql$, :'cq_single_ref'),
+  '22023',
+  'choice_quiz_attempt_invalid',
+  'duplicate selected option ids were accepted'
+);
+
+select pg_temp.assert_raises(
+  format($sql$
+    select public.submit_choice_quiz_attempt_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001',
+      %L, 1, 'cfa00000-0000-4000-8000-000000000091',
+      array['cfffffff-0000-4000-8000-000000000001'::uuid]
+    )
+  $sql$, :'cq_single_ref'),
+  '22023',
+  'choice_quiz_response_invalid',
+  'unknown selected option id was accepted'
+);
+
+select pg_temp.assert_raises(
+  format($sql$
+    select public.submit_choice_quiz_attempt_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001',
+      %L, 1, 'cfa00000-0000-4000-8000-000000000092',
+      array['cf910000-0000-4000-8000-000000000001'::uuid,
+            'cf910000-0000-4000-8000-000000000002'::uuid]
+    )
+  $sql$, :'cq_single_ref'),
+  '22023',
+  'choice_quiz_response_invalid',
+  'single-choice issue accepted multiple selected option ids'
+);
+
+select public.submit_choice_quiz_attempt_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  :'cq_single_ref',
+  1,
+  'cfa00000-0000-4000-8000-000000000001',
+  array['cf910000-0000-4000-8000-000000000002'::uuid]
+)::text as cq_single_wrong
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  (:'cq_single_wrong'::jsonb #>>
+    '{execution,latestFeedback,isCorrect}')::boolean = false
+    and (:'cq_single_wrong'::jsonb #>>
+      '{execution,latestFeedback,score}')::int = 0
+    and (:'cq_single_wrong'::jsonb #>>
+      '{execution,latestFeedback,attemptNumber}')::int = 1
+    and (:'cq_single_wrong'::jsonb #>>
+      '{execution,latestFeedback,canRetry}')::boolean
+    and :'cq_single_wrong'::jsonb #>
+      '{execution,latestFeedback,reveal}' = 'null'::jsonb
+    and position('LA_M5_SINGLE_SECRET_EXPLANATION'
+      in :'cq_single_wrong') = 0
+    and exists (
+      select 1
+      from public.choice_quiz_attempt as attempt
+      join public.choice_quiz_evaluation as evaluation
+        on evaluation.attempt_id = attempt.id
+      join public.learning_evidence as evidence
+        on evidence.source_choice_quiz_evaluation_id = evaluation.id
+      where attempt.issue_id = (
+        select id from public.choice_quiz_issue
+        where learner_ref = :'cq_single_ref'
+      )
+        and attempt.attempt_number = 1
+        and attempt.support = 'independent'
+        and not evaluation.is_correct
+        and evaluation.score = 0
+        and evidence.direction = 'negative'
+        and evidence.support is null
+        and evidence.reason_code =
+          'choice_quiz_not_yet_negative_evidence'
+    ),
+  'single-choice incorrect attempt was not binary, private, retryable and materialized as negative evidence'
+);
+
+-- Reproduce the deployed LA-M3 raw history boundary exactly: its PostgREST
+-- read filters learning_evidence by LearningRecord IDs and then applies a
+-- strict observation-only mapper. Quiz evidence must therefore live outside
+-- the compact record graph even while its Issue retains the lifecycle anchor.
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.learning_evidence as evidence
+    join public.choice_quiz_evaluation as evaluation
+      on evaluation.id = evidence.source_choice_quiz_evaluation_id
+    join public.choice_quiz_issue as issue on issue.id = evaluation.issue_id
+    where issue.learner_ref = :'cq_single_ref'
+      and issue.learning_record_id is not null
+      and evidence.learning_record_id is null
+  )
+    and not exists (
+      select 1
+      from public.learning_evidence as legacy_raw_evidence
+      where legacy_raw_evidence.learning_record_id = any(array[
+        (
+          select issue.learning_record_id
+          from public.choice_quiz_issue as issue
+          where issue.learner_ref = :'cq_single_ref'
+        )
+      ]::uuid[])
+        and legacy_raw_evidence.source_choice_quiz_evaluation_id is not null
+    ),
+  'deployed LA-M3 record-scoped raw history could receive quiz evidence'
+);
+
+set local role service_role;
+select public.submit_choice_quiz_attempt_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  :'cq_single_ref',
+  1,
+  'cfa00000-0000-4000-8000-000000000001',
+  array['cf910000-0000-4000-8000-000000000002'::uuid]
+)::text as cq_single_replay
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  :'cq_single_replay'::jsonb = :'cq_single_wrong'::jsonb
+    and (
+      select count(*) = 1
+      from public.choice_quiz_attempt
+      where issue_id = (
+        select id from public.choice_quiz_issue
+        where learner_ref = :'cq_single_ref'
+      )
+    ),
+  'same-key same-body submission did not replay without duplication'
+);
+
+set local role service_role;
+select pg_temp.assert_raises(
+  format($sql$
+    select public.submit_choice_quiz_attempt_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001',
+      %L, 1, 'cfa00000-0000-4000-8000-000000000001',
+      array['cf910000-0000-4000-8000-000000000001'::uuid]
+    )
+  $sql$, :'cq_single_ref'),
+  '23505',
+  'choice_quiz_idempotency_conflict',
+  'same idempotency key accepted a different selection payload'
+);
+
+select public.submit_choice_quiz_attempt_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  :'cq_single_ref',
+  1,
+  'cfa00000-0000-4000-8000-000000000002',
+  array['cf910000-0000-4000-8000-000000000001'::uuid]
+)::text as cq_single_correct
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  (:'cq_single_correct'::jsonb #>> '{execution,attemptCount}')::int = 2
+    and (:'cq_single_correct'::jsonb #>>
+      '{execution,latestFeedback,isCorrect}')::boolean
+    and (:'cq_single_correct'::jsonb #>>
+      '{execution,latestFeedback,score}')::int = 1
+    and not (:'cq_single_correct'::jsonb #>>
+      '{execution,latestFeedback,canRetry}')::boolean
+    and not (:'cq_single_correct'::jsonb #>>
+      '{execution,canSubmit}')::boolean
+    and :'cq_single_correct'::jsonb #>
+      '{execution,latestFeedback,reveal,correctOptionIds}' =
+      '["cf910000-0000-4000-8000-000000000001"]'::jsonb
+    and :'cq_single_correct'::jsonb #>>
+      '{execution,latestFeedback,reveal,explanation}' =
+      'LA_M5_SINGLE_SECRET_EXPLANATION'
+    and exists (
+      select 1
+      from public.choice_quiz_attempt as attempt
+      join public.choice_quiz_evaluation as evaluation
+        on evaluation.attempt_id = attempt.id
+      join public.learning_evidence as evidence
+        on evidence.source_choice_quiz_evaluation_id = evaluation.id
+      where attempt.issue_id = (
+        select id from public.choice_quiz_issue
+        where learner_ref = :'cq_single_ref'
+      )
+        and attempt.attempt_number = 2
+        and attempt.support = 'with_support'
+        and evaluation.is_correct
+        and evaluation.score = 1
+        and evidence.direction = 'positive'
+        and evidence.support = 'with_support'
+        and evidence.reason_code =
+          'choice_quiz_supported_positive_evidence'
+    ),
+  'new-key deliberate retry did not append a supported correct attempt with answer reveal'
+);
+
+set local role service_role;
+select public.submit_choice_quiz_attempt_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  :'cq_single_ref',
+  1,
+  'cfa00000-0000-4000-8000-000000000001',
+  array['cf910000-0000-4000-8000-000000000002'::uuid]
+)::text as cq_single_first_replay_after_retry
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  :'cq_single_first_replay_after_retry'::jsonb =
+      :'cq_single_wrong'::jsonb
+    and (:'cq_single_first_replay_after_retry'::jsonb #>>
+      '{execution,attemptCount}')::int = 1
+    and (:'cq_single_first_replay_after_retry'::jsonb #>>
+      '{execution,latestFeedback,attemptNumber}')::int = 1
+    and not (:'cq_single_first_replay_after_retry'::jsonb #>>
+      '{execution,latestFeedback,isCorrect}')::boolean
+    and (
+      select count(*) = 2
+      from public.choice_quiz_attempt as attempt
+      join public.choice_quiz_issue as issue on issue.id = attempt.issue_id
+      where issue.learner_ref = :'cq_single_ref'
+    )
+    and (
+      select count(*) = 2
+      from public.choice_quiz_response as response
+      join public.choice_quiz_issue as issue on issue.id = response.issue_id
+      where issue.learner_ref = :'cq_single_ref'
+    )
+    and (
+      select count(*) = 2
+      from public.choice_quiz_evaluation as evaluation
+      join public.choice_quiz_issue as issue
+        on issue.id = evaluation.issue_id
+      where issue.learner_ref = :'cq_single_ref'
+    )
+    and (
+      select count(*) = 2
+      from public.choice_quiz_feedback_delivery as feedback
+      join public.choice_quiz_issue as issue on issue.id = feedback.issue_id
+      where issue.learner_ref = :'cq_single_ref'
+    )
+    and (
+      select count(*) = 2
+      from public.learning_evidence as evidence
+      join public.choice_quiz_evaluation as evaluation
+        on evaluation.id = evidence.source_choice_quiz_evaluation_id
+      join public.choice_quiz_issue as issue
+        on issue.id = evaluation.issue_id
+      where issue.learner_ref = :'cq_single_ref'
+    ),
+  'K1 replay after K2 did not return immutable attempt-1 execution'
+);
+
+set local role service_role;
+select public.submit_choice_quiz_attempt_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  :'cq_multiple_ref',
+  1,
+  'cfa00000-0000-4000-8000-000000000011',
+  array['cf920000-0000-4000-8000-000000000001'::uuid]
+)::text as cq_multiple_partial
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  not (:'cq_multiple_partial'::jsonb #>>
+    '{execution,latestFeedback,isCorrect}')::boolean
+    and (:'cq_multiple_partial'::jsonb #>>
+      '{execution,latestFeedback,score}')::int = 0
+    and :'cq_multiple_partial'::jsonb #>
+      '{execution,latestFeedback,reveal}' = 'null'::jsonb,
+  'multiple-choice partial subset was not graded as binary incorrect/private'
+);
+
+set local role service_role;
+select public.submit_choice_quiz_attempt_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  :'cq_multiple_ref',
+  1,
+  'cfa00000-0000-4000-8000-000000000012',
+  array[
+    'cf920000-0000-4000-8000-000000000003'::uuid,
+    'cf920000-0000-4000-8000-000000000001'::uuid
+  ]
+)::text as cq_multiple_exact
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  (:'cq_multiple_exact'::jsonb #>>
+    '{execution,latestFeedback,isCorrect}')::boolean
+    and (:'cq_multiple_exact'::jsonb #>>
+      '{execution,latestFeedback,score}')::int = 1
+    and :'cq_multiple_exact'::jsonb #>
+      '{execution,latestFeedback,selectedOptionIds}' =
+      '["cf920000-0000-4000-8000-000000000001","cf920000-0000-4000-8000-000000000003"]'::jsonb
+    and :'cq_multiple_exact'::jsonb #>
+      '{execution,latestFeedback,reveal,correctOptionIds}' =
+      '["cf920000-0000-4000-8000-000000000001","cf920000-0000-4000-8000-000000000003"]'::jsonb,
+  'multiple-choice exact set was not order-insensitively normalized and graded correct'
+);
+
+set local role service_role;
+select public.submit_choice_quiz_attempt_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  :'cq_exhaust_ref',
+  1,
+  'cfa00000-0000-4000-8000-000000000031',
+  array['cf940000-0000-4000-8000-000000000002'::uuid]
+)::text as cq_exhaust_one
+\gset
+select public.submit_choice_quiz_attempt_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  :'cq_exhaust_ref',
+  1,
+  'cfa00000-0000-4000-8000-000000000032',
+  array['cf940000-0000-4000-8000-000000000002'::uuid]
+)::text as cq_exhaust_two
+\gset
+select public.submit_choice_quiz_attempt_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  :'cq_exhaust_ref',
+  1,
+  'cfa00000-0000-4000-8000-000000000033',
+  array['cf940000-0000-4000-8000-000000000002'::uuid]
+)::text as cq_exhaust_three
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  :'cq_exhaust_one'::jsonb #> '{execution,latestFeedback,reveal}' =
+      'null'::jsonb
+    and :'cq_exhaust_two'::jsonb #> '{execution,latestFeedback,reveal}' =
+      'null'::jsonb
+    and (:'cq_exhaust_three'::jsonb #>>
+      '{execution,attemptCount}')::int = 3
+    and (:'cq_exhaust_three'::jsonb #>>
+      '{execution,remainingAttempts}')::int = 0
+    and not (:'cq_exhaust_three'::jsonb #>>
+      '{execution,latestFeedback,canRetry}')::boolean
+    and :'cq_exhaust_three'::jsonb #>
+      '{execution,latestFeedback,reveal,correctOptionIds}' =
+      '["cf940000-0000-4000-8000-000000000001"]'::jsonb
+    and :'cq_exhaust_three'::jsonb #>>
+      '{execution,latestFeedback,reveal,explanation}' =
+      'LA_M5_EXHAUST_SECRET_EXPLANATION'
+    and not exists (
+      select 1
+      from public.learning_evidence as evidence
+      join public.choice_quiz_evaluation as evaluation
+        on evaluation.id = evidence.source_choice_quiz_evaluation_id
+      join public.choice_quiz_attempt as attempt
+        on attempt.id = evaluation.attempt_id
+      join public.choice_quiz_issue as issue on issue.id = attempt.issue_id
+      where issue.learner_ref = :'cq_exhaust_ref'
+    ),
+  'practice did not withhold answers until exhaustion or missing-objective attempts created evidence'
+);
+
+set local role service_role;
+select pg_temp.assert_raises(
+  format($sql$
+    select public.submit_choice_quiz_attempt_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001',
+      %L, 1, 'cfa00000-0000-4000-8000-000000000034',
+      array['cf940000-0000-4000-8000-000000000001'::uuid]
+    )
+  $sql$, :'cq_exhaust_ref'),
+  '55000',
+  'choice_quiz_attempt_not_allowed',
+  'practice accepted a fourth attempt after exhaustion'
+);
+reset role;
+
+select evaluation.id::text as cq_corrected_evaluation_id
+from public.choice_quiz_evaluation as evaluation
+join public.choice_quiz_attempt as attempt on attempt.id = evaluation.attempt_id
+join public.choice_quiz_issue as issue on issue.id = attempt.issue_id
+where issue.learner_ref = :'cq_single_ref'
+  and attempt.attempt_number = 2
+  and evaluation.evaluation_source = 'initial'
+\gset
+
+set local role service_role;
+select public.correct_choice_quiz_evaluation_admin(
+  'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004',
+  :'cq_corrected_evaluation_id'::uuid,
+  false,
+  '  LA-M5 teacher correction  ',
+  'cfb00000-0000-4000-8000-000000000001'
+)::text as cq_correction
+\gset
+select (:'cq_correction'::jsonb #>> '{evaluation,evaluationId}')::text
+  as cq_correction_evaluation_id
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  not (:'cq_correction'::jsonb #>> '{evaluation,isCorrect}')::boolean
+    and (:'cq_correction'::jsonb #>> '{evaluation,score}')::int = 0
+    and :'cq_correction'::jsonb #>> '{evaluation,correctionReason}' =
+      'LA-M5 teacher correction'
+    and :'cq_correction'::jsonb #>>
+      '{evaluation,supersedesEvaluationId}' =
+      :'cq_corrected_evaluation_id'
+    and not (:'cq_correction'::jsonb #>>
+      '{evaluation,revealAvailable}')::boolean
+    and exists (
+      select 1
+      from public.learning_evidence as original
+      join public.learning_evidence as correction
+        on correction.supersedes_evidence_id = original.id
+      where original.source_choice_quiz_evaluation_id =
+          :'cq_corrected_evaluation_id'::uuid
+        and original.superseded_by_evidence_id = correction.id
+        and correction.source_choice_quiz_evaluation_id =
+          :'cq_correction_evaluation_id'::uuid
+        and correction.learning_record_id is null
+        and correction.direction = 'negative'
+        and correction.support is null
+        and correction.reason_code =
+          'choice_quiz_not_yet_negative_evidence'
+    ),
+  'teacher correction was not append-only or did not supersede its evidence without learner reveal'
+);
+
+set constraints trg_choice_quiz_evaluation_supersession_chain immediate;
+set constraints trg_choice_quiz_evaluation_supersession_chain deferred;
+
+set local role service_role;
+select public.correct_choice_quiz_evaluation_admin(
+  'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004',
+  :'cq_corrected_evaluation_id'::uuid,
+  false,
+  'LA-M5 teacher correction',
+  'cfb00000-0000-4000-8000-000000000001'
+)::text as cq_correction_replay
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  :'cq_correction_replay'::jsonb = :'cq_correction'::jsonb
+    and (
+      select count(*) = 1
+      from public.choice_quiz_evaluation
+      where correction_idempotency_key =
+        'cfb00000-0000-4000-8000-000000000001'
+    ),
+  'same correction idempotency key did not replay without duplication'
+);
+
+set local role service_role;
+select pg_temp.assert_raises(
+  format($sql$
+    select public.correct_choice_quiz_evaluation_admin(
+      'b1000000-0000-4000-8000-000000000001',
+      'bf100000-0000-4000-8000-000000000004',
+      %L::uuid, false, 'different correction reason',
+      'cfb00000-0000-4000-8000-000000000001'
+    )
+  $sql$, :'cq_corrected_evaluation_id'),
+  '23505',
+  'choice_quiz_correction_idempotency_conflict',
+  'correction idempotency key accepted a different request body'
+);
+reset role;
+
+update public.account_security as security
+set sessions_invalid_before = (
+  select session.created_at + interval '1 microsecond'
+  from auth.sessions as session
+  where session.id = 'bf100000-0000-4000-8000-000000000004'
+)
+where security.account_id = 'b2000000-0000-4000-8000-000000000001';
+
+set local role service_role;
+select pg_temp.assert_raises(
+  format($sql$
+    select public.correct_choice_quiz_evaluation_admin(
+      'b1000000-0000-4000-8000-000000000001',
+      'bf100000-0000-4000-8000-000000000004',
+      %L::uuid, false, 'LA-M5 teacher correction',
+      'cfb00000-0000-4000-8000-000000000001'
+    )
+  $sql$, :'cq_corrected_evaluation_id'),
+  '42501',
+  'choice_quiz_session_revoked',
+  'teacher session cutoff allowed a persisted correction replay'
+);
+reset role;
+
+update public.account_security
+set sessions_invalid_before = null
+where account_id = 'b2000000-0000-4000-8000-000000000001';
+
+set local role service_role;
+
+select public.issue_choice_quiz_definition_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  'cf600000-0000-4000-8000-000000000010',
+  1,
+  :'cq_single_updated_at'::timestamptz,
+  '{"question":"LA-M5 single practice","options":[{"id":"cf910000-0000-4000-8000-000000000001","label":"Single correct"},{"id":"cf910000-0000-4000-8000-000000000002","label":"Single wrong"}],"allowMultiple":false}'::jsonb,
+  '{"correctOptionIds":["cf910000-0000-4000-8000-000000000001"],"allowMultiple":false,"explanation":"LA_M5_SINGLE_SECRET_EXPLANATION"}'::jsonb
+)::text as cq_after_correction_reload
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  (:'cq_after_correction_reload'::jsonb #>>
+    '{execution,latestFeedback,isCorrect}')::boolean
+    and (:'cq_after_correction_reload'::jsonb #>>
+      '{execution,latestFeedback,score}')::int = 1
+    and :'cq_after_correction_reload'::jsonb #>>
+      '{execution,latestFeedback,attemptNumber}' = '2',
+  'teacher evaluation correction rewrote learner-delivered feedback'
+);
+
+set local role service_role;
+select public.issue_choice_quiz_definition_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  'cf600000-0000-4000-8000-000000000015',
+  1,
+  :'cq_legacy_quiz_only_updated_at'::timestamptz,
+  '{"question":"LA-M5 quiz-only legacy boundary","options":[{"id":"cf960000-0000-4000-8000-000000000001","label":"Legacy boundary correct"},{"id":"cf960000-0000-4000-8000-000000000002","label":"Legacy boundary wrong"}],"allowMultiple":false}'::jsonb,
+  '{"correctOptionIds":["cf960000-0000-4000-8000-000000000001"],"allowMultiple":false}'::jsonb
+)::text as cq_legacy_quiz_only_issue
+\gset
+select (:'cq_legacy_quiz_only_issue'::jsonb #>>
+  '{execution,issueRef}')::text as cq_legacy_quiz_only_ref
+\gset
+
+select public.submit_choice_quiz_attempt_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  :'cq_legacy_quiz_only_ref',
+  1,
+  'cfa00000-0000-4000-8000-000000000041',
+  array['cf960000-0000-4000-8000-000000000001'::uuid]
+)::text as cq_legacy_quiz_only_result
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  (:'cq_legacy_quiz_only_result'::jsonb #>>
+    '{execution,latestFeedback,isCorrect}')::boolean
+    and (
+      select component.payload #>> '{options,0,id}' =
+          'CF960000-0000-4000-8000-000000000001'
+        and component.payload #>> '{options,1,id}' =
+          'CF960000-0000-4000-8000-000000000002'
+      from public.lesson_component as component
+      where component.id = 'cf600000-0000-4000-8000-000000000015'
+    )
+    and :'cq_legacy_quiz_only_issue'::jsonb #>>
+      '{learnerDefinition,options,0,id}' =
+        'cf960000-0000-4000-8000-000000000001'
+    and :'cq_legacy_quiz_only_issue'::jsonb #>>
+      '{learnerDefinition,options,1,id}' =
+        'cf960000-0000-4000-8000-000000000002'
+    and :'cq_legacy_quiz_only_result'::jsonb #>
+      '{execution,latestFeedback,selectedOptionIds}' =
+        '["cf960000-0000-4000-8000-000000000001"]'::jsonb
+    and exists (
+      select 1
+      from public.choice_quiz_issue as issue
+      where issue.learner_ref = :'cq_legacy_quiz_only_ref'
+        and issue.learner_definition #>> '{options,0,id}' =
+          'cf960000-0000-4000-8000-000000000001'
+        and issue.learner_definition #>> '{options,1,id}' =
+          'cf960000-0000-4000-8000-000000000002'
+        and issue.evaluator_config #>> '{correctOptionIds,0}' =
+          'cf960000-0000-4000-8000-000000000001'
+    )
+    and exists (
+      select 1
+      from public.learning_evidence as evidence
+      join public.choice_quiz_evaluation as evaluation
+        on evaluation.id = evidence.source_choice_quiz_evaluation_id
+      join public.choice_quiz_attempt as attempt
+        on attempt.id = evaluation.attempt_id
+      join public.choice_quiz_issue as issue on issue.id = attempt.issue_id
+      where issue.learner_ref = :'cq_legacy_quiz_only_ref'
+        and evidence.source_observation_id is null
+        and evidence.source_learning_objective_id_at_time =
+          'cf500000-0000-4000-8000-000000000002'
+    ),
+  'uppercase authored UUIDs did not normalize through issue/submit/evidence'
+);
+
+select pg_temp.set_authenticated_session(
+  'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004'
+);
+set local role authenticated;
+select public.get_teacher_learner_activity_profile_v2(
+  'b3000000-0000-4000-8000-000000000003'
+)::text as cq_teacher_profile
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from jsonb_array_elements(
+      :'cq_teacher_profile'::jsonb -> 'states'
+    ) as state(value)
+    cross join lateral jsonb_array_elements(
+      state.value -> 'evidence'
+    ) as evidence(value)
+    where evidence.value ->> 'sourceKind' = 'choice_quiz_evaluation'
+      and nullif(
+        evidence.value ->> 'sourceChoiceQuizEvaluationId',
+        ''
+      )::uuid is not null
+      and evidence.value -> 'sourceObservationId' = 'null'::jsonb
+  ),
+  'teacher profile did not project current quiz evidence through the exact source union'
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from jsonb_array_elements(
+      :'cq_teacher_profile'::jsonb -> 'states'
+    ) as state(value)
+    where state.value ->> 'sourceLearningObjectiveIdAtTime' =
+        'cf500000-0000-4000-8000-000000000001'
+      and exists (
+        select 1
+        from jsonb_array_elements(state.value -> 'evidence') as evidence(value)
+        where evidence.value ->> 'sourceKind' = 'choice_quiz_evaluation'
+      )
+  )
+    and exists (
+      select 1
+      from public.learning_evidence as observation
+      join public.learning_evidence as quiz
+        on quiz.recorded_by_account_id = observation.recorded_by_account_id
+       and quiz.learner_profile_id = observation.learner_profile_id
+       and quiz.source_learning_objective_id_at_time =
+         observation.source_learning_objective_id_at_time
+      where observation.source_observation_id =
+          'cf9b0000-0000-4000-8000-000000000001'
+        and observation.source_choice_quiz_evaluation_id is null
+        and observation.superseded_by_evidence_id is null
+        and quiz.source_observation_id is null
+        and quiz.source_choice_quiz_evaluation_id is not null
+        and quiz.superseded_by_evidence_id is null
+    )
+    and exists (
+      select 1
+      from jsonb_array_elements(
+        :'cq_teacher_profile'::jsonb -> 'states'
+      ) as state(value)
+      where state.value ->> 'sourceLearningObjectiveIdAtTime' =
+          'cf500000-0000-4000-8000-000000000002'
+        and jsonb_array_length(state.value -> 'evidence') >= 1
+        and not exists (
+          select 1
+          from jsonb_array_elements(state.value -> 'evidence') as evidence(value)
+          where evidence.value ->> 'sourceKind' <>
+            'choice_quiz_evaluation'
+        )
+    ),
+  'V2 profile fixtures did not preserve mixed-source scope and a quiz-only state'
+);
+
+-- The LA-M4 live-authority checks above intentionally use no legacy Course
+-- audience. Add one temporary LA-M3 audience row only around the frozen
+-- legacy profile boundary so its current-objective no_data branch is
+-- exercised; submit authority has already been proven to require enrollment
+-- plus the exact Run capability independently of this relation.
+insert into public.course_learner (course_id, learner_profile_id)
+values (
+  'bf400000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003'
+);
+
+set local role authenticated;
+select public.get_teacher_learner_activity_profile(
+  'b3000000-0000-4000-8000-000000000003'
+)::text as cq_legacy_teacher_profile
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  (
+    select count(*) = 4
+      and bool_and(key in (
+        'projectionVersion', 'learnerProfileId', 'generatedAt', 'states'
+      ))
+    from jsonb_object_keys(
+      :'cq_legacy_teacher_profile'::jsonb
+    ) as root(key)
+  )
+    and (:'cq_legacy_teacher_profile'::jsonb ->>
+      'projectionVersion')::int = 1
+    and :'cq_legacy_teacher_profile'::jsonb ->> 'learnerProfileId' =
+      'b3000000-0000-4000-8000-000000000003'
+    and (
+      select count(*) = 2
+      from jsonb_array_elements(
+        :'cq_legacy_teacher_profile'::jsonb -> 'states'
+      ) as state(value)
+      where state.value ->> 'sourceLearningObjectiveIdAtTime' in (
+        'cf500000-0000-4000-8000-000000000001',
+        'cf500000-0000-4000-8000-000000000002'
+      )
+        and (
+          select count(*) = 16
+            and bool_and(key in (
+              'stateId', 'learningObjectiveId',
+              'sourceLearningObjectiveIdAtTime', 'sourceCourseIdAtTime',
+              'courseTitleAtTime', 'subjectAtTime', 'objectiveTitleAtTime',
+              'status', 'reasonCode', 'reasonText', 'policyVersion',
+              'evaluatedAt', 'lastEvidenceAt', 'freshnessDueAt', 'evidence',
+              'recommendation'
+            ))
+          from jsonb_object_keys(state.value) as state_key(key)
+        )
+    )
+    and position('sourceKind' in :'cq_legacy_teacher_profile') = 0
+    and position(
+      'sourceChoiceQuizEvaluationId' in :'cq_legacy_teacher_profile'
+    ) = 0,
+  'legacy teacher profile changed the exact strict LA-M3 parser boundary'
+);
+
+with legacy_state as (
+  select state.value
+  from jsonb_array_elements(
+    :'cq_legacy_teacher_profile'::jsonb -> 'states'
+  ) as state(value)
+), observation_evidence as (
+  select evidence.*
+  from public.learning_evidence as evidence
+  where evidence.source_observation_id =
+    'cf9b0000-0000-4000-8000-000000000001'
+    and evidence.source_choice_quiz_evaluation_id is null
+), persisted_state as (
+  select state.*
+  from public.learner_objective_state as state
+  where state.recorded_by_account_id =
+      'b2000000-0000-4000-8000-000000000001'
+    and state.learner_profile_id =
+      'b3000000-0000-4000-8000-000000000003'
+    and state.source_course_id_at_time =
+      'bf400000-0000-4000-8000-000000000001'
+    and state.source_learning_objective_id_at_time =
+      'cf500000-0000-4000-8000-000000000001'
+)
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from legacy_state as legacy
+    cross join observation_evidence as evidence
+    cross join persisted_state as state
+    where legacy.value = jsonb_build_object(
+      'stateId', state.id,
+      'learningObjectiveId', evidence.learning_objective_id,
+      'sourceLearningObjectiveIdAtTime',
+        evidence.source_learning_objective_id_at_time,
+      'sourceCourseIdAtTime', evidence.source_course_id_at_time,
+      'courseTitleAtTime', evidence.course_title_at_time,
+      'subjectAtTime', evidence.subject_at_time,
+      'objectiveTitleAtTime', evidence.objective_title_at_time,
+      'status', 'forming',
+      'reasonCode', 'independent_opportunities_missing',
+      'reasonText',
+        'Есть самостоятельное выполнение, но нужно подтверждение в другом занятии.',
+      'policyVersion', 1,
+      'evaluatedAt', state.evaluated_at,
+      'lastEvidenceAt', evidence.observed_at,
+      'freshnessDueAt', null,
+      'evidence', jsonb_build_array(jsonb_build_object(
+        'id', evidence.id,
+        'learnerProfileId', evidence.learner_profile_id,
+        'recordedByAccountId', evidence.recorded_by_account_id,
+        'learningRecordId', evidence.learning_record_id,
+        'sourceObservationId', evidence.source_observation_id,
+        'sourceCourseIdAtTime', evidence.source_course_id_at_time,
+        'sourceLessonIdAtTime', evidence.source_lesson_id_at_time,
+        'sourceLessonRunIdAtTime',
+          evidence.source_lesson_run_id_at_time,
+        'sourceComponentIdAtTime', evidence.source_component_id_at_time,
+        'sourceLearningObjectiveIdAtTime',
+          evidence.source_learning_objective_id_at_time,
+        'lessonComponentId', evidence.lesson_component_id,
+        'learningObjectiveId', evidence.learning_objective_id,
+        'courseTitleAtTime', evidence.course_title_at_time,
+        'lessonTitleAtTime', evidence.lesson_title_at_time,
+        'subjectAtTime', evidence.subject_at_time,
+        'componentTypeAtTime', evidence.component_type_at_time,
+        'componentLabelAtTime', evidence.component_label_at_time,
+        'objectiveTitleAtTime', evidence.objective_title_at_time,
+        'criterionAtTime', evidence.criterion_at_time,
+        'direction', evidence.direction,
+        'support', evidence.support,
+        'observedAt', evidence.observed_at,
+        'finalizedAt', evidence.finalized_at,
+        'materializedAt', evidence.materialized_at,
+        'evidenceVersion', evidence.evidence_version,
+        'eligibilityPolicyVersion', evidence.eligibility_policy_version,
+        'reasonCode', evidence.reason_code,
+        'supersedesEvidenceId', evidence.supersedes_evidence_id,
+        'supersededByEvidenceId', evidence.superseded_by_evidence_id
+      )),
+      'recommendation', jsonb_build_object(
+        'recommendationId', state.id,
+        'type', 'apply_in_new_context',
+        'reasonCode',
+          'apply_in_new_context_after_one_independent_opportunity',
+        'reasonText',
+          'Получилось самостоятельно один раз — примените навык в новом контексте.',
+        'ruleVersion', 1,
+        'generatedAt', state.evaluated_at,
+        'evidenceIds', jsonb_build_array(evidence.id),
+        'effectiveType', 'apply_in_new_context',
+        'effectiveReasonText',
+          'Получилось самостоятельно один раз — примените навык в новом контексте.',
+        'source', 'rule',
+        'override', null
+      )
+    )
+  )
+    and exists (
+      select 1
+      from legacy_state as legacy
+      where legacy.value ->> 'sourceLearningObjectiveIdAtTime' =
+          'cf500000-0000-4000-8000-000000000002'
+        and legacy.value ->> 'status' = 'no_data'
+        and legacy.value ->> 'reasonCode' = 'no_eligible_evidence'
+        and legacy.value -> 'stateId' = 'null'::jsonb
+        and legacy.value -> 'lastEvidenceAt' = 'null'::jsonb
+        and legacy.value -> 'freshnessDueAt' = 'null'::jsonb
+        and legacy.value -> 'evidence' = '[]'::jsonb
+        and legacy.value -> 'recommendation' = 'null'::jsonb
+        and (legacy.value ->> 'evaluatedAt')::timestamptz =
+          (:'cq_legacy_teacher_profile'::jsonb ->>
+            'generatedAt')::timestamptz
+    ),
+  'legacy projection did not preserve exact observation-only state or quiz-only no_data'
+);
+
+select state.value ->> 'evaluatedAt' as cq_legacy_mixed_evaluated_at,
+  state.value ->> 'stateId' as cq_legacy_mixed_state_id
+from jsonb_array_elements(
+  :'cq_legacy_teacher_profile'::jsonb -> 'states'
+) as state(value)
+where state.value ->> 'sourceLearningObjectiveIdAtTime' =
+  'cf500000-0000-4000-8000-000000000001'
+\gset
+
+select pg_temp.set_authenticated_session(
+  'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004'
+);
+set local role authenticated;
+select public.set_learner_recommendation_override(
+  'b3000000-0000-4000-8000-000000000003',
+  'cf500000-0000-4000-8000-000000000001',
+  'replace',
+  'apply_in_new_context',
+  'LA_M5_LEGACY_OVERRIDE_TOKEN_REGRESSION',
+  :'cq_legacy_mixed_evaluated_at'::timestamptz
+)::text as cq_legacy_override_replace
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  :'cq_legacy_override_replace'::jsonb ->> 'action' = 'replace'
+    and :'cq_legacy_override_replace'::jsonb ->> 'stateId' =
+      :'cq_legacy_mixed_state_id'
+    and exists (
+      select 1
+      from public.learner_recommendation_override as override_row
+      where override_row.learner_profile_id =
+          'b3000000-0000-4000-8000-000000000003'
+        and override_row.source_learning_objective_id_at_time =
+          'cf500000-0000-4000-8000-000000000001'
+        and override_row.private_reason =
+          'LA_M5_LEGACY_OVERRIDE_TOKEN_REGRESSION'
+    ),
+  'legacy mixed-state evaluatedAt was rejected by the deployed override RPC'
+);
+
+set local role authenticated;
+select public.set_learner_recommendation_override(
+  'b3000000-0000-4000-8000-000000000003',
+  'cf500000-0000-4000-8000-000000000001',
+  'clear',
+  null,
+  null,
+  :'cq_legacy_mixed_evaluated_at'::timestamptz
+)::text as cq_legacy_override_clear
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  :'cq_legacy_override_clear'::jsonb ->> 'action' = 'clear'
+    and :'cq_legacy_override_clear'::jsonb ->> 'stateId' =
+      :'cq_legacy_mixed_state_id'
+    and not exists (
+      select 1
+      from public.learner_recommendation_override as override_row
+      where override_row.learner_profile_id =
+          'b3000000-0000-4000-8000-000000000003'
+        and override_row.source_learning_objective_id_at_time =
+          'cf500000-0000-4000-8000-000000000001'
+    ),
+  'legacy override-token regression did not restore the empty override state'
+);
+
+insert into public.learning_objective (
+  id,
+  course_id,
+  title,
+  description
+)
+select
+  format(
+    'cfc00000-0000-4000-8000-%s',
+    lpad(fixture.sequence::text, 12, '0')
+  )::uuid,
+  'bf400000-0000-4000-8000-000000000001'::uuid,
+  format('LA-M5 legacy bound no-data %s', fixture.sequence),
+  'Disposable no-data objective for the legacy 200-state bound.'
+from generate_series(1, 205) as fixture(sequence);
+
+set local role authenticated;
+select public.get_teacher_learner_activity_profile(
+  'b3000000-0000-4000-8000-000000000003'
+)::text as cq_legacy_bounded_profile
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  jsonb_array_length(
+    :'cq_legacy_bounded_profile'::jsonb -> 'states'
+  ) = 200
+    and exists (
+      select 1
+      from jsonb_array_elements(
+        :'cq_legacy_bounded_profile'::jsonb -> 'states'
+      ) as state(value)
+      where state.value ->> 'sourceLearningObjectiveIdAtTime' =
+          'cf500000-0000-4000-8000-000000000001'
+        and state.value ->> 'status' = 'forming'
+        and state.value ->> 'reasonCode' =
+          'independent_opportunities_missing'
+        and state.value -> 'evidence' -> 0 ->> 'sourceObservationId' =
+          'cf9b0000-0000-4000-8000-000000000001'
+    )
+    and position('sourceKind' in :'cq_legacy_bounded_profile') = 0,
+  '>200 quiz-only/no-data objectives evicted eligible legacy observation state'
+);
+
+delete from public.learning_objective
+where id in (
+  select format(
+    'cfc00000-0000-4000-8000-%s',
+    lpad(fixture.sequence::text, 12, '0')
+  )::uuid
+  from generate_series(1, 205) as fixture(sequence)
+);
+
+-- Freeze two old independent observation opportunities underneath the newer
+-- quiz-backed union state. The canonical state token is deliberately older
+-- than the exact 90-day observation boundary so the legacy DTO must expose
+-- that deterministic boundary and the deployed override RPC must accept it.
+set local session_replication_role = replica;
+insert into public.learning_record (
+  id,
+  learner_profile_id,
+  lesson_run_id,
+  source_course_id,
+  source_lesson_id,
+  occurred_at,
+  was_present,
+  needs_repeat,
+  course_title_at_time,
+  lesson_title_at_time,
+  subject_at_time,
+  recorded_by_account_id,
+  source_course_id_at_time,
+  source_lesson_id_at_time,
+  source_lesson_run_id_at_time
+) values (
+  'cf8b0000-0000-4000-8000-000000000002',
+  'b3000000-0000-4000-8000-000000000003',
+  null,
+  'bf400000-0000-4000-8000-000000000001',
+  'bf500000-0000-4000-8000-000000000002',
+  '2026-01-02 10:30:00+09',
+  true,
+  false,
+  'LA-M4 no-audience live-delivery fixture',
+  'LA-M4 cancellation delivery',
+  'Русский язык',
+  'b2000000-0000-4000-8000-000000000001',
+  'bf400000-0000-4000-8000-000000000001',
+  'bf500000-0000-4000-8000-000000000002',
+  'bf700000-0000-4000-8000-000000000002'
+);
+
+insert into public.lesson_component_observation (
+  id,
+  learning_record_id,
+  lesson_component_id,
+  source_lesson_component_id_at_time,
+  component_position_at_time,
+  component_type_key_at_time,
+  component_label_at_time,
+  observable_criterion_at_time,
+  rating,
+  entry_method,
+  observed_at,
+  recorded_by_account_id,
+  learning_objective_id,
+  source_learning_objective_id_at_time,
+  learning_objective_title_at_time,
+  component_visibility_at_time
+) values (
+  'cf9b0000-0000-4000-8000-000000000002',
+  'cf8b0000-0000-4000-8000-000000000002',
+  null,
+  'bf600000-0000-4000-8000-000000000003',
+  2,
+  'discussion',
+  'LA-M5 legacy freshness second observation',
+  'Confirms a second independent old opportunity',
+  'independent',
+  'direct',
+  '2026-01-02 10:20:00+09',
+  'b2000000-0000-4000-8000-000000000001',
+  'cf500000-0000-4000-8000-000000000001',
+  'cf500000-0000-4000-8000-000000000001',
+  'LA-M5 exact-set objective',
+  'staff_only'
+);
+set local session_replication_role = origin;
+
+select public.materialize_learning_evidence_for_records(
+  array['cf8b0000-0000-4000-8000-000000000002'::uuid],
+  '2026-01-02 10:31:00+09'::timestamptz
+);
+
+set local session_replication_role = replica;
+update public.learning_record
+set occurred_at = '2026-01-01 10:30:00+09'
+where id = 'cf8b0000-0000-4000-8000-000000000001';
+
+update public.lesson_component_observation
+set observed_at = '2026-01-01 10:20:00+09'
+where id = 'cf9b0000-0000-4000-8000-000000000001';
+
+update public.learning_evidence
+set observed_at = '2026-01-01 10:20:00+09',
+    finalized_at = '2026-01-01 10:30:00+09',
+    materialized_at = '2026-01-01 10:31:00+09'
+where source_observation_id =
+  'cf9b0000-0000-4000-8000-000000000001';
+
+update public.learner_objective_state
+set evaluated_at = '2026-03-01 00:00:00+09'
+where recorded_by_account_id =
+    'b2000000-0000-4000-8000-000000000001'
+  and learner_profile_id =
+    'b3000000-0000-4000-8000-000000000003'
+  and source_learning_objective_id_at_time =
+    'cf500000-0000-4000-8000-000000000001'
+  and status = 'forming'
+  and reason_code = 'latest_with_support';
+set local session_replication_role = origin;
+
+select pg_temp.set_authenticated_session(
+  'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004'
+);
+set local role authenticated;
+select public.get_teacher_learner_activity_profile(
+  'b3000000-0000-4000-8000-000000000003'
+)::text as cq_legacy_freshness_profile
+\gset
+reset role;
+
+select state.value ->> 'evaluatedAt' as cq_legacy_freshness_token,
+  state.value ->> 'stateId' as cq_legacy_freshness_state_id
+from jsonb_array_elements(
+  :'cq_legacy_freshness_profile'::jsonb -> 'states'
+) as state(value)
+where state.value ->> 'sourceLearningObjectiveIdAtTime' =
+  'cf500000-0000-4000-8000-000000000001'
+\gset
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from jsonb_array_elements(
+      :'cq_legacy_freshness_profile'::jsonb -> 'states'
+    ) as state(value)
+    where state.value ->> 'sourceLearningObjectiveIdAtTime' =
+        'cf500000-0000-4000-8000-000000000001'
+      and state.value ->> 'status' = 'recheck_due'
+      and state.value ->> 'reasonCode' = 'confirmed_evidence_stale'
+      and state.value ->> 'evaluatedAt' =
+        state.value ->> 'freshnessDueAt'
+      and (state.value ->> 'evaluatedAt')::timestamptz =
+        '2026-01-02 10:20:00+09'::timestamptz + interval '90 days'
+      and state.value -> 'recommendation' ->> 'generatedAt' =
+        state.value ->> 'evaluatedAt'
+      and state.value -> 'recommendation' ->> 'type' =
+        'recheck_freshness'
+      and jsonb_array_length(state.value -> 'evidence') = 2
+      and exists (
+        select 1
+        from jsonb_array_elements(state.value -> 'evidence') as item(value)
+        where item.value ->> 'sourceObservationId' =
+          'cf9b0000-0000-4000-8000-000000000001'
+      )
+      and exists (
+        select 1
+        from jsonb_array_elements(state.value -> 'evidence') as item(value)
+        where item.value ->> 'sourceObservationId' =
+          'cf9b0000-0000-4000-8000-000000000002'
+      )
+  )
+    and exists (
+      select 1
+      from public.learner_objective_state as state
+      join public.learner_objective_state_evidence as link
+        on link.learner_objective_state_id = state.id
+      join public.learning_evidence as evidence
+        on evidence.id = link.learning_evidence_id
+      where state.id = :'cq_legacy_freshness_state_id'::uuid
+        and state.evaluated_at = '2026-03-01 00:00:00+09'::timestamptz
+        and evidence.source_choice_quiz_evaluation_id is not null
+    )
+    and position('sourceKind' in :'cq_legacy_freshness_profile') = 0,
+  'legacy freshness boundary did not preserve the older mixed-state token contract'
+);
+
+set local role authenticated;
+select pg_temp.assert_raises(
+  format($sql$
+    select public.set_learner_recommendation_override(
+      'b3000000-0000-4000-8000-000000000003',
+      'cf500000-0000-4000-8000-000000000001',
+      'replace',
+      'recheck_freshness',
+      'LA_M5_LEGACY_FRESHNESS_MISMATCH',
+      %L::timestamptz
+    )
+  $sql$, (
+    :'cq_legacy_freshness_token'::timestamptz - interval '1 second'
+  )::text),
+  '40001',
+  'learner_recommendation_override_state_changed',
+  'legacy freshness override accepted a non-boundary token'
+);
+
+select public.set_learner_recommendation_override(
+  'b3000000-0000-4000-8000-000000000003',
+  'cf500000-0000-4000-8000-000000000001',
+  'replace',
+  'recheck_freshness',
+  'LA_M5_LEGACY_FRESHNESS_TOKEN',
+  :'cq_legacy_freshness_token'::timestamptz
+)::text as cq_legacy_freshness_override
+\gset
+reset role;
+
+select exists (
+  select 1
+  from public.learner_recommendation_override as override_row
+  where override_row.learner_profile_id =
+      'b3000000-0000-4000-8000-000000000003'
+    and override_row.source_learning_objective_id_at_time =
+      'cf500000-0000-4000-8000-000000000001'
+    and override_row.private_reason = 'LA_M5_LEGACY_FRESHNESS_TOKEN'
+)::text as cq_legacy_freshness_override_persisted
+\gset
+
+-- A valid authenticated PostgREST session keeps the deployed recorder-scoped
+-- reads working. The same signed JWT must immediately fail closed after the
+-- ShiDao session cutoff, across raw M5 data and every authenticated RPC whose
+-- M5 replacement can read or mutate that graph.
+set local role authenticated;
+select pg_temp.assert_true(
+  public.current_active_session_account_id() =
+      'b2000000-0000-4000-8000-000000000001'
+    and exists (
+      select 1
+      from public.learning_evidence
+      where recorded_by_account_id =
+        'b2000000-0000-4000-8000-000000000001'
+    )
+    and exists (
+      select 1
+      from public.learner_objective_state
+      where recorded_by_account_id =
+        'b2000000-0000-4000-8000-000000000001'
+    )
+    and exists (
+      select 1
+      from public.learner_objective_state_evidence
+    )
+    and exists (
+      select 1
+      from public.learner_recommendation_override
+      where private_reason = 'LA_M5_LEGACY_FRESHNESS_TOKEN'
+    ),
+  'active exact Supabase session lost the rolling sensitive-read contract'
+);
+reset role;
+
+update public.account_security as security
+set sessions_invalid_before = (
+  select session.created_at + interval '1 microsecond'
+  from auth.sessions as session
+  where session.id = 'bf100000-0000-4000-8000-000000000004'
+)
+where security.account_id = 'b2000000-0000-4000-8000-000000000001';
+
+set local role authenticated;
+select pg_temp.assert_true(
+  public.current_active_session_account_id() is null
+    and (select count(*) from public.learning_evidence) = 0
+    and (select count(*) from public.learner_objective_state) = 0
+    and (select count(*) from public.learner_objective_state_evidence) = 0
+    and (select count(*) from public.learner_recommendation_override) = 0,
+  'cut-off JWT retained raw sensitive learning-activity reads'
+);
+select pg_temp.assert_raises(
+  $sql$
+    select public.get_teacher_learner_activity_profile(
+      'b3000000-0000-4000-8000-000000000003'
+    )
+  $sql$,
+  'P0002',
+  'learner_activity_profile_not_found',
+  'cut-off JWT retained the rolling LA-M3 teacher profile'
+);
+select pg_temp.assert_raises(
+  $sql$
+    select public.get_teacher_learner_activity_profile_v2(
+      'b3000000-0000-4000-8000-000000000003'
+    )
+  $sql$,
+  'P0002',
+  'learner_activity_profile_not_found',
+  'cut-off JWT retained the V2 teacher profile'
+);
+select pg_temp.assert_raises(
+  format($sql$
+    select public.set_learner_recommendation_override(
+      'b3000000-0000-4000-8000-000000000003',
+      'cf500000-0000-4000-8000-000000000001',
+      'replace', 'recheck_freshness', 'REVOKED_PRIVATE_REASON',
+      %L::timestamptz
+    )
+  $sql$, :'cq_legacy_freshness_token'),
+  'P0002',
+  'learner_recommendation_override_not_found',
+  'cut-off JWT changed a private recommendation override'
+);
+select pg_temp.assert_raises(
+  $sql$select public.preview_my_learning_data_erasure()$sql$,
+  'P0002',
+  'learner_profile_not_found',
+  'cut-off JWT created an erasure preview request'
+);
+select pg_temp.assert_raises(
+  $sql$select public.get_my_learning_activity_profile()$sql$,
+  'P0002',
+  'learner_profile_not_found',
+  'cut-off JWT retained the unified self activity profile'
+);
+select pg_temp.assert_raises(
+  $sql$
+    select public.cancel_lesson_run(
+      'bf700000-0000-4000-8000-000000000001', now()
+    )
+  $sql$,
+  'P0002',
+  'lesson_run_not_found',
+  'cut-off JWT cancelled a lesson Run'
+);
+select pg_temp.assert_true(
+  not public.delete_lesson_component(
+    'bf600000-0000-4000-8000-000000000003'
+  ),
+  'cut-off JWT deleted a Lesson Component'
+);
+select pg_temp.assert_raises(
+  $sql$
+    select public.delete_lesson_with_history(
+      'bf500000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  'P0002',
+  'lesson_not_found',
+  'cut-off JWT deleted a Lesson with history'
+);
+reset role;
+
+select pg_temp.assert_true(
+  exists (
+    select 1 from public.learner_recommendation_override
+    where private_reason = 'LA_M5_LEGACY_FRESHNESS_TOKEN'
+  )
+    and exists (
+      select 1 from public.lesson_component
+      where id = 'bf600000-0000-4000-8000-000000000003'
+    )
+    and exists (
+      select 1 from public.lesson
+      where id = 'bf500000-0000-4000-8000-000000000001'
+    ),
+  'cut-off JWT changed persisted learning-activity state'
+);
+
+update public.account_security
+set sessions_invalid_before = null
+where account_id = 'b2000000-0000-4000-8000-000000000001';
+
+set local role authenticated;
+select public.set_learner_recommendation_override(
+  'b3000000-0000-4000-8000-000000000003',
+  'cf500000-0000-4000-8000-000000000001',
+  'clear',
+  null,
+  null,
+  :'cq_legacy_freshness_token'::timestamptz
+)::text as cq_legacy_freshness_override_clear
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  :'cq_legacy_freshness_override'::jsonb ->> 'action' = 'replace'
+    and :'cq_legacy_freshness_override'::jsonb ->> 'stateId' =
+      :'cq_legacy_freshness_state_id'
+    and :'cq_legacy_freshness_override_persisted' = 'true'
+    and :'cq_legacy_freshness_override_clear'::jsonb ->> 'action' = 'clear'
+    and not exists (
+      select 1
+      from public.learner_recommendation_override as override_row
+      where override_row.learner_profile_id =
+          'b3000000-0000-4000-8000-000000000003'
+        and override_row.source_learning_objective_id_at_time =
+          'cf500000-0000-4000-8000-000000000001'
+    ),
+  'exact legacy freshness token did not round-trip through override/clear'
+);
+
+-- An archived objective with only quiz evidence remains as durable history,
+-- but it is not an active legacy no-data candidate.
+set local role authenticated;
+select id
+from public.archive_learning_objective(
+  'cf500000-0000-4000-8000-000000000002'
+);
+select public.get_teacher_learner_activity_profile(
+  'b3000000-0000-4000-8000-000000000003'
+)::text as cq_legacy_after_quiz_only_archive
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.learner_objective_state as state
+    where state.recorded_by_account_id =
+        'b2000000-0000-4000-8000-000000000001'
+      and state.learner_profile_id =
+        'b3000000-0000-4000-8000-000000000003'
+      and state.source_learning_objective_id_at_time =
+        'cf500000-0000-4000-8000-000000000002'
+  )
+    and not exists (
+      select 1
+      from jsonb_array_elements(
+        :'cq_legacy_after_quiz_only_archive'::jsonb -> 'states'
+      ) as state(value)
+      where state.value ->> 'sourceLearningObjectiveIdAtTime' =
+        'cf500000-0000-4000-8000-000000000002'
+    ),
+  'archived quiz-only persisted state leaked as a legacy no-data ghost'
+);
+
+delete from public.course_learner
+where course_id = 'bf400000-0000-4000-8000-000000000001'
+  and learner_profile_id = 'b3000000-0000-4000-8000-000000000003';
+
+select pg_temp.set_authenticated_session(
+  'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004'
+);
+set local role authenticated;
+select id
+from public.archive_learning_objective(
+  'cf500000-0000-4000-8000-000000000001'
+);
+reset role;
+
+set local role service_role;
+select public.submit_choice_quiz_attempt_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
+  :'cq_assessment_ref',
+  1,
+  'cfa00000-0000-4000-8000-000000000021',
+  array['cf930000-0000-4000-8000-000000000001'::uuid]
+)::text as cq_assessment_correct
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  (:'cq_assessment_correct'::jsonb #>> '{execution,attemptCount}')::int = 1
+    and (:'cq_assessment_correct'::jsonb #>>
+      '{execution,maxAttempts}')::int = 1
+    and (:'cq_assessment_correct'::jsonb #>>
+      '{execution,latestFeedback,isCorrect}')::boolean
+    and (:'cq_assessment_correct'::jsonb #>>
+      '{execution,latestFeedback,score}')::int = 1
+    and (:'cq_assessment_correct'::jsonb #>>
+      '{execution,remainingAttempts}')::int = 0
+    and not (:'cq_assessment_correct'::jsonb #>>
+      '{execution,canSubmit}')::boolean
+    and not (:'cq_assessment_correct'::jsonb #>>
+      '{execution,latestFeedback,canRetry}')::boolean
+    and :'cq_assessment_correct'::jsonb #>
+      '{execution,latestFeedback,reveal}' = 'null'::jsonb
+    and position('correctOptionIds' in :'cq_assessment_correct') = 0
+    and position('LA_M5_ASSESSMENT_SECRET_EXPLANATION'
+      in :'cq_assessment_correct') = 0
+    and not exists (
+      select 1
+      from public.learning_evidence as evidence
+      join public.choice_quiz_evaluation as evaluation
+        on evaluation.id = evidence.source_choice_quiz_evaluation_id
+      join public.choice_quiz_attempt as attempt
+        on attempt.id = evaluation.attempt_id
+      join public.choice_quiz_issue as issue on issue.id = attempt.issue_id
+      where issue.learner_ref = :'cq_assessment_ref'
+    ),
+  'correct assessment revealed its answer/retry or archived-objective submission created evidence'
+);
+
+set local role service_role;
+select pg_temp.assert_raises(
+  format($sql$
+    select public.submit_choice_quiz_attempt_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001',
+      %L, 1, 'cfa00000-0000-4000-8000-000000000022',
+      array['cf930000-0000-4000-8000-000000000001'::uuid]
+    )
+  $sql$, :'cq_assessment_ref'),
+  '55000',
+  'choice_quiz_attempt_not_allowed',
+  'assessment accepted a second attempt with a fresh key'
+);
+
+select public.list_choice_quiz_run_history_admin(
+  'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004',
+  'bf700000-0000-4000-8000-000000000001'
+)::text as cq_history
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  (
+    select count(*) = 2
+      and bool_and(key in ('items', 'truncated'))
+    from jsonb_object_keys(:'cq_history'::jsonb) as root(key)
+  )
+    and (:'cq_history'::jsonb ->> 'truncated')::boolean is false
+    and jsonb_array_length(:'cq_history'::jsonb -> 'items') = 10
+    and not exists (
+      select 1
+      from jsonb_array_elements(:'cq_history'::jsonb -> 'items') as item(value)
+      where item.value ->> 'learnerProfileId' <>
+          'b3000000-0000-4000-8000-000000000003'
+        or item.value ->> 'learnerDisplayName' <> 'LA Subject'
+        or item.value ->> 'evaluatorVersion' <>
+          'choice_quiz_exact_set_v1'
+        or item.value ->> 'evaluatorFingerprint'
+          !~ '^cqef_v1_[0-9a-f]{64}$'
+    )
+    and exists (
+      select 1
+      from jsonb_array_elements(:'cq_history'::jsonb -> 'items') as item(value)
+      where item.value ->> 'evaluationId' =
+          :'cq_corrected_evaluation_id'
+        and item.value ->> 'supersededByEvaluationId' =
+          :'cq_correction_evaluation_id'
+    )
+    and exists (
+      select 1
+      from jsonb_array_elements(:'cq_history'::jsonb -> 'items') as item(value)
+      where item.value ->> 'evaluationId' =
+          :'cq_correction_evaluation_id'
+        and item.value ->> 'supersedesEvaluationId' =
+          :'cq_corrected_evaluation_id'
+        and not (item.value ->> 'revealAvailable')::boolean
+    )
+    and position('correctOptionIds' in :'cq_history') = 0
+    and position('evaluatorConfig' in :'cq_history') = 0
+    and not exists (
+      select 1
+      from jsonb_array_elements(:'cq_history'::jsonb -> 'items') as item(value)
+      cross join lateral jsonb_array_elements(
+        item.value -> 'shownOptions'
+      ) as option(value)
+      where option.value ? 'isCorrect'
+    )
+    and position('cf600000-0000-4000-8000-000000000010'
+      in :'cq_history') = 0,
+  'owner history was not flat/complete/teacher-safe or lost correction chains and learner identity'
+);
+
+update public.account_security as security
+set sessions_invalid_before = (
+  select session.created_at + interval '1 microsecond'
+  from auth.sessions as session
+  where session.id = 'bf100000-0000-4000-8000-000000000004'
+)
+where security.account_id = 'b2000000-0000-4000-8000-000000000001';
+
+set local role service_role;
+select pg_temp.assert_raises(
+  $sql$
+    select public.list_choice_quiz_run_history_admin(
+      'b1000000-0000-4000-8000-000000000001',
+      'bf100000-0000-4000-8000-000000000004',
+      'bf700000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  '42501',
+  'choice_quiz_session_revoked',
+  'teacher session cutoff allowed Choice Quiz history access'
+);
+reset role;
+
+update public.account_security
+set sessions_invalid_before = null
+where account_id = 'b2000000-0000-4000-8000-000000000001';
+
+set local role service_role;
+select pg_temp.assert_raises(
+  $sql$
+    select public.list_choice_quiz_run_history_admin(
+      'b1000000-0000-4000-8000-000000000002',
+      'bf100000-0000-4000-8000-000000000002',
+      'bf700000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  'P0002',
+  'choice_quiz_history_not_found',
+  'foreign teacher read choice_quiz Run history'
+);
+
+select pg_temp.assert_raises(
+  format($sql$
+    select public.correct_choice_quiz_evaluation_admin(
+      'b1000000-0000-4000-8000-000000000002',
+      'bf100000-0000-4000-8000-000000000002',
+      %L::uuid, true, 'foreign correction',
+      'cfb00000-0000-4000-8000-000000000002'
+    )
+  $sql$, :'cq_correction_evaluation_id'),
+  'P0002',
+  'choice_quiz_evaluation_not_found',
+  'foreign teacher corrected a choice_quiz evaluation'
+);
+reset role;
+
+select pg_temp.set_authenticated_session(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001'
+);
+set local role authenticated;
+select pg_temp.assert_raises(
+  $sql$
+    select * from public.choice_quiz_issue
+  $sql$,
+  '42501',
+  'permission denied for table choice_quiz_issue',
+  'learner received raw choice_quiz issue table access'
+);
+reset role;
+
+-- A lost-response replay is a persisted-result read, not a new live attempt.
+-- Isolate it on a completed Run so later LA-M4 cursor/lifecycle assertions for
+-- the main fixture keep their original revision and roster state. Its Course
+-- is isolated as well because the authority-replay checks below deliberately
+-- revoke and archive that Course before restoring the next gate's fixture.
+insert into public.course (
+  id,
+  owner_account_id,
+  title,
+  subject,
+  audience_type,
+  learning_audience
+) values (
+  'cf4a0000-0000-4000-8000-000000000001',
+  'b2000000-0000-4000-8000-000000000001',
+  'LA-M5 persisted replay authority fixture',
+  'Русский язык',
+  'none',
+  'children'
+);
+
+insert into public.lesson (id, course_id, position, title)
+values (
+  'cf5a0000-0000-4000-8000-000000000001',
+  'cf4a0000-0000-4000-8000-000000000001',
+  1,
+  'LA-M5 persisted replay after completion'
+);
+
+insert into public.lesson_student_slide (id, lesson_id, position)
+values (
+  'cf5b0000-0000-4000-8000-000000000001',
+  'cf5a0000-0000-4000-8000-000000000001',
+  1
+);
+
+insert into public.lesson_component (
+  id,
+  lesson_id,
+  position,
+  type_key,
+  payload,
+  placement_config,
+  visibility,
+  student_slide_id,
+  activity_role
+) values (
+  'cf6a0000-0000-4000-8000-000000000001',
+  'cf5a0000-0000-4000-8000-000000000001',
+  1,
+  'choice_quiz',
+  '{"question":"LA-M5 lost response","options":[{"id":"cf9a0000-0000-4000-8000-000000000001","label":"Replay correct","isCorrect":true},{"id":"cf9a0000-0000-4000-8000-000000000002","label":"Replay wrong","isCorrect":false}],"allowMultiple":false}'::jsonb,
+  '{}'::jsonb,
+  'learner_visible',
+  'cf5b0000-0000-4000-8000-000000000001',
+  'practice'
+);
+
+select updated_at::text as cq_lost_component_updated_at
+from public.lesson_component
+where id = 'cf6a0000-0000-4000-8000-000000000001'
+\gset
+
+insert into public.lesson_run (
+  id,
+  lesson_id,
+  scheduled_at,
+  planned_duration_minutes
+) values (
+  'cf7a0000-0000-4000-8000-000000000001',
+  'cf5a0000-0000-4000-8000-000000000001',
+  '2026-08-19 14:00:00+09',
+  45
+);
+
+insert into public.learning_record (
+  id,
+  learner_profile_id,
+  lesson_run_id,
+  source_course_id,
+  source_lesson_id,
+  source_course_id_at_time,
+  source_lesson_id_at_time,
+  source_lesson_run_id_at_time,
+  recorded_by_account_id
+) values (
+  'cf8a0000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003',
+  'cf7a0000-0000-4000-8000-000000000001',
+  'cf4a0000-0000-4000-8000-000000000001',
+  'cf5a0000-0000-4000-8000-000000000001',
+  'cf4a0000-0000-4000-8000-000000000001',
+  'cf5a0000-0000-4000-8000-000000000001',
+  'cf7a0000-0000-4000-8000-000000000001',
+  'b2000000-0000-4000-8000-000000000001'
+);
+
+select pg_temp.set_authenticated_session(
+  'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004'
+);
+set local role authenticated;
+select public.set_lesson_run_live_access(
+  'cf7a0000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003',
+  true,
+  false
+);
+select public.start_lesson_run(
+  'cf7a0000-0000-4000-8000-000000000001',
+  '2026-08-19 14:05:00+09'
+);
+select public.set_lesson_run_presentation_cursor(
+  'cf7a0000-0000-4000-8000-000000000001',
+  'cf5b0000-0000-4000-8000-000000000001',
+  0
+);
+reset role;
+
+set local role service_role;
+select public.issue_choice_quiz_definition_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'cf7a0000-0000-4000-8000-000000000001',
+  'cf6a0000-0000-4000-8000-000000000001',
+  1,
+  :'cq_lost_component_updated_at'::timestamptz,
+  '{"question":"LA-M5 lost response","options":[{"id":"cf9a0000-0000-4000-8000-000000000001","label":"Replay correct"},{"id":"cf9a0000-0000-4000-8000-000000000002","label":"Replay wrong"}],"allowMultiple":false}'::jsonb,
+  '{"correctOptionIds":["cf9a0000-0000-4000-8000-000000000001"],"allowMultiple":false}'::jsonb
+)::text as cq_lost_issue
+\gset
+select (:'cq_lost_issue'::jsonb #>> '{execution,issueRef}')::text
+  as cq_lost_ref
+\gset
+
+select public.submit_choice_quiz_attempt_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'cf7a0000-0000-4000-8000-000000000001',
+  :'cq_lost_ref',
+  1,
+  'cfaa0000-0000-4000-8000-000000000001',
+  array['cf9a0000-0000-4000-8000-000000000002'::uuid]
+)::text as cq_lost_wrong
+\gset
+reset role;
+
+select pg_temp.set_authenticated_session(
+  'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004'
+);
+set local role authenticated;
+select public.complete_lesson_run_v2(
+  'cf7a0000-0000-4000-8000-000000000001',
+  '[{"learnerProfileId":"b3000000-0000-4000-8000-000000000003","wasPresent":true}]'::jsonb,
+  'LA-M5 lost response completion',
+  '2026-08-19 14:30:00+09',
+  25
+);
+reset role;
+
+set local role service_role;
+select public.submit_choice_quiz_attempt_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'cf7a0000-0000-4000-8000-000000000001',
+  :'cq_lost_ref',
+  1,
+  'cfaa0000-0000-4000-8000-000000000001',
+  array['cf9a0000-0000-4000-8000-000000000002'::uuid]
+)::text as cq_lost_replay
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  :'cq_lost_replay'::jsonb = :'cq_lost_wrong'::jsonb
+    and (:'cq_lost_replay'::jsonb #>>
+      '{execution,latestFeedback,isCorrect}')::boolean is false
+    and (
+      select count(*) = 1
+      from public.choice_quiz_attempt as attempt
+      join public.choice_quiz_issue as issue on issue.id = attempt.issue_id
+      where issue.learner_ref = :'cq_lost_ref'
+    )
+    and (
+      select count(*) = 1
+      from public.choice_quiz_response as response
+      join public.choice_quiz_issue as issue on issue.id = response.issue_id
+      where issue.learner_ref = :'cq_lost_ref'
+    )
+    and (
+      select count(*) = 1
+      from public.choice_quiz_evaluation as evaluation
+      join public.choice_quiz_issue as issue
+        on issue.id = evaluation.issue_id
+      where issue.learner_ref = :'cq_lost_ref'
+    )
+    and (
+      select count(*) = 1
+      from public.choice_quiz_feedback_delivery as feedback
+      join public.choice_quiz_issue as issue on issue.id = feedback.issue_id
+      where issue.learner_ref = :'cq_lost_ref'
+    ),
+  'same-key lost-response replay after completion changed execution or append-only row counts'
+);
+
+set local role service_role;
+select pg_temp.assert_raises(
+  format($sql$
+    select public.submit_choice_quiz_attempt_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'cf7a0000-0000-4000-8000-000000000001',
+      %L, 1, 'cfaa0000-0000-4000-8000-000000000001',
+      array['cf9a0000-0000-4000-8000-000000000001'::uuid]
+    )
+  $sql$, :'cq_lost_ref'),
+  '23505',
+  'choice_quiz_idempotency_conflict',
+  'same replay key accepted a different body after completion'
+);
+
+select pg_temp.assert_raises(
+  format($sql$
+    select public.submit_choice_quiz_attempt_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'cf7a0000-0000-4000-8000-000000000001',
+      %L, 1, 'cfaa0000-0000-4000-8000-000000000002',
+      array['cf9a0000-0000-4000-8000-000000000002'::uuid]
+    )
+  $sql$, :'cq_lost_ref'),
+  '40001',
+  'choice_quiz_attempt_stale',
+  'new-key submission replayed after completion instead of applying live gates'
+);
+reset role;
+
+-- Exact persisted replay still rechecks current Course/enrollment/capability
+-- authority. Revoking the isolated Course must deny the already-known key,
+-- even though its immutable attempt result remains stored.
+select pg_temp.set_authenticated_session(
+  'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004'
+);
+set local role authenticated;
+select public.set_lesson_run_live_access(
+  'cf7a0000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003',
+  false,
+  false
+);
+reset role;
+
+set local role service_role;
+select pg_temp.assert_raises(
+  format($sql$
+    select public.submit_choice_quiz_attempt_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'cf7a0000-0000-4000-8000-000000000001',
+      %L, 1, 'cfaa0000-0000-4000-8000-000000000001',
+      array['cf9a0000-0000-4000-8000-000000000002'::uuid]
+    )
+  $sql$, :'cq_lost_ref'),
+  'P0002',
+  'lesson_run_live_not_found',
+  'revoked Course authority allowed a persisted Choice Quiz replay'
+);
+reset role;
+
+-- Re-enable the supported Course enrollment, then restore the ended Run's
+-- capability only as isolated fixture state. Product RPCs intentionally never
+-- revive a capability after lifecycle end; this direct restoration exists so
+-- the next independent authority gate exercises the same persisted replay.
+select pg_temp.set_authenticated_session(
+  'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004'
+);
+set local role authenticated;
+select public.set_lesson_run_live_access(
+  'cf7a0000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003',
+  true,
+  false
+);
+reset role;
+
+set local session_replication_role = replica;
+update public.lesson_run_execution_capability as capability
+set course_id = enrollment.course_id,
+    enrollment_revision = enrollment.revision,
+    status = 'active',
+    revision = capability.revision + 1,
+    granted_by_account_id =
+      'b2000000-0000-4000-8000-000000000001',
+    granted_at = clock_timestamp(),
+    revoked_by_account_id = null,
+    revoked_at = null,
+    revocation_reason = null,
+    updated_at = clock_timestamp()
+from public.course_learner_enrollment as enrollment
+where capability.lesson_run_id =
+    'cf7a0000-0000-4000-8000-000000000001'
+  and capability.learner_profile_id =
+    'b3000000-0000-4000-8000-000000000003'
+  and enrollment.course_id =
+    'cf4a0000-0000-4000-8000-000000000001'
+  and enrollment.learner_profile_id = capability.learner_profile_id
+  and enrollment.status = 'active';
+set local session_replication_role = origin;
+
+-- Course archival is an independent authority cutoff. It must deny an exact
+-- replay before the attempt idempotency hit can return its stored execution.
+update public.course
+set archived_at = clock_timestamp()
+where id = 'cf4a0000-0000-4000-8000-000000000001';
+
+set local role service_role;
+select pg_temp.assert_raises(
+  format($sql$
+    select public.submit_choice_quiz_attempt_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'cf7a0000-0000-4000-8000-000000000001',
+      %L, 1, 'cfaa0000-0000-4000-8000-000000000001',
+      array['cf9a0000-0000-4000-8000-000000000002'::uuid]
+    )
+  $sql$, :'cq_lost_ref'),
+  'P0002',
+  'lesson_run_live_not_found',
+  'archived Course allowed a persisted Choice Quiz replay'
+);
+reset role;
+
+-- Restore only this isolated authority fixture so the session-cutoff replay
+-- assertion below is not accidentally satisfied by an earlier Course gate.
+update public.course
+set archived_at = null
+where id = 'cf4a0000-0000-4000-8000-000000000001';
+
+select pg_temp.set_authenticated_session(
+  'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004'
+);
+set local role authenticated;
+select public.set_lesson_run_live_access(
+  'cf7a0000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003',
+  true,
+  false
+);
+reset role;
+
+set local session_replication_role = replica;
+update public.lesson_run_execution_capability as capability
+set course_id = enrollment.course_id,
+    enrollment_revision = enrollment.revision,
+    status = 'active',
+    revision = capability.revision + 1,
+    granted_by_account_id =
+      'b2000000-0000-4000-8000-000000000001',
+    granted_at = clock_timestamp(),
+    revoked_by_account_id = null,
+    revoked_at = null,
+    revocation_reason = null,
+    updated_at = clock_timestamp()
+from public.course_learner_enrollment as enrollment
+where capability.lesson_run_id =
+    'cf7a0000-0000-4000-8000-000000000001'
+  and capability.learner_profile_id =
+    'b3000000-0000-4000-8000-000000000003'
+  and enrollment.course_id =
+    'cf4a0000-0000-4000-8000-000000000001'
+  and enrollment.learner_profile_id = capability.learner_profile_id
+  and enrollment.status = 'active';
+set local session_replication_role = origin;
+
+update public.account_security as security
+set sessions_invalid_before = (
+  select session.created_at + interval '1 microsecond'
+  from auth.sessions as session
+  where session.id = 'bf100000-0000-4000-8000-000000000001'
+)
+where security.account_id = 'b2000000-0000-4000-8000-000000000003';
+
+set local role service_role;
+select pg_temp.assert_raises(
+  format($sql$
+    select public.submit_choice_quiz_attempt_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'cf7a0000-0000-4000-8000-000000000001',
+      %L, 1, 'cfaa0000-0000-4000-8000-000000000001',
+      array['cf9a0000-0000-4000-8000-000000000002'::uuid]
+    )
+  $sql$, :'cq_lost_ref'),
+  '42501',
+  'choice_quiz_session_revoked',
+  'session cutoff allowed a persisted Choice Quiz replay'
+);
+reset role;
+
+update public.account_security
+set sessions_invalid_before = null
+where account_id = 'b2000000-0000-4000-8000-000000000003';
+
+-- Correction authority is the current Course owner, even for an immutable
+-- historical evaluation and an otherwise exact idempotent replay. Correct an
+-- isolated evaluation, revoke its live enrollment so ownership can transfer,
+-- then prove the former owner cannot replay or append another correction.
+select evaluation.id::text as cq_owner_transfer_evaluation_id
+from public.choice_quiz_evaluation as evaluation
+join public.choice_quiz_issue as issue on issue.id = evaluation.issue_id
+where issue.learner_ref = :'cq_lost_ref'
+  and evaluation.evaluation_source = 'initial'
+\gset
+
+set local role service_role;
+select public.correct_choice_quiz_evaluation_admin(
+  'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004',
+  :'cq_owner_transfer_evaluation_id'::uuid,
+  true,
+  'LA-M5 correction before ownership transfer',
+  'cfb00000-0000-4000-8000-000000000010'
+)::text as cq_owner_transfer_correction
+\gset
+reset role;
+
+select pg_temp.set_authenticated_session(
+  'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004'
+);
+set local role authenticated;
+select public.set_lesson_run_live_access(
+  'cf7a0000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003',
+  false,
+  false
+);
+reset role;
+
+update public.course
+set owner_account_id = 'b2000000-0000-4000-8000-000000000002'
+where id = 'cf4a0000-0000-4000-8000-000000000001';
+
+set local role service_role;
+select pg_temp.assert_raises(
+  format($sql$
+    select public.correct_choice_quiz_evaluation_admin(
+      'b1000000-0000-4000-8000-000000000001',
+      'bf100000-0000-4000-8000-000000000004',
+      %L::uuid, true,
+      'LA-M5 correction before ownership transfer',
+      'cfb00000-0000-4000-8000-000000000010'
+    )
+  $sql$, :'cq_owner_transfer_evaluation_id'),
+  'P0002',
+  'choice_quiz_evaluation_not_found',
+  'former Course owner replayed a persisted correction after ownership transfer'
+);
+
+select pg_temp.assert_raises(
+  format($sql$
+    select public.correct_choice_quiz_evaluation_admin(
+      'b1000000-0000-4000-8000-000000000001',
+      'bf100000-0000-4000-8000-000000000004',
+      %L::uuid, false, 'former owner correction',
+      'cfb00000-0000-4000-8000-000000000011'
+    )
+  $sql$, :'cq_owner_transfer_evaluation_id'),
+  'P0002',
+  'choice_quiz_evaluation_not_found',
+  'former Course owner appended a new correction after ownership transfer'
+);
+reset role;
+
+select pg_temp.assert_true(
+  (:'cq_owner_transfer_correction'::jsonb #>>
+    '{evaluation,isCorrect}')::boolean
+    and (
+      select count(*) = 1
+      from public.choice_quiz_evaluation
+      where correction_idempotency_key =
+        'cfb00000-0000-4000-8000-000000000010'
+    ),
+  'ownership transfer rewrote the already-committed correction graph'
+);
+
+update public.course
+set owner_account_id = 'b2000000-0000-4000-8000-000000000001'
+where id = 'cf4a0000-0000-4000-8000-000000000001';
+
+update public.lesson_component
+set payload = jsonb_set(
+      payload,
+      '{question}',
+      '"LA-M5 edited after issue"'::jsonb
+    ),
+    updated_at = clock_timestamp()
+where id = 'cf600000-0000-4000-8000-000000000010';
+
+set local role service_role;
+select pg_temp.assert_raises(
+  format($sql$
+    select public.submit_choice_quiz_attempt_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001',
+      %L, 1, 'cfa00000-0000-4000-8000-000000000099',
+      array['cf910000-0000-4000-8000-000000000001'::uuid]
+    )
+  $sql$, :'cq_single_ref'),
+  '40001',
+  'choice_quiz_attempt_stale',
+  'component edit after issuance did not invalidate submission'
+);
+reset role;
+
+delete from public.lesson_component
+where id in (
+  'cf600000-0000-4000-8000-000000000010',
+  'cf600000-0000-4000-8000-000000000011',
+  'cf600000-0000-4000-8000-000000000012',
+  'cf600000-0000-4000-8000-000000000013',
+  'cf600000-0000-4000-8000-000000000014',
+  'cf600000-0000-4000-8000-000000000015'
+);
+delete from public.learning_objective
+where id in (
+  'cf500000-0000-4000-8000-000000000001',
+  'cf500000-0000-4000-8000-000000000002'
+);
+
+select pg_temp.assert_true(
+  (
+    select count(*) = 5
+      and bool_and(lesson_component_id is null)
+      and bool_and(source_component_id_at_time is not null)
+    from public.choice_quiz_issue
+    where source_component_id_at_time in (
+      'cf600000-0000-4000-8000-000000000010',
+      'cf600000-0000-4000-8000-000000000011',
+      'cf600000-0000-4000-8000-000000000012',
+      'cf600000-0000-4000-8000-000000000013',
+      'cf600000-0000-4000-8000-000000000015'
+    )
+  )
+    and exists (
+      select 1
+      from public.choice_quiz_issue
+      where learner_ref = :'cq_single_ref'
+        and learning_objective_id is null
+        and source_learning_objective_id_at_time =
+          'cf500000-0000-4000-8000-000000000001'
+        and objective_title_at_time = 'LA-M5 exact-set objective'
+    )
+    and not exists (
+      select 1
+      from public.learning_evidence
+      where source_choice_quiz_evaluation_id is not null
+        and source_component_id_at_time in (
+          'cf600000-0000-4000-8000-000000000010',
+          'cf600000-0000-4000-8000-000000000011'
+        )
+        and (
+          lesson_component_id is not null
+          or learning_objective_id is not null
+          or source_learning_objective_id_at_time <>
+            'cf500000-0000-4000-8000-000000000001'
+          or objective_title_at_time <> 'LA-M5 exact-set objective'
+        )
+    )
+    and exists (
+      select 1
+      from public.learning_evidence
+      where source_choice_quiz_evaluation_id is not null
+        and source_component_id_at_time =
+          'cf600000-0000-4000-8000-000000000015'
+        and lesson_component_id is null
+        and learning_objective_id is null
+        and source_learning_objective_id_at_time =
+          'cf500000-0000-4000-8000-000000000002'
+        and objective_title_at_time =
+          'LA-M5 quiz-only legacy boundary objective'
+    ),
+  'component/objective deletion destroyed at-time issue/evidence provenance'
+);
+
+set local role service_role;
+select public.list_choice_quiz_run_history_admin(
+  'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004',
+  'bf700000-0000-4000-8000-000000000001'
+)::text as cq_history_after_delete
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  :'cq_history_after_delete'::jsonb = :'cq_history'::jsonb,
+  'component/objective deletion changed retained teacher history'
 );
 
 -- Reordering follows the stable selected Slide id while both Slide and
@@ -4598,10 +7797,9 @@ select pg_temp.assert_true(
   'selected Slide deletion did not atomically clear and bump cursor'
 );
 
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 select public.set_lesson_run_live_access(
@@ -4627,10 +7825,9 @@ select pg_temp.assert_raises(
 );
 reset role;
 
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 select public.set_lesson_run_live_access(
@@ -4674,10 +7871,9 @@ select pg_temp.assert_true(
 
 -- A learner Account status transition revokes durable authority. Returning it
 -- to active cannot silently revive either Course or Run access.
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 select public.set_lesson_run_live_access(
@@ -4715,10 +7911,9 @@ select pg_temp.assert_true(
   'learner Account deactivation left live authority active'
 );
 
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 select public.get_lesson_run_live_delivery_admin(
@@ -4763,10 +7958,9 @@ reset role;
 
 -- A fresh explicit owner grant is required after reactivation; subsequent
 -- unlink/relink must revoke rather than transfer that grant.
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 select public.set_lesson_run_live_access(
@@ -4776,6 +7970,35 @@ select public.set_lesson_run_live_access(
   true
 );
 reset role;
+
+select pg_temp.assert_raises(
+  $sql$
+    update public.learner_profile
+    set account_id = null
+    where id = 'b3000000-0000-4000-8000-000000000003'
+  $sql$,
+  '55000',
+  'learner_profile_not_empty',
+  'profile unlink ignored retained Choice Quiz history'
+);
+
+-- The retained quiz graph has already passed merge/erasure/delete/history
+-- acceptance above. Remove only this rollback-only fixture under the same
+-- narrow erasure mode so the pre-existing LA-M4 unlink/relink regression can
+-- continue to exercise authority revocation on a profile without history.
+select set_config('app.learner_identity_erasure', 'on', true);
+delete from public.choice_quiz_issue
+where learner_profile_id = 'b3000000-0000-4000-8000-000000000003';
+select set_config('app.learner_identity_erasure', 'off', true);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from public.choice_quiz_issue
+    where learner_profile_id = 'b3000000-0000-4000-8000-000000000003'
+  ),
+  'rollback-only Choice Quiz cleanup left profile-unlink blockers'
+);
 
 select set_config('app.learner_profile_link_mutation', 'on', true);
 update public.learner_profile as profile
@@ -4806,10 +8029,9 @@ select pg_temp.assert_true(
   'learner Account unlink left enrollment or Run capability active'
 );
 
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 select public.get_lesson_run_live_delivery_admin(
@@ -4855,10 +8077,9 @@ where profile.id = 'b3000000-0000-4000-8000-000000000003';
 select set_config('app.learner_profile_link_mutation', 'off', true);
 
 -- A relink does not restore authority; only a fresh explicit owner grant does.
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 select public.set_lesson_run_live_access(
@@ -4901,9 +8122,127 @@ select pg_temp.assert_true(
   'completed authorized Run exposed content instead of exact ended DTO'
 );
 
+select pg_temp.set_authenticated_session(
+  'b1000000-0000-4000-8000-000000000001',
+  'bf100000-0000-4000-8000-000000000004'
+);
+set local role authenticated;
+select public.get_teacher_learner_activity_profile(
+  'b3000000-0000-4000-8000-000000000003'
+)::text as deactivation_profile
+\gset
+select state.value ->> 'evaluatedAt' as deactivation_state_token
+from jsonb_array_elements(
+  :'deactivation_profile'::jsonb -> 'states'
+) as state(value)
+where state.value ->> 'sourceLearningObjectiveIdAtTime' =
+  'cf500000-0000-4000-8000-000000000001'
+\gset
+select public.set_learner_recommendation_override(
+  'b3000000-0000-4000-8000-000000000003',
+  'cf500000-0000-4000-8000-000000000001',
+  'replace',
+  'apply_in_new_context',
+  'LA_M5_DEACTIVATION_PRIVATE_SENTINEL',
+  :'deactivation_state_token'::timestamptz
+);
+select pg_temp.assert_true(
+  exists (select 1 from public.learning_evidence)
+    and exists (select 1 from public.learner_objective_state)
+    and exists (select 1 from public.learner_objective_state_evidence)
+    and exists (
+      select 1 from public.learner_recommendation_override
+      where private_reason = 'LA_M5_DEACTIVATION_PRIVATE_SENTINEL'
+    ),
+  'active owner session could not read the deactivation regression fixtures'
+);
+reset role;
+
 update public.account
 set status = 'suspended'
 where id = 'b2000000-0000-4000-8000-000000000001';
+
+set local role authenticated;
+select pg_temp.assert_true(
+  public.current_active_session_account_id() is null
+    and (select count(*) from public.learning_evidence) = 0
+    and (select count(*) from public.learner_objective_state) = 0
+    and (select count(*) from public.learner_objective_state_evidence) = 0
+    and (select count(*) from public.learner_recommendation_override) = 0,
+  'deactivated Account retained raw sensitive learning-activity reads'
+);
+select pg_temp.assert_raises(
+  $sql$
+    select public.get_teacher_learner_activity_profile(
+      'b3000000-0000-4000-8000-000000000003'
+    )
+  $sql$,
+  'P0002',
+  'learner_activity_profile_not_found',
+  'deactivated Account retained the rolling LA-M3 teacher profile'
+);
+select pg_temp.assert_raises(
+  $sql$
+    select public.get_teacher_learner_activity_profile_v2(
+      'b3000000-0000-4000-8000-000000000003'
+    )
+  $sql$,
+  'P0002',
+  'learner_activity_profile_not_found',
+  'deactivated Account retained the V2 teacher profile'
+);
+select pg_temp.assert_raises(
+  format($sql$
+    select public.set_learner_recommendation_override(
+      'b3000000-0000-4000-8000-000000000003',
+      'cf500000-0000-4000-8000-000000000001',
+      'replace', 'apply_in_new_context', 'DEACTIVATED_PRIVATE_REASON',
+      %L::timestamptz
+    )
+  $sql$, :'deactivation_state_token'),
+  'P0002',
+  'learner_recommendation_override_not_found',
+  'deactivated Account changed a private recommendation override'
+);
+select pg_temp.assert_raises(
+  $sql$select public.preview_my_learning_data_erasure()$sql$,
+  'P0002',
+  'learner_profile_not_found',
+  'deactivated Account created an erasure preview request'
+);
+select pg_temp.assert_raises(
+  $sql$select public.get_my_learning_activity_profile()$sql$,
+  'P0002',
+  'learner_profile_not_found',
+  'deactivated Account retained the unified self activity profile'
+);
+select pg_temp.assert_raises(
+  $sql$
+    select public.cancel_lesson_run(
+      'bf700000-0000-4000-8000-000000000001', now()
+    )
+  $sql$,
+  'P0002',
+  'lesson_run_not_found',
+  'deactivated Account cancelled a Lesson Run'
+);
+select pg_temp.assert_true(
+  not public.delete_lesson_component(
+    'bf600000-0000-4000-8000-000000000003'
+  ),
+  'deactivated Account deleted a Lesson Component'
+);
+select pg_temp.assert_raises(
+  $sql$
+    select public.delete_lesson_with_history(
+      'bf500000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  'P0002',
+  'lesson_not_found',
+  'deactivated Account deleted a Lesson with history'
+);
+reset role;
 
 select pg_temp.assert_true(
   exists (
@@ -4939,6 +8278,15 @@ update public.account
 set status = 'active'
 where id = 'b2000000-0000-4000-8000-000000000001';
 
+set local role authenticated;
+select public.set_learner_recommendation_override(
+  'b3000000-0000-4000-8000-000000000003',
+  'cf500000-0000-4000-8000-000000000001',
+  'clear', null, null,
+  :'deactivation_state_token'::timestamptz
+);
+reset role;
+
 set local role service_role;
 select pg_temp.assert_raises(
   $sql$
@@ -4957,10 +8305,9 @@ reset role;
 -- Recreate Course authority explicitly so owner-transfer/archive guards are
 -- still exercised on the ended Run. Run capability cannot be regranted after
 -- close and remains revoked.
-select set_config(
-  'request.jwt.claim.sub',
+select pg_temp.set_authenticated_session(
   'b1000000-0000-4000-8000-000000000001',
-  true
+  'bf100000-0000-4000-8000-000000000004'
 );
 set local role authenticated;
 select public.set_lesson_run_live_access(

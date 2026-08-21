@@ -299,10 +299,15 @@ test("withdraw closes pending review and cannot later be approved", () => {
 });
 
 test("snapshot refresh refuses a database missing E2 governance", () => {
+  assert.match(
+    snapshotRefresh,
+    /--file=\/dev\/stdin <<'SQL'\n[\s\S]*array\['search_path=""'\][\s\S]*\nSQL\n/,
+    "the signature query must stay inside a single-quoted SQL heredoc",
+  );
   assert.doesNotMatch(
     snapshotRefresh,
-    /array\['search_path=""'\]/,
-    "double quotes inside the Bash --command string must stay shell-escaped",
+    /--command(?:=|\s+)"/,
+    "the signature query must not return to an interpolated Bash --command string",
   );
 
   for (const table of [

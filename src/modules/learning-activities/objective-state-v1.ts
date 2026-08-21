@@ -1,4 +1,6 @@
 import {
+  CHOICE_QUIZ_EVIDENCE_ELIGIBILITY_POLICY_VERSION,
+  EVIDENCE_ELIGIBILITY_POLICY_VERSION,
   OBJECTIVE_STATE_POLICY_VERSION,
   type LearningEvidence,
   type ProjectedLearnerObjectiveStateV1,
@@ -79,7 +81,14 @@ function assertOneObjective(evidence: LearningEvidence[]) {
     ) {
       throw new ObjectiveStatePolicyError("objective_state_key_mixed");
     }
-    if (item.evidenceVersion !== 1 || item.eligibilityPolicyVersion !== 1) {
+    const expectedEligibilityPolicyVersion =
+      item.sourceKind === "observation"
+        ? EVIDENCE_ELIGIBILITY_POLICY_VERSION
+        : CHOICE_QUIZ_EVIDENCE_ELIGIBILITY_POLICY_VERSION;
+    if (
+      item.evidenceVersion !== 1 ||
+      item.eligibilityPolicyVersion !== expectedEligibilityPolicyVersion
+    ) {
       throw new ObjectiveStatePolicyError(
         "objective_state_evidence_policy_unsupported",
       );
@@ -123,7 +132,7 @@ function evaluatedAtIso(asOf: string | Date) {
 /**
  * Transparent objective-state-v1 policy. It has no scores, percentages or
  * hidden weights: the latest evidence determines direction/support and two
- * independent observations must come from two distinct LessonRuns.
+ * independent results must come from two distinct LessonRuns.
  */
 export function projectLearnerObjectiveStateV1(
   evidence: LearningEvidence[],

@@ -486,9 +486,11 @@ export const matchingGamePayloadSchema = z
   })
   .strict();
 
+const choiceQuizUuidSchema = z.uuid().toLowerCase();
+
 export const choiceQuizOptionSchema = z
   .object({
-    id: z.uuid(),
+    id: choiceQuizUuidSchema,
     label: z.string().trim().min(1).max(500),
     isCorrect: z.boolean(),
   })
@@ -846,7 +848,17 @@ export const matchingGameEvaluatorConfigSchema = z
 export const choiceQuizLearnerDeliverySchema = z
   .object({
     question: z.string().trim().min(1).max(2_000),
-    options: z.array(singleChoicePollOptionSchema).min(2).max(20),
+    options: z
+      .array(
+        z
+          .object({
+            id: choiceQuizUuidSchema,
+            label: z.string().trim().min(1).max(500),
+          })
+          .strict(),
+      )
+      .min(2)
+      .max(20),
     allowMultiple: z.boolean(),
   })
   .strict()
@@ -863,7 +875,19 @@ export const choiceQuizLearnerDeliverySchema = z
 
 export const choiceQuizEvaluatorConfigSchema = z
   .object({
-    correctOptionIds: z.array(z.uuid()).min(1).max(20),
+    correctOptionIds: z
+      .array(choiceQuizUuidSchema)
+      .min(1)
+      .max(20)
+      .superRefine((ids, context) => {
+        if (new Set(ids).size !== ids.length) {
+          context.addIssue({
+            code: "custom",
+            message:
+              "Идентификаторы правильных вариантов должны быть уникальными.",
+          });
+        }
+      }),
     allowMultiple: z.boolean(),
     explanation: z.string().trim().min(1).max(4_000).optional(),
   })
@@ -1370,6 +1394,12 @@ const manualAssessableCapabilities = {
   assessable: true,
 } satisfies ComponentCapabilities;
 
+const aiAssessableCapabilities = {
+  ...manualAssessableCapabilities,
+  aiCreatable: true,
+  aiEditable: true,
+} satisfies ComponentCapabilities;
+
 export const componentRegistry = {
   heading: defineComponent({
     key: "heading",
@@ -1561,7 +1591,7 @@ export const componentRegistry = {
     category: "interactive",
     payloadSchema: choiceQuizPayloadSchema,
     placementSchema: interactivePlacementSchema,
-    capabilities: manualAssessableCapabilities,
+    capabilities: aiAssessableCapabilities,
     defaultPayload: {
       question: "Выберите правильный ответ",
       options: [
@@ -1582,7 +1612,7 @@ export const componentRegistry = {
     defaultPlacement: { width: "content", compact: false },
     activityFacet: choiceQuizActivityFacet,
     aiInstructions:
-      "Сохраняй стабильные UUID вариантов и явно отмечай правильные ответы. Автоматическое создание и редактирование этого типа пока отключено.",
+      "Сохраняй стабильные UUID вариантов и явно отмечай правильные ответы. AI может создавать этот тип только через canonical planner preview и explicit Apply.",
   }),
   fill_blanks: defineComponent({
     key: "fill_blanks",

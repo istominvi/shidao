@@ -6,6 +6,7 @@ import {
   readAppSession,
 } from "@/lib/server/app-session";
 import {
+  decodeTrustedSupabaseSessionClaims,
   isSupabaseUserReauthenticationRequiredError,
   requireSupabaseUserAccessToken,
   SupabaseUserReauthenticationRequiredError,
@@ -38,6 +39,11 @@ async function getCourseBuilderActorContext(canAuthorEducatorCourses = false) {
   const session = await readAppSession();
   if (!session) throw new SupabaseUserReauthenticationRequiredError();
   const accessToken = await requireSupabaseUserAccessToken();
+  const trustedSession = decodeTrustedSupabaseSessionClaims(accessToken);
+  if (!trustedSession || trustedSession.authUserId !== session.uid) {
+    await clearAppSession();
+    throw new SupabaseUserReauthenticationRequiredError();
+  }
   const repository = createCourseBuilderRepository(accessToken);
   const sessionsInvalidBefore = await repository.getSessionInvalidBefore();
   if (isSessionRevoked(session.iat, sessionsInvalidBefore)) {
@@ -45,6 +51,7 @@ async function getCourseBuilderActorContext(canAuthorEducatorCourses = false) {
   }
   const actor: CourseBuilderActor = {
     authUserId: session.uid,
+    supabaseSessionId: trustedSession.sessionId,
     accessToken,
     canAuthorEducatorCourses,
   };

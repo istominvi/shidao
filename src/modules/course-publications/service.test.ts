@@ -38,6 +38,7 @@ function uuid(sequence: number) {
 
 const ACTOR: CourseBuilderActor = {
   authUserId: uuid(1),
+  supabaseSessionId: uuid(2),
   accessToken: "access-token",
 };
 const ACCOUNT_ID = uuid(101);

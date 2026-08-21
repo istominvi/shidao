@@ -52,12 +52,13 @@ import type {
 } from "./routerai";
 
 const aiProviderBlockInstructions = [
-  "Каждый block обязан содержать все поля kind, title, body, choices и matches.",
+  "Каждый block обязан содержать все поля kind, title, body, choices, correctChoices, allowMultiple, explanation и matches.",
   "Неиспользуемые строки оставляй пустыми, а неиспользуемые массивы — пустыми массивами.",
   "- rich_text: заполни title, body или оба поля; title — короткий заголовок, body — содержательный learner-facing Markdown.",
   "- callout: короткая подсказка в body, необязательный заголовок в title.",
   "- single_choice_poll: нейтральный вопрос в title и 2–8 вариантов в choices; правильный ответ не отмечай.",
   "- matching_game: инструкция в title и 2–8 пар left/right в matches.",
+  "- choice_quiz: однозначный вопрос в title, 2–8 вариантов в choices и точные тексты правильных вариантов в correctChoices; allowMultiple=true только когда ученик должен выбрать несколько ответов; explanation может кратко объяснять решение.",
   "Составь 4–8 разнообразных блоков. Обязательно добавь учебное содержание, а когда уместно — интерактивный блок.",
 ].join("\n");
 
@@ -100,6 +101,7 @@ export type AiCourseBuilderDependencies = {
   learningActivityContextProvider?: {
     load(
       actorAuthUserId: string,
+      actorSupabaseSessionId: string,
       courseId: string,
     ): Promise<LearningActivityAiContext>;
   };
@@ -314,6 +316,7 @@ export function createAiCourseBuilderService({
     try {
       return await learningActivityContextProvider.load(
         actor.authUserId,
+        actor.supabaseSessionId,
         courseId,
       );
     } catch {

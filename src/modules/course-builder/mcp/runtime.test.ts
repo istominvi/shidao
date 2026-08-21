@@ -12,12 +12,14 @@ import {
 
 const ACTOR_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const OTHER_ACTOR_ID = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+const SESSION_ID = "99999999-9999-4999-8999-999999999999";
 const TOKEN_ISSUED_AT_SECONDS = 1_700_000_000;
 
 function userJwt(issuedAtSeconds = TOKEN_ISSUED_AT_SECONDS) {
   return `header.${Buffer.from(
     JSON.stringify({
       sub: ACTOR_ID,
+      session_id: SESSION_ID,
       role: "authenticated",
       iat: issuedAtSeconds,
     }),
@@ -113,6 +115,7 @@ test("context verifies getUser identity before creating the RLS repository", asy
   const context = await resolveContext();
   assert.deepEqual(context.actor, {
     authUserId: ACTOR_ID,
+    supabaseSessionId: SESSION_ID,
     accessToken: userJwt(),
     canAuthorEducatorCourses: true,
   });
@@ -123,6 +126,29 @@ test("context verifies getUser identity before creating the RLS repository", asy
     "account-context",
     "service",
   ]);
+});
+
+test("context rejects a verified user JWT without an exact Supabase session", async () => {
+  const accessToken = `header.${Buffer.from(
+    JSON.stringify({
+      sub: ACTOR_ID,
+      role: "authenticated",
+      iat: TOKEN_ISSUED_AT_SECONDS,
+    }),
+  ).toString("base64url")}.signature`;
+  const resolveContext = createCourseBuilderMcpContextResolver({
+    environment: environment({
+      SHIDAO_MCP_SUPABASE_ACCESS_TOKEN: accessToken,
+    }),
+    resolveUser: async () => ({ id: ACTOR_ID }),
+  });
+
+  await assert.rejects(
+    resolveContext,
+    (error: unknown) =>
+      error instanceof CourseBuilderMcpAuthenticationError &&
+      error.message.includes("session_id"),
+  );
 });
 
 test("context fails closed when getUser returns a different actor", async () => {

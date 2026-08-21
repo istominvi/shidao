@@ -27,6 +27,7 @@ import {
 
 export type LearnerIdentityActor = {
   authUserId: string;
+  supabaseSessionId?: string;
   verifiedEmail: string | null;
 };
 
@@ -70,6 +71,13 @@ function mapRepositoryError(error: unknown): never {
       );
     }
     const raw = `${error.databaseCode ?? ""} ${error.message}`;
+    if (/session_revoked/i.test(raw)) {
+      throw new LearnerIdentityApplicationError(
+        "Войдите снова, чтобы продолжить.",
+        "learner_identity_reauthentication_required",
+        401,
+      );
+    }
     if (/rate_limit/i.test(raw)) {
       throw new LearnerIdentityApplicationError(
         "Слишком много попыток. Подождите и повторите действие позже.",
@@ -841,10 +849,19 @@ export function createLearnerIdentityService(dependencies: {
           401,
         );
       }
+      const supabaseSessionId = actor.supabaseSessionId;
+      if (!supabaseSessionId) {
+        throw new LearnerIdentityApplicationError(
+          "Войдите снова, чтобы продолжить.",
+          "learner_identity_reauthentication_required",
+          401,
+        );
+      }
       const input = parse(confirmFingerprintInputSchema, raw);
       return operation(() =>
         adminRepository.confirmErasure(
           actor.authUserId,
+          supabaseSessionId,
           input.previewFingerprint,
         ),
       );

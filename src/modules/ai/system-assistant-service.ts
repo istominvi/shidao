@@ -115,6 +115,7 @@ export type SystemAssistantDependencies = {
   learningActivityContextProvider?: {
     load(
       actorAuthUserId: string,
+      actorSupabaseSessionId: string,
       courseId: string,
     ): Promise<LearningActivityAiContext>;
   };
@@ -961,6 +962,7 @@ export function createSystemAssistantService(
     try {
       return await learningActivityContextProvider.load(
         actor.authUserId,
+        actor.supabaseSessionId,
         courseId,
       );
     } catch {

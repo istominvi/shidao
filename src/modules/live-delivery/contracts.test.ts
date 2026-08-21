@@ -164,4 +164,31 @@ test("learner response is a strict waiting-active-ended envelope", () => {
     }).success,
     false,
   );
+  assert.equal(
+    learnerLiveDeliveryResponseSchema.safeParse({
+      state: {
+        ...active.state,
+        slide: {
+          ...active.state.slide,
+          components: [
+            {
+              ...active.state.slide.components[0],
+              execution: {
+                issueRef: `cqi_${"a".repeat(64)}`,
+                definitionRevision: `cqd_v1_${"b".repeat(64)}`,
+                attemptCount: 0,
+                maxAttempts: 3,
+                remainingAttempts: 3,
+                hintAvailable: false,
+                hintCount: 0,
+                canSubmit: true,
+                latestFeedback: null,
+              },
+            },
+          ],
+        },
+      },
+    }).success,
+    false,
+  );
 });

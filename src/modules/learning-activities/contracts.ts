@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { CourseBuilderValidationError } from "@/modules/course-builder/contracts";
+import {
+  CHOICE_QUIZ_EVIDENCE_ELIGIBILITY_POLICY_VERSION,
+  EVIDENCE_ELIGIBILITY_POLICY_VERSION,
+} from "./domain";
 import type {
+  ChoiceQuizLearningEvidenceReasonCode,
   FinalizedObservationCorrectionResult,
   LearnerSafeActivityProfile,
   LearnerSafeEvidenceReference,
@@ -9,6 +14,7 @@ import type {
   LearningEvidence,
   LessonObservationCorrection,
   LessonObservationCorrectionHistory,
+  ObservationLearningEvidenceReasonCode,
   RecommendationOverrideResult,
   TeacherLearnerActivityProfile,
   TeacherLearnerObjectiveState,
@@ -80,10 +86,27 @@ export const learningEvidenceSupportSchema = z
   .enum(["independent", "with_support"])
   .nullable();
 
+export const observationLearningEvidenceReasonCodeSchema: z.ZodType<ObservationLearningEvidenceReasonCode> =
+  z.enum([
+    "independent_positive_evidence",
+    "supported_positive_evidence",
+    "not_yet_negative_evidence",
+  ]);
+
+export const choiceQuizLearningEvidenceReasonCodeSchema: z.ZodType<ChoiceQuizLearningEvidenceReasonCode> =
+  z.enum([
+    "choice_quiz_independent_positive_evidence",
+    "choice_quiz_supported_positive_evidence",
+    "choice_quiz_not_yet_negative_evidence",
+  ]);
+
 export const learningEvidenceReasonCodeSchema = z.enum([
   "independent_positive_evidence",
   "supported_positive_evidence",
   "not_yet_negative_evidence",
+  "choice_quiz_independent_positive_evidence",
+  "choice_quiz_supported_positive_evidence",
+  "choice_quiz_not_yet_negative_evidence",
 ]);
 
 export const learnerObjectiveStateStatusSchema = z.enum([
@@ -188,50 +211,88 @@ function stateReasonMatches(
   );
 }
 
-export const learningEvidenceSchema: z.ZodType<LearningEvidence> = z
+const learningEvidenceBaseShape = {
+  id: z.uuid(),
+  learnerProfileId: z.uuid(),
+  recordedByAccountId: z.uuid(),
+  sourceCourseIdAtTime: z.uuid(),
+  sourceLessonIdAtTime: z.uuid(),
+  sourceLessonRunIdAtTime: z.uuid(),
+  sourceComponentIdAtTime: z.uuid(),
+  sourceLearningObjectiveIdAtTime: z.uuid(),
+  lessonComponentId: z.uuid().nullable(),
+  learningObjectiveId: z.uuid().nullable(),
+  courseTitleAtTime: boundedTitleSchema,
+  lessonTitleAtTime: boundedTitleSchema,
+  subjectAtTime: boundedTitleSchema.nullable(),
+  componentTypeAtTime: strictBoundedText(80),
+  componentLabelAtTime: boundedLabelSchema,
+  objectiveTitleAtTime: boundedTitleSchema,
+  criterionAtTime: strictBoundedText(OBSERVABLE_CRITERION_MAX_LENGTH),
+  direction: learningEvidenceDirectionSchema,
+  support: learningEvidenceSupportSchema,
+  observedAt: timestampSchema,
+  finalizedAt: timestampSchema,
+  materializedAt: timestampSchema,
+  evidenceVersion: z.literal(1),
+  supersedesEvidenceId: z.uuid().nullable(),
+  supersededByEvidenceId: z.uuid().nullable(),
+} as const;
+
+const observationLearningEvidenceSchema = z
   .object({
-    id: z.uuid(),
-    learnerProfileId: z.uuid(),
-    recordedByAccountId: z.uuid(),
+    ...learningEvidenceBaseShape,
     learningRecordId: z.uuid(),
+    sourceKind: z.literal("observation"),
     sourceObservationId: z.uuid(),
-    sourceCourseIdAtTime: z.uuid(),
-    sourceLessonIdAtTime: z.uuid(),
-    sourceLessonRunIdAtTime: z.uuid(),
-    sourceComponentIdAtTime: z.uuid(),
-    sourceLearningObjectiveIdAtTime: z.uuid(),
-    lessonComponentId: z.uuid().nullable(),
-    learningObjectiveId: z.uuid().nullable(),
-    courseTitleAtTime: boundedTitleSchema,
-    lessonTitleAtTime: boundedTitleSchema,
-    subjectAtTime: boundedTitleSchema.nullable(),
-    componentTypeAtTime: strictBoundedText(80),
-    componentLabelAtTime: boundedLabelSchema,
-    objectiveTitleAtTime: boundedTitleSchema,
-    criterionAtTime: strictBoundedText(OBSERVABLE_CRITERION_MAX_LENGTH),
-    direction: learningEvidenceDirectionSchema,
-    support: learningEvidenceSupportSchema,
-    observedAt: timestampSchema,
-    finalizedAt: timestampSchema,
-    materializedAt: timestampSchema,
-    evidenceVersion: z.literal(1),
-    eligibilityPolicyVersion: z.literal(1),
-    reasonCode: learningEvidenceReasonCodeSchema,
-    supersedesEvidenceId: z.uuid().nullable(),
-    supersededByEvidenceId: z.uuid().nullable(),
+    sourceChoiceQuizEvaluationId: z.null(),
+    eligibilityPolicyVersion: z.literal(EVIDENCE_ELIGIBILITY_POLICY_VERSION),
+    reasonCode: observationLearningEvidenceReasonCodeSchema,
   })
-  .strict()
+  .strict();
+
+const choiceQuizLearningEvidenceSchema = z
+  .object({
+    ...learningEvidenceBaseShape,
+    learningRecordId: z.null(),
+    sourceKind: z.literal("choice_quiz_evaluation"),
+    sourceObservationId: z.null(),
+    sourceChoiceQuizEvaluationId: z.uuid(),
+    eligibilityPolicyVersion: z.literal(
+      CHOICE_QUIZ_EVIDENCE_ELIGIBILITY_POLICY_VERSION,
+    ),
+    reasonCode: choiceQuizLearningEvidenceReasonCodeSchema,
+  })
+  .strict();
+
+export const learningEvidenceSchema: z.ZodType<LearningEvidence> = z
+  .discriminatedUnion("sourceKind", [
+    observationLearningEvidenceSchema,
+    choiceQuizLearningEvidenceSchema,
+  ])
   .superRefine((evidence, context) => {
-    const expected =
-      evidence.direction === "negative"
+    const expected = (() => {
+      if (evidence.sourceKind === "observation") {
+        return evidence.direction === "negative"
+          ? evidence.support === null
+            ? "not_yet_negative_evidence"
+            : null
+          : evidence.support === "independent"
+            ? "independent_positive_evidence"
+            : evidence.support === "with_support"
+              ? "supported_positive_evidence"
+              : null;
+      }
+      return evidence.direction === "negative"
         ? evidence.support === null
-          ? "not_yet_negative_evidence"
+          ? "choice_quiz_not_yet_negative_evidence"
           : null
         : evidence.support === "independent"
-          ? "independent_positive_evidence"
+          ? "choice_quiz_independent_positive_evidence"
           : evidence.support === "with_support"
-            ? "supported_positive_evidence"
+            ? "choice_quiz_supported_positive_evidence"
             : null;
+    })();
     if (expected !== evidence.reasonCode) {
       context.addIssue({
         code: "custom",

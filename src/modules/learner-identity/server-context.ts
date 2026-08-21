@@ -7,6 +7,7 @@ import {
 } from "@/lib/server/app-session";
 import { getCurrentAccountAuthContext } from "@/lib/server/account-auth";
 import {
+  decodeTrustedSupabaseSessionClaims,
   isSupabaseUserReauthenticationRequiredError,
   requireSupabaseUserAccessToken,
   SupabaseUserReauthenticationRequiredError,
@@ -23,6 +24,11 @@ export async function getLearnerIdentityContext() {
   const session = await readAppSession();
   if (!session) throw new SupabaseUserReauthenticationRequiredError();
   const accessToken = await requireSupabaseUserAccessToken();
+  const trustedSession = decodeTrustedSupabaseSessionClaims(accessToken);
+  if (!trustedSession || trustedSession.authUserId !== session.uid) {
+    await clearAppSession();
+    throw new SupabaseUserReauthenticationRequiredError();
+  }
   const account = await getCurrentAccountAuthContext(accessToken);
   if (
     account.authUserId !== session.uid ||
@@ -33,6 +39,7 @@ export async function getLearnerIdentityContext() {
   }
   const actor: LearnerIdentityActor = {
     authUserId: session.uid,
+    supabaseSessionId: trustedSession.sessionId,
     verifiedEmail: account.verifiedEmail,
   };
   const recentlyReauthenticated = isRecentReauthentication(session);

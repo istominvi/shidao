@@ -125,6 +125,8 @@ export type StudentScreenCourse = Pick<CourseWorkspace, "id" | "title"> & {
 
 export type CourseBuilderActor = {
   authUserId: string;
+  /** Exact Supabase Auth session from the verified server-held user JWT. */
+  supabaseSessionId: string;
   accessToken: string;
   /** Fresh Account capability, absent/false for non-browser adapters. */
   canAuthorEducatorCourses?: boolean;

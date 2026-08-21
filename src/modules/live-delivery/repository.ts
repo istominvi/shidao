@@ -22,7 +22,7 @@ export const LIVE_DELIVERY_RPC = {
   getTeacherDelivery: "get_lesson_run_live_delivery_admin",
   setAccess: "set_lesson_run_live_access",
   setCursor: "set_lesson_run_presentation_cursor",
-  resolveLearnerSource: "resolve_lesson_run_live_source_admin",
+  resolveLearnerSource: "resolve_lesson_run_live_source_choice_quiz_admin",
 } as const;
 
 type RepositoryOptions = { fetcher?: typeof fetch };

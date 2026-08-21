@@ -77,6 +77,42 @@ test("authenticated PostgREST repository has no secret-bearing RPC arguments", (
   assert.doesNotMatch(userRepositorySource, /createProfileInvitation/);
 });
 
+test("destructive erasure admin RPC binds the verified Supabase session", async (t) => {
+  configureAdminEnvironment(t);
+  const actorAuthUserId = "00000000-0000-4000-8000-000000000101";
+  const supabaseSessionId = "00000000-0000-4000-8000-000000000102";
+  const previewFingerprint = "a".repeat(64);
+  let requestBody: Record<string, unknown> | undefined;
+  const repository = createLearnerIdentityAdminRepository({
+    fetcher: async (input, init) => {
+      assert.equal(
+        new URL(String(input)).pathname,
+        "/rest/v1/rpc/confirm_my_learning_data_erasure",
+      );
+      requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return Response.json({
+        learner_profile_id: "00000000-0000-4000-8000-000000000103",
+        display_name: "Ученик",
+        created_at: "2026-08-21T00:00:00.000Z",
+        merged_lineage_count: 0,
+        can_safe_unlink: true,
+        pending_connections: [],
+      });
+    },
+  });
+
+  await repository.confirmErasure(
+    actorAuthUserId,
+    supabaseSessionId,
+    previewFingerprint,
+  );
+  assert.deepEqual(requestBody, {
+    p_actor_auth_user_id: actorAuthUserId,
+    p_session_id: supabaseSessionId,
+    p_preview_fingerprint: previewFingerprint,
+  });
+});
+
 test("identity DB harness models the trusted Auth writer without weakening auth RLS", () => {
   const rollbackBoundary = identityDbHarnessSource.indexOf("rollback;\nSQL");
   const createRole = identityDbHarnessSource.indexOf(

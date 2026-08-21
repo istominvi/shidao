@@ -34,6 +34,8 @@ function componentPreview(component: AiLessonComponentPlan) {
       return component.payload.question;
     case "matching_game":
       return component.payload.instruction;
+    case "choice_quiz":
+      return component.payload.question;
   }
 }
 
@@ -85,6 +87,25 @@ function AiComponentContent({
               </li>
             ))}
           </ul>
+        </div>
+      );
+    case "choice_quiz":
+      return (
+        <div className="grid gap-2">
+          <strong>{component.payload.question}</strong>
+          <ul className="list-disc space-y-1 pl-5">
+            {component.payload.options.map((option) => (
+              <li key={option.id}>
+                {option.label}
+                {option.isCorrect ? " — правильный ответ" : ""}
+              </li>
+            ))}
+          </ul>
+          {component.payload.explanation ? (
+            <p className="text-sm text-neutral-600">
+              {component.payload.explanation}
+            </p>
+          ) : null}
         </div>
       );
   }

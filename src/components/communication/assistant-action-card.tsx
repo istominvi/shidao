@@ -120,6 +120,13 @@ function lessonComponentPreview(component: AiLessonComponentPlan) {
           .map((pair) => `${pair.left} ↔ ${pair.right}`)
           .join("; ")}`,
       };
+    case "choice_quiz":
+      return {
+        label: "Тест с выбором ответа",
+        content: `${component.payload.question} — ${component.payload.options
+          .map((option) => option.label)
+          .join(" / ")}`,
+      };
   }
 }
 

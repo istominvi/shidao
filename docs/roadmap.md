@@ -699,9 +699,12 @@ view-sort, начиная с `position ASC`. В action-cell остаётся о�
 В current production code-first Component registry расширен с 10 до 20 активных
 типов: добавлены video/audio, расширенный quiz, пропуски, bank
 слов, порядок, категории, свободный ответ, HTTPS-ссылка, сборка слова и
-словарь; layout-only `divider` исключён. Текущая самопроверка живёт только
-в preview state; learner answer persistence/scoring не реализованы и входят в
-LA-M5. LA-M4 доставляет только authorization/read-only live projection.
+словарь; layout-only `divider` исключён. Current deployed web самопроверка живёт
+только в preview state, а LA-M4 доставляет только authorization/read-only live
+projection. Current production DB/snapshot LA-M5 уже содержит learner answer
+persistence и server scoring ровно для `choice_quiz`; dependent application
+rollout этого исключения остаётся NEXT, остальные interactive types остаются
+preview-only.
 Продуктовый выбор и границы зафиксированы в
 [`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
 Current production palette больше не меняет размер между категориями: responsive
@@ -1408,7 +1411,7 @@ functional/concurrency. После verified production backup owner apply зав
 не изменились; обе source LearningRecord сохранили empty
 correction/supersession metadata. RLS `4/4`, `4` policies,
 ACL/RPC/security, `0` identity violations и PostgREST denial/resolution probes
-прошли. Current production-head PostgreSQL `15.8` snapshot имеет SHA-256
+прошли. LA-M3 production-head PostgreSQL `15.8` snapshot на момент rollout имел SHA-256
 `a1768f22f829d58c01a5846b68cdb7be60a363ebb771869ed90fb83dd316cbc2`,
 `29533` строки, `66` public tables и `235` functions.
 
@@ -1420,7 +1423,8 @@ Functional task commit `6e3f97c230f688663abaa06a126a56d0d0e2c9c6` прошёл
 HTTP/API/CSRF/host guest postflight прошёл; authenticated production no-write
 LA-M3 smoke не выполнен из-за guest-only browser session и не заявляется.
 Последующий execution-record docs commit runtime не меняет. LA-M4 имеет статус
-**CURRENT PRODUCTION DB/SOURCE/WEB**; LA-M5–LA-M6 остаются **NEXT**.
+**CURRENT PRODUCTION DB/SOURCE/WEB**. LA-M5 имеет статус **CURRENT production
+DB + snapshot / NEXT application source+web rollout**; LA-M6 остаётся **NEXT**.
 
 ## P1.3: persisted Homework authoring
 
@@ -1592,14 +1596,71 @@ evidence. Disposable DB/container/local LA-M4 temp counts равны `0`.
   `LearningRecord`; LA-M4 не добавляет attempts, scoring, Homework или
   `free_response`.
 
-**Next после rollout:** Realtime/presence может заменить polling transport, не
-меняя authorization/cursor contract и не создавая content-bearing
+### LA-M5: первый full online `choice_quiz` (**CURRENT DB + snapshot / NEXT application rollout**)
+
+Frozen vertical slice реализован в рабочем дереве, а его physical contract уже
+применён к production DB и отражён в generated snapshot. Deployed application
+всё ещё LA-M4, поэтому следующий release milestone — не новый activity type, а
+commit/push/Coolify rollout уже реализованного LA-M5 web/API/UI.
+
+Exact migration `20260821100000_choice_quiz_activity.sql` имеет `6372` строки,
+SHA-256
+`32e860c8d56e299a19c7a5a4d05103df008935ff9814c6d6c206c39f68242d44` и
+завершила production owner apply видимым `COMMIT` вскоре после
+`2026-08-21T15:34Z`. Verified backup
+`/root/shidao-db-backups/shidao-before-choice-quiz-20260821T153411Z.dump`
+имеет size `1804381`, mode `600`, `1985` restore-list entries и SHA-256
+`bb4dcc56b379f5ef2f105478f426a2e05eb5e17100c08c0656967c3acf855211`.
+Post-apply inventory — `74` public tables / `275` functions, включая `5` новых
+закрытых Choice Quiz relations.
+
+Snapshot сгенерирован `2026-08-21T15:43:37Z`: `35466` строк, SHA-256
+`acd73762c061de56a4ae39ec81c25c0b2ce243d2000f04f877e952e2df67473e`,
+timestamp-normalized SHA-256
+`063ca4be6c0f76f9c2b95133763d39acfe932b5de84e64fd8c37942678333b44`.
+Final local application gate прошёл `991/991` unit/API, production build
+`73/73` и `31/31` strict production-mode Chromium scenarios.
+
+Dependent application доставляет:
+
+- immutable issued learner definition и opaque learner reference поверх exact
+  current Component revision;
+- strict idempotent submit, exact-set server evaluation, append-only Attempt/
+  Response/Evaluation и отдельный Feedback Delivery audit;
+- practice `maxAttempts=3` с retry только после неверных попыток 1/2 и reveal
+  после correct/exhausted; assessment `maxAttempts=1` без reveal/retry; hints
+  честно выключены (`hintAvailable=false`, `hintCount=0`);
+- exact-source online LearningEvidence с policy v2 и deterministic profile
+  rebuild без записи raw responses/scores в `LearningRecord`;
+- learner-safe accessible live UI с persisted reload и сохранением selection/
+  idempotency key при transient error; roleless и все другие activity types
+  остаются LA-M4 presentation-only;
+- teacher-only compact Run history с learner/question/attempt/correctness/
+  score/support/reveal и correction chain; teacher panel содержит явное
+  исправление с обязательной причиной, stable idempotency retry и reload
+  append-only audit chain;
+- canonical manual editor и AI planner/provider/preview/explicit Apply только
+  для `choice_quiz`; preview не создаёт issue/attempt/evidence.
+- Course AI activity context использует exact server-decoded Supabase session
+  и service-only трёхаргументный RPC; прежний двухаргументный overload в
+  rolling deploy только fail closed и не возвращает learner projection.
+
+DB/snapshot часть DoD закрыта measured production evidence выше. Application
+DoD остаётся незакрытым до exact release commit, normal fast-forward push,
+matching Coolify image/`SOURCE_COMMIT` и deployed guest boundary postflight.
+Authenticated production flow не выполнялся и не заявляется; local Chromium
+не подменяет его. До dependent rollout LA-M5 можно называть CURRENT production
+DB, но не CURRENT production source/web. LA-M6 остаётся следующим отдельным
+slice и не расширяется этим rollout.
+
+**Later transport после LA-M5 rollout:** Realtime/presence может заменить
+polling, не меняя authorization/cursor contract и не создавая content-bearing
 `LessonSession`.
 
 ## P3: online activities, adaptive learning и product scale
 
-- один полный `choice_quiz`: learner-safe delivery, persisted attempt,
-  server-side evaluation, compact at-time envelope, evidence и profile update;
+- доставить dependent LA-M5 `choice_quiz` application из уже current DB в
+  production web и закрыть release evidence до расширения activity catalog;
 - затем shared deterministic engine для fill/matching/sequence/categorize и
   отдельный manual-review flow для `free_response`;
 - history остаётся source of truth, а objective state — rebuildable projection

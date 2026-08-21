@@ -89,7 +89,19 @@ const E2E_EDUCATOR_LEARNER_TEXT =
   "Наблюдаемая цель описывает действие ученика.";
 const E2E_EDUCATOR_PRIVATE_TEXT = "PRIVATE EDUCATOR PLAN — только автору курса";
 const E2E_LESSON_TITLE = "Present Perfect · жизненный опыт";
-const E2E_SUPABASE_ACCESS_TOKEN = "e2e-supabase-user-access-token";
+const E2E_SUPABASE_SESSION_ID = "11111111-1111-4111-8111-111111111119";
+const E2E_SUPABASE_ACCESS_TOKEN = [
+  Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString(
+    "base64url",
+  ),
+  Buffer.from(
+    JSON.stringify({
+      sub: E2E_ADULT_USER_ID,
+      session_id: E2E_SUPABASE_SESSION_ID,
+    }),
+  ).toString("base64url"),
+  "e2e-signature",
+].join(".");
 const E2E_FOREIGN_ACCOUNT_ID = "22222222-2222-4222-8222-222222222229";
 const E2E_PRIVATE_SELF_COMMENT = "PRIVATE SELF COMMENT — только преподавателю";
 const E2E_PUBLISHED_OBSERVED_COMMENT =
@@ -1184,7 +1196,9 @@ function e2eActivityEvidenceRow() {
     learner_profile_id: E2E_LEARNER_ANNA_ID,
     recorded_by_account_id: E2E_ACCOUNT_ID,
     learning_record_id: observation.learning_record_id,
+    source_kind: "observation",
     source_observation_id: observation.id,
+    source_choice_quiz_evaluation_id: null,
     source_course_id_at_time: E2E_COURSE_ID,
     source_lesson_id_at_time: E2E_LESSON_ID,
     source_lesson_run_id_at_time: E2E_COMPLETION_PRIVATE_RUN_ID,
@@ -2491,7 +2505,8 @@ async function handleMockSupabase(
   }
 
   if (
-    requestUrl.pathname === "/rest/v1/rpc/get_teacher_learner_activity_profile"
+    requestUrl.pathname ===
+    "/rest/v1/rpc/get_teacher_learner_activity_profile_v2"
   ) {
     const body = await readJsonBody(request);
     if (body.p_learner_profile_id !== E2E_LEARNER_ANNA_ID) {

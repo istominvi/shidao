@@ -15,7 +15,8 @@ import {
 } from "../server/app-session";
 
 const APP_SESSION_SECRET = "e2e-app-session-secret-value-with-minimum-32-chars";
-const E2E_ADULT_USER_ID = "e2e-adult";
+const E2E_ADULT_USER_ID = "00000000-0000-4000-8000-000000000100";
+const E2E_SUPABASE_SESSION_ID = "00000000-0000-4000-8000-000000000107";
 const E2E_LEARNER_PROFILE_ID = "00000000-0000-4000-8000-000000000101";
 const E2E_OLD_LEARNER_PROFILE_ID = "00000000-0000-4000-8000-000000000105";
 const E2E_TEACHER_ACCOUNT_ID = "00000000-0000-4000-8000-000000000102";
@@ -34,6 +35,16 @@ let lastInvitationListBody: Record<string, unknown> | null = null;
 let lastAuthVerifyBody: Record<string, unknown> | null = null;
 let lastAuthRelayRefreshBody: Record<string, unknown> | null = null;
 
+function buildE2ESupabaseAccessToken(authUserId: string) {
+  const payload = Buffer.from(
+    JSON.stringify({
+      sub: authUserId,
+      session_id: E2E_SUPABASE_SESSION_ID,
+    }),
+  ).toString("base64url");
+  return `e2e.${payload}.signature`;
+}
+
 function buildSessionCookieValue(input: {
   uid: string;
   email: string;
@@ -50,7 +61,7 @@ function buildSessionCookieValue(input: {
         fullName: input.fullName,
         reauthenticatedAt: input.reauthenticatedAt ?? null,
         supabaseSession: buildAppSessionSupabaseTokens({
-          accessToken: "e2e-user-access-token",
+          accessToken: buildE2ESupabaseAccessToken(input.uid),
           refreshToken: "e2e-user-refresh-token",
           expiresInSeconds: 3600,
         }),

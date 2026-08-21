@@ -103,9 +103,10 @@ structured observation учитель сначала подтверждает к
 - payload, placement, defaults и capabilities валидируются общими Zod
   contracts;
 - ответы интерактивных renderer сейчас живут только в локальном preview state;
-- learner attempts и online evaluations ещё не сохраняются; deployed LA-M3
-  создаёт durable typed evidence/state только из eligible finalized teacher
-  observations;
+- deployed LA-M4 web ещё не создаёт learner attempts и online evaluations;
+  production DB уже содержит закрытый LA-M5 `choice_quiz` engine, но dependent
+  application rollout фиксируется отдельно. LA-M3 по-прежнему создаёт durable
+  typed evidence/state из eligible finalized teacher observations;
 - LessonRun и compact LearningRecord уже сохраняют факт занятия, посещаемость,
   teacher comment и рекомендацию повторения;
 - learner-safe history/progress уже отделены от teacher-private raw history;
@@ -313,6 +314,142 @@ privacy/mobile/accessibility, но не подменяет этот smoke.
 Ни локально правильный ответ в preview, ни просмотр видео в deployed web сейчас
 не изменяют учебный профиль. Нельзя показывать выдуманный mastery на основании
 этих сигналов.
+
+## LA-M5 FROZEN contract — **CURRENT production DB / current-source; NEXT web**
+
+**Статус:** frozen migration применена к production DB с проверенным `COMMIT`,
+postflight и production-generated snapshot. Application slice остаётся
+**current-source**, а dependent web deployment — **NEXT** до exact
+commit/image/`SOURCE_COMMIT` и deployed postflight. Полный статус **CURRENT
+production DB/source/web** до этого не заявляется.
+
+LA-M5 реализует только существующий `choice_quiz` в child live LessonRun. Он не
+создаёт generic activity framework для остальных типов и не меняет
+LA-M4 authorization/cursor contract.
+
+### Issued definition и learner boundary
+
+- До показа вопроса learner server создаёт или находит persisted immutable
+  `choice_quiz_issue`. Операция идемпотентна для одного learner, exact
+  LessonRun и stable Component definition/revision; повторный poll не создаёт
+  новую выдачу.
+- Issue фиксирует compact at-time contract: exact question, показанные варианты
+  в их фактическом порядке, public definition revision, server-private
+  evaluator config, versioned policy/evaluator metadata и Course/Lesson/Run/
+  Component/objective provenance. Полный Component, Slide, placement или
+  layout snapshot не копируется.
+- Learner получает только opaque non-UUID `issueRef`, public
+  `definitionRevision`, learner-safe question/options и policy state. Stable
+  Component/objective/profile/Account UUID, correct-answer config и другие
+  authority/private поля остаются server-only. UUID вариантов являются только
+  content identifiers внутри issued definition и не дают authority.
+- Изменение Component создаёт новую definition revision и новую issue. Старые
+  issue/attempt history остаются понятными после edit или delete исходного
+  Component.
+
+### Submit, evaluator и execution policy
+
+Browser отправляет только:
+
+```text
+issueRef
+cursorRevision
+idempotencyKey (UUID)
+selectedOptionIds (strict unique UUID array)
+```
+
+Account, LearnerProfile, correctness, score, evaluator config, objective или
+Component UUID browser не выбирает. Server нормализует выбранные IDs как set,
+проверяет их принадлежность exact issue и выполняет exact-set evaluation:
+выбранный set должен полностью совпасть с correct set. Evaluation бинарна,
+`score` равен `0 | 1`; partial credit в LA-M5 отсутствует.
+
+Versioned deterministic evaluator и private reproducibility source принадлежат
+issue. `evaluatorFingerprint` — SHA-256 canonical versioned private config,
+включая correct option IDs и применимую policy/schema version. Он позволяет
+воспроизвести решение без чтения mutable Component.
+
+Frozen execution policy:
+
+- `activity_role = NULL` оставляет `choice_quiz` presentation-only;
+  executable роли — только `practice | assessment`;
+- practice допускает максимум три append-only Attempt. Correctness возвращается
+  сразу. Retry доступен только после неверной попытки 1 или 2 и всегда создаёт
+  новый Attempt с новым idempotency key. Correct answer и authored explanation
+  раскрываются только после правильной либо исчерпанной третьей попытки;
+- assessment допускает ровно один Attempt, сразу возвращает correctness и
+  score, но никогда не возвращает answer key, explanation или retry;
+- hint contract в текущем author payload отсутствует, поэтому LA-M5 честно
+  фиксирует `hintAvailable = false` и `hintCount = 0` и не вводит скрытый hint
+  endpoint;
+- missing, archived или иначе noncurrent objective не мешает сохранить
+  Attempt/Evaluation и разрешённый feedback, но закрывает learner-state evidence
+  gate;
+- первая попытка является independent opportunity. Последующие practice
+  attempts support-qualified. Несколько Attempts одного LessonRun никогда не
+  становятся несколькими mastery opportunities.
+
+Evaluation и Feedback Delivery — разные persisted понятия. Delivery фиксирует,
+какой feedback/reveal policy transaction сделала устойчиво доступным в submit
+response и при reload. Это не transport/read receipt: потерянный HTTP response
+не доказывает, что learner уже увидел ответ или explanation.
+
+### Atomicity, correction и lifecycle
+
+Одна DB transaction выполняет resolver/recheck, idempotency, immutable
+Attempt/Response, deterministic Evaluation, policy-controlled Feedback
+Delivery, eligible typed Evidence и refresh rebuildable objective/profile
+projection. Частично сохранённого результата быть не должно.
+
+Один `idempotencyKey` с тем же нормализованным request возвращает уже
+зафиксированный результат. Тот же key с другим `issueRef`, cursor revision или
+selected set даёт deterministic conflict без новых строк. Осознанный retry
+использует новый key и создаёт следующий append-only Attempt.
+
+Correction не меняет Attempt, Response или Evaluation in place. Explicit
+teacher correction с reason и собственным idempotency key добавляет
+superseding Evaluation и соответствующую superseding Evidence, затем
+перестраивает projection. Audit уже доступного по policy feedback сохраняется;
+новая Evaluation не делает вид, что learner исторически видел другой ответ.
+
+Submit под общим lock order повторно проверяет live Auth session, canonical
+profile, active Course enrollment, exact Run capability, actual-started open
+Run, current cursor revision, current Slide/Component и exact issued
+definition. Submit и concurrent cursor change, revoke, Course archive,
+completion/cancel, Component edit/delete сериализуются: кто первым commit-ит
+валидное изменение, тот определяет результат; проигравшая операция получает
+stale/denied response и не пишет частичные activity rows.
+
+Merge переводит learner-owned activity lineage на тот же canonical target, что
+LearningRecord, и запускает deterministic profile rebuild; live authority при
+этом не переносится. Subject erasure каскадно удаляет issue, Attempt, Response,
+Evaluation, Feedback Delivery и online Evidence до создания нового пустого
+profile. До erasure или отдельной будущей explicit retention policy compact
+history хранится вместе с learner history; generic event lake не создаётся.
+
+### Authoring и UI boundary
+
+Manual editor остаётся полностью работоспособным без AI. AI authoring
+разрешается только для `choice_quiz` через существующие registry schemas,
+planner preview и explicit Apply; AI не получает action для Attempt,
+Evaluation, Evidence или profile mutation. Teacher preview остаётся no-write.
+
+Live UI показывает только реально поддержанные состояния: instruction,
+single/multiple selection, submit/checking, policy feedback, допустимый retry и
+network error с сохранённым выбором/idempotency key. Reload восстанавливает
+persisted state. Keyboard/focus/screen-reader announcements, touch,
+phone/tablet/desktop, zoom и reduced motion являются частью contract tests.
+Passive/media Components и остальные activity types сохраняют current LA-M4
+presentation behavior.
+
+Bounded Course AI activity context остаётся отдельной server-only projection.
+Application передаёт в service-role RPC не только trusted Auth user, но и exact
+Supabase `session_id` из проверенного server-held JWT. DB удерживает canonical
+learner advisory → `auth.sessions` → active Account/`account_security` →
+Course/Profile/state lock order и повторно применяет session cutoff. Старый
+двухаргументный overload во время DB-first rollout не читает данные и всегда
+завершается fail-closed `42501`; AI consumer в таком окне использует явную
+пустую projection.
 
 ## Неподвижные архитектурные границы
 
@@ -877,8 +1014,8 @@ contract tests, а не финальной косметической прове
    recommendations для objective-aligned observations;
 4. **CURRENT production DB/source/web:** learner authorization и
    teacher-controlled live delivery;
-5. **NEXT:** один полный `choice_quiz` через learner-safe delivery и server
-   evaluation;
+5. **CURRENT production DB / current-source; NEXT web:** один полный
+   `choice_quiz` через learner-safe delivery и server evaluation;
 6. **NEXT:** Homework/free-response review;
 7. **LATER:** reference audio, learner recording и teacher review;
 8. **LATER:** только затем advanced sequencing, spaced review и статистические

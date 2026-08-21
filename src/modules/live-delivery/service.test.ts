@@ -113,9 +113,13 @@ function liveSource(): LearnerLiveSource {
       position: 2,
       components: [
         {
+          id: uuid(11),
           typeKey: "image",
           schemaVersion: 1,
           position: 3,
+          updatedAt: "2026-08-21T08:00:00.000Z",
+          primaryLearningObjectiveId: null,
+          activityRole: null,
           payload: { storedFileId: STORED_FILE_ID, alt: "Иероглиф 道" },
           placement: {
             width: "wide",
@@ -125,9 +129,13 @@ function liveSource(): LearnerLiveSource {
           },
         },
         {
+          id: uuid(12),
           typeKey: "choice_quiz",
           schemaVersion: 1,
           position: 4,
+          updatedAt: "2026-08-21T08:00:00.000Z",
+          primaryLearningObjectiveId: null,
+          activityRole: null,
           payload: {
             question: "Что означает 道?",
             options: [
@@ -238,6 +246,72 @@ test("learner state uses only opaque same-origin asset refs and local URLs", asy
     /storagePath|originalFilename|signed|token=/i,
   );
   assert.doesNotMatch(serialized, /isCorrect|explanation|teacher|objective/i);
+});
+
+test("practice choice_quiz is durably issued before its execution reaches the learner", async () => {
+  const source = liveSource();
+  if (source.state !== "live") return;
+  const quiz = source.slide.components[1]!;
+  quiz.activityRole = "practice";
+  quiz.primaryLearningObjectiveId = uuid(13);
+  const issueCalls: unknown[] = [];
+  const repository = new LearnerRepository(source);
+  const service = createLiveDeliveryService({
+    learnerRepository: repository,
+    choiceQuizService: {
+      async issueLiveDefinition(input) {
+        issueCalls.push(input);
+        return {
+          learnerDefinition: {
+            question: "Что означает 道?",
+            options: [
+              { id: QUIZ_OPTION_A, label: "Путь" },
+              { id: QUIZ_OPTION_B, label: "Дом" },
+            ],
+            allowMultiple: false,
+          },
+          execution: {
+            issueRef: `cqi_${"a".repeat(64)}`,
+            definitionRevision: `cqd_v1_${"b".repeat(64)}`,
+            attemptCount: 0,
+            maxAttempts: 3,
+            remainingAttempts: 3,
+            hintAvailable: false,
+            hintCount: 0,
+            canSubmit: true,
+            latestFeedback: null,
+          },
+        };
+      },
+    },
+  });
+
+  const state = await service.getLearnerState(
+    { authUserId: AUTH_USER_ID, supabaseSessionId: SESSION_ID },
+    RUN_ID,
+  );
+  assert.equal(state.kind, "active");
+  if (state.kind !== "active") return;
+  assert.equal(issueCalls.length, 1);
+  const issuedQuiz = state.slide.components[1]!;
+  assert.deepEqual(issuedQuiz.execution, {
+    issueRef: `cqi_${"a".repeat(64)}`,
+    definitionRevision: `cqd_v1_${"b".repeat(64)}`,
+    attemptCount: 0,
+    maxAttempts: 3,
+    remainingAttempts: 3,
+    hintAvailable: false,
+    hintCount: 0,
+    canSubmit: true,
+    latestFeedback: null,
+  });
+  const serialized = JSON.stringify(state);
+  assert.doesNotMatch(serialized, new RegExp(quiz.id));
+  assert.doesNotMatch(serialized, new RegExp(uuid(13)));
+  assert.doesNotMatch(
+    serialized,
+    /activityRole|primaryLearningObjectiveId|isCorrect|correctOptionIds|explanation|evaluator/i,
+  );
 });
 
 test("learner asset proxy re-resolves current projection, revision, ref, and Range", async () => {

@@ -51,6 +51,7 @@ const OBJECTIVE_ID = uuid(11);
 
 const actor: CourseBuilderActor = {
   authUserId: USER_ID,
+  supabaseSessionId: uuid(12),
   accessToken: "access-token",
 };
 

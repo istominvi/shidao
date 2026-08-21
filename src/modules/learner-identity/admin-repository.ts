@@ -483,11 +483,16 @@ export function createLearnerIdentityAdminRepository(
       );
     },
 
-    confirmErasure(actorAuthUserId: string, previewFingerprint: string) {
+    confirmErasure(
+      actorAuthUserId: string,
+      supabaseSessionId: string,
+      previewFingerprint: string,
+    ) {
       return adminRpc(
         LEARNER_IDENTITY_ADMIN_RPC.confirmErasure,
         {
           p_actor_auth_user_id: actorAuthUserId,
+          p_session_id: supabaseSessionId,
           p_preview_fingerprint: previewFingerprint,
         },
         selfLearningProfileSchema,

@@ -17,6 +17,7 @@ import { courseBuilderMcpToolNames } from "./tools";
 
 const ACTOR: CourseBuilderActor = {
   authUserId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+  supabaseSessionId: "99999999-9999-4999-8999-999999999999",
   accessToken: "private-user-jwt",
 };
 const COURSE_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";

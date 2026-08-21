@@ -1,7 +1,8 @@
 # Каталог компонентов Course Builder
 
-**Статус:** CURRENT registry + NEXT/LATER product catalog
-**Актуально на:** 19 августа 2026 года
+**Статус:** CURRENT registry + CURRENT production DB/current-source LA-M5 +
+NEXT web/LATER product catalog
+**Актуально на:** 21 августа 2026 года
 
 Этот документ отвечает на три вопроса:
 
@@ -61,15 +62,15 @@ telemetry, accessibility и исправления не расходятся м�
 
 ### Deterministic practice
 
-| Type            | Учебное действие                   | Current boundary                    | NEXT evaluator role        |
-| --------------- | ---------------------------------- | ----------------------------------- | -------------------------- |
-| `choice_quiz`   | Выбрать один или несколько ответов | Самопроверка только в preview state | Recognition/discrimination |
-| `fill_blanks`   | Ввести ответы в пропуски           | Самопроверка только в preview state | Cued production            |
-| `word_bank`     | Заполнить пропуски из банка        | Самопроверка только в preview state | Cued selection             |
-| `matching_game` | Сопоставить пары                   | Local interactive state             | Association/discrimination |
-| `sequence`      | Восстановить порядок               | Local interactive state             | Ordered procedure          |
-| `categorize`    | Распределить по категориям         | Local interactive state             | Classification             |
-| `word_builder`  | Собрать слово из букв              | Самопроверка только в preview state | Constrained production     |
+| Type            | Учебное действие                   | Current boundary                                        | Evaluator role             |
+| --------------- | ---------------------------------- | ------------------------------------------------------- | -------------------------- |
+| `choice_quiz`   | Выбрать один или несколько ответов | LA-M5 engine: production DB current; dependent web next | Recognition/discrimination |
+| `fill_blanks`   | Ввести ответы в пропуски           | Самопроверка только в preview state                     | Cued production            |
+| `word_bank`     | Заполнить пропуски из банка        | Самопроверка только в preview state                     | Cued selection             |
+| `matching_game` | Сопоставить пары                   | Local interactive state                                 | Association/discrimination |
+| `sequence`      | Восстановить порядок               | Local interactive state                                 | Ordered procedure          |
+| `categorize`    | Распределить по категориям         | Local interactive state                                 | Classification             |
+| `word_builder`  | Собрать слово из букв              | Самопроверка только в preview state                     | Constrained production     |
 
 ### Constructed response
 
@@ -81,12 +82,17 @@ CURRENT palette показывает 19 вариантов создания и �
 `heading`. UI, service и renderer используют registry contracts. AI provider
 adapter выдаёт ограниченный structured draft, который повторно валидируется
 тем же registry/application contract; development MCP вызывает те же services.
-Это adapters, а не второй registry. Интерактивные ответы пока не сохраняются и
-не меняют учебный профиль.
+Это adapters, а не второй registry. Production DB уже содержит LA-M5 durable
+runtime только для `choice_quiz`; deployed LA-M4 web не использует его до
+dependent application rollout. Все остальные activity types остаются
+preview/presentation-only и не меняют учебный профиль.
 
 Current raw Component payload может содержать correct-answer configuration.
-Поэтому существующий preview/read model нельзя считать learner-safe assessment
-delivery; этот serializer и server evaluator появляются отдельным slice.
+Поэтому обычный preview/read model нельзя считать learner-safe assessment
+delivery. LA-M5 current source решает это только для issued `choice_quiz`:
+learner получает persisted public definition без answer key, а exact-set
+evaluator остаётся server-private. Teacher/Course preview остаётся no-write;
+остальные types не получают generic execution fallback.
 
 ## NEXT: что обязательно описывает тип
 
@@ -140,19 +146,23 @@ Advanced-поля скрываются до раскрытия. AI заполн�
 
 ### Foundation
 
-1. Добавить optional `activityFacet` в существующий registry, не создавая
-   второй каталог.
-2. Добавить Course-scoped objectives и один optional primary objective на
-   Component.
-3. Разделить author/evaluator payload и learner delivery payload.
-4. Ввести единый `ActivityFrame`: instruction, response area, submit/status,
-   feedback, hint/retry и accessible announcements.
-5. Добавить contract tests: no answer leak, keyboard/focus, responsive states,
-   idempotent submit и reload behavior.
+1. **CURRENT production:** optional `activityFacet` находится в существующем
+   registry, без второго каталога.
+2. **CURRENT production:** Course-scoped objectives и один optional primary
+   objective на Component доставлены LA-M2.
+3. **CURRENT production foundation / DB + current-source execution:** author/
+   evaluator и learner delivery projections разделены; persisted issued
+   execution реализован только для LA-M5 `choice_quiz`.
+4. **CURRENT-SOURCE / NEXT web:** learner `choice_quiz` frame реализует instruction,
+   response, submit/status, policy feedback/retry и accessible announcements;
+   generic frame для других engines ещё не заявлен.
+5. **CURRENT-SOURCE / NEXT web:** focused `choice_quiz` contracts покрывают no-answer-leak,
+   keyboard/focus, responsive/reduced-motion, idempotent transient retry и
+   persisted reload. Полный production release gate остаётся NEXT.
 
 ### Первый online engine: `choice_quiz`
 
-Он должен пройти полный путь:
+Current source проходит полный путь:
 
 ```text
 manual/AI authoring
@@ -163,6 +173,22 @@ manual/AI authoring
 → compact history
 → learning evidence
 ```
+
+Manual editor остаётся canonical. AI creation/editing включён только через
+existing registry, provider contract, planner preview и explicit teacher Apply;
+preview не пишет execution state. Live execution выдаётся только persisted
+`practice | assessment` issue: practice имеет максимум три попытки и policy
+reveal, assessment — одну попытку без reveal/retry, roleless Component остаётся
+presentation-only. Exact-set grading, score `0 | 1`, feedback delivery,
+correction history и evidence принадлежат server boundary.
+
+Статус этого engine — **CURRENT production DB / CURRENT-SOURCE / NEXT web**.
+Frozen migration
+`supabase/migrations/20260821100000_choice_quiz_activity.sql` применена с
+проверенным `COMMIT`; production snapshot содержит `74` public tables, `275`
+functions и пять закрытых `choice_quiz_*` relations. Application/API/UI и
+focused tests готовы в репозитории, но deployed source/image и authenticated
+production flow до dependent rollout не заявляются.
 
 Только после этого shared deterministic engine доказывается на `fill_blanks`,
 а затем на matching/sequence/categorize/word-bank/word-builder.
@@ -289,9 +315,13 @@ grade-centric иерархию сторонних систем.
 
 ## AI boundary
 
-CURRENT RouterAI planning создаёт только ограниченный allowlist типов и
-повторно валидирует provider output registry contracts перед Apply. Расширение
-allowlist выполняется по одному проверенному recipe/type и требует:
+CURRENT production RouterAI planning создаёт ограниченный allowlist типов и
+повторно валидирует provider output registry contracts перед Apply.
+Current-source LA-M5 добавляет в этот allowlist `choice_quiz` и включает для
+него `aiCreatable/aiEditable`; остальные новые assessable types остаются
+выключены. Teacher видит question/options/correct markers/explanation в preview
+и только затем выполняет explicit Apply. Расширение allowlist выполняется по
+одному проверенному recipe/type и требует:
 
 - author schema и понятного manual editor;
 - provider schema/prompt;

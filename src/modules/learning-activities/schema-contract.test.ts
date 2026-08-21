@@ -14,6 +14,10 @@ const profileMigration = readFileSync(
   "supabase/migrations/20260820132725_learning_activity_profile_history_skills_recommendations.sql",
   "utf8",
 );
+const choiceQuizMigration = readFileSync(
+  "supabase/migrations/20260821100000_choice_quiz_activity.sql",
+  "utf8",
+);
 const snapshot = readFileSync("supabase/schema/current-schema.sql", "utf8");
 const refreshScript = readFileSync(
   "scripts/refresh-schema-snapshot.sh",
@@ -876,6 +880,693 @@ test("LA-M3 is one additive guarded migration with closed raw-table ACL", () => 
       new RegExp(
         `has_table_privilege\\(\\s*'service_role', 'public\\.${tableName}', 'SELECT'`,
       ),
+    );
+  }
+});
+
+test("LA-M5 keeps quiz tables closed and generalizes typed evidence exactly once", () => {
+  assert.match(choiceQuizMigration, /^begin;\n/);
+  assert.match(choiceQuizMigration, /\ncommit;\n$/);
+
+  for (const tableName of [
+    "choice_quiz_issue",
+    "choice_quiz_attempt",
+    "choice_quiz_response",
+    "choice_quiz_evaluation",
+    "choice_quiz_feedback_delivery",
+  ]) {
+    assert.match(
+      choiceQuizMigration,
+      new RegExp(`create table public\\.${tableName} \\(`),
+    );
+    assert.match(
+      choiceQuizMigration,
+      new RegExp(
+        `alter table public\\.${tableName} enable row level security;`,
+      ),
+    );
+    assert.match(
+      choiceQuizMigration,
+      new RegExp(
+        `revoke all on table public\\.${tableName}\\s+from public, anon, authenticated, service_role;`,
+      ),
+    );
+    assert.match(
+      choiceQuizMigration,
+      new RegExp(`grant all on table public\\.${tableName} to postgres;`),
+    );
+  }
+
+  assert.match(
+    choiceQuizMigration,
+    /alter column learning_record_id drop not null/,
+  );
+  assert.match(
+    choiceQuizMigration,
+    /alter column source_observation_id drop not null/,
+  );
+  assert.match(
+    choiceQuizMigration,
+    /add column source_choice_quiz_evaluation_id uuid/,
+  );
+  assert.match(
+    choiceQuizMigration,
+    /learning_evidence_exact_source_check check \([\s\S]*?source_observation_id is not null[\s\S]*?source_choice_quiz_evaluation_id is null[\s\S]*?learning_record_id is not null[\s\S]*?or \([\s\S]*?source_observation_id is null[\s\S]*?source_choice_quiz_evaluation_id is not null[\s\S]*?learning_record_id is null/,
+  );
+  for (const reasonCode of [
+    "choice_quiz_independent_positive_evidence",
+    "choice_quiz_supported_positive_evidence",
+    "choice_quiz_not_yet_negative_evidence",
+  ]) {
+    assert.match(choiceQuizMigration, new RegExp(reasonCode));
+  }
+  assert.match(
+    choiceQuizMigration,
+    /source_observation_id is not null and eligibility_policy_version = 1/,
+  );
+  assert.match(
+    choiceQuizMigration,
+    /source_choice_quiz_evaluation_id is not null[\s\S]*?eligibility_policy_version = 2/,
+  );
+  assert.match(
+    choiceQuizMigration,
+    /'sourceKind', case[\s\S]*?evidence\.source_observation_id is not null[\s\S]*?'observation'[\s\S]*?'choice_quiz_evaluation'/,
+  );
+  assert.match(
+    choiceQuizMigration,
+    /'sourceChoiceQuizEvaluationId',[\s\S]*?evidence\.source_choice_quiz_evaluation_id/,
+  );
+  const evidenceGuard = functionBodyIn(
+    choiceQuizMigration,
+    "guard_learning_evidence_immutable",
+  );
+  assert.doesNotMatch(evidenceGuard, /'learning_record_id'/);
+  assert.doesNotMatch(evidenceGuard, /new\.learning_record_id/);
+  assert.match(
+    choiceQuizMigration,
+    /count\(distinct lower\(option\.value ->> 'id'\)\)/,
+  );
+  assert.match(
+    choiceQuizMigration,
+    /count\(distinct lower\(answer\.value #>> '\{\}'\)\)/,
+  );
+  assert.match(
+    choiceQuizMigration,
+    /order by \(answer\.value #>> '\{\}'\)::uuid/,
+  );
+  const projectionMatcher = functionBodyIn(
+    choiceQuizMigration,
+    "choice_quiz_projection_matches_payload",
+  );
+  assert.match(projectionMatcher, /lower\(authored\.value ->> 'id'\)/);
+  assert.match(projectionMatcher, /lower\(delivered\.value ->> 'id'\)/);
+  assert.match(projectionMatcher, /lower\(answer\.value #>> '\{\}'\)/);
+
+  for (const functionName of [
+    "issue_choice_quiz_definition_admin",
+    "submit_choice_quiz_attempt_admin",
+    "correct_choice_quiz_evaluation_admin",
+    "list_choice_quiz_run_history_admin",
+    "resolve_lesson_run_live_source_choice_quiz_admin",
+  ]) {
+    const body = functionBodyIn(choiceQuizMigration, functionName);
+    assert.match(body, /security definer/i);
+    assert.match(body, /set search_path = ''/i);
+    assert.match(
+      choiceQuizMigration,
+      new RegExp(
+        `revoke all on function public\\.${functionName}\\([\\s\\S]*?from public, anon, authenticated;`,
+      ),
+    );
+  }
+  assert.match(
+    choiceQuizMigration,
+    /grant execute on function public\.submit_choice_quiz_attempt_admin\([\s\S]*?\) to service_role, postgres;/,
+  );
+  const issueChoiceQuiz = functionBodyIn(
+    choiceQuizMigration,
+    "issue_choice_quiz_definition_admin",
+  );
+  assert.equal(
+    issueChoiceQuiz.indexOf("lock_learning_activity_learners") <
+      issueChoiceQuiz.indexOf("for share of session") &&
+      issueChoiceQuiz.indexOf("for share of session") <
+        issueChoiceQuiz.indexOf("for share of account, profile") &&
+      issueChoiceQuiz.indexOf("for share of account, profile") <
+        issueChoiceQuiz.indexOf("for share of security") &&
+      issueChoiceQuiz.indexOf("for share of security") <
+        issueChoiceQuiz.indexOf("for share of course") &&
+      issueChoiceQuiz.indexOf("for share of course") <
+        issueChoiceQuiz.indexOf("for share of lesson"),
+    true,
+  );
+  assert.match(
+    choiceQuizMigration,
+    /count\(distinct evidence\.source_lesson_run_id_at_time\)/,
+  );
+  const currentAccount = functionBodyIn(
+    choiceQuizMigration,
+    "current_active_session_account_id",
+  );
+  assert.match(currentAccount, /security definer/);
+  assert.match(currentAccount, /auth\.jwt\(\) ->> 'session_id'/);
+  assert.match(currentAccount, /join auth\.sessions as session/);
+  assert.match(
+    currentAccount,
+    /account\.status in \('active', 'provisional'\)/,
+  );
+  assert.match(currentAccount, /session\.not_after > statement_timestamp\(\)/);
+  assert.match(
+    currentAccount,
+    /session\.created_at >= security\.sessions_invalid_before/,
+  );
+  for (const [tableName, policyName] of [
+    ["learning_evidence", "learning_evidence_recorder_select"],
+    ["learner_objective_state", "learner_objective_state_recorder_select"],
+    [
+      "learner_objective_state_evidence",
+      "learner_objective_state_evidence_recorder_select",
+    ],
+    [
+      "learner_recommendation_override",
+      "learner_recommendation_override_recorder_select",
+    ],
+  ] as const) {
+    assert.match(
+      choiceQuizMigration,
+      new RegExp(`drop policy ${policyName}\\s+on public\\.${tableName}`),
+    );
+    assert.match(
+      choiceQuizMigration,
+      new RegExp(
+        `create policy ${policyName}[\\s\\S]*?current_active_session_account_id\\(\\)`,
+      ),
+    );
+  }
+  const sessionAuthority = functionBodyIn(
+    choiceQuizMigration,
+    "lock_current_account_session_authority",
+  );
+  assert.match(sessionAuthority, /auth\.jwt\(\) ->> 'session_id'/);
+  assert.match(sessionAuthority, /for share of session/);
+  assert.match(sessionAuthority, /for share of account, security/);
+  assert.equal(
+    sessionAuthority.indexOf("for share of session") <
+      sessionAuthority.indexOf("for share of account, security"),
+    true,
+  );
+  assert.match(
+    choiceQuizMigration,
+    /create function public\.get_teacher_learner_activity_profile_v2/,
+  );
+  assert.match(
+    choiceQuizMigration,
+    /create function public\.teacher_learning_activity_profile_projection_v2/,
+  );
+  assert.match(
+    choiceQuizMigration,
+    /create or replace function public\.resolve_lesson_run_live_source_admin/,
+  );
+  const choiceResolver = functionBodyIn(
+    choiceQuizMigration,
+    "resolve_lesson_run_live_source_choice_quiz_admin",
+  );
+  assert.match(choiceResolver, /primaryLearningObjectiveId/);
+  assert.equal(
+    choiceResolver.indexOf("lock_learning_activity_learners") <
+      choiceResolver.indexOf("for share of session"),
+    true,
+  );
+  const legacyResolver = functionBodyIn(
+    choiceQuizMigration,
+    "resolve_lesson_run_live_source_admin",
+  );
+  assert.match(
+    legacyResolver,
+    /resolve_lesson_run_live_source_choice_quiz_admin/,
+  );
+  assert.match(legacyResolver, /component\.value - array/);
+  for (const privateM5Key of [
+    "id",
+    "primaryLearningObjectiveId",
+    "activityRole",
+    "updatedAt",
+  ]) {
+    assert.match(legacyResolver, new RegExp(`'${privateM5Key}'`));
+  }
+  const cancel = functionBodyIn(choiceQuizMigration, "cancel_lesson_run");
+  assert.match(cancel, /detach_choice_quiz_history_from_learning_records/);
+  assert.match(cancel, /delete from public\.learning_record as record/);
+  assert.equal(
+    cancel.indexOf("lock_current_account_session_authority") <
+      cancel.indexOf("for update of course") &&
+      cancel.indexOf("for update of course") <
+        cancel.indexOf("for update of lesson"),
+    true,
+  );
+  const history = functionBodyIn(
+    choiceQuizMigration,
+    "list_choice_quiz_run_history_admin",
+  );
+  assert.match(history, /lock_learning_activity_learners/);
+  assert.match(history, /from public\.learning_record as record/);
+  assert.match(history, /v_current_learner_profile_ids is distinct from/);
+  assert.match(history, /choice_quiz_history_stale/);
+  assert.match(history, /auth\.sessions/);
+  assert.match(history, /security\.sessions_invalid_before/);
+  const correction = functionBodyIn(
+    choiceQuizMigration,
+    "correct_choice_quiz_evaluation_admin",
+  );
+  assert.match(correction, /lock_learning_activity_learners/);
+  assert.match(correction, /auth\.sessions/);
+  assert.match(correction, /security\.sessions_invalid_before/);
+  assert.match(correction, /course\.owner_account_id = v_actor_account_id/);
+  assert.equal(
+    correction.indexOf("lock_learning_activity_learners") <
+      correction.indexOf("for share of session"),
+    true,
+  );
+  assert.equal(
+    correction.indexOf("lock_learning_activity_learners") <
+      correction.indexOf("for share of account"),
+    true,
+  );
+  assert.equal(
+    correction.indexOf("for share of course") <
+      correction.indexOf("for update of evaluation"),
+    true,
+  );
+  assert.equal(
+    correction.indexOf("for update of evidence") <
+      correction.indexOf("for share of issue"),
+    true,
+  );
+  assert.match(
+    correction,
+    /insert into public\.learning_evidence \([\s\S]*?\) values \(\s*v_old_evidence\.learner_profile_id,\s*v_old_evidence\.recorded_by_account_id,\s*null,\s*null,\s*v_new_evaluation_id,/,
+  );
+  assert.doesNotMatch(correction, /v_old_evidence\.learning_record_id/);
+  const submit = functionBodyIn(
+    choiceQuizMigration,
+    "submit_choice_quiz_attempt_admin",
+  );
+  assert.match(submit, /choice_quiz_execution_payload_at_attempt/);
+  assert.match(
+    submit,
+    /insert into public\.learning_evidence \([\s\S]*?\) values \(\s*v_issue\.learner_profile_id,\s*v_issue\.recorded_by_account_id,\s*null,\s*null,\s*v_evaluation_id,/,
+  );
+  assert.doesNotMatch(submit, /v_issue\.learning_record_id/);
+  assert.equal(
+    submit.indexOf("lock_learning_activity_learners") <
+      submit.indexOf("for share of session"),
+    true,
+  );
+  const detach = functionBodyIn(
+    choiceQuizMigration,
+    "detach_choice_quiz_history_from_learning_records",
+  );
+  assert.match(
+    detach,
+    /from public\.choice_quiz_evaluation as evaluation[\s\S]*?join public\.choice_quiz_issue as issue[\s\S]*?issue\.learning_record_id = any\(p_learning_record_ids\)/,
+  );
+  assert.doesNotMatch(
+    detach.slice(
+      detach.indexOf("update public.learning_evidence"),
+      detach.indexOf("update public.choice_quiz_issue"),
+    ),
+    /set learning_record_id = null,/,
+  );
+  assert.equal(
+    detach.indexOf("update public.learning_evidence") <
+      detach.indexOf("update public.choice_quiz_issue"),
+    true,
+  );
+  const transfer = functionBodyIn(
+    choiceQuizMigration,
+    "transfer_detached_choice_quiz_history_on_profile_merge",
+  );
+  assert.equal(
+    transfer.indexOf("update public.learning_evidence") <
+      transfer.indexOf("update public.choice_quiz_issue"),
+    true,
+  );
+  for (const deletionName of [
+    "delete_lesson_component",
+    "delete_lesson_with_history",
+  ]) {
+    const deletion = functionBodyIn(choiceQuizMigration, deletionName);
+    assert.equal(
+      deletion.indexOf("lock_current_account_session_authority") <
+        deletion.indexOf("for update of course") &&
+        deletion.indexOf("for update of course") <
+          deletion.indexOf("for update of lesson"),
+      true,
+    );
+    assert.equal(
+      deletion.indexOf("for update of evidence") <
+        deletion.indexOf("for update of issue"),
+      true,
+    );
+  }
+  const legacyProjection = functionBodyIn(
+    choiceQuizMigration,
+    "teacher_learning_activity_profile_projection",
+  );
+  assert.match(
+    legacyProjection,
+    /teacher_learning_activity_legacy_observation_state/,
+  );
+  assert.match(legacyProjection, /candidate\.has_observation desc/);
+  assert.match(legacyProjection, /limit 200/);
+  assert.match(legacyProjection, /source_observation_id is not null/);
+  assert.match(legacyProjection, /source_choice_quiz_evaluation_id is null/);
+  assert.doesNotMatch(
+    legacyProjection,
+    /teacher_learning_activity_profile_projection_v2/,
+  );
+  const legacyObservationState = functionBodyIn(
+    choiceQuizMigration,
+    "teacher_learning_activity_legacy_observation_state",
+  );
+  assert.match(legacyObservationState, /source_observation_id is not null/);
+  assert.match(
+    legacyObservationState,
+    /source_choice_quiz_evaluation_id is null/,
+  );
+  assert.match(legacyObservationState, /eligibility_policy_version = 1/);
+  assert.match(legacyObservationState, /record\.was_present/);
+  assert.match(legacyObservationState, /'sourceObservationId'/);
+  assert.match(legacyObservationState, /p_fallback_state ->> 'evaluatedAt'/);
+  assert.match(
+    legacyObservationState,
+    /greatest\(v_state_evaluated_at, v_freshness_due_at\)/,
+  );
+  assert.match(legacyObservationState, /'status', 'no_data'/);
+  assert.doesNotMatch(legacyObservationState, /'sourceKind'/);
+  const legacyOverrideToken = functionBodyIn(
+    choiceQuizMigration,
+    "teacher_learning_activity_legacy_override_token_is_valid",
+  );
+  assert.match(
+    legacyOverrideToken,
+    /latest\.observed_at \+ interval '90 days'/,
+  );
+  const recommendationOverride = functionBodyIn(
+    choiceQuizMigration,
+    "set_learner_recommendation_override",
+  );
+  assert.match(
+    recommendationOverride,
+    /teacher_learning_activity_legacy_override_token_is_valid/,
+  );
+  assert.equal(
+    recommendationOverride.indexOf("lock_learning_activity_learners") <
+      recommendationOverride.indexOf("lock_current_account_session_authority"),
+    true,
+  );
+  const teacherProfileV2 = functionBodyIn(
+    choiceQuizMigration,
+    "get_teacher_learner_activity_profile_v2",
+  );
+  const teacherProfileLegacy = functionBodyIn(
+    choiceQuizMigration,
+    "get_teacher_learner_activity_profile",
+  );
+  const selfProfile = functionBodyIn(
+    choiceQuizMigration,
+    "get_my_learning_activity_profile",
+  );
+  assert.equal(
+    selfProfile.indexOf("lock_learning_activity_learners") <
+      selfProfile.indexOf("lock_current_account_session_authority") &&
+      selfProfile.indexOf("lock_current_account_session_authority") <
+        selfProfile.indexOf("for update of profile") &&
+      selfProfile.indexOf("for update of profile") <
+        selfProfile.indexOf("refresh_learning_activity_states_for_profile"),
+    true,
+  );
+  const observerProfile = functionBodyIn(
+    choiceQuizMigration,
+    "get_observed_learner_activity_profile",
+  );
+  assert.equal(
+    observerProfile.indexOf("lock_learning_activity_learners") <
+      observerProfile.indexOf("lock_current_account_session_authority") &&
+      observerProfile.indexOf("lock_current_account_session_authority") <
+        observerProfile.indexOf("for update of profile") &&
+      observerProfile.indexOf("for update of profile") <
+        observerProfile.indexOf("for share of grant_row"),
+    true,
+  );
+  assert.equal(
+    teacherProfileLegacy.indexOf("lock_learning_activity_learners") <
+      teacherProfileLegacy.indexOf("lock_current_account_session_authority") &&
+      teacherProfileLegacy.indexOf("lock_current_account_session_authority") <
+        teacherProfileLegacy.indexOf("for share of relation"),
+    true,
+  );
+  assert.equal(
+    teacherProfileV2.indexOf("lock_learning_activity_learners") <
+      teacherProfileV2.indexOf("lock_current_account_session_authority"),
+    true,
+  );
+  const erasurePreview = functionBodyIn(
+    choiceQuizMigration,
+    "preview_my_learning_data_erasure",
+  );
+  assert.match(erasurePreview, /- 'choiceQuizIssueCount'/);
+  assert.equal(
+    erasurePreview.indexOf("lock_learning_activity_learners") <
+      erasurePreview.indexOf("lock_current_account_session_authority") &&
+      erasurePreview.indexOf("lock_current_account_session_authority") <
+        erasurePreview.indexOf("for share of profile") &&
+      erasurePreview.indexOf("for share of profile") <
+        erasurePreview.indexOf("delete from public.learner_erasure_request"),
+    true,
+  );
+  const erasure = functionBodyIn(
+    choiceQuizMigration,
+    "confirm_my_learning_data_erasure",
+  );
+  assert.match(erasure, /p_session_id uuid/);
+  assert.match(erasure, /v_counts := v_current_base/);
+  assert.equal(
+    erasure.indexOf("lock_learning_activity_learners") <
+      erasure.indexOf("for share of session") &&
+      erasure.indexOf("for share of session") <
+        erasure.indexOf("for update of account") &&
+      erasure.indexOf("for update of account") <
+        erasure.indexOf("for share of security"),
+    true,
+  );
+  assert.match(erasure, /account\.status = 'active'/);
+  assert.match(erasure, /learning_data_erasure_session_revoked/);
+  assert.match(
+    choiceQuizMigration,
+    /drop function public\.confirm_my_learning_data_erasure\(uuid, text\)/,
+  );
+  assert.match(
+    choiceQuizMigration,
+    /grant execute on function public\.confirm_my_learning_data_erasure\([\s\S]*?uuid, uuid, text[\s\S]*?\) to service_role, postgres;/,
+  );
+});
+
+test("schema refresh fail-closes on the exact LA-M5 database contract", () => {
+  const tableNames = [
+    "choice_quiz_issue",
+    "choice_quiz_attempt",
+    "choice_quiz_response",
+    "choice_quiz_evaluation",
+    "choice_quiz_feedback_delivery",
+  ];
+  const serviceSignatures = [
+    "public.issue_choice_quiz_definition_admin(uuid,uuid,uuid,uuid,bigint,timestamp with time zone,jsonb,jsonb)",
+    "public.submit_choice_quiz_attempt_admin(uuid,uuid,uuid,text,bigint,uuid,uuid[])",
+    "public.correct_choice_quiz_evaluation_admin(uuid,uuid,uuid,boolean,text,uuid)",
+    "public.list_choice_quiz_run_history_admin(uuid,uuid,uuid)",
+    "public.resolve_lesson_run_live_source_choice_quiz_admin(uuid,uuid,uuid)",
+  ];
+  const teacherSignatures = [
+    "public.get_my_learning_activity_profile()",
+    "public.get_observed_learner_activity_profile(uuid)",
+    "public.get_teacher_learner_activity_profile(uuid)",
+    "public.get_teacher_learner_activity_profile_v2(uuid)",
+    "public.current_active_session_account_id()",
+  ];
+  const helperSignatures = [
+    "public.choice_quiz_learner_definition_is_valid(jsonb)",
+    "public.choice_quiz_evaluator_config_is_valid(jsonb,jsonb)",
+    "public.guard_choice_quiz_issue_immutable()",
+    "public.guard_choice_quiz_attempt_immutable()",
+    "public.guard_choice_quiz_strictly_immutable()",
+    "public.guard_choice_quiz_evaluation_immutable()",
+    "public.assert_choice_quiz_evaluation_supersession_chain()",
+    "public.choice_quiz_projection_matches_payload(jsonb,jsonb,jsonb)",
+    "public.choice_quiz_execution_payload_at_attempt(uuid,integer)",
+    "public.choice_quiz_execution_payload(uuid)",
+    "public.choice_quiz_history_item(uuid)",
+    "public.lock_current_account_session_authority(uuid)",
+    "public.detach_choice_quiz_history_from_learning_records(uuid[])",
+    "public.delete_draft_learning_records_for_lesson_run()",
+    "public.guard_learning_record_choice_quiz_presence()",
+    "public.transfer_detached_choice_quiz_history_on_profile_merge()",
+    "public.guard_choice_quiz_profile_unlink()",
+    "public.guard_learning_evidence_immutable()",
+    "public.rebuild_learner_objective_state_for_actor(uuid,uuid,uuid,timestamp with time zone)",
+    "public.learning_activity_scope_fingerprint(uuid[])",
+    "public.execute_learner_profile_merge_for_actor(uuid,uuid,text)",
+    "public.learner_erasure_state_for_actor(uuid,uuid)",
+    "public.learner_safe_unlink_preview_for_actor(uuid)",
+    "public.teacher_learning_activity_legacy_observation_state(uuid,uuid,uuid,timestamp with time zone,jsonb)",
+    "public.teacher_learning_activity_legacy_override_token_is_valid(uuid,uuid,uuid,timestamp with time zone,timestamp with time zone)",
+    "public.teacher_learning_activity_profile_projection(uuid,uuid,timestamp with time zone)",
+    "public.teacher_learning_activity_profile_projection_v2(uuid,uuid,timestamp with time zone)",
+  ];
+  const triggerNames = [
+    "trg_choice_quiz_issue_immutable",
+    "trg_choice_quiz_attempt_immutable",
+    "trg_choice_quiz_response_immutable",
+    "trg_choice_quiz_evaluation_immutable",
+    "trg_choice_quiz_feedback_immutable",
+    "trg_choice_quiz_evaluation_supersession_chain",
+    "trg_learning_record_choice_quiz_presence",
+    "trg_learner_profile_transfer_detached_choice_quiz",
+    "trg_learner_profile_choice_quiz_unlink_guard",
+    "trg_learner_profile_choice_quiz_delete_guard",
+  ];
+
+  for (const marker of [
+    ...tableNames,
+    ...serviceSignatures,
+    ...teacherSignatures,
+    ...helperSignatures,
+    ...triggerNames,
+    "choice_quiz_table(table_name)",
+    "choice_quiz_service_rpc(signature)",
+    "choice_quiz_teacher_rpc(signature)",
+    "choice_quiz_internal_helper(signature)",
+    "choice_quiz_trigger(",
+    "choice_quiz_function_marker(signature, marker)",
+    "relation.relrowsecurity",
+    "pg_get_userbyid(relation.relowner) <> 'supabase_admin'",
+    "from choice_quiz_table as required_table\n           join pg_policy as policy",
+    "array['anon', 'authenticated', 'service_role']",
+    "acl_entry.grantee = 0",
+    "not procedure.prosecdef",
+    `procedure.proconfig @> array['search_path=""']`,
+    "'service_role', procedure.oid, 'EXECUTE'",
+    "'postgres', procedure.oid, 'EXECUTE'",
+    "database_trigger.tgtype <> required_trigger.trigger_type",
+    "required_trigger.is_constraint",
+    "required_trigger.is_deferrable",
+    "required_trigger.is_initially_deferred",
+    "learning_evidence_exact_source_check",
+    "learning_evidence_semantics_check",
+    "learning_evidence_version_check",
+    "learning_evidence_choice_quiz_evaluation_fkey",
+    "source_choice_quiz_evaluation_id is not null",
+    "learning_record_id is null",
+    "eligibility_policy_version = 2",
+    "choice_quiz_issue_record_identity_fkey",
+    "choice_quiz_attempt_issue_learner_fkey",
+    "confupdtype = 'c'",
+    "confdeltype = 'c'",
+    "'primaryLearningObjectiveId'",
+    "component.primary_learning_objective_id",
+    "'activityRole'",
+    "component.activity_role",
+    "'updatedAt'",
+    "component.updated_at",
+    "limit 5001",
+    "'truncated'",
+    "choice_quiz_history_stale",
+    "lock_learning_activity_learners",
+    "'quiz-issue:'",
+    "'quiz-attempt:'",
+    "'quiz-response:'",
+    "'quiz-evaluation:'",
+    "'quiz-feedback:'",
+    "learning_activity_scope_fingerprint",
+    "app.learner_identity_merge",
+    "app.learner_identity_erasure",
+    "'choiceQuizFeedbackDeliveryCount'",
+    "'sourceKind'",
+    "'sourceChoiceQuizEvaluationId'",
+    "choice_quiz_service_rpc_name",
+    "get_teacher_learner_activity_profile_v2",
+    "choice_quiz_internal_helper_name",
+    "generated result has incomplete service-only ACL",
+    "generated result has incomplete closed helper ACL",
+    "generated result exposes a choice_quiz table through a policy",
+    "generated result exposes raw choice_quiz table privileges",
+    "generated result exposes a choice_quiz internal helper",
+    "generated result exposes a choice_quiz service RPC to a browser role",
+  ]) {
+    assert.equal(refreshScript.includes(marker), true, marker);
+  }
+
+  const tableContract = refreshScript.slice(
+    refreshScript.indexOf("choice_quiz_table(table_name)"),
+    refreshScript.indexOf("choice_quiz_service_rpc(signature)"),
+  );
+  assert.equal((tableContract.match(/\('choice_quiz_/g) ?? []).length, 5);
+
+  const rpcContract = refreshScript.slice(
+    refreshScript.indexOf("choice_quiz_service_rpc(signature)"),
+    refreshScript.indexOf("choice_quiz_teacher_rpc(signature)"),
+  );
+  assert.equal((rpcContract.match(/\('public\./g) ?? []).length, 5);
+
+  const teacherRpcContract = refreshScript.slice(
+    refreshScript.indexOf("choice_quiz_teacher_rpc(signature)"),
+    refreshScript.indexOf("choice_quiz_internal_helper(signature)"),
+  );
+  assert.equal((teacherRpcContract.match(/\('public\./g) ?? []).length, 5);
+
+  const helperContract = refreshScript.slice(
+    refreshScript.indexOf("choice_quiz_internal_helper(signature)"),
+    refreshScript.indexOf("choice_quiz_function(signature)"),
+  );
+  assert.equal((helperContract.match(/\('public\./g) ?? []).length, 27);
+
+  const triggerContract = refreshScript.slice(
+    refreshScript.indexOf("choice_quiz_trigger("),
+    refreshScript.indexOf("choice_quiz_function_marker(signature, marker)"),
+  );
+  assert.equal((triggerContract.match(/27::smallint/g) ?? []).length, 5);
+  assert.equal((triggerContract.match(/21::smallint/g) ?? []).length, 1);
+  assert.equal((triggerContract.match(/23::smallint/g) ?? []).length, 1);
+  assert.equal((triggerContract.match(/11::smallint/g) ?? []).length, 2);
+  assert.equal((triggerContract.match(/19::smallint/g) ?? []).length, 1);
+  for (const triggerName of triggerNames) {
+    assert.equal(triggerContract.includes(`'${triggerName}'`), true);
+    assert.equal(
+      refreshScript.includes(
+        `"CREATE${
+          triggerName.endsWith("supersession_chain") ? " CONSTRAINT" : ""
+        } TRIGGER ${triggerName}"`,
+      ),
+      true,
+    );
+  }
+
+  for (const tableName of tableNames) {
+    assert.equal(
+      refreshScript.includes(`"CREATE TABLE public.${tableName}"`),
+      true,
+    );
+    assert.equal(
+      refreshScript.includes(
+        `"ALTER TABLE public.${tableName} ENABLE ROW LEVEL SECURITY;"`,
+      ),
+      true,
+    );
+    assert.equal(
+      refreshScript.includes(
+        `"GRANT ALL ON TABLE public.${tableName} TO postgres;"`,
+      ),
+      true,
     );
   }
 });

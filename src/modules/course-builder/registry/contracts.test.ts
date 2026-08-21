@@ -454,8 +454,8 @@ test("new component capabilities match the current manual-authoring slice", () =
     const capabilities = componentRegistry[key].capabilities;
     assert.equal(capabilities.teacherSurface, true, key);
     assert.equal(capabilities.studentSurface, true, key);
-    assert.equal(capabilities.aiCreatable, false, key);
-    assert.equal(capabilities.aiEditable, false, key);
+    assert.equal(capabilities.aiCreatable, key === "choice_quiz", key);
+    assert.equal(capabilities.aiEditable, key === "choice_quiz", key);
     assert.equal(capabilities.interactive, interactiveKeys.has(key), key);
     assert.equal(capabilities.assessable, assessableKeys.has(key), key);
   }
@@ -660,6 +660,49 @@ test("choice quiz enforces unique IDs and correct-answer invariants", () => {
       })),
     }).success,
     true,
+  );
+});
+
+test("choice quiz canonicalizes UUID case before uniqueness and evaluation", () => {
+  const lower = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const upper = lower.toUpperCase();
+  const second = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+
+  assert.equal(
+    componentRegistry.choice_quiz.payloadSchema.safeParse({
+      question: "Выберите вариант",
+      options: [
+        { id: lower, label: "Первый", isCorrect: true },
+        { id: upper, label: "Дубликат", isCorrect: false },
+      ],
+      allowMultiple: false,
+      shuffle: false,
+    }).success,
+    false,
+  );
+
+  const parsed = componentRegistry.choice_quiz.payloadSchema.parse({
+    question: "Выберите вариант",
+    options: [
+      { id: upper, label: "Первый", isCorrect: true },
+      { id: second.toUpperCase(), label: "Второй", isCorrect: false },
+    ],
+    allowMultiple: false,
+    shuffle: false,
+  });
+  assert.deepEqual(
+    parsed.options.map((option) => option.id),
+    [lower, second],
+  );
+
+  assert.equal(
+    componentRegistry.choice_quiz.activityFacet.evaluatorConfigSchema.safeParse(
+      {
+        correctOptionIds: [lower, upper],
+        allowMultiple: true,
+      },
+    ).success,
+    false,
   );
 });
 

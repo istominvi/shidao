@@ -1,0 +1,499 @@
+.panel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.9rem;
+  margin-bottom: 1.25rem;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  border: 1px solid #a7f3d0;
+  border-radius: 1.35rem;
+  background: linear-gradient(145deg, #fff, #f6fffb);
+  box-shadow: 0 14px 40px rgb(15 23 42 / 0.055);
+  color: #374151;
+}
+
+.panel > svg {
+  width: 1.3rem;
+  height: 1.3rem;
+  color: #047857;
+}
+
+.panel h2,
+.panel h3,
+.panel h4,
+.panel p,
+.panel dl,
+.panel dd {
+  margin: 0;
+}
+
+.panel > div > p {
+  margin-top: 0.25rem;
+}
+
+.panel > div > button {
+  margin-top: 0.75rem;
+}
+
+.header,
+.titleGroup,
+.attemptHeader,
+.learner,
+.evaluationHeading,
+.evaluationMeta dd {
+  display: flex;
+  align-items: center;
+}
+
+.header {
+  grid-column: 1 / -1;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.titleGroup {
+  min-width: 0;
+  gap: 0.8rem;
+}
+
+.icon {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.9rem;
+  background: #d1fae5;
+  color: #047857;
+}
+
+.icon svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.header h2 {
+  color: #111827;
+  font-size: 1.14rem;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+.header p:last-child {
+  margin-top: 0.2rem;
+  color: #6b7280;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.eyebrow {
+  color: #047857 !important;
+  font-size: 0.69rem !important;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.error {
+  grid-column: 1 / -1;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #fecaca;
+  border-radius: 0.8rem;
+  background: #fff7f7;
+  color: #991b1b;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.truncated {
+  grid-column: 1 / -1;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #fde68a;
+  border-radius: 0.8rem;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.empty {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 0.3rem;
+  min-height: 6rem;
+  align-content: center;
+  justify-items: start;
+  padding: 1rem;
+  border: 1px dashed #a7f3d0;
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 0.75);
+}
+
+.empty strong {
+  color: #111827;
+}
+
+.empty p {
+  color: #6b7280;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.attemptList {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attemptCard {
+  min-width: 0;
+  height: 100%;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 0.92);
+}
+
+.attemptHeader {
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.attemptHeader > div {
+  min-width: 0;
+}
+
+.learner {
+  gap: 0.35rem;
+  color: #047857;
+  font-size: 0.78rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.learner svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+
+.attemptHeader h3 {
+  margin-top: 0.35rem;
+  color: #111827;
+  font-size: 1rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.roleBadge,
+.evaluationHeading span {
+  flex: 0 0 auto;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.roleBadge[data-role="assessment"] {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.objective {
+  margin-top: 0.75rem !important;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.75rem;
+  background: #f9fafb;
+  color: #4b5563;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.attemptMeta,
+.evaluationMeta {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.attemptMeta {
+  grid-template-columns: auto auto minmax(0, 1fr);
+  margin-top: 0.8rem !important;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.attemptMeta div,
+.evaluationMeta div {
+  min-width: 0;
+}
+
+.attemptMeta dt,
+.evaluationMeta dt {
+  color: #6b7280;
+  font-size: 0.66rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.attemptMeta dd,
+.evaluationMeta dd {
+  margin-top: 0.15rem;
+  color: #1f2937;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.chain {
+  margin-top: 0.8rem;
+}
+
+.chain h4 {
+  color: #374151;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.chain ol {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chain li {
+  padding: 0.7rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.8rem;
+  background: #f9fafb;
+}
+
+.chain li[data-current="true"] {
+  border-color: #6ee7b7;
+  background: #f0fdf4;
+}
+
+.chain li[data-correct="false"] .evaluationMeta > div:first-child dd {
+  color: #9f1239;
+}
+
+.chain li[data-correct="true"] .evaluationMeta > div:first-child dd {
+  color: #047857;
+}
+
+.evaluationHeading {
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.evaluationHeading strong {
+  color: #111827;
+  font-size: 0.77rem;
+}
+
+.evaluationHeading span {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+.chain li[data-current="true"] .evaluationHeading span {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.evaluationMeta {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0.6rem !important;
+}
+
+.evaluationMeta dd {
+  gap: 0.3rem;
+}
+
+.evaluationMeta svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: 0 0 auto;
+}
+
+.correctionReason {
+  margin-top: 0.6rem !important;
+  padding-top: 0.55rem;
+  border-top: 1px solid #d1d5db;
+  color: #4b5563;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.correctionAnnouncement {
+  grid-column: 1 / -1;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #6ee7b7;
+  border-radius: 0.8rem;
+  background: #f0fdf4;
+  color: #047857;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.correctionEditor {
+  margin-top: 0.7rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid #a7f3d0;
+}
+
+.correctionEditor summary {
+  width: fit-content;
+  min-height: 2.75rem;
+  cursor: pointer;
+  color: #065f46;
+  font-size: 0.78rem;
+  font-weight: 850;
+  line-height: 2.75rem;
+}
+
+.correctionEditor summary:focus-visible,
+.correctionEditor textarea:focus-visible,
+.correctionEditor input:focus-visible {
+  outline: 3px solid #34d399;
+  outline-offset: 2px;
+}
+
+.correctionEditor form {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.4rem;
+}
+
+.correctionEditor fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.8rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.correctionEditor legend,
+.reasonField {
+  color: #374151;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.correctionEditor legend {
+  width: 100%;
+  margin-bottom: 0.35rem;
+}
+
+.correctionEditor fieldset label {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.7rem;
+  background: #fff;
+  color: #1f2937;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.reasonField {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.reasonField textarea {
+  width: 100%;
+  min-height: 5.5rem;
+  resize: vertical;
+  padding: 0.65rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.7rem;
+  background: #fff;
+  color: #111827;
+  font: inherit;
+  line-height: 1.45;
+}
+
+.correctionEditor button {
+  width: fit-content;
+  min-height: 2.75rem;
+}
+
+.correctionError {
+  color: #991b1b;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.retryNote {
+  color: #6b7280;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .header,
+  .attemptHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .header > button {
+    width: 100%;
+    min-height: 2.75rem;
+  }
+
+  .attemptMeta,
+  .evaluationMeta {
+    grid-template-columns: 1fr;
+  }
+
+  .correctionEditor button,
+  .correctionEditor summary {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .panel,
+  .attemptCard,
+  .chain li,
+  .empty,
+  .correctionEditor fieldset label,
+  .reasonField textarea {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+}

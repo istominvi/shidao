@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   decodeTrustedSupabaseSessionClaims,
+  liveDeliveryApiError,
   liveDeliveryAssetError,
   liveDeliveryAssetResponse,
   liveDeliveryJson,
@@ -11,6 +12,10 @@ import {
   LiveDeliveryAssetRangeError,
   LiveDeliveryProjectionError,
 } from "./errors";
+import {
+  ChoiceQuizProjectionError,
+  ChoiceQuizRepositoryError,
+} from "@/modules/choice-quiz/errors";
 
 function uuid(index: number) {
   return `00000000-0000-4000-8000-${index.toString().padStart(12, "0")}`;
@@ -103,5 +108,35 @@ test("opaque asset errors retain security headers and expose no redirect", async
       /default-src 'none'/,
     );
     assert.equal(response.headers.get("Location"), null);
+  }
+});
+
+test("issued quiz failures keep live polling fail-closed and retryable", async () => {
+  for (const [error, status, code] of [
+    [
+      new ChoiceQuizRepositoryError(
+        "stale internal source",
+        409,
+        "choice_quiz_state_conflict",
+      ),
+      409,
+      "live_delivery_cursor_conflict",
+    ],
+    [
+      new ChoiceQuizRepositoryError(
+        "private missing details",
+        404,
+        "choice_quiz_not_found",
+      ),
+      404,
+      "live_delivery_not_found",
+    ],
+    [new ChoiceQuizProjectionError(), 503, "choice_quiz_projection_error"],
+  ] as const) {
+    const response = await liveDeliveryApiError(error);
+    assert.equal(response.status, status);
+    const body = (await response.json()) as { code: string; error: string };
+    assert.equal(body.code, code);
+    assert.doesNotMatch(body.error, /internal|private|source/i);
   }
 });

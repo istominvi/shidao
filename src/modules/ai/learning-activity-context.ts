@@ -221,6 +221,7 @@ function unwrapRpcProjection(value: unknown) {
 export const learningActivityContextProvider = {
   async load(
     actorAuthUserId: string,
+    actorSupabaseSessionId: string,
     courseId: string,
   ): Promise<LearningActivityAiContext> {
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -239,6 +240,7 @@ export const learningActivityContextProvider = {
         },
         body: JSON.stringify({
           p_actor_auth_user_id: actorAuthUserId,
+          p_actor_session_id: actorSupabaseSessionId,
           p_course_id: courseId,
         }),
         cache: "no-store",

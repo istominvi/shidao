@@ -9,6 +9,7 @@ const API_URL = "https://shidao-test.supabase.co";
 const ANON_KEY = "test-anon-key";
 const SERVICE_ROLE_KEY = "test-service-role-key";
 const ACTOR_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const SESSION_ID = "99999999-9999-4999-8999-999999999999";
 const COURSE_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const STATE_KEY = `las_${"1".repeat(64)}`;
 const EVIDENCE_KEY = `lae_${"2".repeat(64)}`;
@@ -98,6 +99,7 @@ test("learning-activity provider uses the bounded service-role RPC", async () =>
     assert.equal(headers.get("authorization"), `Bearer ${SERVICE_ROLE_KEY}`);
     assert.deepEqual(JSON.parse(String(init?.body)), {
       p_actor_auth_user_id: ACTOR_ID,
+      p_actor_session_id: SESSION_ID,
       p_course_id: COURSE_ID,
     });
     return Response.json([{ result: snakeCaseProjection(projection()) }]);
@@ -106,6 +108,7 @@ test("learning-activity provider uses the bounded service-role RPC", async () =>
   try {
     const result = await learningActivityContextProvider.load(
       ACTOR_ID,
+      SESSION_ID,
       COURSE_ID,
     );
     assert.equal(result.states.length, 1);

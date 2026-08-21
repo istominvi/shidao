@@ -10,29 +10,39 @@ export type ObservationRating = "independent" | "with_support" | "not_yet";
 export type ObservationEntryMethod = "direct" | "bulk_confirmed";
 
 export const LEARNING_EVIDENCE_VERSION = 1 as const;
+/** Observation eligibility remains frozen at the deployed LA-M3 policy. */
 export const EVIDENCE_ELIGIBILITY_POLICY_VERSION = 1 as const;
+/** Deterministic choice-quiz evidence uses its own frozen LA-M5 policy. */
+export const CHOICE_QUIZ_EVIDENCE_ELIGIBILITY_POLICY_VERSION = 2 as const;
 export const OBJECTIVE_STATE_POLICY_VERSION = 1 as const;
 export const RECOMMENDATION_RULE_VERSION = 1 as const;
 
 export type LearningEvidenceDirection = "positive" | "negative";
 export type LearningEvidenceSupport = "independent" | "with_support" | null;
 
-export type LearningEvidenceReasonCode =
+export type ObservationLearningEvidenceReasonCode =
   | "independent_positive_evidence"
   | "supported_positive_evidence"
   | "not_yet_negative_evidence";
 
+export type ChoiceQuizLearningEvidenceReasonCode =
+  | "choice_quiz_independent_positive_evidence"
+  | "choice_quiz_supported_positive_evidence"
+  | "choice_quiz_not_yet_negative_evidence";
+
+export type LearningEvidenceReasonCode =
+  ObservationLearningEvidenceReasonCode | ChoiceQuizLearningEvidenceReasonCode;
+
 /**
- * Immutable, typed pedagogical evidence materialized from an eligible,
- * objective-aligned finalized teacher observation. It deliberately excludes
- * private notes, full Component payloads, evaluator payloads and scores.
+ * Immutable, source-agnostic pedagogical evidence materialized from exactly
+ * one eligible observation or deterministic choice-quiz evaluation. It
+ * deliberately excludes private notes, full Component payloads, evaluator
+ * payloads and scores.
  */
-export type LearningEvidence = {
+type LearningEvidenceBase = {
   id: string;
   learnerProfileId: string;
   recordedByAccountId: string;
-  learningRecordId: string;
-  sourceObservationId: string;
   sourceCourseIdAtTime: string;
   sourceLessonIdAtTime: string;
   sourceLessonRunIdAtTime: string;
@@ -53,11 +63,34 @@ export type LearningEvidence = {
   finalizedAt: string;
   materializedAt: string;
   evidenceVersion: typeof LEARNING_EVIDENCE_VERSION;
-  eligibilityPolicyVersion: typeof EVIDENCE_ELIGIBILITY_POLICY_VERSION;
-  reasonCode: LearningEvidenceReasonCode;
   supersedesEvidenceId: string | null;
   supersededByEvidenceId: string | null;
 };
+
+export type ObservationLearningEvidence = LearningEvidenceBase & {
+  learningRecordId: string;
+  sourceKind: "observation";
+  sourceObservationId: string;
+  sourceChoiceQuizEvaluationId: null;
+  eligibilityPolicyVersion: typeof EVIDENCE_ELIGIBILITY_POLICY_VERSION;
+  reasonCode: ObservationLearningEvidenceReasonCode;
+};
+
+export type ChoiceQuizLearningEvidence = LearningEvidenceBase & {
+  /**
+   * Always detached from the compact record graph so an LA-M3 worker's raw
+   * `learning_record_id` history read can only receive observation evidence.
+   */
+  learningRecordId: null;
+  sourceKind: "choice_quiz_evaluation";
+  sourceObservationId: null;
+  sourceChoiceQuizEvaluationId: string;
+  eligibilityPolicyVersion: typeof CHOICE_QUIZ_EVIDENCE_ELIGIBILITY_POLICY_VERSION;
+  reasonCode: ChoiceQuizLearningEvidenceReasonCode;
+};
+
+export type LearningEvidence =
+  ObservationLearningEvidence | ChoiceQuizLearningEvidence;
 
 export type LearnerObjectiveStateStatus =
   "no_data" | "forming" | "confirmed" | "recheck_due";

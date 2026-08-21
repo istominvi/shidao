@@ -58,8 +58,9 @@ type LearningEvidenceRow = {
   id: string;
   learner_profile_id: string;
   recorded_by_account_id: string;
-  learning_record_id: string;
-  source_observation_id: string;
+  learning_record_id: string | null;
+  source_observation_id: string | null;
+  source_choice_quiz_evaluation_id: string | null;
   source_course_id_at_time: string;
   source_lesson_id_at_time: string;
   source_lesson_run_id_at_time: string;
@@ -163,6 +164,7 @@ const LEARNING_EVIDENCE_SELECT = [
   "recorded_by_account_id",
   "learning_record_id",
   "source_observation_id",
+  "source_choice_quiz_evaluation_id",
   "source_course_id_at_time",
   "source_lesson_id_at_time",
   "source_lesson_run_id_at_time",
@@ -360,12 +362,20 @@ function invalidEvidenceProjection(): never {
 }
 
 function mapEvidence(row: LearningEvidenceRow): LearningEvidence {
+  const sourceKind =
+    row.source_observation_id !== null
+      ? "observation"
+      : row.source_choice_quiz_evaluation_id !== null
+        ? "choice_quiz_evaluation"
+        : null;
   const result = learningEvidenceSchema.safeParse({
     id: row.id,
     learnerProfileId: row.learner_profile_id,
     recordedByAccountId: row.recorded_by_account_id,
     learningRecordId: row.learning_record_id,
+    sourceKind,
     sourceObservationId: row.source_observation_id,
+    sourceChoiceQuizEvaluationId: row.source_choice_quiz_evaluation_id,
     sourceCourseIdAtTime: row.source_course_id_at_time,
     sourceLessonIdAtTime: row.source_lesson_id_at_time,
     sourceLessonRunIdAtTime: row.source_lesson_run_id_at_time,
@@ -396,9 +406,19 @@ function mapEvidence(row: LearningEvidenceRow): LearningEvidence {
 }
 
 function compareEvidence(left: LearningEvidence, right: LearningEvidence) {
+  const leftSourceId =
+    left.learningRecordId ??
+    left.sourceChoiceQuizEvaluationId ??
+    left.sourceObservationId ??
+    left.id;
+  const rightSourceId =
+    right.learningRecordId ??
+    right.sourceChoiceQuizEvaluationId ??
+    right.sourceObservationId ??
+    right.id;
   return (
     left.observedAt.localeCompare(right.observedAt) ||
-    left.learningRecordId.localeCompare(right.learningRecordId) ||
+    leftSourceId.localeCompare(rightSourceId) ||
     left.id.localeCompare(right.id)
   );
 }
@@ -740,7 +760,7 @@ export function createLearningActivitiesRepository(
 
     getTeacherLearnerActivityProfile(learnerProfileId) {
       return rpcProjection(
-        "get_teacher_learner_activity_profile",
+        "get_teacher_learner_activity_profile_v2",
         { p_learner_profile_id: learnerProfileId },
         teacherLearnerActivityProfileSchema,
       );

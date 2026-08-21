@@ -12,6 +12,9 @@ const EMPTY_FIELDS = {
   title: "",
   body: "",
   choices: [] as string[],
+  correctChoices: [] as string[],
+  allowMultiple: false,
+  explanation: "",
   matches: [] as { left: string; right: string }[],
 };
 
@@ -52,6 +55,15 @@ test("flat provider lesson converts every supported block to canonical component
           { left: "你好", right: "Здравствуйте" },
         ],
       },
+      {
+        ...EMPTY_FIELDS,
+        kind: "choice_quiz",
+        title: "Какие фразы являются приветствием?",
+        choices: ["你好", "您好", "再见", "你好"],
+        correctChoices: ["你好", "您好"],
+        allowMultiple: true,
+        explanation: "Обе фразы используются как приветствие.",
+      },
     ],
   });
 
@@ -63,6 +75,7 @@ test("flat provider lesson converts every supported block to canonical component
       "callout",
       "single_choice_poll",
       "matching_game",
+      "choice_quiz",
     ],
   );
   const titleOnly = plan.components[0];
@@ -101,9 +114,29 @@ test("flat provider lesson converts every supported block to canonical component
   assert.equal(matching.payload.pairs.length, 2);
   assert.equal(matching.payload.shuffle, true);
 
+  const quiz = plan.components[5];
+  assert.equal(quiz?.typeKey, "choice_quiz");
+  if (quiz?.typeKey !== "choice_quiz") {
+    assert.fail("Expected choice quiz");
+  }
+  assert.deepEqual(
+    quiz.payload.options.map(({ label, isCorrect }) => ({ label, isCorrect })),
+    [
+      { label: "你好", isCorrect: true },
+      { label: "您好", isCorrect: true },
+      { label: "再见", isCorrect: false },
+    ],
+  );
+  assert.equal(quiz.payload.allowMultiple, true);
+  assert.equal(
+    quiz.payload.explanation,
+    "Обе фразы используются как приветствие.",
+  );
+
   const ids = [
     ...poll.payload.options.map((option) => option.id),
     ...matching.payload.pairs.map((pair) => pair.id),
+    ...quiz.payload.options.map((option) => option.id),
   ];
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(
@@ -144,6 +177,13 @@ test("provider conversion rejects invalid content for every content-bearing kind
       kind: "matching_game",
       title: "Соедините пары",
       matches: [{ left: "Один", right: "One" }],
+    },
+    {
+      ...EMPTY_FIELDS,
+      kind: "choice_quiz",
+      title: "Выберите правильный вариант",
+      choices: ["Один", "Два"],
+      correctChoices: ["Три"],
     },
   ];
 
@@ -235,6 +275,9 @@ test("provider JSON schema keeps structure but omits incompatible size keywords"
     "title",
     "body",
     "choices",
+    "correctChoices",
+    "allowMultiple",
+    "explanation",
     "matches",
   ]);
   assert.deepEqual(blockProperties.kind?.enum, [
@@ -242,7 +285,9 @@ test("provider JSON schema keeps structure but omits incompatible size keywords"
     "callout",
     "single_choice_poll",
     "matching_game",
+    "choice_quiz",
   ]);
   assert.ok(blockProperties.choices?.items);
+  assert.ok(blockProperties.correctChoices?.items);
   assert.ok(blockProperties.matches?.items);
 });

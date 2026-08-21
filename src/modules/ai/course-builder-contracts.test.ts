@@ -61,12 +61,43 @@ test("lesson planner accepts only canonical AI-safe registry payloads", () => {
           showResults: true,
         },
       },
+      {
+        typeKey: "choice_quiz",
+        payload: {
+          question: "Выберите дробь больше одной второй.",
+          options: [
+            {
+              id: "33333333-3333-4333-8333-333333333333",
+              label: "2/3",
+              isCorrect: true,
+            },
+            {
+              id: "44444444-4444-4444-8444-444444444444",
+              label: "1/3",
+              isCorrect: false,
+            },
+          ],
+          allowMultiple: false,
+          explanation: "Две трети больше одной второй.",
+          shuffle: true,
+        },
+      },
     ],
   });
 
   const component = toLessonAddComponentInput(LESSON_ID, valid.components[2]);
   assert.equal(component.typeKey, "single_choice_poll");
   assert.deepEqual(component.placement, {
+    width: "content",
+    compact: false,
+  });
+
+  const quizComponent = toLessonAddComponentInput(
+    LESSON_ID,
+    valid.components[3],
+  );
+  assert.equal(quizComponent.typeKey, "choice_quiz");
+  assert.deepEqual(quizComponent.placement, {
     width: "content",
     compact: false,
   });

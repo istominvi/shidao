@@ -189,9 +189,7 @@ test("auth context and reviewed snapshot preserve the avatar contract", () => {
     /unnest\(array\['anon', 'authenticated'\]\)[\s\S]{0,240}set_current_account_avatar\(uuid,text,text,text,integer\)/,
   );
   assert.ok(
-    snapshotRefresh.includes(
-      "procedure.proconfig @> array['search_path=\\\"\\\"']",
-    ),
+    snapshotRefresh.includes(`procedure.proconfig @> array['search_path=""']`),
   );
 
   const snapshotSetterAclStart = snapshot.indexOf(

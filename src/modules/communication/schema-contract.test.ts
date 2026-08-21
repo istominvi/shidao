@@ -638,7 +638,7 @@ test("schema refresh rejects partial CC1 databases and generated snapshots", () 
   assert.match(cc1Gate, /checked_table_privilege/);
   assert.match(cc1Gate, /has_table_privilege/);
   assert.match(cc1Gate, /not procedure\.prosecdef/);
-  assert.match(cc1Gate, /search_path=\\"\\"/);
+  assert.match(cc1Gate, /search_path=""/);
   assert.match(
     cc1Gate,
     /communication_user_rpc[\s\S]*?'authenticated'[\s\S]*?EXECUTE/,

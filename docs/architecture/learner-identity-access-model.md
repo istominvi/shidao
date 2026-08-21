@@ -507,7 +507,9 @@ closed как stale.
   `src/app/api/v2/me/live-runs/[lessonRunId]`,
   `src/app/api/v2/lesson-runs/[lessonRunId]/live-delivery/`;
 - physical snapshot: `supabase/schema/current-schema.sql`, refreshed from the
-  production LA-M4 head `2026-08-21T07:56:01Z`.
+  production LA-M5 head `2026-08-21T15:43:37Z` (`74` public tables / `275`
+  functions, SHA-256
+  `acd73762c061de56a4ae39ec81c25c0b2ce243d2000f04f877e952e2df67473e`).
 
 ## Production verification
 

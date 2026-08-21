@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   calloutPayloadSchema,
+  choiceQuizPayloadSchema,
   getComponentDefinition,
   lessonAddComponentInputSchema,
   matchingGamePayloadSchema,
@@ -72,11 +73,19 @@ const matchingGamePlanSchema = z
   })
   .strict();
 
+const choiceQuizPlanSchema = z
+  .object({
+    typeKey: z.literal("choice_quiz"),
+    payload: choiceQuizPayloadSchema,
+  })
+  .strict();
+
 export const aiLessonComponentPlanSchema = z.discriminatedUnion("typeKey", [
   richTextPlanSchema,
   calloutPlanSchema,
   singleChoicePollPlanSchema,
   matchingGamePlanSchema,
+  choiceQuizPlanSchema,
 ]);
 
 export const aiLessonPlanSchema = z

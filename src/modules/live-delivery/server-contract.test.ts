@@ -24,6 +24,7 @@ const learnerAssetRoute = source(
 const repository = source("src/modules/live-delivery/repository.ts");
 const service = source("src/modules/live-delivery/service.ts");
 const serverContext = source("src/modules/live-delivery/server-context.ts");
+const supabaseUserSession = source("src/lib/server/supabase-user-session.ts");
 
 test("live delivery routes are thin application-service adapters", () => {
   assert.match(teacherRoute, /service\.getTeacherDelivery\(lessonRunId\)/);
@@ -72,9 +73,17 @@ test("learner assets are opaque same-origin streams, never browser signed URLs",
 });
 
 test("learner authority comes from encrypted session JWT claims, never request input", () => {
+  assert.match(serverContext, /from "@\/lib\/server\/supabase-user-session"/);
   assert.match(serverContext, /requireSupabaseUserSession\(\)/);
-  assert.match(serverContext, /candidate\.session_id/);
+  assert.match(
+    serverContext,
+    /decodeTrustedSupabaseSessionClaims\(accessToken\)/,
+  );
+  assert.match(supabaseUserSession, /candidate\.sub/);
+  assert.match(supabaseUserSession, /candidate\.session_id/);
   assert.match(serverContext, /claims\.authUserId !== session\.uid/);
+  assert.match(serverContext, /authUserId: session\.uid/);
+  assert.match(serverContext, /supabaseSessionId: claims\.sessionId/);
   assert.match(repository, /p_auth_user_id: actor\.authUserId/);
   assert.match(repository, /p_session_id: actor\.supabaseSessionId/);
   assert.match(repository, /^import "server-only";/);
@@ -88,10 +97,9 @@ test("learner projection uses the registry and excludes private activity fields"
     /definition\.activityFacet\.learnerDeliverySchema\.parse/,
   );
   assert.match(service, /parseComponentPlacement\(/);
-  assert.doesNotMatch(
-    service,
-    /projectComponentEvaluatorConfig|primaryLearningObjectiveId|teacherReport|summary/,
-  );
+  assert.match(service, /issueLiveDefinition\(/);
+  assert.match(service, /payload: issued\.learnerDefinition/);
+  assert.doesNotMatch(service, /teacherReport|summary/);
 });
 
 test("browser-authorized teacher RPCs never accept an Account authority id", () => {
@@ -99,7 +107,7 @@ test("browser-authorized teacher RPCs never accept an Account authority id", () 
     "get_lesson_run_live_delivery_admin",
     "set_lesson_run_live_access",
     "set_lesson_run_presentation_cursor",
-    "resolve_lesson_run_live_source_admin",
+    "resolve_lesson_run_live_source_choice_quiz_admin",
   ]) {
     assert.match(repository, new RegExp(`"${rpc}"`));
   }

@@ -234,8 +234,103 @@ Projection fail closed при неизвестной версии/невалид
 другие Slides, Lesson summary/
 teacher comments, answer keys/evaluator config, objective/activity metadata,
 private data, authority IDs и raw unsafe JSON не выдаются. Presentation cursor
-не хранит response state и не расширяет compact `LearningRecord`; attempts,
-evaluation, Homework и `free_response` остаются LA-M5/LA-M6.
+не хранит response state и не расширяет compact `LearningRecord`; deployed web
+runtime по-прежнему не выполняет attempts/evaluation. CURRENT production DB
+LA-M5 описана ниже, Homework и `free_response` остаются LA-M6.
+
+**CURRENT production DB + snapshot / NEXT application source+web rollout —
+LA-M5 `choice_quiz`:** production DB уже содержит полный additive online
+activity contract поверх неизменённой LA-M4 authorization/cursor boundary, а
+generated snapshot отражает этот head. Dependent application пока существует
+только в рабочем дереве: он не входит в deployed functional source
+`e09631d2fa00ad1c4b91ad0584392efb748cf235`. Current container source
+`df230d185532429b14080d8859438c197f63e66b` — docs-only deployment `1008` и
+runtime LA-M5 не добавляет.
+
+Exact migration `20260821100000_choice_quiz_activity.sql` имеет `6372` строки и
+SHA-256
+`32e860c8d56e299a19c7a5a4d05103df008935ff9814c6d6c206c39f68242d44`.
+Verified production backup
+`/root/shidao-db-backups/shidao-before-choice-quiz-20260821T153411Z.dump`
+имеет size `1804381`, mode `600`, `1985` restore-list entries и SHA-256
+`bb4dcc56b379f5ef2f105478f426a2e05eb5e17100c08c0656967c3acf855211`.
+Owner apply завершился видимым `COMMIT` вскоре после
+`2026-08-21T15:34Z`.
+
+Post-apply inventory — `74` public tables и `275` functions, включая `5`
+новых закрытых Choice Quiz relations. Production-head snapshot сгенерирован
+`2026-08-21T15:43:37Z`: `35466` строк, SHA-256 файла
+`acd73762c061de56a4ae39ec81c25c0b2ce243d2000f04f877e952e2df67473e`,
+SHA-256 без generated timestamp line —
+`063ca4be6c0f76f9c2b95133763d39acfe932b5de84e64fd8c37942678333b44`.
+
+Dependent application worktree добавляет:
+
+- immutable learner-specific `choice_quiz_issue` с persisted learner-safe
+  definition и private evaluator-at-time; append-only Attempt/Response/
+  Evaluation/Feedback Delivery, correction как superseding Evaluation и
+  exact-source typed LearningEvidence без записи activity rows в
+  `LearningRecord`;
+- exact-set server evaluation без partial credit. Practice допускает до трёх
+  Attempts, immediate correctness и retry после неверных попыток 1/2; answer
+  key/explanation раскрываются только после правильного ответа или исчерпанной
+  третьей попытки. Assessment допускает один Attempt, immediate correctness/
+  score и никогда не раскрывает answer key, explanation или retry. Hint schema
+  отсутствует, поэтому execution честно фиксирует `hintAvailable=false` и
+  `hintCount=0`;
+- learner live DTO только для persisted `practice | assessment`
+  `choice_quiz`: opaque `issueRef`, public `definitionRevision`, attempt
+  counters, `canSubmit` и latest persisted feedback. `activity_role=NULL`
+  остаётся presentation-only; passive/media и остальные activity types
+  сохраняют LA-M4 presentation behavior;
+- strict learner submit
+  `POST /api/v2/me/live-runs/[lessonRunId]/activities/[issueRef]/attempts` с
+  телом только `{ idempotencyKey, cursorRevision, selectedOptionIds }`. Network
+  retry сохраняет exact selection/key, deliberate practice retry создаёт новый
+  key, а stale `409` вызывает live refresh;
+- teacher-only history
+  `GET /api/v2/lesson-runs/[lessonRunId]/choice-quiz-history` с learner,
+  question, selected response, attempt, correctness, score, support, reveal и
+  correction chain. Focused Run показывает историю и явный teacher correction
+  control через
+  `POST /api/v2/choice-quiz-evaluations/[evaluationId]/corrections`: причина
+  обязательна, exact idempotency key сохраняется при сетевом retry, успешное
+  исправление перезагружает append-only correction chain;
+- canonical manual authoring остаётся прежним. AI planner/provider/preview/
+  explicit Apply разрешают из новых assessable types только `choice_quiz` и не
+  получают actions для Attempt/Evaluation/Evidence/profile mutation. Teacher и
+  обычный Course preview остаются no-write;
+- bounded Course AI activity context передаёт через server-only actor exact
+  Supabase `session_id`: service-role overload повторно блокирует и проверяет
+  learner scope → `auth.sessions` → active Account/security cutoff →
+  Course/Profile/state. Прежний двухаргументный overload сохранён только как
+  fail-closed `42501` rolling-deploy boundary;
+- accessible learner fieldset/legend radio/checkbox UI, keyboard/focus/
+  screen-reader announcements, touch/responsive/zoom/reduced-motion states,
+  persisted reload и transient-error recovery без client-side answer key или
+  evaluator.
+
+Exact source locations: current production migration
+`supabase/migrations/20260821100000_choice_quiz_activity.sql`; contracts,
+domain/repository/service/server boundary — `src/modules/choice-quiz/`;
+LA-M4 projection integration — `src/modules/live-delivery/`; learner submit,
+teacher history/correction routes — `src/app/api/v2/me/live-runs/`,
+`src/app/api/v2/lesson-runs/[lessonRunId]/choice-quiz-history/` и
+`src/app/api/v2/choice-quiz-evaluations/`; learner/teacher UI —
+`src/components/learning-activities/`; authoring/AI mapping —
+`src/modules/course-builder/registry/contracts.ts`, `src/modules/ai/` и
+`src/components/course-builder/ai-lesson-plan-dialog.tsx`.
+
+Focused source coverage находится в `src/modules/choice-quiz/*.test.ts`,
+`src/modules/learning-activities/schema-contract.test.ts`, LA-M5 additions к
+`src/modules/live-delivery/*.test.ts`, AI/registry tests и
+`src/components/learning-activities/*choice-quiz*.test.ts` /
+`evidence-history-format.test.ts`. Final local application gate прошёл
+`991/991` unit/API, production build `73/73` и `31/31` strict production-mode
+Chromium scenarios. Это local evidence, а не deployed authenticated production
+flow. Exact release commit, normal push, matching Coolify image/source и web
+postflight остаются NEXT; authenticated production flow не выполнялся и не
+заявляется.
 
 **Current source / next production — единый Auth и registration entry UI:**
 `/login`, `/join`, `/join/check-email`, `/forgot-password` и
@@ -2345,16 +2440,22 @@ REST `POST`, development MCP, AI и deterministic assembler. Payload `rich_text`
 непустое значение.
 
 `video`, `audio` и `external_link` в этом срезе принимают только прямые
-HTTPS URL; upload/transcoding медиа не заявлены. Самопроверка новых
-интерактивных типов и ответ `free_response` живут только в React state
-текущего preview: learner answer persistence, scoring, attempts и teacher review
-ещё не реализованы. Отдельных voice-recording, arbitrary embed и
-image-match типов в active registry нет. Продуктовое сопоставление с
+HTTPS URL; upload/transcoding медиа не заявлены. Dependent application LA-M5 является
+ровно одним исключением из preview-only activity behavior: только
+`choice_quiz` с persisted `practice | assessment` issue получает learner-safe
+delivery, server evaluation, attempts/evidence и teacher history после
+dependent application rollout. Physical production DB contract и generated
+snapshot уже current; deployed web пока LA-M4. `activity_role=NULL`, остальные
+interactive types и `free_response` по-прежнему остаются
+presentation/preview-only без durable learner response или teacher review.
+Отдельных voice-recording, arbitrary embed и image-match типов в active
+registry нет. Продуктовое сопоставление с
 ProgressMe и границы этого среза зафиксированы в
 [`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
-Versioned execution/evaluation/durable evidence и objective-state target описан в
-[`docs/architecture/learning-activity-system.md`](./architecture/learning-activity-system.md);
-он не является current runtime.
+Frozen LA-M5 execution/evaluation/evidence contract описан в
+[`docs/architecture/learning-activity-system.md`](./architecture/learning-activity-system.md):
+он current production DB только для `choice_quiz`, но ещё не deployed
+application runtime.
 
 ### Development MCP
 
@@ -2641,9 +2742,12 @@ History-aware context развёрнут в release `9393080`; production provid
 - persisted Homework editor;
 - Realtime/presence для live Student Screen; current production LA-M4 намеренно
   использует reload/reconnect и bounded request polling;
-- versioned learner activity attempts и server-side evaluation; они остаются
-  последующими LA-M5/LA-M6 slices и не подменяются LA-M3 teacher observations;
-  `LearningRecord` остаётся compact LessonRun outcome, а не metrics/event
+- dependent application rollout versioned learner activity attempts и
+  server-side evaluation: production DB/snapshot LA-M5 current только для
+  `choice_quiz`, но web rollout и authenticated production evidence ещё
+  pending; остальные deterministic types и `free_response` остаются
+  последующими slices. Online evidence не подменяет LA-M3 teacher observations,
+  а `LearningRecord` остаётся compact LessonRun outcome, не metrics/event
   container;
 - Realtime/presence для messaging, push/email delivery, attachments,
   moderation и reliable background notification/AI workers;
@@ -2790,7 +2894,7 @@ Current production LA-M2 schema дополнительно ввела
 V2 function definitions. LA-M3 добавляет
 correction/evidence/objective-state/recommendation contract; matching
 production-derived clone и snapshot остаются независимыми verified artifacts.
-Current production physical head LA-M4 поверх него добавляет три закрытые raw
+Current deployed live-authority layer LA-M4 поверх него добавляет три закрытые raw
 relation: explicit Course access `course_learner_enrollment`, explicit per-Run
 `lesson_run_execution_capability` и отдельный persisted presentation cursor
 `lesson_run_presentation_state`. Все три включают RLS без broad authenticated
@@ -2798,8 +2902,21 @@ table access; поддерживаемые actor boundaries — узкие owner
 service-only learner resolver с exact authenticated
 Account/profile/session/capability проверками. Current snapshot содержит этот
 contract и exact совпадает с clean production-derived replay. Deployed
-functional web пока работает на exact source
-`6e3f97c230f688663abaa06a126a56d0d0e2c9c6`.
+functional web работает на exact source
+`e09631d2fa00ad1c4b91ad0584392efb748cf235`.
+
+Current production LA-M5 migration
+`supabase/migrations/20260821100000_choice_quiz_activity.sql` является
+production schema head и отражена в `supabase/schema/current-schema.sql`. Она
+добавляет пять закрытых RLS relations
+`choice_quiz_issue`, `choice_quiz_attempt`, `choice_quiz_response`,
+`choice_quiz_evaluation`, `choice_quiz_feedback_delivery`, exact-source
+`learning_evidence.source_choice_quiz_evaluation_id`, immutable/supersession
+guards и narrow issue/submit/history/correction functions. Measured inventory
+равен `74` public tables / `275` functions; snapshot содержит `35466` строк и
+имеет SHA-256
+`acd73762c061de56a4ae39ec81c25c0b2ce243d2000f04f877e952e2df67473e`.
+Dependent application commit/push/Coolify rollout остаётся NEXT.
 
 Current Communication Center читает bounded finalized history и сохраняет
 несколько AI conversations/turns/read cursors; human threads/messages и system
@@ -2968,7 +3085,7 @@ payloads, отдельный quota/billing ledger и durable action/job ledger �
   `014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0` доставлен normal fast-forward
   push и Coolify deployment `1003` с restart count `0`.
 - `20260820132725_learning_activity_profile_history_skills_recommendations.sql`
-  — current production DB LA-M3 schema head; exact SHA-256
+  — historical LA-M3 production schema head at its rollout; exact SHA-256
   `a7e7dad7db4632f98cf0857597dae99b58cf653bd39ec57d0eb91f540c9793f8`,
   `5335` строк. Owner apply завершился наблюдаемым `COMMIT`; pre/post canonical
   tuple `19/6/22/84/2/2/0/0`, publication
@@ -2977,8 +3094,8 @@ payloads, отдельный quota/billing ledger и durable action/job ledger �
   Dependent functional source
   `6e3f97c230f688663abaa06a126a56d0d0e2c9c6` доставлен Coolify deployment
   `1005`; production guest boundary postflight завершён.
-- `20260821093000_lesson_run_live_delivery.sql` — current production DB LA-M4
-  head: `2535` строк, SHA-256
+- `20260821093000_lesson_run_live_delivery.sql` — current deployed
+  application LA-M4 compatibility layer: `2535` строк, SHA-256
   `7fb531bc199b8d6a24afeb1e01ff2730c8e5388a0cbbd233e2679d8e7825319c`;
   explicit Course enrollment, per-Run execution capability, CAS presentation
   cursor, lifecycle revocation и closed learner/admin projection RPC. Owner
@@ -2991,6 +3108,14 @@ payloads, отдельный quota/billing ledger и durable action/job ledger �
   и Coolify deployment `1007`; exact image/`SOURCE_COMMIT`, guest/host/CSRF
   postflight, cleanup и retained backup подтверждены. Authenticated production
   UI smoke не выполнялся без безопасной existing session/Run и не заявляется.
+- `20260821100000_choice_quiz_activity.sql` — **CURRENT production DB +
+  snapshot / NEXT application rollout** LA-M5 head. Он содержит один
+  complete `choice_quiz` issue/attempt/response/evaluation/feedback engine,
+  teacher correction/history, exact-source evidence integration и lifecycle
+  cleanup поверх LA-M4 authority. Exact migration checksum, verified backup,
+  owner `COMMIT`, postflight и refreshed `74/275` snapshot recorded выше.
+  Deployed SHA/image и authenticated production flow должны быть записаны
+  только после dependent application rollout и пока не заявляются.
 
 Источники истины для текущего состояния:
 
@@ -3034,6 +3159,7 @@ positions, а плотность поддерживают текущие service
 | Learning Activity module           | `src/modules/learning-activities/`                                                                                                                                                                                                                                                 |
 | Observation API/UI                 | `src/app/api/v2/lesson-runs/[lessonRunId]/observations/`, `src/app/(app)/courses/[courseId]/runs/[lessonRunId]/`, `src/components/learning-activities/`                                                                                                                            |
 | LA-M4 live delivery                | `src/modules/live-delivery/`, `src/app/api/v2/lesson-runs/[lessonRunId]/live-delivery/`, `src/app/api/v2/me/live-runs/`, `src/app/(live)/live/[lessonRunId]/`, `src/components/learning-activities/`                                                                               |
+| LA-M5 `choice_quiz` application    | `src/modules/choice-quiz/`, `src/modules/live-delivery/`, `src/app/api/v2/me/live-runs/[lessonRunId]/activities/`, `src/app/api/v2/lesson-runs/[lessonRunId]/choice-quiz-history/`, `src/app/api/v2/choice-quiz-evaluations/`, `src/components/learning-activities/`               |
 | Learner identity contracts/service | `src/modules/learner-identity/`                                                                                                                                                                                                                                                    |
 | Learner identity UI/routes         | `src/app/(app)/profile/`, `src/components/profile/`, `src/components/learner-identity/`, `/profile`, `/students?tab=observing`, `/identity/invitations/*`; `/learning-profile`, `/settings/*` и `/observing` — compatibility redirects                                             |
 | Account profile/avatar UI          | `src/components/account/`, `src/components/account/avatar-settings-form.tsx`, `src/lib/navigation/profile-nav.ts`                                                                                                                                                                  |

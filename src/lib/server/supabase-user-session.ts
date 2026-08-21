@@ -6,6 +6,7 @@ import {
   type AppSession,
   type AppSessionSupabaseTokens,
 } from "./app-session";
+import { postgresUuidSchema } from "@/lib/postgres-uuid";
 
 export const SUPABASE_USER_REAUTHENTICATION_REQUIRED =
   "SUPABASE_USER_REAUTHENTICATION_REQUIRED";
@@ -39,6 +40,38 @@ type SupabaseRefreshResponse = {
   expires_at?: number | null;
   user?: { id?: string | null } | null;
 };
+
+export type TrustedSupabaseSessionClaims = {
+  authUserId: string;
+  sessionId: string;
+};
+
+/**
+ * Decodes only the two signed identity hints needed to bind a server action to
+ * its exact Supabase session. Database authority is still re-established from
+ * auth.sessions, Account and account_security; no other JWT field is trusted.
+ */
+export function decodeTrustedSupabaseSessionClaims(
+  accessToken: string,
+): TrustedSupabaseSessionClaims | null {
+  const payloadSegment = accessToken.split(".")[1];
+  if (!payloadSegment) return null;
+  try {
+    const payload = JSON.parse(
+      Buffer.from(payloadSegment, "base64url").toString("utf8"),
+    ) as unknown;
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return null;
+    }
+    const candidate = payload as Record<string, unknown>;
+    const authUserId = postgresUuidSchema.safeParse(candidate.sub);
+    const sessionId = postgresUuidSchema.safeParse(candidate.session_id);
+    if (!authUserId.success || !sessionId.success) return null;
+    return { authUserId: authUserId.data, sessionId: sessionId.data };
+  } catch {
+    return null;
+  }
+}
 
 type SupabaseUserSessionDependencies = {
   readSession?: () => Promise<AppSession | null>;

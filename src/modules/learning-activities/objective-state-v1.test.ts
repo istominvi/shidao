@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { LearningEvidence } from "./domain";
+import type {
+  ChoiceQuizLearningEvidence,
+  ObservationLearningEvidence,
+} from "./domain";
 import {
   fixedLearningActivityClock,
   OBJECTIVE_STATE_FRESHNESS_MS_V1,
@@ -21,8 +24,8 @@ const BASE_TIME = "2026-01-01T00:00:00.000Z";
 
 function evidence(
   sequence: number,
-  overrides: Partial<LearningEvidence> = {},
-): LearningEvidence {
+  overrides: Partial<ObservationLearningEvidence> = {},
+): ObservationLearningEvidence {
   const direction = overrides.direction ?? "positive";
   const support =
     overrides.support === undefined
@@ -35,7 +38,9 @@ function evidence(
     learnerProfileId: LEARNER_ID,
     recordedByAccountId: ACCOUNT_ID,
     learningRecordId: uuid(200 + sequence),
+    sourceKind: "observation",
     sourceObservationId: uuid(300 + sequence),
+    sourceChoiceQuizEvaluationId: null,
     sourceCourseIdAtTime: COURSE_ID,
     sourceLessonIdAtTime: uuid(400 + sequence),
     sourceLessonRunIdAtTime: uuid(500 + sequence),
@@ -71,6 +76,40 @@ function evidence(
           : "supported_positive_evidence",
     supersedesEvidenceId: null,
     supersededByEvidenceId: null,
+    ...overrides,
+  };
+}
+
+function choiceQuizEvidence(
+  sequence: number,
+  overrides: Partial<ChoiceQuizLearningEvidence> = {},
+): ChoiceQuizLearningEvidence {
+  const direction = overrides.direction ?? "positive";
+  const support =
+    overrides.support === undefined
+      ? direction === "positive"
+        ? "independent"
+        : null
+      : overrides.support;
+  const base = evidence(sequence);
+  return {
+    ...base,
+    learningRecordId: null,
+    sourceKind: "choice_quiz_evaluation",
+    sourceObservationId: null,
+    sourceChoiceQuizEvaluationId: uuid(700 + sequence),
+    componentTypeAtTime: "choice_quiz",
+    componentLabelAtTime: "Выберите правильный ответ",
+    criterionAtTime: "Выбирает правильный ответ",
+    direction,
+    support,
+    eligibilityPolicyVersion: 2,
+    reasonCode:
+      direction === "negative"
+        ? "choice_quiz_not_yet_negative_evidence"
+        : support === "independent"
+          ? "choice_quiz_independent_positive_evidence"
+          : "choice_quiz_supported_positive_evidence",
     ...overrides,
   };
 }
@@ -159,6 +198,29 @@ test("one observation or multiple Components in one Run cannot confirm an object
       "apply_in_new_context",
     );
   }
+});
+
+test("objective-state-v1 combines observation and quiz evidence but counts one Run once", () => {
+  const observation = evidence(1);
+  const sameRunQuiz = choiceQuizEvidence(2, {
+    sourceLessonRunIdAtTime: observation.sourceLessonRunIdAtTime,
+  });
+  const oneOpportunity = projectLearnerObjectiveStateV1(
+    [observation, sameRunQuiz],
+    "2026-01-02T00:00:00.000Z",
+  );
+  assert.equal(oneOpportunity.status, "forming");
+  assert.equal(oneOpportunity.reasonCode, "independent_opportunities_missing");
+  assert.equal(oneOpportunity.evidenceIds.length, 1);
+
+  const differentRunQuiz = choiceQuizEvidence(3);
+  const confirmed = projectLearnerObjectiveStateV1(
+    [observation, sameRunQuiz, differentRunQuiz],
+    "2026-01-02T00:00:00.000Z",
+  );
+  assert.equal(confirmed.status, "confirmed");
+  assert.equal(confirmed.reasonCode, "multiple_independent_opportunities");
+  assert.equal(confirmed.evidenceIds.length, 2);
 });
 
 test("two distinct independent Run opportunities confirm deterministically", () => {

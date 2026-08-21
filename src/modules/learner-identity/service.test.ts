@@ -9,6 +9,7 @@ import {
 
 const actor = {
   authUserId: "00000000-0000-4000-8000-000000000001",
+  supabaseSessionId: "00000000-0000-4000-8000-000000000010",
   verifiedEmail: "recipient@example.com",
 };
 const learnerProfileId = "00000000-0000-4000-8000-000000000002";
@@ -322,4 +323,47 @@ test("verified-email child activation forwards explicit recovery delegation ackn
   assert.equal(tokenActivationCalled, false);
   assert.equal(result.recoveryDelegateActive, true);
   assert.equal("provisionalAuthUserConsumed" in result, false);
+});
+
+test("erasure confirmation forwards the trusted session only after recent reauthentication", async () => {
+  const calls: unknown[][] = [];
+  const service = createLearnerIdentityService({
+    repository: {} as LearnerIdentityRepository,
+    adminRepository: {
+      confirmErasure: async (...input: unknown[]) => {
+        calls.push(input);
+        return {
+          learnerProfileId: learnerProfileId,
+          displayName: "Ученик",
+          createdAt: "2026-08-21T00:00:00.000Z",
+          mergedLineageCount: 0,
+          canSafeUnlink: true,
+          pendingConnections: [],
+        };
+      },
+    } as unknown as LearnerIdentityAdminRepository,
+  });
+  const previewFingerprint = "a".repeat(64);
+
+  await service.confirmErasure(
+    actor,
+    { previewFingerprint },
+    { recentlyReauthenticated: true },
+  );
+  assert.deepEqual(calls, [
+    [actor.authUserId, actor.supabaseSessionId, previewFingerprint],
+  ]);
+
+  await assert.rejects(
+    async () =>
+      service.confirmErasure(
+        actor,
+        { previewFingerprint },
+        { recentlyReauthenticated: false },
+      ),
+    (error: unknown) =>
+      error instanceof LearnerIdentityApplicationError &&
+      error.code === "recent_reauthentication_required",
+  );
+  assert.equal(calls.length, 1);
 });

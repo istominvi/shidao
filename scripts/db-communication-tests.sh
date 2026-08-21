@@ -308,9 +308,9 @@ select pg_temp.assert_true(
   'atomic assistant schedule RPC grant matrix is incorrect'
 );
 
--- Auth rows exist only to satisfy the Account FK and auth.uid() lookup. Keep
--- the fixture compatible with the deliberately minimal auth.users stub used
--- by isolated snapshot databases; communication authorization needs only id.
+-- Auth rows satisfy the Account FK and authenticated RPC context. Keep the
+-- fixture compatible with the deliberately minimal auth.users stub while the
+-- hardened Run cancellation path also receives an exact live Session claim.
 -- Disabling triggers for these six inserts avoids unrelated signup bootstrap.
 set local session_replication_role = replica;
 insert into auth.users (id)
@@ -322,6 +322,21 @@ values
   ('c1000000-0000-4000-8000-000000000005'),
   ('c1000000-0000-4000-8000-000000000006');
 set local session_replication_role = origin;
+
+insert into auth.sessions (
+  id,
+  user_id,
+  created_at,
+  updated_at,
+  not_after
+)
+values (
+  'c1100000-0000-4000-8000-000000000001',
+  'c1000000-0000-4000-8000-000000000001',
+  clock_timestamp(),
+  clock_timestamp(),
+  null
+);
 
 insert into public.account (
   id,
@@ -366,6 +381,20 @@ values
     'Assistant Outsider',
     'active'
   );
+
+-- Manual Account fixtures bypass the Auth bootstrap trigger, so provision the
+-- canonical security companion rows required by exact-session boundaries.
+insert into public.account_security (
+  account_id,
+  sessions_invalid_before
+)
+values
+  ('c2000000-0000-4000-8000-000000000001', null),
+  ('c2000000-0000-4000-8000-000000000002', null),
+  ('c2000000-0000-4000-8000-000000000003', null),
+  ('c2000000-0000-4000-8000-000000000004', null),
+  ('c2000000-0000-4000-8000-000000000005', null),
+  ('c2000000-0000-4000-8000-000000000006', null);
 
 -- Direct Account/Profile linkage is guarded even for database owners. The
 -- transaction-local workflow flag is the same narrow path used by Auth sync.
@@ -1437,6 +1466,15 @@ values (
 select set_config(
   'request.jwt.claim.sub',
   'c1000000-0000-4000-8000-000000000001',
+  true
+);
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object(
+    'sub', 'c1000000-0000-4000-8000-000000000001',
+    'session_id', 'c1100000-0000-4000-8000-000000000001',
+    'role', 'authenticated'
+  )::text,
   true
 );
 set local role authenticated;

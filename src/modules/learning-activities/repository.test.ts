@@ -64,7 +64,9 @@ function evidenceRow(overrides: Record<string, unknown> = {}) {
     learner_profile_id: uuid(31),
     recorded_by_account_id: ACCOUNT_ID,
     learning_record_id: RECORD_ID,
+    source_kind: "observation",
     source_observation_id: OBSERVATION_ID,
+    source_choice_quiz_evaluation_id: null,
     source_course_id_at_time: uuid(32),
     source_lesson_id_at_time: uuid(33),
     source_lesson_run_id_at_time: RUN_ID,
@@ -537,6 +539,9 @@ test("repository reads typed evidence by LearningRecord IDs with stable deleted 
         RECORD_ID,
       ]);
       assert.equal(evidence?.sourceComponentIdAtTime, COMPONENT_ID);
+      assert.equal(evidence?.sourceKind, "observation");
+      assert.equal(evidence?.sourceObservationId, OBSERVATION_ID);
+      assert.equal(evidence?.sourceChoiceQuizEvaluationId, null);
       assert.equal(evidence?.sourceLearningObjectiveIdAtTime, OBJECTIVE_ID);
       assert.equal(evidence?.lessonComponentId, null);
       assert.equal(evidence?.learningObjectiveId, null);
@@ -554,9 +559,38 @@ test("repository reads typed evidence by LearningRecord IDs with stable deleted 
         .get("select")
         ?.split(",");
       assert.ok(selectedColumns?.includes("source_component_id_at_time"));
+      assert.ok(selectedColumns?.includes("source_choice_quiz_evaluation_id"));
       assert.equal(
         selectedColumns?.includes("source_lesson_component_id_at_time"),
         false,
+      );
+    },
+  );
+});
+
+test("record-scoped raw history rejects impossible record-linked choice-quiz evidence", async () => {
+  const evaluationId = uuid(35);
+  await withMockSupabase(
+    [
+      {
+        payload: [
+          evidenceRow({
+            source_observation_id: null,
+            source_choice_quiz_evaluation_id: evaluationId,
+            eligibility_policy_version: 2,
+            reason_code: "choice_quiz_independent_positive_evidence",
+          }),
+        ],
+        headers: { "Content-Range": "0-0/1" },
+      },
+    ],
+    async (repository) => {
+      await assert.rejects(
+        repository.listEvidenceByLearningRecordIds([RECORD_ID]),
+        (error: unknown) =>
+          error instanceof Error &&
+          "code" in error &&
+          error.code === "learning_evidence_projection_invalid",
       );
     },
   );
@@ -567,6 +601,24 @@ test("repository fails closed on malformed evidence semantics or paging", async 
     [
       {
         payload: [evidenceRow({ direction: "negative" })],
+        headers: { "Content-Range": "0-0/1" },
+      },
+    ],
+    async (repository) => {
+      await assert.rejects(
+        repository.listEvidenceByLearningRecordIds([RECORD_ID]),
+        (error: unknown) =>
+          error instanceof Error &&
+          "code" in error &&
+          error.code === "learning_evidence_projection_invalid",
+      );
+    },
+  );
+
+  await withMockSupabase(
+    [
+      {
+        payload: [evidenceRow({ source_choice_quiz_evaluation_id: uuid(36) })],
         headers: { "Content-Range": "0-0/1" },
       },
     ],
@@ -802,7 +854,7 @@ test("repository maps teacher/self/observer activity-profile RPCs through strict
       assert.deepEqual(
         requests.map((request) => new URL(request.url).pathname),
         [
-          "/rest/v1/rpc/get_teacher_learner_activity_profile",
+          "/rest/v1/rpc/get_teacher_learner_activity_profile_v2",
           "/rest/v1/rpc/get_my_learning_activity_profile",
           "/rest/v1/rpc/get_observed_learner_activity_profile",
         ],
@@ -850,6 +902,15 @@ test("teacher profile RPC maps bounded evidence, state and recommendation withou
                   support: "with_support",
                   reason_code: "supported_positive_evidence",
                 }),
+                evidenceRow({
+                  id: uuid(37),
+                  learning_record_id: null,
+                  source_kind: "choice_quiz_evaluation",
+                  source_observation_id: null,
+                  source_choice_quiz_evaluation_id: uuid(38),
+                  eligibility_policy_version: 2,
+                  reason_code: "choice_quiz_independent_positive_evidence",
+                }),
               ],
               recommendation: {
                 recommendation_id: uuid(61),
@@ -895,6 +956,11 @@ test("teacher profile RPC maps bounded evidence, state and recommendation withou
         uuid(31),
       );
       assert.equal(profile.states[0]?.evidence[0]?.id, evidenceId);
+      assert.equal(profile.states[0]?.evidence[1]?.learningRecordId, null);
+      assert.equal(
+        profile.states[0]?.evidence[1]?.sourceKind,
+        "choice_quiz_evaluation",
+      );
       assert.equal(
         profile.states[0]?.recommendation?.type,
         "try_without_support",

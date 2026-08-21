@@ -99,6 +99,18 @@ function verifiedJwtIssuedAtMs(accessToken: string) {
   return issuedAt * 1000;
 }
 
+function verifiedJwtSessionId(accessToken: string) {
+  const sessionId = uuidSchema.safeParse(
+    decodedJwtPayload(accessToken)?.session_id,
+  );
+  if (!sessionId.success) {
+    throw new CourseBuilderMcpAuthenticationError(
+      "Supabase user JWT не содержит корректный session_id.",
+    );
+  }
+  return sessionId.data;
+}
+
 function isIssuedBeforeCutoff(
   issuedAtMs: number,
   invalidBefore: string | null,
@@ -234,6 +246,7 @@ export function createCourseBuilderMcpContextResolver(
         "Auth-пользователь токена не совпадает с SHIDAO_MCP_AUTH_USER_ID.",
       );
     }
+    const supabaseSessionId = verifiedJwtSessionId(environment.accessToken);
 
     const repository = (
       dependencies.createRepository ?? createCourseBuilderRepository
@@ -272,6 +285,7 @@ export function createCourseBuilderMcpContextResolver(
     }
     const actor: CourseBuilderActor = {
       authUserId: authenticatedUserId.data,
+      supabaseSessionId,
       accessToken: environment.accessToken,
       canAuthorEducatorCourses: accountContext.canAuthorEducatorCourses,
     };

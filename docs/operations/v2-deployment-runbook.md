@@ -131,6 +131,34 @@ gate расширяется следующими обязательными пр
   denied/ended, accessibility, responsive и reduced-motion states без LA-M5/
   LA-M6 persistence.
 
+Для первого LA-M5 `choice_quiz` apply от LA-M4 baseline этот release gate был
+обязательным и дополнительно расширялся. Ниже описана pre-apply процедура;
+текущий post-apply результат зафиксирован в LA-M5 execution record:
+
+- до rehearsal зафиксировать exact functional commit и checksum/line count
+  `20260821100000_choice_quiz_activity.sql`; непосредственно до первого apply
+  production head обязан был быть LA-M4, а пять `choice_quiz_*` tables и
+  `learning_evidence.source_choice_quiz_evaluation_id` — отсутствовать;
+- на production-derived disposable clone выполнить exact apply, safe rollback/
+  fresh replay и сравнить refreshed public schema с ожидаемым candidate
+  contract. Запустить обновлённые `db-learning-activity-tests.sh` и настоящие
+  multi-session races для issue/submit/cursor/revoke/component edit/lifecycle/
+  correction/merge/erasure boundaries;
+- доказать closed raw ACL/RLS всех пяти tables, exact helper/RPC grants,
+  `SECURITY DEFINER` + empty `search_path`, immutable history, strict one-source
+  evidence constraint и absence of partial writes;
+- проверить practice/assessment policy, exact-set grading, idempotent replay/
+  conflict, reveal rules, honest `hintAvailable=false`/`hintCount=0`, teacher
+  history/correction chain и subject lifecycle cleanup;
+- application gate обязан отдельно покрыть manual/AI preview+explicit Apply,
+  issued learner live UI, roleless/other-type presentation fallback, transient
+  retry with stable selection/key, reload, stale refresh, teacher history,
+  no-answer/evaluator leak, keyboard/screen-reader/touch/zoom/reduced motion;
+- никакой local/mock/production-derived result не записывается как production
+  evidence. Production backup, owner `COMMIT`, postflight, snapshot, exact
+  pushed/deployed SHA/image и deployed smoke фиксируются отдельными наблюдаемыми
+  шагами ниже.
+
 Provider tests в AI-release используют только fake credentials и локальный
 mock. CI/build не получают реальный `ROUTERAI_API_KEY`; если сборка требует
 production secret, release останавливается как нарушение server-runtime
@@ -358,6 +386,180 @@ Production postflight:
 LA-M4 production execution record complete: DB/source/web current. Skipped
 authenticated UI smoke remains explicitly unclaimed and не подменяется local
 Chromium evidence.
+
+### LA-M5 `choice_quiz` — production DB/snapshot execution record; web pending
+
+**Статус: CURRENT production DB/snapshot; CURRENT-SOURCE / NEXT deployed
+web.** Production PostgreSQL и generated schema snapshot содержат LA-M5, но
+dependent application source ещё не закоммичен и не доставлен. Current running
+container получен docs-only deployment `1008`
+(`jzli0zrpcghoailqq22y17l0`) из exact source
+`df230d185532429b14080d8859438c197f63e66b`; его functional payload остаётся
+LA-M4 source `e09631d2fa00ad1c4b91ad0584392efb748cf235`.
+Поэтому clone/application evidence ниже не выдаётся за deployed behavior, а
+authenticated production Choice Quiz flow остаётся явно pending.
+
+Frozen inputs:
+
+- исходный local `HEAD` и verified `origin/main`:
+  `df230d185532429b14080d8859438c197f63e66b`;
+- pre-rollout Coolify recheck: application id/UUID
+  `1` / `g9x4d9zn60jv35r7zf0xl6xj`, repository/branch
+  `istominvi/shidao` / `main`; deployment `1008`
+  (`jzli0zrpcghoailqq22y17l0`) имеет PR `0`, status `finished` и exact commit
+  `df230d185532429b14080d8859438c197f63e66b`. Production container
+  `g9x4d9zn60jv35r7zf0xl6xj-083843668768` использует matching tag и
+  `SOURCE_COMMIT`, image ID
+  `sha256:508b412910234ace64da13f66db62fb5da61679c2f0ffae31aca49671ac8f569`,
+  running с restart count `0`; три PR-preview containers не принимались за
+  production;
+- exact forward migration:
+  `supabase/migrations/20260821100000_choice_quiz_activity.sql`, `6372` строки,
+  SHA-256
+  `32e860c8d56e299a19c7a5a4d05103df008935ff9814c6d6c206c39f68242d44`;
+- functional DB harness `scripts/db-learning-activity-tests.sh`: SHA-256
+  `a5c524a91042d29a74e3aefe14024bce31cc99e1fc6505cd3666954bfe851ef4`;
+- multi-session harness
+  `scripts/db-learning-activity-concurrency-tests.sh`: `10615` строк, SHA-256
+  `c7577dacdbcfe888890217de3b3a257510ffd7e649740e080a8d0c65eb451dce`;
+- snapshot generator `scripts/refresh-schema-snapshot.sh`: `4416` строк,
+  SHA-256
+  `ea963f860ff848fd823a704da70d77ba5bb873a60561a811df72a8fa7f6e3cfc`;
+- все DB/SSH операции использовали только ignored project-local
+  `.codex/ssh-db.local.toml`, mode `0600`; global DB MCP не использовался,
+  secret values не выводились.
+
+Production-derived rehearsal and replay:
+
+- verified source dump
+  `/tmp/shidao-learning-activity-m5-production-source-acl.dump` имеет size
+  `1583950`, mode `600`, `1864` restore-list entries и SHA-256
+  `4793d806936639f78d2b550873f9bcb2a7302dc4b24d1396ee08f07600b9379f`;
+  reviewed public/Auth ACL lists применены отдельно, exact production rows
+  buckets `course-assets` и `profile-avatars` восстановлены;
+- disposable PostgreSQL `15.8` clone имел exact database
+  `shidao_learning_activity_test`, owner `supabase_admin`; перед каждым write
+  read-only sanity подтверждал expected identity, current source state и
+  отсутствие чужих fixtures/sessions;
+- один полный replay frozen concurrency harness завершился `PASS`; EXIT cleanup
+  удалил committed fixtures, post-check дал `0` `la_m*` sessions и `0` exact
+  fixture Course/Account rows;
+- final drop/recreate replay из verified source dump применил ту же frozen
+  migration с наблюдаемым `COMMIT`; inventory стал `74` public tables / `275`
+  functions, пять `choice_quiz_*` tables присутствуют;
+- functional learning-activity harness завершился `PASS` и откатил все
+  fixtures; identity functional и true-concurrency harnesses прошли;
+  обновлённый Communication Center harness отдельно прошёл на exact disposable
+  database `shidao_communication_test` и откатил fixtures;
+- clean replay подтвердил five-table RLS/default-deny, exact RPC/helper ACL,
+  triggers/constraints/indexes/FK, session-bound authority, immutable history,
+  exact-set practice/assessment policy, idempotency/correction/evidence/profile,
+  merge/erasure и lifecycle/concurrency contract;
+- normalized public-schema SHA-256 clean replay равен
+  `063ca4be6c0f76f9c2b95133763d39acfe932b5de84e64fd8c37942678333b44` и
+  позднее побайтово совпал с тем же normalized production snapshot body.
+
+Final application gate на exact pre-delivery tree:
+
+- `npm ci`: `PASS`;
+- typecheck, lint без warnings/errors, repository-wide format check и
+  `git diff --check`: `PASS`;
+- full unit/API suite: `991/991` `PASS`;
+- production build: compiled/generated `73/73` pages;
+- strict production-mode Chromium: итоговый repeat `31/31` `PASS`. Первый run
+  обнаружил только отсутствие новых LA-M5 evidence discriminator fields в
+  local browser fixture; fixture был исправлен, после чего exact full suite
+  прошёл;
+- focused contracts покрывают manual/AI preview + explicit Apply, learner-safe
+  issued practice/assessment, stable retry/idempotency/reload/stale refresh,
+  teacher history/correction chain, roleless/passive fallback, accessibility,
+  phone/tablet/desktop, touch/zoom, forced colors и reduced motion;
+- independent final scope/security review не нашёл P0/P1 blocker, secret или
+  high-entropy leak и unintended generated artifact. Known nonblocking legacy
+  residuals не расширяли scope LA-M5.
+
+Production backup and DB-first apply:
+
+- final read-only pre-write sanity подтвердил database `postgres`, owner
+  `supabase_admin`, PostgreSQL `15.8`, exact search path
+  `"$user", public, auth, extensions`, canonical
+  Account/Course/Lesson/Component/LessonRun/
+  LearningRecord/objective/observation tuple `19/6/22/84/2/2/0/0`, publication
+  tuple `1/9056/4235054d4453665bfb804b089173b8b6`, inventory `69/248`,
+  `0` Choice Quiz tables / `0` evidence source column и empty LA/quiz rows;
+  все четыре private Storage buckets остались неизменными;
+- verified recoverable backup
+  `/root/shidao-db-backups/shidao-before-choice-quiz-20260821T153411Z.dump`
+  имеет size `1804381`, mode `600`, `1985` restore-list entries и SHA-256
+  `bb4dcc56b379f5ef2f105478f426a2e05eb5e17100c08c0656967c3acf855211`;
+  backup retained, LA-M4 backup не изменялся;
+- immediately-before-write sanity и frozen migration checksum повторно
+  совпали. Exact tracked SQL применён owner `supabase_admin` через
+  `psql -X -v ON_ERROR_STOP=1`; output завершился наблюдаемым `COMMIT` без
+  unknown transaction state;
+- после отдельного sanity выполнен operational
+  `NOTIFY pgrst, 'reload schema'`; schema cache увидел новые exact signatures.
+
+Production DB postflight:
+
+- canonical tuple и publication tuple остались
+  `19/6/22/84/2/2/0/0` и
+  `1/9056/4235054d4453665bfb804b089173b8b6`; все LA-M3/LA-M4/Choice Quiz
+  relations остались пустыми, production fixtures не создавались;
+- inventory стал `74` public tables / `275` functions; присутствуют ровно пять
+  Choice Quiz tables и exact nullable
+  `learning_evidence.source_choice_quiz_evaluation_id`;
+- все `5` Choice Quiz relations имеют RLS, `0` policies и `0` raw grants для
+  `anon`/`authenticated`/`service_role`; exact trigger set равен `10`;
+- service/teacher RPC, internal helper owner, `SECURITY DEFINER`, empty
+  `search_path`, grants, immutable/supersession constraints, exact-source
+  evidence union, indexes/FK и old-overload fail-closed contracts прошли;
+  unexpected violations и persisted Choice Quiz rows равны `0`;
+- четыре private Storage buckets и их server-only boundary не изменились;
+- safe PostgREST negative probes вернули anon raw `401/42501`, service-role raw
+  `403/42501`; anon history, learner resolver, correction, old/new AI context и
+  erasure RPC получили `401/42501 permission denied`. После исправления exact
+  named argument `p_reason` ни один probe не получил `PGRST202`.
+
+Production-head snapshot:
+
+- `supabase/schema/current-schema.sql` сгенерирован штатным PostgreSQL `15.8`
+  script в `2026-08-21T15:43:37Z`; snapshot имеет `35466` строк, `74` public
+  tables, `275` functions и file SHA-256
+  `acd73762c061de56a4ae39ec81c25c0b2ce243d2000f04f877e952e2df67473e`;
+- normalized public-schema SHA-256 равен
+  `063ca4be6c0f76f9c2b95133763d39acfe932b5de84e64fd8c37942678333b44`;
+  production и clean production-derived replay совпали exact;
+- complete snapshot diff reviewed: он отражает measured LA-M5 production head,
+  сохраняет reviewed cross-schema Auth/Storage section и не заменяет migration
+  history.
+
+#### Remaining delivery and deployed postflight — PENDING
+
+- [ ] Stage только LA-M5 task files, создать один descriptive commit и выполнить
+      normal fast-forward push `main`; записать exact commit/push result и clean
+      worktree. Не force-push/amend/rebase.
+- [ ] Дождаться exact Coolify deployment; записать deployment ID/status/times,
+      container/tag/image ID, matching `SOURCE_COMMIT`, running/restart/health и
+      bounded log evidence.
+- [ ] Выполнить external/in-container host/Origin/CSRF/guest probes, включая
+      unauthenticated learner submit и teacher history/correction denial с
+      private/no-store response headers.
+- [ ] На safe existing authenticated teacher/learner/Run выполнить controlled
+      no-write/read flow и, только при явно разрешённом disposable activity
+      data, submit/history/correction lifecycle с supported cleanup. Не создавать
+      credentials/learners/Runs только ради smoke; при отсутствии safe context
+      записать **NOT RUN**, не заменяя local Chromium evidence.
+- [ ] Проверить deployed learner privacy/UI и teacher history на desktop/mobile,
+      browser console и service logs; записать exact results.
+- [ ] После deployed checks повторить final DB postflight, reverify retained
+      backup, удалить exact disposable/temp artifacts и записать measured zero
+      counts.
+
+Stop-on-failure остаётся в силе: уже применённую migration не переписывать,
+partial/unknown result не считать успехом, dependent web rollout остановить при
+failed delivery gate и выпускать только compatible forward fix. До exact
+commit/push/Coolify/postflight LA-M5 не является current deployed web behavior.
 
 ### LA-M3 profile/evidence/recommendations — production execution record
 
@@ -1642,6 +1844,43 @@ ShiDao V2 application:
 - не создавать production learner/teacher credentials, roster или activity
   records только ради postflight. При отсутствии безопасных existing sessions
   записать authenticated smoke как непройденный, не заменяя его guest smoke.
+
+### LA-M5 `choice_quiz` smoke — выполнять только после rollout
+
+Этот список пока pending и не доказывает deployed behavior:
+
+- guest learner submit, teacher history и correction routes получают `401` с
+  private/no-store headers; wrong Course/Run/issue/evaluation не раскрывает
+  existence;
+- roleless `choice_quiz` и все non-`choice_quiz` activities остаются
+  presentation-only. Persisted execution появляется только для exact issued
+  `practice | assessment` current Component;
+- learner response не содержит correct option markers, evaluator config/
+  fingerprint, Account/profile/Component/objective authority IDs или teacher
+  data; opaque issue ref не используется как единственная authority;
+- strict submit принимает только `idempotencyKey`, current `cursorRevision` и
+  unique issued `selectedOptionIds`. Same-key/same-request возвращает persisted
+  response, changed request конфликтует без новых rows;
+- practice: attempts 1/2 incorrect дают immediate score/correctness и retry без
+  reveal; correct или exhausted attempt 3 раскрывает только разрешённые answer/
+  explanation. Assessment: attempt 1 даёт score/correctness без reveal/retry;
+  hints отсутствуют;
+- disconnect/timeout сохраняет selection и idempotency key; deliberate retry
+  создаёт новый key; stale cursor/component/access `409` refresh-ит live state;
+  reload восстанавливает persisted selection/feedback;
+- concurrent cursor change, revoke/archive, completion/cancel, Component edit/
+  delete и subject lifecycle сериализуются с submit и не создают partial rows;
+- teacher Run panel показывает learner, question, selected response, attempt,
+  support, correctness, score, reveal и complete correction chain/reasons без
+  private evaluator config;
+- eligible online evidence имеет source
+  `choice_quiz_evaluation`, policy v2 и rebuildable profile effect; raw response
+  и score не появляются в compact `LearningRecord`. Один correct result не
+  заявляется mastery;
+- keyboard/focus/screen-reader/touch/zoom/reduced-motion/forced-colors states,
+  browser console и server logs проходят на deployed image;
+- production data не создавать только для smoke. Без безопасного existing
+  context authenticated result записывается **NOT RUN**.
 
 ### Course Builder
 

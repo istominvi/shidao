@@ -1,7 +1,22 @@
 # Правила изменений базы ShiDao
 
 **Статус:** обязательная политика для всех новых DB changes
-**Последний подтверждённый production schema head:**
+**Текущий подтверждённый production schema head:**
+`20260821100000_choice_quiz_activity.sql`, exact SHA-256
+`32e860c8d56e299a19c7a5a4d05103df008935ff9814c6d6c206c39f68242d44`,
+`6372` строки. Owner apply завершился наблюдаемым `COMMIT` после exact
+production-derived replay и verified backup
+`/root/shidao-db-backups/shidao-before-choice-quiz-20260821T153411Z.dump`
+(size `1804381`, mode `600`, `1985` restore-list entries, SHA-256
+`bb4dcc56b379f5ef2f105478f426a2e05eb5e17100c08c0656967c3acf855211`).
+Current PostgreSQL `15.8` snapshot сгенерирован `2026-08-21T15:43:37Z`, имеет
+SHA-256
+`acd73762c061de56a4ae39ec81c25c0b2ce243d2000f04f877e952e2df67473e`,
+`35466` строк, `74` public tables и `275` functions; normalized body SHA-256
+`063ca4be6c0f76f9c2b95133763d39acfe932b5de84e64fd8c37942678333b44`
+побайтово совпал с clean production-derived replay.
+
+**Исторический LA-M3 execution record:**
 `20260820132725_learning_activity_profile_history_skills_recommendations.sql`,
 exact SHA-256
 `a7e7dad7db4632f98cf0857597dae99b58cf653bd39ec57d0eb91f540c9793f8`,
@@ -21,8 +36,8 @@ Production owner apply завершился наблюдаемым `COMMIT`; can
 `4/4`, `4` policies, ACL/RPC/security, `0` identity violations подтверждены.
 PostgREST raw probes вернули anon
 `401/42501` и service role `403/42501`; narrow service RPC достиг ожидаемого
-domain `P0002` (`500`), а не schema-cache `PGRST202`. Current production-head
-PostgreSQL `15.8` snapshot сгенерирован `2026-08-21T00:25:53Z`, имеет SHA-256
+domain `P0002` (`500`), а не schema-cache `PGRST202`. LA-M3 production-head
+PostgreSQL `15.8` snapshot был сгенерирован `2026-08-21T00:25:53Z`, имел SHA-256
 `a1768f22f829d58c01a5846b68cdb7be60a363ebb771869ed90fb83dd316cbc2`,
 `29533` строки, `66` public tables и `235` functions; body побайтово совпадает
 с snapshot, replayed из production-derived clone.
@@ -32,16 +47,17 @@ production; `psql` зафиксировал `COMMIT`, а maximum `updated_at`
 преобразованных строк — `2026-08-13T07:05:50.169297Z`. Она не меняла
 physical schema; последующие E2A, AV1, CC1, A2 и LA-M1–LA-M3 schema rollout
 отражены в production contract и execution record выше.
-**Последний документированный coupled application rollout source:**
+**Текущий deployed coupled application rollout source:**
 deployed functional source
-`6e3f97c230f688663abaa06a126a56d0d0e2c9c6`; normal fast-forward push `main`
-выполнен из `3582dc8`. Coolify deployment `1005`
-(`bgw36mvk1fz6opacg080drx2`) завершён `finished` с exact source/image/
-`SOURCE_COMMIT`; container `g9x4d9zn60jv35r7zf0xl6xj-004505665052`
-running, restart count `0`. Local gates `893/893`, browser `30/30`, build
-`73/73`; production guest HTTP/API/CSRF/host/browser postflight зелёный.
-Authenticated production no-write LA-M3 smoke не заявляется из-за guest-only
-browser session.
+`e09631d2fa00ad1c4b91ad0584392efb748cf235`; Coolify deployment `1007`
+(`flg9786e15llusgj6kgz7pwk`) завершён `finished` с exact source/image/
+`SOURCE_COMMIT`, running container и restart count `0`. Local gates `936/936`,
+browser `31/31`, build `73/73`; production guest HTTP/API/CSRF/host postflight
+зелёный. LA-M5 dependent application commit/push/Coolify rollout остаётся
+NEXT; authenticated production smoke без safe existing session/Run не
+заявляется. Current container source
+`df230d185532429b14080d8859438c197f63e66b` из docs-only deployment `1008` не
+меняет этот functional LA-M4 baseline.
 
 **LA-M3 delivery boundary:** physical production DB, functional source/web и
 release postflight current. Последующий execution-record docs-only commit не

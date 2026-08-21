@@ -52,10 +52,12 @@ const BOB_GROUP_ID = uuid(503);
 
 const alice: CourseBuilderActor = {
   authUserId: ALICE_USER_ID,
+  supabaseSessionId: uuid(11),
   accessToken: "alice-access-token",
 };
 const bob: CourseBuilderActor = {
   authUserId: BOB_USER_ID,
+  supabaseSessionId: uuid(12),
   accessToken: "bob-access-token",
 };
 

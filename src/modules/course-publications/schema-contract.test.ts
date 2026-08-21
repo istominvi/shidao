@@ -519,7 +519,7 @@ test("authoring descendants touch the publication clock and repository docs desc
   assert.match(schemaGuide, /Current production DB\/source\/web — LA-M3/);
   assert.match(
     schemaGuide,
-    /Production schema head:[\s\S]*20260820132725_learning_activity_profile_history_skills_recommendations\.sql/,
+    /Production schema head:[\s\S]*20260821100000_choice_quiz_activity\.sql/,
   );
   assert.match(
     schemaGuide,

@@ -1,4 +1,5 @@
 import { postgresUuidSchema } from "@/lib/postgres-uuid";
+import type { ChoiceQuizApplicationService } from "@/modules/choice-quiz/service";
 import {
   getComponentDefinition,
   parseComponentPlacement,
@@ -35,6 +36,7 @@ import type {
 type LiveDeliveryServiceDependencies = {
   teacherRepository?: TeacherLiveDeliveryRepository;
   learnerRepository?: LearnerLiveDeliveryRepository;
+  choiceQuizService?: Pick<ChoiceQuizApplicationService, "issueLiveDefinition">;
 };
 
 function requireTeacherRepository(
@@ -281,23 +283,82 @@ function projectActiveSource(
   }
 }
 
-function projectLearnerState(
+async function issueActiveChoiceQuizzes(input: {
+  actor: LearnerLiveActor;
+  lessonRunId: string;
+  source: Extract<LearnerLiveSource, { state: "live" }>;
+  components: ReturnType<typeof projectActiveSource>["components"];
+  choiceQuizService:
+    Pick<ChoiceQuizApplicationService, "issueLiveDefinition"> | undefined;
+}) {
+  const components = [];
+  for (const [index, projected] of input.components.entries()) {
+    const sourceComponent = input.source.slide.components[index];
+    if (!sourceComponent || sourceComponent.position !== projected.position) {
+      throw new LiveDeliveryProjectionError();
+    }
+    if (
+      sourceComponent.typeKey !== "choice_quiz" ||
+      sourceComponent.activityRole === null
+    ) {
+      components.push(projected);
+      continue;
+    }
+    if (!input.choiceQuizService) throw new LiveDeliveryProjectionError();
+
+    const issued = await input.choiceQuizService.issueLiveDefinition({
+      actor: input.actor,
+      lessonRunId: input.lessonRunId,
+      cursorRevision: input.source.cursorRevision,
+      component: {
+        id: sourceComponent.id,
+        schemaVersion: sourceComponent.schemaVersion,
+        position: sourceComponent.position,
+        updatedAt: sourceComponent.updatedAt,
+        activityRole: sourceComponent.activityRole,
+        primaryLearningObjectiveId: sourceComponent.primaryLearningObjectiveId,
+        payload: sourceComponent.payload,
+      },
+    });
+    if (!issued) throw new LiveDeliveryProjectionError();
+    components.push({
+      ...projected,
+      // Use the definition returned from the durable issue row, never the
+      // pre-write source projection, as the learner-visible question.
+      payload: issued.learnerDefinition,
+      execution: issued.execution,
+    });
+  }
+  return components;
+}
+
+async function projectLearnerState(
   source: LearnerLiveSource,
   lessonRunId: string,
-): LearnerLiveState {
+  actor: LearnerLiveActor,
+  choiceQuizService:
+    Pick<ChoiceQuizApplicationService, "issueLiveDefinition"> | undefined,
+): Promise<LearnerLiveState> {
   if (source.state === "ended") return { kind: "ended" };
   if (source.state === "waiting") {
     return { kind: "waiting", cursorRevision: source.cursorRevision };
   }
 
   const projected = projectActiveSource(source);
+  const components = await issueActiveChoiceQuizzes({
+    actor,
+    lessonRunId,
+    source,
+    components: projected.components,
+    choiceQuizService,
+  });
   const candidate = {
     kind: "active" as const,
     cursorRevision: source.cursorRevision,
     slide: {
       position: source.slide.position,
-      componentCount: projected.components.length,
-      components: projected.components,
+      componentCount: components.length,
+      components,
     },
     assets: projected.assets.map(({ ref, source: asset }) => ({
       ref,
@@ -363,6 +424,8 @@ export function createLiveDeliveryService(
       return projectLearnerState(
         await repository.resolveSource(actor, lessonRunId),
         lessonRunId,
+        actor,
+        dependencies.choiceQuizService,
       );
     },
 
