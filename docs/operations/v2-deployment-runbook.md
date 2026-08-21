@@ -140,12 +140,12 @@ Worktree должен содержать только изменения тек�
 
 ## 4. Если release содержит DB migration
 
-### LA-M3 profile/evidence/recommendations — production DB execution record / dependent web pending
+### LA-M3 profile/evidence/recommendations — production execution record
 
-**Статус: CURRENT PRODUCTION DB / DEPENDENT WEB ROLLOUT PENDING.** Physical DB
-gate завершён. Dependent application/UI task commit/push, Coolify deployment и
-production HTTP/API/browser smoke не выполнены и ниже не заявляются; deployed
-web/source пока остаётся LA-M2.
+**Статус: CURRENT PRODUCTION DB/SOURCE/WEB.** Physical DB, exact deployed
+functional source и production guest release postflight завершены. Единственное
+явно не заявленное покрытие — authenticated production no-write LA-M3 smoke:
+доступный browser был guest-only, credentials/fixtures не создавались.
 
 Неизменяемые inputs и clone evidence:
 
@@ -160,8 +160,8 @@ web/source пока остаётся LA-M2.
   `COMMIT`, `85` functional assertions, `11/11` LA multi-session races и
   identity functional/concurrency;
 - final application gate до rollout: `893/893` unit/API, `30/30` strict browser
-  scenarios, typecheck, lint и production build зелёные. Это local release
-  evidence, а не production web smoke.
+  scenarios, typecheck, lint и production build `73/73` pages зелёные. Это
+  pre-deployment evidence, а не production authenticated smoke.
 
 Production backup и apply:
 
@@ -194,19 +194,61 @@ Production-head snapshot:
 - body побайтово совпадает с snapshot, clean replayed из production-derived
   clone.
 
-Оставшийся dependent web gate:
+Deployed functional source:
 
-1. Stage только task files, создать task commit и выполнить normal fast-forward
-   push `main`.
-2. Дождаться Coolify exact `SOURCE_COMMIT`/image, running state и проверить
-   restart count.
-3. Выполнить production HTTPS/API/CSRF/browser smoke для manual teacher
-   correction/override, self profile, active observer, revoke и reload без AI.
+- functional task commit
+  `6e3f97c230f688663abaa06a126a56d0d0e2c9c6` доставлен normal fast-forward
+  push `main` из `3582dc851d0877ce3c5a7f45c0ad716a22d60633`;
+- Coolify deployment `1005`, UUID `bgw36mvk1fz6opacg080drx2`, имеет PR `0`,
+  `webhook=true`, `api=false`, exact functional commit, created
+  `2026-08-21 00:45:05`, finished `2026-08-21 00:49:39`, status `finished`;
+- container `g9x4d9zn60jv35r7zf0xl6xj-004505665052` использует image ref/tag exact
+  functional commit, image ID
+  `sha256:1424add945a5554eec751d3bd6f0d2860b61e2293f300b765783fa96b308884f`
+  и exact `SOURCE_COMMIT`; `StartedAt`
+  `2026-08-21T00:49:37.989856149Z`, state `running`, restart count `0`;
+- container healthcheck не настроен. После start прочитаны `12` log lines,
+  error matches — `0`.
 
-До завершения этих трёх шагов не записывать commit, deployment, container/image
-или production browser evidence. Уже применённую migration не переписывать;
-исправление после apply — только новая forward migration или отдельно
-согласованный restore.
+Production HTTP/API/CSRF/host postflight выполнен в окне
+`2026-08-21T00:51:11Z–00:51:28Z`:
+
+- `v2.shidao.ru/login` вернул `200` и `X-Robots-Tag` со значением
+  `noindex, nofollow, noarchive`; `/robots.txt` — `200` с `Disallow: /`;
+- guest `/courses` вернул `307` с `Location: /login`;
+- новые self `/api/v2/me/learning-profile/activity-profile`, teacher
+  `/api/v2/learner-profiles/<learnerProfileId>/activity-profile` и observer
+  `/api/v2/observations/<learnerProfileId>/activity-profile` API вернули `401`
+  без session;
+- correction `POST`
+  `/api/v2/learner-profiles/<learnerProfileId>/activity-profile/corrections`
+  вернул `403` при missing/wrong Origin и `401` без session при exact
+  `Origin: https://v2.shidao.ru`;
+- landing host сохранил boundary: `/` — `200`, `/login` и V2 API — `503`;
+- внешний unknown-host probe был перехвачен fail-closed с `503`. Это не
+  подменяет exact middleware result: in-container probes вернули normal `200`,
+  unknown host `421` и mismatched `X-Forwarded-Host` `421`;
+- доступен был только guest in-app browser: `/profile` перенаправил на
+  `/login`, console errors — `0`. Authenticated production no-write LA-M3 smoke
+  недоступен и не заявляется; credentials и production fixtures не создавались.
+
+Cleanup evidence:
+
+- disposable DB `shidao_learning_activity_test` перед удалением имела size
+  `20755247` bytes и active sessions `0`; exact drop выполнен, post-count `0`;
+- container temp `/tmp/shidao-la-m3-schema-refresh` содержал `4` files /
+  `1180` KiB; directory удалён, post-check подтвердил отсутствие;
+- host source dump `/tmp/shidao-learning-activity-m3-production-source.dump` и
+  helper `/tmp/shidao-la-clone-restore.sh` уже отсутствовали;
+- production backup сохранён и повторно verified: size `1552941`, mode `600`,
+  SHA-256
+  `0d89e0be74aba44f20b0ee82ad5cafb6f887da1f55821350e84959a502f8a88e`.
+
+Последующий execution-record docs-only commit не меняет runtime и не должен
+подменять deployed functional source SHA
+`6e3f97c230f688663abaa06a126a56d0d0e2c9c6`. Уже применённую migration не
+переписывать; исправление после apply — только новая forward migration или
+отдельно согласованный restore.
 
 ### LA-M2 Course objectives / Component alignment — production execution record
 

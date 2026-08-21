@@ -1120,9 +1120,9 @@ Course только открывают этот же центр на нужно�
 
 **Next:** отдельными slices добавить durable action/job и token-usage ledger,
 quota reservation/settlement с distributed enforcement, reliable background
-completion producers, завершить dependent web delivery текущего production DB
-LA-M3 evidence/profile contract, Realtime/presence и push/email delivery.
-Текущий тестовый meter не используется как billing balance.
+completion producers, LA-M4 learner authorization/teacher-controlled live
+delivery, Realtime/presence и push/email delivery. Текущий тестовый meter не
+используется как billing balance.
 
 ## P0.4: reusable Course catalog
 
@@ -1366,14 +1366,13 @@ editor smoke не был выполнен из-за отсутствия authent
 не подменяется guest smoke.
 
 Rebuildable objective state и прозрачные recommendations уже входят в current
-production DB LA-M3 после objective alignment; один score, completion или
-eligible observation не считается mastery. Dependent application/UI source
-реализован в task tree, но deployed web/source остаётся LA-M2 до task
-commit/push, Coolify exact-SHA rollout и production smoke.
+production DB/source/web LA-M3 после objective alignment; один score,
+completion или eligible observation не считается mastery.
 
-## P1.2A: учебный профиль, evidence и рекомендации (**CURRENT PRODUCTION DB / DEPENDENT WEB ROLLOUT PENDING**)
+## P1.2A: учебный профиль, evidence и рекомендации (**CURRENT PRODUCTION**)
 
-Текущий task tree реализует один manual-first vertical slice поверх LA-M1/LA-M2:
+Deployed functional source реализует один manual-first vertical slice поверх
+LA-M1/LA-M2:
 
 - finalized Course → Lesson → LessonRun → observation history остаётся source of
   truth; correction создаёт explicit superseding chain, а не переписывает
@@ -1412,11 +1411,15 @@ ACL/RPC/security, `0` identity violations и PostgREST denial/resolution probes
 `a1768f22f829d58c01a5846b68cdb7be60a363ebb771869ed90fb83dd316cbc2`,
 `29533` строки, `66` public tables и `235` functions.
 
-Dependent source gate прошёл `893/893` unit/API, `30/30` strict browser
-scenarios, typecheck, lint и production build. **Next:** выполнить только
-dependent web gate: task commit/push, Coolify exact SHA/image и production
-HTTP/API/CSRF/browser smoke. Они пока не заявлены. LA-M4–LA-M6 от DB rollout
-LA-M3 не становятся реализованными.
+Functional task commit `6e3f97c230f688663abaa06a126a56d0d0e2c9c6` прошёл
+`893/893` unit/API, `30/30` strict browser, typecheck, lint и build `73/73`,
+затем доставлен normal fast-forward push `main` из `3582dc8`. Coolify deployment
+`1005` (`bgw36mvk1fz6opacg080drx2`) завершился `finished` с exact image/
+`SOURCE_COMMIT`, running container и restart count `0`. Production
+HTTP/API/CSRF/host guest postflight прошёл; authenticated production no-write
+LA-M3 smoke не выполнен из-за guest-only browser session и не заявляется.
+Последующий execution-record docs commit runtime не меняет. LA-M4–LA-M6
+остаются **NEXT**.
 
 ## P1.3: persisted Homework authoring
 

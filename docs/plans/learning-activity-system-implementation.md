@@ -1,8 +1,7 @@
 # План реализации Learning Activity System
 
-**Статус:** LA-M0 — CURRENT architecture; LA-M1–LA-M2 — CURRENT production;
-LA-M3 — CURRENT PRODUCTION DB / DEPENDENT WEB ROLLOUT PENDING; LA-M4–LA-M6 —
-NEXT; LA-M7–LA-M9 — LATER.
+**Статус:** LA-M0 — CURRENT architecture; LA-M1–LA-M3 — CURRENT production;
+LA-M4–LA-M6 — NEXT; LA-M7–LA-M9 — LATER.
 **Актуально на:** 21 августа 2026 года
 **Архитектура:**
 [`learning-activity-system.md`](../architecture/learning-activity-system.md)
@@ -289,10 +288,10 @@ exact local strict production-mode suite прошёл `30/30`, включая ma
 scenario `#29`. Authenticated production no-write editor smoke не выполнен из-за
 отсутствия authenticated browser session и остаётся явно не заявленным.
 
-## LA-M3 — учебный профиль: история, навыки, рекомендации (**CURRENT PRODUCTION DB / DEPENDENT WEB ROLLOUT PENDING**)
+## LA-M3 — учебный профиль: история, навыки, рекомендации (**CURRENT PRODUCTION**)
 
-Application/API/manual UI реализованы в текущем task tree по зафиксированному
-ниже contract. Physical DB gate завершён: frozen migration
+Application/API/manual UI доставлены deployed functional source по
+зафиксированному ниже contract. Physical DB gate завершён: frozen migration
 `20260820132725_learning_activity_profile_history_skills_recommendations.sql`
 имеет `5335` строк и SHA-256
 `a7e7dad7db4632f98cf0857597dae99b58cf653bd39ec57d0eb91f540c9793f8`.
@@ -318,9 +317,14 @@ Final production-head PostgreSQL `15.8` snapshot сгенерирован
 `2026-08-21T00:25:53Z`: SHA-256
 `a1768f22f829d58c01a5846b68cdb7be60a363ebb771869ed90fb83dd316cbc2`,
 `29533` строки, `66` public tables и `235` functions; body побайтово совпадает
-с snapshot, replayed из production-derived clone. Task commit/push, Coolify
-exact-SHA deploy и production HTTP/API/browser smoke ещё не зафиксированы; до
-них deployed application/source остаётся LA-M2.
+с snapshot, replayed из production-derived clone. Functional task commit
+`6e3f97c230f688663abaa06a126a56d0d0e2c9c6` прошёл `893/893` unit/API,
+`30/30` strict browser и build `73/73`, затем доставлен normal fast-forward
+push `main` из `3582dc8` и Coolify deployment `1005`
+(`bgw36mvk1fz6opacg080drx2`). Exact image/`SOURCE_COMMIT`, running container,
+restart count `0` и production guest HTTP/API/CSRF/host postflight подтверждены.
+Authenticated production no-write LA-M3 smoke недоступен и не заявляется;
+последующий execution-record docs-only commit runtime не меняет.
 
 ### Цель
 
@@ -482,9 +486,10 @@ workflow полностью работает без AI.
 - verified backup, exact owner migration и
   RLS/ACL/PostgREST/data-preservation postflight записаны в execution record;
   production fixtures не создаются;
-- fast-forward `main`, exact Coolify SHA/image и production
-  HTTP/API/CSRF/browser smoke должны быть записаны до перевода dependent web
-  rollout в **CURRENT**; сейчас этот web gate **PENDING**.
+- fast-forward `main`, exact Coolify SHA/image и production guest
+  HTTP/API/CSRF/host/browser postflight записаны в execution record;
+  authenticated production no-write LA-M3 smoke отдельно не заявляется из-за
+  отсутствия authenticated browser session и не требует credentials/fixtures.
 
 ## Execution contexts
 

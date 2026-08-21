@@ -4,7 +4,9 @@
 **Актуально на:** 21 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
-**Initial Communication Center functional application source:**
+**Current deployed functional source:**
+`6e3f97c230f688663abaa06a126a56d0d0e2c9c6`
+**Initial Communication Center functional application source (historical):**
 `2efaa86851fffc7e444af904fb900d9984caa6a8`
 (`704/704` unit/API, `27/27` strict production-mode browser scenarios,
 typecheck, lint, repository-wide format check и production build)
@@ -20,8 +22,8 @@ source `014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0`. Coolify deployment `1003`
 завершён с matching image/`SOURCE_COMMIT`, running container и restart
 count `0`; HTTP/API/CSRF/browser guest postflight прошёл без mutation.
 
-**Current production DB / dependent web rollout pending — LA-M3 учебный
-профиль:** production physical schema теперь содержит append-only correction
+**Current production DB/source/web — LA-M3 учебный профиль:** production
+physical schema и deployed functional source содержат append-only correction
 finalized observations, durable typed evidence, deterministic
 `objective-state-v1`, transparent `recommendation-rules-v1`, explicit teacher
 override, teacher/self/active-observer profile projections и bounded AI
@@ -60,15 +62,34 @@ Final production-head snapshot сгенерирован `2026-08-21T00:25:53Z` �
 PostgreSQL `15.8`: SHA-256
 `a1768f22f829d58c01a5846b68cdb7be60a363ebb771869ed90fb83dd316cbc2`,
 `29533` строки, `66` public tables и `235` functions; его body побайтово
-совпадает с snapshot, replayed из production-derived clone. Dependent
-application/UI source
-реализован в task tree; local gate прошёл `893/893` unit/API, `30/30` strict
-browser scenarios, typecheck, lint и production build. Task commit/push,
-Coolify exact-SHA deploy и production HTTP/API/browser smoke ещё **PENDING**.
-Поэтому production DB уже LA-M3, а deployed web/source остаётся LA-M2 до
-отдельного rollout evidence.
+совпадает с snapshot, replayed из production-derived clone. Functional task
+commit `6e3f97c230f688663abaa06a126a56d0d0e2c9c6` доставлен normal fast-forward
+push `main` из `3582dc851d0877ce3c5a7f45c0ad716a22d60633`; local gate прошёл `893/893`
+unit/API, `30/30` strict browser scenarios, typecheck, lint и production build
+`73/73` pages.
 
-Local source locations: domain/Zod/policies/repository/service находятся в
+Coolify deployment `1005` (`bgw36mvk1fz6opacg080drx2`, PR `0`,
+`webhook=true`, `api=false`) создался `2026-08-21 00:45:05`, завершился
+`2026-08-21 00:49:39` со status `finished` и exact functional commit. Container
+`g9x4d9zn60jv35r7zf0xl6xj-004505665052` использует exact commit image tag,
+image ID
+`sha256:1424add945a5554eec751d3bd6f0d2860b61e2293f300b765783fa96b308884f`
+и matching `SOURCE_COMMIT`; он running с `StartedAt`
+`2026-08-21T00:49:37.989856149Z`, restart count `0`, без healthcheck. В `12`
+log lines после старта error matches `0`.
+
+Production HTTP postflight `2026-08-21T00:51:11Z–00:51:28Z` подтвердил V2
+login/robots/guest redirect, `401` новых self/teacher/observer activity API,
+CSRF `403` для missing/wrong Origin и `401` без session при exact Origin, а
+также landing-only boundary. External unknown-host probe был перехвачен с
+fail-closed `503`; exact in-container middleware probes вернули normal `200`,
+unknown `421` и mismatched `X-Forwarded-Host` `421`. Доступный in-app browser
+был guest-only: `/profile` redirect-нулся на `/login`, console errors `0`.
+Authenticated production no-write LA-M3 smoke недоступен и не заявляется;
+credentials/fixtures не создавались.
+
+Current deployed source locations: domain/Zod/policies/repository/service
+находятся в
 `src/modules/learning-activities/`; teacher/self/observer API — в
 `src/app/api/v2/learner-profiles/[learnerProfileId]/activity-profile/`,
 `src/app/api/v2/me/learning-profile/activity-profile/` и
@@ -77,7 +98,9 @@ Local source locations: domain/Zod/policies/repository/service находятс�
 projection — `src/modules/ai/learning-activity-context.ts`. Current production
 DB migration —
 `supabase/migrations/20260820132725_learning_activity_profile_history_skills_recommendations.sql`.
-Наличие application-файлов не подменяет dependent web deploy evidence.
+Эти application-файлы доставлены exact deployed functional source
+`6e3f97c230f688663abaa06a126a56d0d0e2c9c6`. Последующий docs-only
+execution-record commit runtime не меняет и не должен подменять этот SHA.
 
 **Current source / next production — единый Auth и registration entry UI:**
 `/login`, `/join`, `/join/check-email`, `/forgot-password` и
@@ -1478,8 +1501,8 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 Полные Lesson/Run invariants зафиксированы в
 [`docs/architecture/lesson-workflow-model.md`](./architecture/lesson-workflow-model.md),
-канонический contract учебных активностей, current production LA-M1/LA-M2 web
-и current production DB LA-M3 — в
+канонический contract учебных активностей и current production LA-M1–LA-M3
+DB/source/web — в
 [`docs/architecture/learning-activity-system.md`](./architecture/learning-activity-system.md),
 а identity/access boundary — в
 [`docs/architecture/learner-identity-access-model.md`](./architecture/learner-identity-access-model.md).
@@ -2485,10 +2508,6 @@ History-aware context развёрнут в release `9393080`; production provid
   educator Course описан отдельно и не является LessonRun/live flow;
 - live Student Screen sync, realtime presence и teacher-controlled runtime
   cursor поверх открытого LessonRun;
-- dependent web rollout LA-M3 typed evidence, rebuildable learner-objective
-  state, correction/recommendation profile workflow и bounded AI projection;
-  production DB и DB postflight current, но task commit/push, Coolify deploy и
-  production HTTP/API/browser smoke ещё не заявлены;
 - versioned learner activity attempts и server-side evaluation; они остаются
   последующими LA-M5/LA-M6 slices и не подменяются LA-M3 teacher observations;
   `LearningRecord` остаётся compact LessonRun outcome, а не metrics/event
@@ -2632,13 +2651,14 @@ recorder с record; cancel cascade удаляет drafts, а nullable live Compo
 запрещены; recorder читает свои rows, а mutation выполняет narrow
 `save_lesson_component_observations`.
 
-Current production LA-M2 schema и matching verified-clone snapshot
-дополнительно содержат
+Current production LA-M2 schema дополнительно ввела
 `learning_objective`, Component `primary_learning_objective_id`/
 `activity_role`, observation objective-at-time columns и publication snapshot
-V2 function definitions. Verified-clone reference остаётся независимым
-rehearsal artifact; production physical head теперь LA-M2B, а dependent web
-работает на exact source `014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0`.
+V2 function definitions. Current production physical head LA-M3 добавляет
+correction/evidence/objective-state/recommendation contract; matching
+production-derived clone и final snapshot остаются независимыми verified
+artifacts. Deployed functional web работает на exact source
+`6e3f97c230f688663abaa06a126a56d0d0e2c9c6`.
 
 Current Communication Center читает bounded finalized history и сохраняет
 несколько AI conversations/turns/read cursors; human threads/messages и system
@@ -2813,7 +2833,9 @@ payloads, отдельный quota/billing ledger и durable action/job ledger �
   tuple `19/6/22/84/2/2/0/0`, publication
   `1/9056/2832fcf2ee1a4c3ccdf01501fc4f60f3`, четыре LA-M3 relation `0/0/0/0`, а
   обе source LearningRecord сохранили empty correction/supersession metadata.
-  Dependent web rollout ещё pending.
+  Dependent functional source
+  `6e3f97c230f688663abaa06a126a56d0d0e2c9c6` доставлен Coolify deployment
+  `1005`; production guest boundary postflight завершён.
 
 Источники истины для текущего состояния:
 

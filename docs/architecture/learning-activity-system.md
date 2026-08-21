@@ -94,7 +94,7 @@ structured observation учитель сначала подтверждает к
 
 ## CURRENT: что уже существует
 
-В подтверждённом deployed production application baseline LA-M1/LA-M2:
+В подтверждённом deployed production application baseline LA-M1–LA-M3:
 
 - Course напрямую владеет Lessons, а Lesson — одним ordered списком Components;
 - Student Screen Slides являются только learner-facing presentation projection;
@@ -103,9 +103,9 @@ structured observation учитель сначала подтверждает к
 - payload, placement, defaults и capabilities валидируются общими Zod
   contracts;
 - ответы интерактивных renderer сейчас живут только в локальном preview state;
-- learner attempts и evaluations ещё не сохраняются; deployed web пока не
-  создаёт durable typed evidence или skill state, хотя их LA-M3 physical DB
-  contract уже current;
+- learner attempts и online evaluations ещё не сохраняются; deployed LA-M3
+  создаёт durable typed evidence/state только из eligible finalized teacher
+  observations;
 - LessonRun и compact LearningRecord уже сохраняют факт занятия, посещаемость,
   teacher comment и рекомендацию повторения;
 - learner-safe history/progress уже отделены от teacher-private raw history;
@@ -160,11 +160,10 @@ LA-M1 доставлен DB-first 20 августа 2026 года: exact migrati
 развёрнут Coolify deployment `1001`, а DB/HTTP/API/CSRF/browser postflight
 завершён. Полный execution record находится в deployment runbook.
 
-## CURRENT PRODUCTION DB / DEPENDENT WEB ROLLOUT PENDING: LA-M3
+## CURRENT: LA-M3
 
-Production physical schema и текущий task tree реализуют учебный профиль поверх
-LA-M1/LA-M2. DB delivery доказана, а dependent application/UI rollout ещё
-pending. Границы LA-M3:
+Production physical schema и deployed functional source реализуют учебный
+профиль поверх LA-M1/LA-M2. Границы LA-M3:
 
 - finalized LearningRecord/observation history остаётся append-only source of
   truth; correction создаёт reciprocal superseding chain и клонирует at-time
@@ -209,9 +208,14 @@ production-head PostgreSQL `15.8` snapshot сгенерирован
 `29533` строки, `66` public tables и `235` functions; body побайтово совпадает
 с snapshot, replayed из production-derived clone.
 
-Task commit/push, Coolify exact-SHA deploy и production HTTP/API/browser smoke
-ещё **PENDING**. Поэтому текущий deployed web/source остаётся LA-M2 и пока не
-создаёт LA-M3 profile rows через application workflow.
+Functional task commit `6e3f97c230f688663abaa06a126a56d0d0e2c9c6` прошёл
+`893/893` unit/API, `30/30` strict browser и build `73/73`, доставлен normal
+fast-forward push `main` и Coolify deployment `1005`
+(`bgw36mvk1fz6opacg080drx2`). Running container имеет exact image/
+`SOURCE_COMMIT`, restart count `0`; production HTTP/API/CSRF/host guest
+postflight прошёл. Authenticated production no-write LA-M3 smoke недоступен в
+guest-only browser session и не заявляется. Последующий execution-record
+docs-only commit runtime не меняет.
 
 Ни локально правильный ответ в preview, ни просмотр видео в deployed web сейчас
 не изменяют учебный профиль. Нельзя показывать выдуманный mastery на основании
@@ -353,9 +357,9 @@ provenance:
   пока Run фактически started и открыт, finalized history read-only;
 - LA-M2 pure projection может назвать observation eligible/ineligible и вернуть
   reason codes, support/direction, но не создаёт durable evidence, objective
-  state, recommendation или mastery через deployed LA-M2 web. Current
-  production DB LA-M3 уже содержит durable evidence/state/recommendation
-  contract; его dependent web rollout остаётся отдельным pending gate.
+  state, recommendation или mastery сам по себе. Current deployed LA-M3
+  materialization/profile workflow использует эту eligibility projection как
+  часть отдельного versioned contract.
 
 Retention contract: archive objective сохраняет существующие alignment и
 history, но запрещает новое назначение archived objective. При физическом
@@ -768,9 +772,8 @@ contract tests, а не финальной косметической прове
 2. **CURRENT:** Course objectives, одна optional primary objective на Component,
    activity role и optional registry `activityFacet` с learner-safe/evaluator
    projections;
-3. **CURRENT PRODUCTION DB / DEPENDENT WEB ROLLOUT PENDING:**
-   history/evidence/objective-state projection и transparent recommendations
-   для objective-aligned observations;
+3. **CURRENT:** history/evidence/objective-state projection и transparent
+   recommendations для objective-aligned observations;
 4. **NEXT:** learner authorization и teacher-controlled live delivery;
 5. **NEXT:** один полный `choice_quiz` через learner-safe delivery и server
    evaluation;

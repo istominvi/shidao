@@ -8,10 +8,10 @@ content-guard correction + U1 unified Text authored data + AV1 Account avatars
 guard + LA-M1 learning activity foundation + LA-M2 Course objectives,
 Component alignment/publication snapshot V2 + LA-M3 correction/evidence/
 objective-state/recommendation contract. CC1, A2 и LA-M1–LA-M3 DB-first
-contracts применены. Последний deployed functional application source
-`014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0` остаётся LA-M2: Coolify deployment
-`1003` прошёл deployed-SHA HTTP/API/CSRF/browser guest postflight; dependent
-LA-M3 web rollout ещё pending.
+contracts применены. Current deployed functional application source
+`6e3f97c230f688663abaa06a126a56d0d0e2c9c6` включает LA-M3; Coolify deployment
+`1005` (`bgw36mvk1fz6opacg080drx2`) прошёл exact-source/image и production guest
+HTTP/API/CSRF/host postflight.
 
 **Production schema head:**
 `20260820132725_learning_activity_profile_history_skills_recommendations.sql`,
@@ -24,8 +24,9 @@ sanity, production-derived clone rehearsal и verified backup. LA-M2 migrations
 `20260820090529_course_publication_snapshot_v2.sql` остаются предыдущим
 production head.
 
-**Current production DB / dependent web rollout pending — LA-M3:** physical
-schema содержит additive correction/evidence/objective-state/override contract.
+**Current production DB/source/web — LA-M3:** physical schema и deployed
+functional source содержат additive correction/evidence/objective-state/
+override contract.
 Production-derived PostgreSQL `15.8` clone из source dump SHA-256
 `6db636b32c1256efaf7b70321a031e3e93196788d265368561d4dbe239b456c1`
 (`1801` restore-list entries) прошёл exact apply с наблюдаемым `COMMIT`, `85`
@@ -34,8 +35,8 @@ Verified production backup
 `/root/shidao-db-backups/shidao-before-learning-activity-profile-20260821T002135Z.dump`
 имеет size `1552941`, mode `600`, `1801` restore-list entries и SHA-256
 `0d89e0be74aba44f20b0ee82ad5cafb6f887da1f55821350e84959a502f8a88e`.
-Production owner apply завершился наблюдаемым `COMMIT`; dependent application/UI
-task commit/push, Coolify deploy и production browser smoke ещё pending.
+Production owner apply завершился наблюдаемым `COMMIT`; dependent functional
+source доставлен normal fast-forward push `main` и Coolify deployment `1005`.
 
 **LA-M2 production migration set:**
 
@@ -302,7 +303,7 @@ Production execution evidence, 20 августа 2026 года:
   final host/container post-check подтвердил отсутствие обоих paths. Verified
   production backup выше сохранён и не удалялся.
 
-### Current production DB LA-M3 — dependent web rollout pending
+### Current production DB/source/web LA-M3
 
 Forward migration расширяет compact `learning_record` stable Course/Lesson/Run
 identity и explicit correction metadata, добавляет reciprocal correction links
@@ -335,8 +336,24 @@ correction/supersession metadata.
 Postflight подтвердил RLS `4/4`, `4` policies, ACL/RPC/security contract и `0`
 identity violations. PostgREST raw access возвращает anon `401/42501` и
 service role `403/42501`; service RPC разрешается до ожидаемого domain `P0002`
-(`500`), а не schema-cache `PGRST202`. Dependent web commit/push, Coolify
-deploy и production browser smoke остаются **PENDING**.
+(`500`), а не schema-cache `PGRST202`.
+
+Functional task commit `6e3f97c230f688663abaa06a126a56d0d0e2c9c6` доставлен
+normal fast-forward push `main` из `3582dc8`. Coolify deployment `1005`
+(`bgw36mvk1fz6opacg080drx2`) завершился `finished` с exact commit image/
+`SOURCE_COMMIT`; container `g9x4d9zn60jv35r7zf0xl6xj-004505665052`
+running, restart count `0`. Production guest HTTP/API/CSRF/host postflight
+прошёл; authenticated production no-write LA-M3 smoke недоступен и не
+заявляется.
+
+Перед cleanup disposable DB `shidao_learning_activity_test` имела size
+`20755247` bytes и active sessions `0`; exact drop выполнен, post-count `0`.
+Container temp `/tmp/shidao-la-m3-schema-refresh` содержал `4` files /
+`1180` KiB, удалён, post-check absent. Host source dump
+`/tmp/shidao-learning-activity-m3-production-source.dump` и helper
+`/tmp/shidao-la-clone-restore.sh` уже отсутствовали. Production backup сохранён
+и повторно verified: size `1552941`, mode `600`, SHA-256
+`0d89e0be74aba44f20b0ee82ad5cafb6f887da1f55821350e84959a502f8a88e`.
 
 ### Production CC1 Communication Center
 
@@ -1314,8 +1331,8 @@ status, Homework persistence, parsing/RAG, learner enrollment/consumption
 детского Course, live Student Screen, learner attempts или mastery percentage.
 LA-M2 Course objectives/alignment существуют в current production DB/source/web.
 LA-M3 typed evidence/objective state/recommendation contract существует в
-current production DB, но четыре новые relation пока пусты, а deployed LA-M2
-web ещё не создаёт и не показывает эти projections до dependent rollout.
+current production DB/source/web. Четыре новые relation были пусты на DB
+postflight; production authenticated no-write smoke не создавал fixtures.
 E2 educator self-learning progress —
 отдельный Account-scoped contract без roster/Run. Observer capability не
 является Parent/Guardian role, а
@@ -1402,5 +1419,7 @@ LA-M2 production apply/postflight и dependent web execution record заверш
 После LA-M3 production-derived PostgreSQL `15.8` clone rehearsal и production
 owner apply final current snapshot снят `2026-08-21T00:25:53Z`; SHA-256
 `a1768f22f829d58c01a5846b68cdb7be60a363ebb771869ed90fb83dd316cbc2`,
-`29533` строки. DB execution record current; dependent LA-M3 web execution
-record остаётся pending.
+`29533` строки. DB и deployed functional source execution records current;
+последующий docs-only execution-record commit runtime не меняет и не заменяет
+functional source SHA
+`6e3f97c230f688663abaa06a126a56d0d0e2c9c6`.

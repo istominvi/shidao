@@ -37,7 +37,7 @@ V2. DB-first apply/postflight и dependent source
 production-mode browser suite `30/30` прошли. Authenticated production no-write
 editor smoke не заявляется из-за отсутствия authenticated browser session.
 
-Current production DB LA-M3 добавляет correction chain, typed evidence,
+Current production DB/source/web LA-M3 добавляет correction chain, typed evidence,
 rebuildable objective state, transparent recommendations и
 teacher/self/observer profile projections рядом с этим workflow. Он не меняет
 authored hierarchy: evidence ссылается на stable Course/Lesson/Run/Component/
@@ -51,8 +51,12 @@ production-derived PostgreSQL `15.8` clone gate (`85` functional, `11/11` LA
 races и identity functional/concurrency) и verified backup. DB postflight
 сохранил canonical tuple `19/6/22/84/2/2/0/0`, publication
 `1/9056/2832fcf2ee1a4c3ccdf01501fc4f60f3` и подтвердил RLS/ACL/RPC/security.
-Dependent web task commit/push, Coolify deploy и production browser smoke ещё
-**PENDING**, поэтому deployed application/source остаётся LA-M2.
+Functional task commit `6e3f97c230f688663abaa06a126a56d0d0e2c9c6` доставлен
+normal fast-forward push `main` и Coolify deployment `1005`
+(`bgw36mvk1fz6opacg080drx2`). Container имеет exact image/`SOURCE_COMMIT`,
+running state и restart count `0`; production guest HTTP/API/CSRF/host
+postflight прошёл. Authenticated production no-write LA-M3 smoke недоступен и
+не заявляется; последующий execution-record docs commit runtime не меняет.
 
 Этот документ владеет authored hierarchy, Slides projection, Homework
 separation и compact LessonRun/LearningRecord boundary. Учебные цели, ответы,
@@ -1671,10 +1675,9 @@ Learner-identity consent/audit schema входит в отдельные M2–M3
 ## Runtime and future live mode
 
 Current production application реализует appointment/completion history, LA-M1
-teacher observation workspace и LA-M2 objective provenance/eligibility.
-Current production DB дополнительно содержит LA-M3 objective-state/profile
-contract; dependent web rollout ещё не заявлен. Система по-прежнему не
-реализует learner live sync или attempts.
+teacher observation workspace, LA-M2 objective provenance/eligibility и LA-M3
+objective-state/profile workflow. Система по-прежнему не реализует learner live
+sync или attempts.
 Открытый LessonRun уже является конкретным проведением; второй content-bearing
 `LessonSession` не нужен. Будущий operational presentation cursor может быть
 связан с открытым Run и текущим Student Screen Slide, не меняя authored
@@ -1732,9 +1735,9 @@ application services и MCP не импортируют demo fixtures; все н
 - persisted homework editor;
 - live Student Screen sync, realtime presence и runtime cursor;
 - versioned learner activity attempts и server-side evaluation; current
-  production DB LA-M3 уже отделяет durable typed evidence, rebuildable
+  production DB/source/web LA-M3 уже отделяет durable typed evidence, rebuildable
   objective state и transparent recommendations от compact `LearningRecord`,
-  но dependent application/UI rollout ещё pending;
+  а attempts/evaluation остаются LA-M4–LA-M6;
 - enrollment/consumption детских Course через LearnerProfile и live Student
   Screen access; Account-scoped self-learning educator publications уже
   реализован;

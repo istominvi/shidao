@@ -33,17 +33,20 @@ production; `psql` зафиксировал `COMMIT`, а maximum `updated_at`
 physical schema; последующие E2A, AV1, CC1, A2 и LA-M1–LA-M3 schema rollout
 отражены в production contract и execution record выше.
 **Последний документированный coupled application rollout source:**
-`014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0`; Coolify deployment `1003`
-(`f93pn3ifoq4cehouec41793m`) завершён с exact source/image, restart count `0` и
-зелёным HTTPS/API/CSRF/browser guest postflight. Exact local strict
-production-mode browser suite прошёл `30/30`; authenticated production no-write
-editor smoke не заявляется из-за отсутствия authenticated browser session.
+deployed functional source
+`6e3f97c230f688663abaa06a126a56d0d0e2c9c6`; normal fast-forward push `main`
+выполнен из `3582dc8`. Coolify deployment `1005`
+(`bgw36mvk1fz6opacg080drx2`) завершён `finished` с exact source/image/
+`SOURCE_COMMIT`; container `g9x4d9zn60jv35r7zf0xl6xj-004505665052`
+running, restart count `0`. Local gates `893/893`, browser `30/30`, build
+`73/73`; production guest HTTP/API/CSRF/host/browser postflight зелёный.
+Authenticated production no-write LA-M3 smoke не заявляется из-за guest-only
+browser session.
 
-**LA-M3 delivery boundary:** physical production DB и DB postflight current.
-Dependent application/UI task commit/push, Coolify exact-SHA deploy и
-production HTTP/API/browser smoke ещё **PENDING**; последний documented coupled
-application rollout поэтому остаётся LA-M2 source выше. Не добавлять deployment
-ID, container/image или smoke timestamp до их фактического измерения.
+**LA-M3 delivery boundary:** physical production DB, functional source/web и
+release postflight current. Последующий execution-record docs-only commit не
+меняет runtime; его SHA нельзя подставлять вместо exact deployed functional
+source `6e3f97c230f688663abaa06a126a56d0d0e2c9c6`.
 
 Исторический U1-compatible source
 `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da` был развёрнут и проверен до U1
@@ -317,8 +320,8 @@ generated SQL snapshot не переписывается только ради �
   Run hydration, а rebuild читает полный authoritative evidence set, не
   ограниченный UI history window;
 - production apply принял exact tracked checksum и завершился наблюдаемым
-  `COMMIT`; snapshot/checksum/counts/backup evidence записаны только после
-  фактической проверки, а deployment evidence остаётся pending.
+  `COMMIT`; snapshot/checksum/counts/backup и deployed functional source
+  evidence записаны только после фактической проверки.
 
 Записать измеримые результаты в commit/hand-off, а не только «migration
 успешна».

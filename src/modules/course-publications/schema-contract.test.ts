@@ -516,10 +516,7 @@ test("authoring descendants touch the publication clock and repository docs desc
     schemaGuide,
     /Обе migrations[\s\S]*production apply\/postflight и dependent web rollout выполнены/,
   );
-  assert.match(
-    schemaGuide,
-    /Current production DB \/ dependent web rollout pending — LA-M3/,
-  );
+  assert.match(schemaGuide, /Current production DB\/source\/web — LA-M3/);
   assert.match(
     schemaGuide,
     /Production schema head:[\s\S]*20260820132725_learning_activity_profile_history_skills_recommendations\.sql/,
