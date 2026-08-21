@@ -8,16 +8,10 @@ content-guard correction + U1 unified Text authored data + AV1 Account avatars
 guard + LA-M1 learning activity foundation + LA-M2 Course objectives,
 Component alignment/publication snapshot V2 + LA-M3 correction/evidence/
 objective-state/recommendation contract + LA-M4 explicit Course/Run live
-authority и presentation cursor + LA-M5 durable `choice_quiz`. CC1, A2 и
-LA-M1–LA-M5 contracts применены. Current deployed functional application source
-`b8f62a635ad3bd77933e71decffe2a5616de26d5` включает LA-M4 authority/live
-delivery и LA-M5 `choice_quiz`; commit уже pushed в `origin/main`. Coolify
-deployment `1009` (`cpeh1gokla9hpng8z57woj96`) и config redeploy `1010`
-(`m7depyulpqt0ka943ewajt10`) после исправления отсутствующего `www.shidao.ru`
-Domain доставили exact source/image и production guest host/API/CSRF boundary.
-Final container `g9x4d9zn60jv35r7zf0xl6xj-162236082905` running с restart
-count `0`, matching `SOURCE_COMMIT` и image ID
-`sha256:1458de67a667584f4863ad712ed25d64bb59ede12faba9f52959fe4424ce9045`.
+authority и presentation cursor + LA-M5 durable `choice_quiz` + P1.3 persisted
+Homework authoring contract. CC1, A2, LA-M1–LA-M5 и обе P1.3 forward
+migrations применены; dependent P1.3 application/API/UI также являются
+**CURRENT production DB/source/web**.
 
 **CURRENT deployed source/web authority layer — LA-M4:** forward migration
 `20260821093000_lesson_run_live_delivery.sql` реализует explicit Course
@@ -32,26 +26,42 @@ application/API/UI current в release commit
 teacher/learner lifecycle **NOT RUN** без safe existing session/Run; production
 credentials/fixtures ради smoke не создавались.
 
+**CURRENT production DB/source/web — P1.3 Homework authoring:** base
+forward migration `20260821181832_lesson_homework_authoring.sql` и обязательная
+forward-only repair
+`20260821193000_harden_lesson_homework_rpc_validation.sql` применены production
+owner с наблюдаемыми `COMMIT`. Финальный audit после первого apply выявил, что
+authenticated direct RPC мог обойти часть application validation. Уже
+применённый файл не переписывался: второй additive repair повторно валидирует
+payload/placement через canonical component schemas внутри DB boundary.
+Dependent application rollout и guest web postflight завершены; authenticated
+production Homework smoke **NOT RUN**.
+
 **Production schema head:**
-`20260821100000_choice_quiz_activity.sql`, exact SHA-256
-`32e860c8d56e299a19c7a5a4d05103df008935ff9814c6d6c206c39f68242d44`,
-`6372` строки. Migration применена к production PostgreSQL `15.8` с наблюдаемым
-`COMMIT` после production-derived rehearsal и read-only identity/schema sanity.
+`20260821193000_harden_lesson_homework_rpc_validation.sql`, exact SHA-256
+`423fec96d0623684ca61d8fa3b40cfbe96322b848ca11e7130fbe725092983a2`,
+`607` строк. Предшествующая base migration
+`20260821181832_lesson_homework_authoring.sql` имеет `806` строк и SHA-256
+`c5fe2d972ef69679f54a2d2a7409e82f75c3bbaa8b7030a632d6d2c4b7b03567`.
+Обе migrations применены к production PostgreSQL `15.8` с отдельными
+наблюдаемыми `COMMIT` после production-derived rehearsal и read-only
+identity/schema sanity.
 Verified pre-mutation backup
-`/root/shidao-db-backups/shidao-before-choice-quiz-20260821T153411Z.dump` имеет
-mode `600`, size `1804381`, `1985` restore-list entries и SHA-256
-`bb4dcc56b379f5ef2f105478f426a2e05eb5e17100c08c0656967c3acf855211`;
+`/root/shidao-db-backups/shidao-before-homework-authoring-20260821T190751Z.dump`
+имеет mode `600`, size `1972249`, `2104` restore-list entries и SHA-256
+`d82c8fdd7d435dd6b04310c1d75f88e72556dc916574a0570934a18928cffdde`;
 он сохранён.
 
 Production apply сохранил canonical tuple `19/6/22/84/2/2/0/0` и publication
 tuple `1/9056` с MD5 `4235054d4453665bfb804b089173b8b6`, увеличив inventory
-`69/248 → 74/275`. Все пять `choice_quiz_*` tables присутствуют, колонка
-`learning_evidence.source_choice_quiz_evaluation_id` присутствует ровно один
-раз, а все проверенные LA/quiz relation counts остались `0`. Пять quiz tables
-имеют RLS, `0` policies, `0` raw grants и exact `10` triggers. PostgREST probes
-вернули anon raw/RPC `401/42501` и service raw `403/42501`; `PGRST202` не
-возникал. Source/web rollout current; authenticated production teacher/learner
-lifecycle остаётся **NOT RUN** и не заявляется как пройденный.
+`74/275 → 76/278`. `lesson_homework` и `lesson_homework_item` присутствуют и
+пусты `0/0`; обе tables имеют RLS, policies `0`, user triggers `0`, а raw ACL
+разрешён только `postgres`/`supabase_admin`. Три exact functions имеют owner
+`supabase_admin`, expected invoker/definer flags, empty `search_path` и узкие
+grants: owner `get`/`replace` доступны `authenticated`, projection helper —
+только DB principals. PostgREST вернул anon raw/RPC `401/42501`, service raw и
+`replace` `403/42501`; `PGRST202` не возникал. Production DB/source/web current;
+authenticated Homework smoke остаётся **NOT RUN**.
 
 **Previous LA-M4 production execution record:**
 
@@ -129,16 +139,15 @@ Admin create/delete probe
 
 **SQL snapshot:**
 [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
-содержит current production-head LA-M5 public contract со strict signature
-`shidao-v2-contract`. Он снят штатным script `2026-08-21T15:43:37Z` из
+содержит current production-head P1.3 DB contract со strict signature
+`shidao-v2-contract`. Он снят штатным script `2026-08-21T19:38:04Z` из
 production-head PostgreSQL `15.8`; SHA-256 snapshot —
-`acd73762c061de56a4ae39ec81c25c0b2ce243d2000f04f877e952e2df67473e`,
-длина — `35466` строк. Inventory содержит `74` public tables и `275` functions;
-normalized public body SHA-256
-`063ca4be6c0f76f9c2b95133763d39acfe932b5de84e64fd8c37942678333b44`
-побайтово совпадает с clean replayed production-derived clone snapshot
-(`PASS`). Reviewed cross-schema Auth/Storage section сохранён script без
-изменения.
+`7f7741ca126e90bdadfbc151de4fbd2e57bf4a0c808c5f52f1fbf2ebe18d42c0`,
+длина — `36204` строки. Inventory содержит `76` public tables и `278` functions;
+normalized public body имеет `36080` строк и SHA-256
+`c922ccbb52093a286f8cb967acd8258f6ba276eaf68a8fb86591444f69dbcdec`;
+production body exact совпадает с clean replay обеих P1.3 migrations (`PASS`).
+Reviewed cross-schema Auth/Storage section сохранён script без изменения.
 
 ## Read order для DB-задач
 
@@ -151,7 +160,11 @@ normalized public body SHA-256
 5. `20260821100000_choice_quiz_activity.sql`, если задача касается current
    production LA-M5 contract, rollout/replay или compatibility; migration file
    сам по себе не заменяет current snapshot и production execution record;
-6. остальные `supabase/migrations/*` только для compatibility, rollback или
+6. обе P1.3 migrations — `20260821181832_lesson_homework_authoring.sql`, затем
+   `20260821193000_harden_lesson_homework_rpc_validation.sql` — если задача
+   касается current production DB Homework authoring contract. Repair обязателен
+   и не может быть свернут в уже применённый base file;
+7. остальные `supabase/migrations/*` только для compatibility, rollback или
    debugging history.
 
 Политика изменений:
@@ -182,6 +195,8 @@ normalized public body SHA-256
 | LA-M2B | `20260820090529_course_publication_snapshot_v2.sql`                    | applied production: immutable publication V2 objectives/remap при exact V1 compatibility                                                       |
 | LA-M4  | `20260821093000_lesson_run_live_delivery.sql`                          | applied production DB/source/web: explicit Course/Run learner authority, persisted CAS Student Screen cursor и closed safe projections         |
 | LA-M5  | `20260821100000_choice_quiz_activity.sql`                              | **current production DB/source/web:** immutable `choice_quiz` issue/attempt/evaluation/feedback/history/evidence contract                      |
+| P1.3A  | `20260821181832_lesson_homework_authoring.sql`                         | **current production DB/source/web:** separate Lesson Homework aggregate/items, owner RPC и CAS authoring                                      |
+| P1.3B  | `20260821193000_harden_lesson_homework_rpc_validation.sql`             | **mandatory current production DB repair:** direct-RPC payload/placement validation; forward-only поверх applied P1.3A                         |
 
 M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
 первого deploy и применена только после доказательства, что running и rollback
@@ -1042,6 +1057,88 @@ image/`SOURCE_COMMIT` и guest boundary postflight подтверждает CURR
 production DB/source/web. Authenticated production teacher/learner lifecycle
 **NOT RUN** и не заявляется как пройденный.
 
+### CURRENT production DB/source/web — P1.3 Homework authoring
+
+Physical contract состоит из двух forward migrations:
+
+1. `20260821181832_lesson_homework_authoring.sql` — `806` строк, SHA-256
+   `c5fe2d972ef69679f54a2d2a7409e82f75c3bbaa8b7030a632d6d2c4b7b03567`;
+2. обязательная repair migration
+   `20260821193000_harden_lesson_homework_rpc_validation.sql` — `607` строк,
+   SHA-256
+   `423fec96d0623684ca61d8fa3b40cfbe96322b848ca11e7130fbe725092983a2`.
+
+Обе применены production owner и завершились отдельными наблюдаемыми `COMMIT`.
+Финальный audit уже применённого base contract выявил direct-RPC integrity gap:
+authenticated caller мог миновать часть registry payload/placement validation,
+если обращался к RPC вне application service. Переписывать применённую первую
+migration запрещено; forward-only repair сохранила signatures и добавила
+canonical type-specific DB validation для `rich_text`, `image`,
+`external_link`, `file`.
+
+| Relation               | Назначение                                                             |
+| ---------------------- | ---------------------------------------------------------------------- |
+| `lesson_homework`      | один mutable authoring aggregate на Lesson, revision для full-list CAS |
+| `lesson_homework_item` | ordered schema V1 items четырёх allowlisted existing registry types    |
+
+`get_my_lesson_homework(uuid)` — stable `SECURITY DEFINER`, а
+`replace_my_lesson_homework(uuid, integer, jsonb)` — volatile
+`SECURITY DEFINER`; обе owner/session-scoped и доступны только `postgres` и
+`authenticated`. `build_lesson_homework_projection(uuid)` — stable
+`SECURITY INVOKER`, доступный только `postgres`. Owner всех трёх functions —
+`supabase_admin`, `search_path` пустой. Raw relations имеют RLS, но policies и
+browser/service grants отсутствуют; table ACL остаётся только у
+`postgres`/`supabase_admin`.
+
+Replace атомарно валидирует и заменяет полный ordered list по
+`expectedRevision`. Clear удаляет items, сохраняет пустой aggregate и повышает
+revision, исключая ABA. Архивный Course сохраняет строки, но owner read/write
+fail closed. Lesson delete сериализуется в Lesson → Homework → items lock order
+и каскадно удаляет aggregate/items. Нет learner assignment/issuance/attempt/
+review/evidence/profile/notification relations, policies, triggers или FK.
+
+Measured DB execution evidence:
+
+- production-derived source dump: `2104` restore-list entries, SHA-256
+  `11774e1a913e0dbfee2cb9763db3963ae692d5ea1a6183ceb23537450662e1a7`;
+  clean restore исключал ровно один несовместимый GraphQL ACL TOC entry `6293`;
+- exact disposable database `shidao_homework_authoring_test`, owner
+  `supabase_admin`, PostgreSQL `15.8`, прошла clean replay обеих migrations;
+  functional и real multi-session concurrency harnesses завершились `PASS`
+  дважды, cleanup оставил Homework rows `0/0`;
+- frozen harnesses: functional `899` строк, SHA-256
+  `18415f6f0d3d6b9d0e953506ed1777a567651b7613ed3d81c6bd4b7416a113d3`;
+  concurrency `889` строк, SHA-256
+  `5784d8b093b99c88e457d4b67ffecca3c696aecd593d4c28e9bc8050c2f8c0eb`;
+  snapshot script `4794` строк, SHA-256
+  `130978272eacede8191f416a5ec915f29589e41c0c365341b7b91851f1750ec9`;
+- final production sanity: database `postgres`, user `supabase_admin`,
+  PostgreSQL `15.8`, search path `"$user", public, auth, extensions`;
+- verified backup
+  `/root/shidao-db-backups/shidao-before-homework-authoring-20260821T190751Z.dump`:
+  size `1972249`, mode `600`, `2104` restore-list entries, SHA-256
+  `d82c8fdd7d435dd6b04310c1d75f88e72556dc916574a0570934a18928cffdde`;
+- inventory `74/275 → 76/278`; canonical tuple `19/6/22/84/2/2/0/0` и
+  publication tuple `1/9056/4235054d4453665bfb804b089173b8b6` не изменились;
+  Homework rows `0/0`, RLS `2`, policies `0`, user triggers `0`;
+- PostgREST anon raw/RPC — `401/42501`, service raw/replace — `403/42501`;
+  schema-cache miss `PGRST202` отсутствует;
+- production snapshot `2026-08-21T19:38:04Z`, PostgreSQL `15.8`, `36204`
+  строки, SHA-256
+  `7f7741ca126e90bdadfbc151de4fbd2e57bf4a0c808c5f52f1fbf2ebe18d42c0`;
+  normalized public body — `36080` строк, SHA-256
+  `c922ccbb52093a286f8cb967acd8258f6ba276eaf68a8fb86591444f69dbcdec`,
+  exact clean-replay equality `PASS`.
+
+Predeploy Coolify baseline остаётся application deployment `1011`
+(`an2ccym338mrigf9t8if0qu9`) со status `finished` и source
+`442f0216451c30c747dffd1ab1d417e015f5efb0`; production container
+`g9x4d9zn60jv35r7zf0xl6xj-165510902517` имеет restart count `0`, проверенные
+logs clean. Это зафиксированный predeploy baseline, не P1.3 delivery evidence.
+Final application gate имеет `1018/1018` unit/API; task commit/push, matching
+Coolify image/`SOURCE_COMMIT` и guest web postflight завершены. Authenticated
+production Homework smoke **NOT RUN** и не заявляется.
+
 ## Current repository tables
 
 ### Communication Center (current CC1 + A2 database contract)
@@ -1521,6 +1618,7 @@ contacts, exact timestamps, foreign titles и private comments не возвра
 | learner-safe self/observer history             | no raw table access                                                                                                             | safe projection RPC                                          |
 | LA-M4 live tables (current production DB)      | none for `anon/authenticated`; RLS enabled, policies absent                                                                     | owner narrow RPC + service-only exact learner resolver       |
 | LA-M5 quiz tables (current production DB)      | none for `anon/authenticated`; RLS enabled, policies absent                                                                     | deployed owner/service narrow application RPC                |
+| P1.3 Homework tables (current production DB)   | none for `anon/authenticated/service_role`; RLS enabled, policies absent                                                        | deployed authenticated owner `get`/`replace` workflow        |
 
 E2A устранила прежнюю техническую блокировку owner-scoped
 Course/Component/Slide/File mutations nested helper ACL, не расширив целевую
@@ -1574,12 +1672,14 @@ guard.
 
 В current production model по-прежнему нет Methodology, Lesson Step/root Step,
 `lesson_run_participant`, operational LessonRun snapshot, persisted Run/Record
-status, Homework persistence, parsing/RAG, generalized learner consumption
-детского Course, generic multi-activity attempt engine или mastery percentage.
+status, Homework assignment/issuance/attempt/review, parsing/RAG, generalized
+learner consumption детского Course, generic multi-activity attempt engine или
+mastery percentage. Mutable P1.3 Homework authoring persistence и dependent
+source/web workflow уже current production.
 Current deployed source/web содержит LA-M4 teacher-controlled live contract и
 узкий LA-M5 `choice_quiz` attempt/evaluation engine. В contract по-прежнему нет
-generalized child Course consumption, других online activity engines, Homework
-или mastery percentage.
+generalized child Course consumption, других online activity engines, learner
+Homework runtime или mastery percentage.
 LA-M2 Course objectives/alignment существуют в current production DB/source/web.
 LA-M3 typed evidence/objective state/recommendation contract существует в
 current production DB/source/web. Проверенные LA-M3/LA-M4/LA-M5 relation counts
@@ -1599,8 +1699,8 @@ provider-backed explicit action executor доступны в current application
 `scripts/refresh-schema-snapshot.sh` принимает ровно два строгих compatibility
 stage: `expand` сохраняет полный legacy compatibility contract, `contract`
 требует завершённый M4 cleanup. Current production script дополнительно требует
-полный M1–M3 identity contract, M5/M6 Auth hardening, A1/E1/E2/CC1/A2 и
-LA-M1–LA-M5 database contracts. Contract snapshot сохраняет verified clone
+полный M1–M3 identity contract, M5/M6 Auth hardening, A1/E1/E2/CC1/A2,
+LA-M1–LA-M5 и обе P1.3 Homework migrations. Contract snapshot сохраняет verified clone
 provenance; отдельный production execution record подтверждает exact
 apply/postflight уже применённого production head. Current snapshot снят из
 production-head PostgreSQL `15.8`, а его public body побайтово совпадает с
@@ -1637,6 +1737,11 @@ clean replayed production-derived clone snapshot.
 - LA-M5 closed quiz relations, exact-source evidence column, immutable/
   supersession triggers, owner/service RPC ACL, exact session predicates и
   fail-closed legacy overloads;
+- P1.3 exact two Homework relations, one-per-Lesson and deferrable ordered-item
+  constraints, four-type schema V1 allowlist, RLS without policies/raw grants,
+  exact three function owner/security/search-path/grants, full-list CAS,
+  retained-empty revision bump after clear, archive denial, Lesson-first delete
+  lock order и absence of learner relations/FK/user triggers;
 - сохранность cross-schema Auth/Storage section.
 
 Перед refresh выполнить read-only ShiDao identity/schema sanity check:
@@ -1721,3 +1826,14 @@ service raw — `403/42501`, без `PGRST202`. Verified backup
 matching final image/`SOURCE_COMMIT` подтверждает CURRENT production
 DB/source/web. Authenticated production teacher/learner lifecycle **NOT RUN**
 без safe existing session/Run и не заявляется как пройденный.
+
+После P1.3 base apply, обязательного forward-only RPC validation repair,
+verified backup и production `COMMIT` current DB snapshot снят
+`2026-08-21T19:38:04Z` из PostgreSQL `15.8`; SHA-256
+`7f7741ca126e90bdadfbc151de4fbd2e57bf4a0c808c5f52f1fbf2ebe18d42c0`,
+`36204` строки, `76` public tables и `278` functions. Normalized public body —
+`36080` строк, SHA-256
+`c922ccbb52093a286f8cb967acd8258f6ba276eaf68a8fb86591444f69dbcdec`, exact
+совпадает с clean replay обеих migrations. Canonical/publication tuples не
+изменились; Homework rows `0/0`, RLS `2`, policies `0`, user triggers `0`.
+Production DB/source/web являются CURRENT.

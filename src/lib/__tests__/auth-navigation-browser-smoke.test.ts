@@ -1696,6 +1696,7 @@ async function assertCourseTableFitsAndTruncates(
 
 type PlaywrightRoute = {
   request: () => {
+    method: () => string;
     postDataJSON: () => unknown;
     url: () => string;
   };
@@ -20044,6 +20045,476 @@ test("browser smoke: course opens lesson workspace and returns to the course", a
     e2eLearningObjectiveArchivePayloads.length = 0;
     e2eComponentUpdateV2Payloads.length = 0;
     e2eStudentScreenRpcPayloads.length = 0;
+    await runtime.close();
+  }
+});
+
+test("browser smoke: Homework authoring persists and stays read-only in preview", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  type HomeworkDraftItem = {
+    id: string;
+    typeKey: string;
+    schemaVersion: number;
+    payload: Record<string, unknown>;
+    placement: Record<string, unknown>;
+  };
+  type HomeworkFixture = {
+    id: string;
+    lessonId: string;
+    revision: number;
+    items: Array<HomeworkDraftItem & { position: number }>;
+    createdAt: string;
+    updatedAt: string;
+  };
+  type ReplaceHomeworkPayload = {
+    expectedRevision: number | null;
+    items: HomeworkDraftItem[];
+  };
+  type ClearHomeworkPayload = { expectedRevision: number };
+
+  const homeworkPath = `/api/v2/lessons/${E2E_LESSON_ID}/homework`;
+  const homeworkId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  let persistedHomework: HomeworkFixture | null = null;
+  let revision = 0;
+  const calls = {
+    get: 0,
+    put: [] as ReplaceHomeworkPayload[],
+    delete: [] as ClearHomeworkPayload[],
+  };
+
+  const installHomeworkApi = async (page: BrowserSmokePage) => {
+    await page.route(`**${homeworkPath}`, async (route) => {
+      const method = route.request().method();
+      if (method === "GET") {
+        calls.get += 1;
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ homework: persistedHomework }),
+        });
+        return;
+      }
+
+      if (method === "PUT") {
+        const payload = route
+          .request()
+          .postDataJSON() as ReplaceHomeworkPayload;
+        assert.equal(
+          payload.expectedRevision,
+          persistedHomework?.revision ?? null,
+          "Homework PUT must use the latest aggregate revision",
+        );
+        calls.put.push(payload);
+        revision += 1;
+        const updatedAt = new Date(
+          Date.UTC(2026, 7, 22, 8, revision),
+        ).toISOString();
+        persistedHomework = {
+          id: homeworkId,
+          lessonId: E2E_LESSON_ID,
+          revision,
+          items: payload.items.map((item, index) => ({
+            ...item,
+            position: index + 1,
+          })),
+          createdAt: persistedHomework?.createdAt ?? "2026-08-22T08:00:00.000Z",
+          updatedAt,
+        };
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ homework: persistedHomework }),
+        });
+        return;
+      }
+
+      assert.equal(method, "DELETE");
+      const payload = route.request().postDataJSON() as ClearHomeworkPayload;
+      assert.ok(persistedHomework, "Homework DELETE requires an aggregate");
+      assert.equal(
+        payload.expectedRevision,
+        persistedHomework.revision,
+        "Homework DELETE must use the latest aggregate revision",
+      );
+      calls.delete.push(payload);
+      revision += 1;
+      persistedHomework = {
+        ...persistedHomework,
+        revision,
+        items: [],
+        updatedAt: new Date(Date.UTC(2026, 7, 22, 8, revision)).toISOString(),
+      };
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ homework: persistedHomework }),
+      });
+    });
+  };
+
+  const openHomework = async (page: BrowserSmokePage) => {
+    await page.goto(`/courses/${E2E_COURSE_ID}`, {
+      waitUntil: "networkidle",
+    });
+    const lessonButton = page.getByRole("button", {
+      name: E2E_LESSON_TITLE,
+      exact: true,
+    });
+    await lessonButton.waitFor();
+    await lessonButton.click();
+    await page
+      .getByRole("heading", {
+        name: `Урок 4. ${E2E_LESSON_TITLE}`,
+        exact: true,
+        level: 1,
+      })
+      .waitFor();
+    await page
+      .getByRole("tab", { name: "Домашнее задание", exact: true })
+      .click();
+    await page
+      .getByRole("heading", {
+        name: "Домашнее задание",
+        exact: true,
+        level: 2,
+      })
+      .waitFor();
+  };
+
+  const trackLearnerApi = async (page: BrowserSmokePage) => {
+    const requests: string[] = [];
+    await page.route("**/api/v2/me/**", async (route) => {
+      requests.push(route.request().url());
+      await route.continue();
+    });
+    return requests;
+  };
+
+  const addRichText = async (
+    page: BrowserSmokePage,
+    triggerName: "Добавить первый пункт" | "Добавить пункт",
+    title: string,
+    content: string,
+  ) => {
+    const trigger = page.getByRole("button", {
+      name: triggerName,
+      exact: true,
+    });
+    await trigger.evaluate((element) => (element as HTMLElement).focus());
+    await trigger.press("Enter");
+
+    const dialog = page.getByRole("dialog");
+    const typeButton = dialog.locator(
+      'button[data-homework-item-type-key="rich_text"]',
+    );
+    await typeButton.waitFor();
+    await page.waitForFunction(
+      () =>
+        document.activeElement?.getAttribute("data-homework-item-type-key") ===
+        "rich_text",
+    );
+    assert.equal(
+      await typeButton.evaluate(
+        (element) => element === document.activeElement,
+      ),
+      true,
+      "Homework picker must focus its first allowed type",
+    );
+    await typeButton.press("Enter");
+
+    const titleInput = dialog.getByLabel("Заголовок");
+    await titleInput.waitFor();
+    await page.waitForFunction(
+      () =>
+        document.querySelector("[data-homework-item-editor] input") ===
+        document.activeElement,
+    );
+    await titleInput.fill(title);
+    await dialog
+      .getByRole("textbox", { name: "Текст", exact: true })
+      .fill(content);
+    await dialog
+      .getByRole("button", { name: "Сохранить пункт", exact: true })
+      .click();
+    await dialog.waitFor({ state: "detached" });
+    await page.waitForFunction(() =>
+      Array.from(document.querySelectorAll("button")).some(
+        (button) =>
+          button.textContent?.trim() === "Добавить пункт" &&
+          button === document.activeElement,
+      ),
+    );
+  };
+
+  const saveHomework = async (page: BrowserSmokePage) => {
+    await page
+      .getByText("Есть несохранённые изменения", { exact: true })
+      .waitFor();
+    await page.getByRole("button", { name: "Сохранить", exact: true }).click();
+    await page.getByText("Изменения сохранены", { exact: true }).waitFor();
+  };
+
+  e2eAuthoredExerciseVisible = false;
+  e2eComponentLearnerVisible = false;
+  e2eComponentPayloadOverride = null;
+  e2eComponentPlacementOverride = null;
+  const runtime = await openPage({ cookie: authenticatedCookieValue() });
+
+  try {
+    await installHomeworkApi(runtime.page);
+    await openHomework(runtime.page);
+    const learnerRequests = await trackLearnerApi(runtime.page);
+
+    const firstAdd = runtime.page.getByRole("button", {
+      name: "Добавить первый пункт",
+      exact: true,
+    });
+    await firstAdd.evaluate((element) => (element as HTMLElement).focus());
+    await firstAdd.press("Enter");
+    const initialDialog = runtime.page.getByRole("dialog");
+    await initialDialog.waitFor();
+    await runtime.page.waitForFunction(
+      () =>
+        document.activeElement?.getAttribute("data-homework-item-type-key") ===
+        "rich_text",
+    );
+    assert.equal(
+      await initialDialog
+        .locator('button[data-homework-item-type-key="rich_text"]')
+        .evaluate((element) => element === document.activeElement),
+      true,
+    );
+    await initialDialog.press("Escape");
+    await initialDialog.waitFor({ state: "detached" });
+    await runtime.page.waitForFunction(
+      () =>
+        document.activeElement?.textContent?.trim() === "Добавить первый пункт",
+    );
+
+    await addRichText(
+      runtime.page,
+      "Добавить первый пункт",
+      "Первый пункт",
+      "Первое задание",
+    );
+    await saveHomework(runtime.page);
+    assert.equal(calls.put.length, 1);
+    assert.equal(calls.put[0]?.expectedRevision, null);
+
+    const preview = runtime.page
+      .getByRole("heading", { name: "Предпросмотр", exact: true, level: 3 })
+      .locator("..")
+      .locator("..");
+    assert.equal(
+      await preview.locator('[data-course-component-mode="student"]').count(),
+      1,
+    );
+    assert.match((await preview.textContent()) ?? "", /Первое задание/);
+    assert.equal(
+      await preview.locator("input, textarea, select, button").count(),
+      0,
+      "Homework preview must stay read-only",
+    );
+    assert.deepEqual(learnerRequests, []);
+
+    await addRichText(
+      runtime.page,
+      "Добавить пункт",
+      "Второй пункт",
+      "Второе задание",
+    );
+    const authoredItems = runtime.page.locator("[data-homework-item-id]");
+    assert.equal(await authoredItems.count(), 2);
+    const moveSecondUp = authoredItems
+      .nth(1)
+      .getByRole("button", { name: "Переместить «Текст» выше", exact: true });
+    await moveSecondUp.evaluate((element) => (element as HTMLElement).focus());
+    await moveSecondUp.press("Enter");
+    await saveHomework(runtime.page);
+    assert.deepEqual(
+      calls.put.at(-1)?.items.map((item) => item.payload.content),
+      ["Второе задание", "Первое задание"],
+    );
+
+    await openHomework(runtime.page);
+    learnerRequests.length = 0;
+    const persistedItems = runtime.page.locator("[data-homework-item-id]");
+    await persistedItems.nth(1).waitFor();
+    const persistedTexts = await persistedItems.evaluateAll((items) =>
+      items.map((item) => item.textContent ?? ""),
+    );
+    assert.match(persistedTexts[0] ?? "", /Второе задание/);
+    assert.match(persistedTexts[1] ?? "", /Первое задание/);
+
+    const firstPersistedItem = persistedItems.nth(0);
+    await firstPersistedItem.hover();
+    const editButton = firstPersistedItem.getByRole("button", {
+      name: "Редактировать «Текст»",
+      exact: true,
+    });
+    await editButton.click();
+    const editDialog = runtime.page.getByRole("dialog");
+    await editDialog
+      .getByRole("textbox", { name: "Текст", exact: true })
+      .fill("Второе задание — обновлено");
+    await editDialog
+      .getByRole("button", { name: "Сохранить пункт", exact: true })
+      .click();
+    await editDialog.waitFor({ state: "detached" });
+    await runtime.page.waitForFunction(
+      () =>
+        document.activeElement?.getAttribute("aria-label") ===
+        "Редактировать «Текст»",
+    );
+    await saveHomework(runtime.page);
+    assert.equal(calls.put.length, 3);
+    assert.equal(
+      calls.put.at(-1)?.items[0]?.payload.content,
+      "Второе задание — обновлено",
+    );
+
+    const secondPersistedItem = runtime.page
+      .locator("[data-homework-item-id]")
+      .nth(1);
+    await secondPersistedItem.hover();
+    await runtime.page.evaluate(() => {
+      window.confirm = () => true;
+    });
+    await secondPersistedItem
+      .getByRole("button", { name: "Удалить «Текст»", exact: true })
+      .click();
+    await saveHomework(runtime.page);
+    assert.equal(calls.put.length, 4);
+    assert.equal(calls.put.at(-1)?.items.length, 1);
+
+    await runtime.page
+      .getByRole("button", { name: "Очистить", exact: true })
+      .click();
+    await runtime.page
+      .getByRole("heading", {
+        name: "Домашнее задание пока пусто",
+        exact: true,
+        level: 3,
+      })
+      .waitFor();
+    assert.equal(calls.delete.length, 1);
+    const clearedHomework = persistedHomework as HomeworkFixture | null;
+    assert.ok(clearedHomework);
+    assert.equal(clearedHomework.items.length, 0);
+    assert.equal(clearedHomework.revision, 5);
+
+    await openHomework(runtime.page);
+    learnerRequests.length = 0;
+    await runtime.page
+      .getByRole("heading", {
+        name: "Домашнее задание пока пусто",
+        exact: true,
+        level: 3,
+      })
+      .waitFor();
+    assert.ok(calls.get >= 3, "Homework must reload the persisted aggregate");
+    assert.deepEqual(learnerRequests, []);
+
+    const mobileRuntime = await openPage({
+      cookie: authenticatedCookieValue(),
+      viewport: { width: 375, height: 812 },
+      mobile: true,
+    });
+    try {
+      await installHomeworkApi(mobileRuntime.page);
+      await openHomework(mobileRuntime.page);
+      const mobileLearnerRequests = await trackLearnerApi(mobileRuntime.page);
+      await addRichText(
+        mobileRuntime.page,
+        "Добавить первый пункт",
+        "Мобильный пункт",
+        "Задание на телефоне",
+      );
+      const mobileContract = await mobileRuntime.page.evaluate(() => {
+        const heading = Array.from(document.querySelectorAll("h2")).find(
+          (candidate) => candidate.textContent?.trim() === "Домашнее задание",
+        );
+        const surface = heading?.closest("section");
+        const actions = surface?.querySelector<HTMLElement>(
+          ".lesson-component-card-actions",
+        );
+        if (!surface || !actions) {
+          throw new Error("Mobile Homework surface is missing");
+        }
+        const surfaceRect = surface.getBoundingClientRect();
+        const actionRects = Array.from(
+          actions.querySelectorAll<HTMLElement>("button"),
+        ).map((button) => button.getBoundingClientRect());
+        const visibleButtonRects = Array.from(
+          surface.querySelectorAll<HTMLElement>("button"),
+        )
+          .filter((button) => button.offsetParent !== null)
+          .map((button) => button.getBoundingClientRect());
+        return {
+          clientWidth: document.documentElement.clientWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+          surfaceFits:
+            surfaceRect.left >= 0 && surfaceRect.right <= window.innerWidth,
+          touchPoints: navigator.maxTouchPoints,
+          actionOpacity: getComputedStyle(actions).opacity,
+          actionPointerEvents: getComputedStyle(actions).pointerEvents,
+          actionSizes: actionRects.map(({ width, height }) => ({
+            width,
+            height,
+          })),
+          visibleButtonHeights: visibleButtonRects.map(({ height }) => height),
+        };
+      });
+      assert.equal(mobileContract.clientWidth, 375);
+      assert.equal(mobileContract.scrollWidth, 375);
+      assert.equal(mobileContract.surfaceFits, true);
+      assert.ok(mobileContract.touchPoints > 0);
+      assert.equal(mobileContract.actionOpacity, "1");
+      assert.equal(mobileContract.actionPointerEvents, "auto");
+      assert.ok(
+        mobileContract.actionSizes.every(
+          ({ width, height }) => width >= 44 && height >= 44,
+        ),
+      );
+      assert.ok(
+        mobileContract.visibleButtonHeights.every((height) => height >= 40),
+      );
+
+      const mobileEdit = mobileRuntime.page
+        .locator("[data-homework-item-id]")
+        .getByRole("button", { name: "Редактировать «Текст»", exact: true });
+      await mobileEdit.click();
+      const mobileDialog = mobileRuntime.page.getByRole("dialog");
+      await mobileDialog.waitFor();
+      await mobileDialog.press("Escape");
+      await mobileDialog.waitFor({ state: "detached" });
+      assert.deepEqual(mobileLearnerRequests, []);
+
+      await mobileRuntime.page.evaluate(() => {
+        window.confirm = () => true;
+      });
+      await mobileRuntime.page
+        .getByRole("button", { name: "Очистить", exact: true })
+        .click();
+      await mobileRuntime.page
+        .getByRole("heading", {
+          name: "Домашнее задание пока пусто",
+          exact: true,
+          level: 3,
+        })
+        .waitFor();
+    } finally {
+      await mobileRuntime.close();
+    }
+  } finally {
+    e2eAuthoredExerciseVisible = false;
+    e2eComponentLearnerVisible = false;
+    e2eComponentPayloadOverride = null;
+    e2eComponentPlacementOverride = null;
     await runtime.close();
   }
 });

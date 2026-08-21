@@ -116,8 +116,11 @@ structured observation учитель сначала подтверждает к
 - observation хранится отдельной строкой на LearningRecord + source Component
   и не расширяет compact LearningRecord, learner-safe history или Component
   payload;
-- persisted Homework ещё не реализован; child live runtime current production
-  в DB/source/web включает LA-M4 delivery и узкий LA-M5 `choice_quiz` engine.
+- persisted Homework authoring DB уже current: P1.3 mutable aggregate/items
+  применены base и mandatory forward-only validation repair migrations, но
+  source/web rollout также **CURRENT production**. Child live runtime current production включает
+  LA-M4 delivery и узкий LA-M5 `choice_quiz` engine; P1.3 не меняет learner
+  runtime.
 
 Current production LA-M2 дополнительно реализует:
 
@@ -284,8 +287,8 @@ IDs, private data или raw source JSON.
 
 Presentation cursor существует отдельно от Attempt/Response/Evaluation и
 teacher Observation. Он не меняет authored Components/Slides и не расширяет
-compact `LearningRecord`. `choice_quiz` execution остаётся LA-M5, Homework и
-`free_response` — LA-M6.
+compact `LearningRecord`. `choice_quiz` execution остаётся LA-M5, а learner
+Homework issuance/review и `free_response` — LA-M6; P1.3 ограничен authoring.
 
 Production physical schema уже содержит LA-M4. Exact migration имеет `2535`
 строк и SHA-256
@@ -461,9 +464,12 @@ Course/Profile/state lock order и повторно применяет session c
    `stepId` или второй порядок контента.
 2. **Slides остаются проекцией.** Адаптивность и live runtime не переставляют
    Components и не создают скрытый порядок внутри Slides.
-3. **Homework остаётся отдельной Lesson surface.** Можно переиспользовать
-   engines и registry contracts, но не сами mutable `lesson_component` как
-   выданную домашнюю работу.
+3. **Homework остаётся отдельной Lesson surface.** P1.3 использует отдельный
+   mutable Lesson-owned aggregate и ordered items, разрешая только registry
+   schema V1 типов `rich_text`, `image`, `external_link`, `file`. Owner RPC/API
+   применяет full-list CAS; clear сохраняет пустой aggregate и повышает revision
+   против ABA. Можно переиспользовать engines и registry contracts, но не сами
+   mutable `lesson_component` как выданную домашнюю работу.
 4. **LearningRecord остаётся компактным итогом LessonRun.** Ответы, попытки и
    подробные наблюдения не складываются в один generic JSON этого объекта.
 5. **Один code-first registry.** UI, application services, AI и MCP не получают
@@ -1019,9 +1025,11 @@ contract tests, а не финальной косметической прове
    teacher-controlled live delivery;
 5. **CURRENT production DB/source/web:** один полный
    `choice_quiz` через learner-safe delivery и server evaluation;
-6. **NEXT:** Homework/free-response review;
-7. **LATER:** reference audio, learner recording и teacher review;
-8. **LATER:** только затем advanced sequencing, spaced review и статистические
+6. **CURRENT production DB/source/web:** P1.3 mutable Homework authoring без
+   learner effects;
+7. **NEXT:** LA-M6 immutable Homework issuance/review и `free_response`;
+8. **LATER:** reference audio, learner recording и teacher review;
+9. **LATER:** только затем advanced sequencing, spaced review и статистические
    модели;
    простые reason-coded recommendations уже входят в profile slice.
 

@@ -159,6 +159,17 @@ gate расширяется следующими обязательными пр
   pushed/deployed SHA/image и deployed smoke фиксируются отдельными наблюдаемыми
   шагами ниже.
 
+Для P1.3 Homework mandatory gate использует exact disposable database
+`shidao_homework_authoring_test` и применяет две migrations по порядку:
+`20260821181832_lesson_homework_authoring.sql`, затем forward-only repair
+`20260821193000_harden_lesson_homework_rpc_validation.sql`. Repair обязателен:
+после первого production `COMMIT` audit выявил direct-RPC validation gap, а
+переписывать уже применённую migration запрещено. Functional/concurrency gate
+доказывает owner/cross-owner ACL, direct-RPC payload/placement validation,
+full-list CAS, retained-empty ABA-safe clear, archive/delete lifecycle и
+отсутствие learner effects. Source/web нельзя выпускать до green production DB
+postflight и refreshed snapshot.
+
 Provider tests в AI-release используют только fake credentials и локальный
 mock. CI/build не получают реальный `ROUTERAI_API_KEY`; если сборка требует
 production secret, release останавливается как нарушение server-runtime
@@ -194,6 +205,50 @@ Worktree должен содержать только изменения тек�
 чужие локальные правки или `.local-backups`.
 
 ## 4. Если release содержит DB migration
+
+### P1.3 Homework authoring — production DB execution record
+
+**Статус: CURRENT production DB/source/web.** Base migration (`806`
+строк, SHA-256
+`c5fe2d972ef69679f54a2d2a7409e82f75c3bbaa8b7030a632d6d2c4b7b03567`) и
+mandatory repair (`607` строк, SHA-256
+`423fec96d0623684ca61d8fa3b40cfbe96322b848ca11e7130fbe725092983a2`)
+завершились отдельными production `COMMIT`.
+
+- production-derived dump: `2104` TOC entries, SHA-256
+  `11774e1a913e0dbfee2cb9763db3963ae692d5ea1a6183ceb23537450662e1a7`;
+  clean restore исключил только GraphQL ACL TOC `6293`; PostgreSQL `15.8`
+  clone clean-replayed обе migrations, functional/concurrency прошли дважды,
+  cleanup Homework rows `0/0`;
+- frozen harnesses: functional `899` lines / SHA-256
+  `18415f6f0d3d6b9d0e953506ed1777a567651b7613ed3d81c6bd4b7416a113d3`,
+  concurrency `889` / `5784d8b093b99c88e457d4b67ffecca3c696aecd593d4c28e9bc8050c2f8c0eb`,
+  snapshot script `4794` /
+  `130978272eacede8191f416a5ec915f29589e41c0c365341b7b91851f1750ec9`;
+- final sanity: database `postgres`, user `supabase_admin`, PostgreSQL `15.8`,
+  search path `"$user", public, auth, extensions`; backup
+  `/root/shidao-db-backups/shidao-before-homework-authoring-20260821T190751Z.dump`
+  — size `1972249`, mode `600`, TOC `2104`, SHA-256
+  `d82c8fdd7d435dd6b04310c1d75f88e72556dc916574a0570934a18928cffdde`;
+- postflight: inventory `74/275 → 76/278`; canonical
+  `19/6/22/84/2/2/0/0` и publication
+  `1/9056/4235054d4453665bfb804b089173b8b6` unchanged; Homework rows `0/0`,
+  RLS `2`, policies/user triggers `0`; raw ACL только
+  `postgres`/`supabase_admin`; exact three function owner/security/grants green;
+  PostgREST anon raw/RPC `401/42501`, service raw/replace `403/42501`;
+- snapshot `2026-08-21T19:38:04Z`, PostgreSQL `15.8`, `36204` lines, SHA-256
+  `7f7741ca126e90bdadfbc151de4fbd2e57bf4a0c808c5f52f1fbf2ebe18d42c0`;
+  normalized public `36080` lines, SHA-256
+  `c922ccbb52093a286f8cb967acd8258f6ba276eaf68a8fb86591444f69dbcdec`,
+  exact clean-replay equality `PASS`.
+
+Final local unit/API gate — `1018/1018`. Predeploy baseline: deployment `1011`
+(`an2ccym338mrigf9t8if0qu9`) finished на source
+`442f0216451c30c747dffd1ab1d417e015f5efb0`, container
+`g9x4d9zn60jv35r7zf0xl6xj-165510902517`, restart count `0`, logs clean. Это
+predeploy baseline, не P1.3 delivery evidence. Task commit/push, matching
+deployment/image/`SOURCE_COMMIT` и guest web postflight завершены;
+authenticated production Homework smoke **NOT RUN**.
 
 ### LA-M4 learner authorization/live delivery — production execution record
 

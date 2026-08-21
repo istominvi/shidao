@@ -30,6 +30,14 @@ const atomicCourseArchiveMigration = readFileSync(
   "supabase/migrations/20260811231505_atomic_course_archive.sql",
   "utf8",
 );
+const lessonHomeworkMigration = readFileSync(
+  "supabase/migrations/20260821181832_lesson_homework_authoring.sql",
+  "utf8",
+);
+const lessonHomeworkHardeningMigration = readFileSync(
+  "supabase/migrations/20260821193000_harden_lesson_homework_rpc_validation.sql",
+  "utf8",
+);
 const snapshot = readFileSync("supabase/schema/current-schema.sql", "utf8");
 const snapshotWorkflow = readFileSync(
   "scripts/refresh-schema-snapshot.sh",
@@ -74,6 +82,73 @@ const preservedBuilderTables = [
   "stored_file",
   "course_attachment",
 ] as const;
+
+test("P1.3 Homework snapshot refresh fails closed on partial schema or expanded ACL", () => {
+  assert.match(lessonHomeworkMigration, /^begin;\n/);
+  assert.match(lessonHomeworkMigration, /\ncommit;\n$/);
+  assert.match(
+    lessonHomeworkMigration,
+    /current_database\(\) not in \([\s\S]*?'postgres',[\s\S]*?'shidao_homework_authoring_test'/,
+  );
+  assert.match(
+    lessonHomeworkMigration,
+    /server_version_num'[\s\S]*?not between 150000 and 159999/,
+  );
+  assert.match(lessonHomeworkHardeningMigration, /^begin;\n/);
+  assert.match(lessonHomeworkHardeningMigration, /\ncommit;\n$/);
+  assert.match(
+    lessonHomeworkHardeningMigration,
+    /public\.course_attachment as attachment/,
+  );
+  assert.match(
+    lessonHomeworkHardeningMigration,
+    /stored_file\.status = 'ready'/,
+  );
+
+  for (const fragment of [
+    "lesson_homework_table(table_name)",
+    "lesson_homework_function(",
+    "lesson_homework_function_marker(signature, marker)",
+    "public.course_attachment as attachment",
+    "stored_file.status = ''ready''",
+    "stored_file.mime_type like ''image/%''",
+    "relation.relname like 'lesson_homework%'",
+    "or not relation.relrowsecurity",
+    "from lesson_homework_table as required_table\n           join pg_policy as policy",
+    "cross join unnest(array['anon', 'authenticated', 'service_role'])",
+    "pg_get_userbyid(procedure.proowner) <> 'supabase_admin'",
+    "procedure.proconfig is distinct from",
+    "required_function.expected_volatility",
+    "required_function.expected_security_definer",
+    "required_function.authenticated_execute",
+    "forbidden_relation.name",
+    "delete from public.lesson_homework as homework",
+    "UNIQUE (lesson_id)",
+    'UNIQUE (lesson_homework_id, "position") DEFERRABLE INITIALLY DEFERRED',
+    "foreign_key.confrelid in (",
+    "and foreign_key.conrelid not in (",
+    "CREATE TABLE public.lesson_homework (",
+    "CREATE TABLE public.lesson_homework_item (",
+    "CREATE FUNCTION public.get_my_lesson_homework",
+    "CREATE FUNCTION public.replace_my_lesson_homework",
+    "CREATE FUNCTION public.build_lesson_homework_projection",
+    "generated result exposes raw Homework table privileges",
+    "generated result expands the Homework function boundary",
+    "generated result crosses P1.3 into learner Homework runtime",
+  ]) {
+    assert.equal(
+      snapshotWorkflow.includes(fragment),
+      true,
+      `snapshot workflow missing P1.3 guard ${fragment}`,
+    );
+  }
+
+  assert.match(
+    snapshotWorkflow,
+    /position\(\s*'for update of homework'[\s\S]*?\) > position\(\s*'for update of lesson'[\s\S]*?position\(\s*'for update of item'[\s\S]*?\) > position\(\s*'for update of homework'[\s\S]*?position\(\s*'for update of component'[\s\S]*?\) > position\(\s*'for update of item'/,
+    "snapshot signature must preserve Lesson -> Homework -> item -> Component lock order",
+  );
+});
 
 test("authenticated component edits use an inline SECURITY INVOKER educator guard", () => {
   assert.match(educatorCourseContentGuardFixMigration, /^begin;\n/);

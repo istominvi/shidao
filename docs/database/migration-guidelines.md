@@ -2,19 +2,26 @@
 
 **Статус:** обязательная политика для всех новых DB changes
 **Текущий подтверждённый production schema head:**
-`20260821100000_choice_quiz_activity.sql`, exact SHA-256
-`32e860c8d56e299a19c7a5a4d05103df008935ff9814c6d6c206c39f68242d44`,
-`6372` строки. Owner apply завершился наблюдаемым `COMMIT` после exact
-production-derived replay и verified backup
-`/root/shidao-db-backups/shidao-before-choice-quiz-20260821T153411Z.dump`
-(size `1804381`, mode `600`, `1985` restore-list entries, SHA-256
-`bb4dcc56b379f5ef2f105478f426a2e05eb5e17100c08c0656967c3acf855211`).
-Current PostgreSQL `15.8` snapshot сгенерирован `2026-08-21T15:43:37Z`, имеет
+P1.3 состоит из применённой base migration
+`20260821181832_lesson_homework_authoring.sql` (`806` строк, SHA-256
+`c5fe2d972ef69679f54a2d2a7409e82f75c3bbaa8b7030a632d6d2c4b7b03567`) и
+обязательной forward-only repair
+`20260821193000_harden_lesson_homework_rpc_validation.sql` (`607` строк,
 SHA-256
-`acd73762c061de56a4ae39ec81c25c0b2ce243d2000f04f877e952e2df67473e`,
-`35466` строк, `74` public tables и `275` functions; normalized body SHA-256
-`063ca4be6c0f76f9c2b95133763d39acfe932b5de84e64fd8c37942678333b44`
-побайтово совпал с clean production-derived replay.
+`423fec96d0623684ca61d8fa3b40cfbe96322b848ca11e7130fbe725092983a2`).
+Обе owner apply завершились отдельными наблюдаемыми `COMMIT` после exact
+production-derived replay и verified backup
+`/root/shidao-db-backups/shidao-before-homework-authoring-20260821T190751Z.dump`
+(size `1972249`, mode `600`, `2104` restore-list entries, SHA-256
+`d82c8fdd7d435dd6b04310c1d75f88e72556dc916574a0570934a18928cffdde`).
+Current PostgreSQL `15.8` snapshot сгенерирован `2026-08-21T19:38:04Z`, имеет
+SHA-256
+`7f7741ca126e90bdadfbc151de4fbd2e57bf4a0c808c5f52f1fbf2ebe18d42c0`,
+`36204` строки, `76` public tables и `278` functions; normalized public body —
+`36080` строк, SHA-256
+`c922ccbb52093a286f8cb967acd8258f6ba276eaf68a8fb86591444f69dbcdec`, exact
+совпал с clean production-derived replay. P1.3 является CURRENT production
+DB/source/web.
 
 **Исторический LA-M3 execution record:**
 `20260820132725_learning_activity_profile_history_skills_recommendations.sql`,
@@ -47,7 +54,7 @@ production; `psql` зафиксировал `COMMIT`, а maximum `updated_at`
 преобразованных строк — `2026-08-13T07:05:50.169297Z`. Она не меняла
 physical schema; последующие E2A, AV1, CC1, A2 и LA-M1–LA-M3 schema rollout
 отражены в production contract и execution record выше.
-**Текущий deployed coupled application rollout source:**
+**Предыдущий LA-M5 deployed application baseline перед P1.3:**
 deployed functional source
 `b8f62a635ad3bd77933e71decffe2a5616de26d5` доставлен normal fast-forward push в
 `origin/main`. Local gates: `991/991` tests, strict Chromium `31/31`, production
@@ -63,7 +70,9 @@ deployment `1009` (`cpeh1gokla9hpng8z57woj96`) доставил LA-M5 applicatio
 host/API/CSRF/guest probes прошли. Authenticated production teacher/learner
 lifecycle **NOT RUN**: safe existing session/Run отсутствовали, credentials и
 fixtures не создавались. Disposable clone и временные файлы удалены, verified
-production backups сохранены.
+production backups сохранены. P1.3 application/API/UI и guest web postflight
+доставлены последующим task release; authenticated production Homework smoke
+**NOT RUN**.
 
 **LA-M3 delivery boundary:** physical production DB, functional source/web и
 release postflight current. Последующий execution-record docs-only commit не
@@ -132,6 +141,12 @@ forward history.
 - Data backfill разрешён внутри migration, когда он необходим для нового
   invariant и детерминирован. Product fixtures/демо-контент не добавляются в
   schema migration.
+
+P1.3 является обязательным примером этого правила: после production `COMMIT`
+base Homework migration финальный audit выявил direct-RPC validation gap.
+Применённый файл не переписывался; исправление доставлено отдельной migration
+`20260821193000_harden_lesson_homework_rpc_validation.sql`. Любой replay обязан
+применять обе migrations в исходном порядке.
 
 ## 4. Структура безопасной migration
 
@@ -265,6 +280,10 @@ generated SQL snapshot не переписывается только ради �
   completion/merge/erasure rebuild hooks, safe self/observer projections и
   единый learner-first/objective-sorted lock order. Synthesized `no_data` не
   должен появляться как persisted state row.
+- после P1.3 — exact two Homework tables и three functions, four-type allowlist,
+  one-per-Lesson/dense-order constraints, RLS без policies/raw browser grants,
+  direct-RPC payload/placement validation, retained-empty CAS clear и отсутствие
+  learner Homework relations/triggers/FK.
 
 Скрипт сначала проверяет read-only ShiDao schema signature, пишет во временный
 файл и не должен менять migration history. Полученный snapshot не применяется
@@ -315,6 +334,14 @@ generated SQL snapshot не переписывается только ради �
   legacy revision bytes/checksum;
 - evidence eligibility остаётся pure projection и не создаёт persisted
   evidence, objective state или mastery.
+
+Для P1.3 отдельно обязательны exact database
+`shidao_homework_authoring_test`, functional и real multi-session concurrency
+harnesses, оба forward migrations, owner/cross-owner/direct-RPC validation,
+CAS/ABA clear, archive/delete lifecycle, closed raw ACL и доказательство
+отсутствия learner effects. Production DB postflight фиксирует inventory,
+tuples, row counts, function grants и PostgREST codes; local/clone results не
+подменяют production evidence.
 
 Фактически выполненный LA-M3 production gate дополнительно включал:
 

@@ -16,10 +16,12 @@ history/progress, explicit shared comments, actual duration и consented
 cross-provider AI. Phased M1–M6 migrations, exact Coolify deploy и postflight
 завершены. Account-scoped самостоятельное прохождение approved educator
 publications с revision progress и аттестацией также является current
-production. Homework не реализован. LA-M4 Course enrollment/live Student Screen
-и LA-M5 `choice_quiz` execution являются current production в DB/source/web.
-Durable attempts/server evaluation реализованы только для `choice_quiz`;
-Homework и `free_response` остаются LA-M6 NEXT.
+production. LA-M4 Course enrollment/live Student Screen и LA-M5 `choice_quiz`
+execution являются current production в DB/source/web. P1.3 Homework authoring
+DB contract и dependent source/web уже **CURRENT production**.
+Durable learner attempts/server evaluation реализованы только для
+`choice_quiz`; immutable Homework issuance/review и `free_response` остаются
+LA-M6 **NEXT**.
 
 Current production дополнительно реализует LA-M1: focused teacher workspace и
 recorder-owned component observations поверх фактически started LessonRun.
@@ -205,7 +207,9 @@ Lesson остаётся одной сущностью содержания и т
   содержащая только разрешённые ученику компоненты.
 - **Материалы курса** — course-wide файлы и изображения, загруженные в private
   Storage и связанные с Course.
-- **Домашнее задание** — отдельная поверхность выбранной Lesson.
+- **Домашнее задание** — отдельная поверхность выбранной Lesson с собственным
+  mutable authoring aggregate и ordered items; не Component group, Slide или
+  LessonRun.
 - **Preview / Предпросмотр** — режим проверки Student Screen внутри Course или
   на отдельной полноэкранной странице.
 
@@ -693,8 +697,9 @@ placeholder surfaces, **Материалы** показывают staging picker
 Lesson-вкладка **Материалы** является только read-only проекцией того же
 course-wide каталога. Она не создаёт lesson attachment, не копирует StoredFile
 и не означает, что материал назначен конкретному Lesson. **История** показывает
-только завершённые LessonRun с teacher report и результатами; Homework остаётся
-отдельной честной заглушкой.
+только завершённые LessonRun с teacher report и результатами. Current Homework
+surface — отдельный persisted editor/teacher+student preview с полным
+GET/PUT/DELETE CAS lifecycle.
 
 Текущий slice не добавляет отдельный Lesson URL или schema: Course/Lesson view
 и вкладки переключаются внутри `/courses/[courseId]`. Без `tab` Course открывает
@@ -1526,11 +1531,34 @@ attachment relation. Надёжное добавление новых файло
 
 Homework принадлежит выбранной Lesson, но не входит в `lesson.components`.
 Текущий deployed UI содержит честную заглушку редактора без fixture или
-localStorage. Persisted homework получит отдельные contracts, authorization и
-ordered owner/items без возврата групп/шагов в Lesson. Он переиспользует
-activity/evaluator primitives единственного Component registry, но выданная
-работа получает immutable assignment snapshot и не исполняет mutable
-`lesson_component` напрямую.
+localStorage. Current production P1.3 DB contract добавляет отдельные
+`lesson_homework` mutable aggregate и ordered `lesson_homework_item`, максимум
+один aggregate на Lesson. Items используют schema V1 и только четыре уже
+существующих Component registry type: `rich_text`, `image`, `external_link`,
+`file`; второго registry и generic arbitrary JSON workflow нет.
+
+Owner-only API `/api/v2/lessons/[lessonId]/homework` предоставляет
+`GET/PUT/DELETE` через application service/repository и narrow authenticated
+RPC. `PUT` атомарно заменяет весь список с compare-and-swap по
+`expectedRevision`; canonical order выводится из ordinal входного массива.
+Clear удаляет items, но сохраняет aggregate с пустым списком и повышает
+revision, поэтому stale revision не может пройти ABA. Teacher preview read-only
+и не создаёт learner rows.
+
+Архивация Course сохраняет authored Homework, но любые owner read/mutation
+после archive fail closed. Удаление Lesson берёт lock Lesson → Homework → items
+до остального dependent graph и затем каскадно удаляет aggregate/items.
+Raw relations закрыты; browser работает только через owner RPC/API.
+
+P1.3 не добавляет learner assignment/projection, immutable issuance, due date,
+individual override, response/attempt, review, `free_response`, evidence/
+profile update, notification или связь с LessonRun/Student Screen. Эти
+capabilities остаются LA-M6 **NEXT**; выданная работа получит immutable snapshot
+и никогда не будет исполнять mutable `lesson_component` напрямую.
+
+Статус P1.3 — **CURRENT production DB/source/web**. Обе forward migrations,
+verified backup, apply/postflight, snapshot и dependent application rollout
+подтверждены.
 
 ## Application service and MCP
 
@@ -1769,8 +1797,10 @@ Current production application реализует appointment/completion history
 teacher observation workspace, LA-M2 objective provenance/eligibility и LA-M3
 objective-state/profile workflow. Current production DB/source/web LA-M4
 реализует learner live delivery, а LA-M5 — durable attempts и server evaluation
-ровно для `choice_quiz`. Homework/`free_response` и generic execution остальных
-activity types не реализованы.
+ровно для `choice_quiz`. P1.3 DB уже содержит только mutable Homework authoring,
+и source/web current; immutable Homework issuance/review,
+`free_response` и generic execution остальных activity types не реализованы и
+остаются LA-M6 **NEXT**.
 
 Открытый LessonRun уже является конкретным проведением; второй content-bearing
 `LessonSession` не нужен. Operational presentation cursor связан с
@@ -1836,7 +1866,7 @@ application services и MCP не импортируют demo fixtures; все н
   replicas;
 - persistent AI quota/ledger, billing и change sets/undo;
 - parsing/RAG загруженных файлов;
-- persisted homework editor;
+- LA-M6 learner Homework issuance, submission, evaluation и `free_response`;
 - Realtime/presence transport поверх current production request/polling LA-M4
   live cursor;
 - durable learner attempts/server evaluation для activity types кроме current
@@ -1858,9 +1888,9 @@ self/observer history, real-record progress и consented cross-provider AI уж�
 release/postflight завершены. Explicit enrollment + per-Run learner live
 Student Screen являются CURRENT production DB/source/web LA-M4; единственный
 durable `choice_quiz` execution engine является CURRENT production
-DB/source/web LA-M5. Broader child Course consumption, persisted Homework и
-`free_response` находятся в roadmap. Educator self-learning является current
-production.
+DB/source/web LA-M5. P1.3 Homework authoring current production DB/source/web; broader
+child Course consumption, immutable Homework issuance/review и `free_response`
+находятся в LA-M6 **NEXT**. Educator self-learning является current production.
 
 ## Shipped acceptance baseline
 

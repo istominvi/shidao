@@ -1424,23 +1424,32 @@ LA-M3 smoke не выполнен из-за guest-only browser session и не �
 Последующий execution-record docs commit runtime не меняет. LA-M4 и LA-M5
 имеют статус **CURRENT PRODUCTION DB/SOURCE/WEB**; LA-M6 остаётся **NEXT**.
 
-## P1.3: persisted Homework authoring (**NEXT**)
+## P1.3: persisted Homework authoring (**CURRENT production DB/source/web**)
 
-Цель первого slice — заменить текущую заглушку отдельным Lesson-owned
-редактором. Learner assignment, выдача и attempts идут позже вместе с
-authorized learner runtime.
+Production DB уже содержит отдельный owner-only Lesson-owned contract после
+base migration и обязательного forward-only direct-RPC validation repair.
+Current deployed UI остаётся заглушкой до exact source push, web deploy и
+postflight; эти evidence пока не заявляются.
 
-- собственный Homework authoring contract/service/repository;
-- собственный ordered owner/items с reuse authoring primitives единственного
-  registry;
-- teacher editor и preview common Homework;
-- learner projection, immutable issuance, due/individual override, review и
-  attempts входят в более поздний LA-M6 вместе с authorized learner runtime;
-- Homework не смешивается с `lesson.components` и Student Screen Slides.
+- отдельные `lesson_homework` mutable aggregate и ordered
+  `lesson_homework_item`; максимум один aggregate на Lesson;
+- reuse единственного registry с узким schema V1 allowlist из четырёх типов:
+  `rich_text`, `image`, `external_link`, `file`;
+- owner-only `GET/PUT/DELETE /api/v2/lessons/[lessonId]/homework` поверх
+  authenticated `get_my_lesson_homework`/`replace_my_lesson_homework` RPC;
+- atomic full-list replace с compare-and-swap по `expectedRevision` и
+  deterministic order из array ordinal;
+- clear удаляет items, но сохраняет пустой aggregate и повышает revision,
+  поэтому stale client не проходит ABA; preview остаётся read-only;
+- архивный Course сохраняет Homework, но read/mutation fail closed; delete
+  Lesson берёт lock в canonical order и каскадно удаляет aggregate/items;
+- Homework не смешивается с `lesson.components`, Student Screen Slides или
+  LessonRun и не создаёт learner data.
 
-Первый authoring slice может сохранять одно common Homework на Lesson без
-individual override. Mutable `lesson_component` не исполняется как выданная
-домашняя работа.
+Learner assignment/projection, immutable issuance, due date, individual
+override, answers/attempts, review, `free_response`, evidence/profile updates и
+notifications не входят в P1.3. Это LA-M6 **NEXT**; mutable
+`lesson_component` не исполняется как выданная домашняя работа.
 
 ## P1.4: Sources и parsing/RAG
 
@@ -1659,8 +1668,9 @@ backups сохранены.
 Authenticated production teacher/learner lifecycle **NOT RUN**: safe existing
 session/Run отсутствовали, credentials и fixtures ради smoke не создавались.
 Это не failure и не blocker; local Chromium не подменяет authenticated
-production evidence. Следующий продуктовый этап — P1.3 persisted Homework
-authoring, затем отдельный LA-M6 Homework/`free_response`.
+production evidence. P1.3 rollout завершён; **NEXT** идёт отдельный LA-M6
+immutable Homework issuance/review
+и `free_response`.
 
 **Later transport поверх current LA-M5:** Realtime/presence может заменить
 polling, не меняя authorization/cursor contract и не создавая content-bearing
@@ -1668,8 +1678,9 @@ polling, не меняя authorization/cursor contract и не создавая 
 
 ## P3: online activities, adaptive learning и product scale
 
-- после P1.3 persisted Homework authoring выполнить отдельный LA-M6
-  Homework/`free_response`; не смешивать его state machine с current LA-M5;
+- следующим выполнить отдельный LA-M6 immutable Homework
+  issuance/review и `free_response`; не смешивать его state machine с current
+  LA-M5;
 - затем shared deterministic engine для fill/matching/sequence/categorize;
 - history остаётся source of truth, а objective state — rebuildable projection
   рядом с compact LearningRecord, не внутри него;

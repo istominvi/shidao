@@ -272,7 +272,8 @@ test("course uses audience-aware four-tab sets while lesson history is teaching-
   assert.match(authoring, /role="tabpanel"/);
   assert.match(authoring, /aria-labelledby=\{workspaceTabId/);
   assert.match(authoring, />\s*Компонент\s*</);
-  assert.match(authoring, /Редактор домашнего задания будет/);
+  assert.match(authoring, /<HomeworkAuthoringSurface/);
+  assert.doesNotMatch(authoring, /Редактор домашнего задания будет/);
   assert.match(
     authoring,
     /CourseMaterialsPanel course=\{course\} context="lesson"/,
@@ -299,7 +300,7 @@ test("lesson metadata moves into a transparent page header and remains editable"
   assert.match(authoring, /<AppPageHeader/);
   assert.match(
     authoring,
-    /back=\{\{[\s\S]*?type: "button"[\s\S]*?onClick: onBackToCourse[\s\S]*?label: course\.title/,
+    /back=\{\{[\s\S]*?type: "button"[\s\S]*?onClick: backToCourse[\s\S]*?label: course\.title/,
   );
   assert.match(authoring, /formatLessonWorkspaceTitle/);
   assert.match(authoring, /headingRef=\{lessonHeadingRef\}/);
@@ -1624,7 +1625,7 @@ test("Student Screen surfaces render one ordered slide without legacy step group
   );
   const combined = [authoring, preview].join("\n");
   const inlineSurface =
-    /function StudentLessonSurface[\s\S]*?function HomeworkSurface/.exec(
+    /function StudentLessonSurface[\s\S]*?function LessonHistorySurface/.exec(
       authoring,
     )?.[0];
 

@@ -1,8 +1,8 @@
 # План реализации Learning Activity System
 
 **Статус:** LA-M0 — CURRENT architecture; LA-M1–LA-M3 — CURRENT production;
-LA-M4–LA-M5 — CURRENT production DB/source/web; LA-M6 — NEXT; LA-M7–LA-M9 —
-LATER.
+LA-M4–LA-M5 — CURRENT production DB/source/web; P1.3 Homework authoring —
+CURRENT production DB/source/web; LA-M6 — NEXT; LA-M7–LA-M9 — LATER.
 **Актуально на:** 22 августа 2026 года
 **Архитектура:**
 [`learning-activity-system.md`](../architecture/learning-activity-system.md)
@@ -503,7 +503,8 @@ Learning Activity runtime не должен случайно смешать уж
 | Teacher preview                | mutable Lesson Component                | preview-only; не пишет learner data                                                     |
 | Current educator self-learning | immutable approved publication revision | текущие Lesson completions остаются progress-only; attestation использует свой contract |
 | Child live LessonRun           | Lesson + Student Screen projection      | current production LA-M4; отдельный explicitly authorized learner context               |
-| Homework                       | immutable issued Homework snapshot      | появляется в LA-M6                                                                      |
+| Homework authoring             | mutable Lesson-owned aggregate/items    | P1.3 current production DB/source/web; owner-only, без learner data                     |
+| Issued Homework                | immutable issued Homework snapshot      | появляется в LA-M6                                                                      |
 
 Обычные educator Course Components не становятся assessable attempts незаметно.
 Их перевод на общий activity runtime требует отдельного совместимого slice;
@@ -870,16 +871,42 @@ policy данные хранятся вместе с learner history.
 learner. Изменение teacher question после попытки не делает старый результат
 непонятным.
 
-Следующий продуктовый этап — P1.3 persisted Homework authoring, затем LA-M6
-Homework/`free_response`. Shared deterministic engine для `fill_blanks`,
-matching/sequence/categorize/word-bank/word-builder относится к более позднему
+P1.3 rollout завершён. Продуктовый этап **NEXT** — LA-M6 immutable Homework issuance/review и
+`free_response`. Shared deterministic engine для `fill_blanks`, matching/
+sequence/categorize/word-bank/word-builder относится к более позднему
 расширению activity catalog.
+
+## P1.3 — persisted Homework authoring (**CURRENT production DB/source/web**)
+
+Current production DB добавляет максимум один mutable Homework aggregate на
+Lesson и отдельный ordered список items. Он переиспользует schema V1 четырёх
+allowlisted типов единственного registry: `rich_text`, `image`,
+`external_link`, `file`.
+
+- owner-only `GET/PUT/DELETE /api/v2/lessons/[lessonId]/homework` работает через
+  application service/repository и authenticated owner RPC;
+- `PUT` атомарно заменяет полный список по `expectedRevision`, а порядок
+  выводится из ordinal входного массива;
+- clear удаляет items, сохраняет пустой aggregate и повышает revision, закрывая
+  ABA для stale clients;
+- archived Course сохраняет aggregate/items, но owner read/mutation fail closed;
+- Lesson delete блокирует Homework после Lesson и каскадно удаляет
+  aggregate/items;
+- preview read-only; assignment, issuance, due/override, answers/attempts,
+  review, `free_response`, evidence/profile updates, notifications, LessonRun и
+  Student Screen effects отсутствуют.
+
+Base и mandatory forward-only direct-RPC validation repair migrations прошли
+production-derived rehearsal, verified backup, DB apply/postflight и snapshot.
+Exact source push, web deploy/image и postflight ещё pending и заполняются
+только после фактического выполнения.
 
 ## LA-M6 — Homework и `free_response` (**NEXT**)
 
-Homework получает собственный ordered owner/items, authorization и immutable
-issued snapshot, но переиспользует activity/evaluator primitives единственного
-registry.
+LA-M6 начинает с immutable issuance mutable P1.3 Homework и добавляет
+learner authorization, assignment state, responses/attempts и review. Issued
+snapshot переиспользует activity/evaluator primitives единственного registry,
+но больше не зависит от последующего редактирования authoring aggregate.
 
 Первый review workflow:
 

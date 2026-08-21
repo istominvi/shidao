@@ -7,7 +7,6 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
-  ClipboardCheck,
   Gamepad2,
   Image as ImageIcon,
   Layers3,
@@ -42,6 +41,7 @@ import {
 } from "@/components/course-builder/component-renderers";
 import { courseBuilderJsonRequest } from "@/components/course-builder/course-builder-client";
 import { getStudentScreenToggleInput } from "@/components/course-builder/student-slide-placement";
+import { HomeworkAuthoringSurface } from "@/components/course-builder/homework-authoring-surface";
 import {
   LessonRunDialog,
   LessonRunStatusButton,
@@ -1012,28 +1012,6 @@ function StudentLessonSurface({
   );
 }
 
-function HomeworkSurface({ lesson }: { lesson: CourseLesson }) {
-  return (
-    <section className="rounded-[1.25rem] border border-neutral-200 bg-white/90 px-6 py-14 text-center shadow-sm">
-      <ClipboardCheck
-        className="mx-auto h-8 w-8 text-violet-500"
-        aria-hidden="true"
-      />
-      <p className="mt-4 text-xs font-bold uppercase tracking-[0.14em] text-violet-700">
-        Урок {lesson.position}
-      </p>
-      <h2 className="mt-2 text-2xl font-black text-neutral-950">
-        Домашнее задание
-      </h2>
-      <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-neutral-600">
-        Раздел закреплён за выбранным уроком. Редактор домашнего задания будет
-        подключён отдельным срезом; сейчас здесь нет фиктивных данных и ничего
-        не сохраняется в обход базы.
-      </p>
-    </section>
-  );
-}
-
 function LessonHistorySurface({
   lesson,
   runs,
@@ -1099,6 +1077,7 @@ export function LessonAuthoringWorkspace({
   const [lessonEditorOpen, setLessonEditorOpen] = useState(false);
   const [lessonRunDialogOpen, setLessonRunDialogOpen] = useState(false);
   const [componentQuery, setComponentQuery] = useState("");
+  const [homeworkDirty, setHomeworkDirty] = useState(false);
   const pickerTriggerRef = useRef<HTMLButtonElement>(null);
   const lessonHeadingRef = useRef<HTMLHeadingElement>(null);
   const availableLessonTabs = LESSON_WORKSPACE_TABS.filter(
@@ -1126,8 +1105,8 @@ export function LessonAuthoringWorkspace({
     if (
       !window.confirm(
         teachingEnabled
-          ? `Удалить урок «${lesson.title}»? План, назначение и история проведений будут удалены. Завершённые индивидуальные результаты сохранятся в учебных профилях.`
-          : `Удалить урок «${lesson.title}» вместе с его компонентами?`,
+          ? `Удалить урок «${lesson.title}»? План, домашнее задание, назначение и история проведений будут удалены. Завершённые индивидуальные результаты сохранятся в учебных профилях.`
+          : `Удалить урок «${lesson.title}» вместе с его компонентами и домашним заданием?`,
       )
     ) {
       return;
@@ -1138,6 +1117,18 @@ export function LessonAuthoringWorkspace({
       );
       if (deleted) onBackToCourse();
     })();
+  }
+
+  function backToCourse() {
+    if (
+      homeworkDirty &&
+      !window.confirm(
+        "Вернуться к курсу? Несохранённые изменения домашнего задания будут потеряны.",
+      )
+    ) {
+      return;
+    }
+    onBackToCourse();
   }
 
   useEffect(() => {
@@ -1159,7 +1150,7 @@ export function LessonAuthoringWorkspace({
         headingRef={lessonHeadingRef}
         back={{
           type: "button",
-          onClick: onBackToCourse,
+          onClick: backToCourse,
           label: course.title,
         }}
         title={formatLessonWorkspaceTitle(lesson.position, lesson.title)}
@@ -1307,8 +1298,13 @@ export function LessonAuthoringWorkspace({
             {active && item.value === "student" ? (
               <StudentLessonSurface course={course} lesson={lesson} />
             ) : null}
-            {active && item.value === "homework" ? (
-              <HomeworkSurface lesson={lesson} />
+            {item.value === "homework" ? (
+              <HomeworkAuthoringSurface
+                lessonId={lesson.id}
+                lessonPosition={lesson.position}
+                assets={course.attachments}
+                onDirtyChange={setHomeworkDirty}
+              />
             ) : null}
             {active && item.value === "materials" ? (
               <CourseMaterialsPanel course={course} context="lesson" />

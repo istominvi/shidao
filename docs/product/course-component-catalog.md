@@ -1,7 +1,7 @@
 # Каталог компонентов Course Builder
 
-**Статус:** CURRENT registry + CURRENT production DB/source/web LA-M5 + LATER
-product catalog
+**Статус:** CURRENT registry + CURRENT production DB/source/web LA-M5 + P1.3
+Homework authoring CURRENT production DB/source/web + LATER product catalog
 **Актуально на:** 22 августа 2026 года
 
 Этот документ отвечает на три вопроса:
@@ -101,7 +101,9 @@ evaluator остаётся server-private. Teacher/Course preview остаётс
 - author payload schema, defaults и migration strategy;
 - placement и доступные Lesson contexts;
 - editor и renderer capabilities;
-- teacher plan, Student Screen, preview и future Homework projections;
+- teacher plan, Student Screen, preview и declared Homework eligibility/
+  projection; P1.3 разрешает в Homework только `rich_text`, `image`,
+  `external_link`, `file` schema V1;
 - responsive/accessibility contract;
 - privacy/media/storage classification;
 - fixtures и contract tests.
@@ -194,10 +196,17 @@ boundary postflight, logs и cleanup подтверждены. Authenticated pro
 teacher/learner lifecycle **NOT RUN** без safe existing session/Run и не
 является release blocker.
 
-Следующий продуктовый этап — P1.3 persisted Homework authoring, затем LA-M6
-Homework/`free_response`. Shared deterministic engine для `fill_blanks` и затем
-matching/sequence/categorize/word-bank/word-builder относится к более позднему
-расширению catalog.
+P1.3 persisted Homework authoring DB уже current: отдельный mutable Lesson-owned
+aggregate с ordered items переиспользует только
+четыре allowlisted registry definitions выше. Owner API/RPC делает atomic
+full-list CAS; clear сохраняет пустой aggregate и повышает revision. Preview не
+пишет learner data, а Homework не становится Component group или Student Screen
+Slide. Dependent source/web workflow является CURRENT production behavior.
+
+Следующий продуктовый этап после P1.3 rollout — LA-M6 immutable Homework
+issuance/review и `free_response`. Shared deterministic engine для `fill_blanks`
+и затем matching/sequence/categorize/word-bank/word-builder относится к более
+позднему расширению catalog.
 
 ### Первый review engine: `free_response`
 

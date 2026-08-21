@@ -11,9 +11,10 @@ set -euo pipefail
 # The signature accepts exactly two learner-identity compatibility stages. Both
 # must contain every learner-identity M1-M3 object/invariant plus the M5/M6
 # Auth hardening. The generated snapshot must also contain the current
-# Learning Activity System schema through LA-M5. The expand stage requires the
-# complete, known legacy compatibility contract; the final stage requires the
-# complete M4 helper/type/ACL cleanup. A partial stage is rejected.
+# Learning Activity System schema through LA-M5 and the separate P1.3 persisted
+# Homework authoring contract. The expand stage requires the complete, known
+# legacy compatibility contract; the final stage requires the complete M4
+# helper/type/ACL cleanup. A partial stage is rejected.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -124,6 +125,93 @@ SHIDAO_SCHEMA_SIGNATURE="$({
         values
           ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'),
           ('REFERENCES'), ('TRIGGER')
+      ), lesson_homework_table(table_name) as (
+        values
+          ('lesson_homework'),
+          ('lesson_homework_item')
+      ), lesson_homework_function(
+        signature,
+        expected_volatility,
+        expected_security_definer,
+        authenticated_execute
+      ) as (
+        values
+          (
+            'public.get_my_lesson_homework(uuid)',
+            's'::"char",
+            true,
+            true
+          ),
+          (
+            'public.replace_my_lesson_homework(uuid,integer,jsonb)',
+            'v'::"char",
+            true,
+            true
+          ),
+          (
+            'public.build_lesson_homework_projection(uuid)',
+            's'::"char",
+            false,
+            false
+          )
+      ), lesson_homework_function_marker(signature, marker) as (
+        values
+          (
+            'public.get_my_lesson_homework(uuid)',
+            'public.current_active_session_account_id()'
+          ),
+          (
+            'public.get_my_lesson_homework(uuid)',
+            'course.archived_at is null'
+          ),
+          (
+            'public.replace_my_lesson_homework(uuid,integer,jsonb)',
+            'public.lock_current_account_session_authority('
+          ),
+          (
+            'public.replace_my_lesson_homework(uuid,integer,jsonb)',
+            'lesson_homework_revision_conflict'
+          ),
+          (
+            'public.replace_my_lesson_homework(uuid,integer,jsonb)',
+            'set revision = homework.revision + 1'
+          ),
+          (
+            'public.replace_my_lesson_homework(uuid,integer,jsonb)',
+            'with ordinality as entry(value, position)'
+          ),
+          (
+            'public.replace_my_lesson_homework(uuid,integer,jsonb)',
+            'when ''rich_text'' then not'
+          ),
+          (
+            'public.replace_my_lesson_homework(uuid,integer,jsonb)',
+            'when ''image'' then not'
+          ),
+          (
+            'public.replace_my_lesson_homework(uuid,integer,jsonb)',
+            'when ''external_link'' then not'
+          ),
+          (
+            'public.replace_my_lesson_homework(uuid,integer,jsonb)',
+            'when ''file'' then not'
+          ),
+          (
+            'public.replace_my_lesson_homework(uuid,integer,jsonb)',
+            'public.course_attachment as attachment'
+          ),
+          (
+            'public.replace_my_lesson_homework(uuid,integer,jsonb)',
+            'stored_file.status = ''ready'''
+          ),
+          (
+            'public.replace_my_lesson_homework(uuid,integer,jsonb)',
+            'stored_file.mime_type like ''image/%'''
+          ),
+          (
+            'public.build_lesson_homework_projection(uuid)',
+            'order by item.position'
+          )
       ), live_delivery_table(table_name) as (
         values
           ('course_learner_enrollment'),
@@ -649,6 +737,225 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and to_regclass('public.lesson') is not null
          and to_regclass('public.lesson_component') is not null
          and to_regclass('public.lesson_student_slide') is not null
+         and (
+           select count(*)
+           from pg_class as relation
+           join pg_namespace as namespace
+             on namespace.oid = relation.relnamespace
+           where namespace.nspname = 'public'
+             and relation.relkind = 'r'
+             and relation.relname like 'lesson_homework%'
+         ) = 2
+         and not exists (
+           select 1
+           from lesson_homework_table as required_table
+           left join pg_class as relation
+             on relation.oid = to_regclass(
+               'public.' || required_table.table_name
+             )
+           where relation.oid is null
+              or relation.relkind <> 'r'
+              or not relation.relrowsecurity
+              or pg_get_userbyid(relation.relowner) <> 'supabase_admin'
+         )
+         and not exists (
+           select 1
+           from lesson_homework_table as required_table
+           join pg_policy as policy
+             on policy.polrelid = to_regclass(
+               'public.' || required_table.table_name
+             )
+         )
+         and not exists (
+           select 1
+           from lesson_homework_table as required_table
+           join pg_class as relation
+             on relation.oid = to_regclass(
+               'public.' || required_table.table_name
+             )
+           cross join unnest(array['anon', 'authenticated', 'service_role'])
+             as actor(role_name)
+           cross join checked_table_privilege
+           where has_table_privilege(
+             actor.role_name,
+             relation.oid,
+             checked_table_privilege.privilege_name
+           )
+         )
+         and not exists (
+           select 1
+           from lesson_homework_table as required_table
+           join pg_class as relation
+             on relation.oid = to_regclass(
+               'public.' || required_table.table_name
+             )
+           cross join lateral aclexplode(
+             coalesce(relation.relacl, acldefault('r', relation.relowner))
+           ) as acl_entry
+           where acl_entry.grantee = 0
+         )
+         and not exists (
+           select 1
+           from lesson_homework_function as required_function
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_function.signature)
+           where procedure.oid is null
+              or procedure.provolatile <>
+                required_function.expected_volatility
+              or procedure.prosecdef is distinct from
+                required_function.expected_security_definer
+              or procedure.proconfig is distinct from
+                array['search_path=""']::text[]
+              or pg_get_userbyid(procedure.proowner) <> 'supabase_admin'
+         )
+         and not exists (
+           select 1
+           from lesson_homework_function as required_function
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_function.signature)
+           where not has_function_privilege(
+             'postgres', procedure.oid, 'EXECUTE'
+           )
+              or has_function_privilege(
+                'authenticated', procedure.oid, 'EXECUTE'
+              ) is distinct from required_function.authenticated_execute
+              or has_function_privilege(
+                'anon', procedure.oid, 'EXECUTE'
+              )
+              or has_function_privilege(
+                'service_role', procedure.oid, 'EXECUTE'
+              )
+         )
+         and not exists (
+           select 1
+           from lesson_homework_function as required_function
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_function.signature)
+           cross join lateral aclexplode(
+             coalesce(procedure.proacl, acldefault('f', procedure.proowner))
+           ) as acl_entry
+           left join pg_roles as grantee on grantee.oid = acl_entry.grantee
+           where acl_entry.privilege_type = 'EXECUTE'
+             and coalesce(grantee.rolname, 'PUBLIC') not in (
+               'supabase_admin',
+               'postgres',
+               case
+                 when required_function.authenticated_execute
+                   then 'authenticated'
+                 else 'supabase_admin'
+               end
+             )
+         )
+         and not exists (
+           select 1
+           from lesson_homework_function_marker as required_marker
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_marker.signature)
+           where procedure.oid is null
+              or position(
+                required_marker.marker
+                in lower(pg_get_functiondef(procedure.oid))
+              ) = 0
+         )
+         and not exists (
+           select 1
+           from lesson_homework_function as required_function
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_function.signature)
+           cross join unnest(array[
+             'public.lesson_run',
+             'public.learning_record',
+             'public.learning_evidence',
+             'public.learner_profile',
+             'public.choice_quiz',
+             'public.system_notification'
+           ]) as forbidden_relation(name)
+           where position(
+             forbidden_relation.name
+             in lower(pg_get_functiondef(procedure.oid))
+           ) > 0
+         )
+         and position(
+           'delete from public.lesson_homework as homework'
+           in lower(pg_get_functiondef(
+             'public.replace_my_lesson_homework(uuid,integer,jsonb)'::regprocedure
+           ))
+         ) = 0
+         and exists (
+           select 1
+           from pg_constraint as constraint_definition
+           where constraint_definition.conrelid =
+               to_regclass('public.lesson_homework')
+             and constraint_definition.contype = 'u'
+             and pg_get_constraintdef(constraint_definition.oid) =
+               'UNIQUE (lesson_id)'
+         )
+         and exists (
+           select 1
+           from pg_constraint as constraint_definition
+           where constraint_definition.conrelid =
+               to_regclass('public.lesson_homework_item')
+             and constraint_definition.contype = 'u'
+             and constraint_definition.condeferrable
+             and constraint_definition.condeferred
+             and pg_get_constraintdef(constraint_definition.oid) =
+               'UNIQUE (lesson_homework_id, "position") DEFERRABLE INITIALLY DEFERRED'
+         )
+         and not exists (
+           select 1
+           from pg_constraint as foreign_key
+           where foreign_key.contype = 'f'
+             and foreign_key.confrelid in (
+               to_regclass('public.lesson_homework'),
+               to_regclass('public.lesson_homework_item')
+             )
+             and foreign_key.conrelid not in (
+               to_regclass('public.lesson_homework'),
+               to_regclass('public.lesson_homework_item')
+             )
+         )
+         and (
+           select count(*)
+           from pg_trigger as database_trigger
+           where database_trigger.tgrelid in (
+               to_regclass('public.lesson_homework'),
+               to_regclass('public.lesson_homework_item')
+             )
+             and not database_trigger.tgisinternal
+         ) = 0
+         and position(
+           'for update of homework'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_with_history(uuid)'::regprocedure
+           ))
+         ) > position(
+           'for update of lesson'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_with_history(uuid)'::regprocedure
+           ))
+         )
+         and position(
+           'for update of item'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_with_history(uuid)'::regprocedure
+           ))
+         ) > position(
+           'for update of homework'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_with_history(uuid)'::regprocedure
+           ))
+         )
+         and position(
+           'for update of component'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_with_history(uuid)'::regprocedure
+           ))
+         ) > position(
+           'for update of item'
+           in lower(pg_get_functiondef(
+             'public.delete_lesson_with_history(uuid)'::regprocedure
+           ))
+         )
          and to_regclass('public.learner_profile') is not null
          and to_regclass('public.teacher_learner') is not null
          and to_regclass('public.course_learner') is not null
@@ -3921,14 +4228,20 @@ fi
 sed \
   -e 's/CONSTRAINT learner_objective_state_context_bounds_check CHECK ((((char_length/CONSTRAINT learner_objective_state_context_bounds_check CHECK (((char_length/' \
   -e 's/CONSTRAINT learning_evidence_context_bounds_check CHECK ((((char_length/CONSTRAINT learning_evidence_context_bounds_check CHECK (((char_length/' \
+  -e 's/CONSTRAINT choice_quiz_issue_context_check CHECK ((((char_length/CONSTRAINT choice_quiz_issue_context_check CHECK (((char_length/' \
+  -e 's/CONSTRAINT choice_quiz_response_option_ids_check CHECK ((((cardinality/CONSTRAINT choice_quiz_response_option_ids_check CHECK (((cardinality/' \
   -e '/CONSTRAINT learner_objective_state_context_bounds_check/ s/(char_length(btrim(course_title_at_time)) <= 240)) AND/(char_length(btrim(course_title_at_time)) <= 240) AND/' \
   -e '/CONSTRAINT learning_evidence_context_bounds_check/ s/(char_length(btrim(course_title_at_time)) <= 240)) AND/(char_length(btrim(course_title_at_time)) <= 240) AND/' \
+  -e '/CONSTRAINT choice_quiz_issue_context_check/ s/(char_length(btrim(course_title_at_time)) <= 240)) AND/(char_length(btrim(course_title_at_time)) <= 240) AND/' \
+  -e '/CONSTRAINT choice_quiz_response_option_ids_check/ s/(cardinality(selected_option_ids) <= 20)) AND/(cardinality(selected_option_ids) <= 20) AND/' \
   "${TMP_PUBLIC}" > "${TMP_NORMALIZED}"
 mv "${TMP_NORMALIZED}" "${TMP_PUBLIC}"
 
 for normalized_constraint_prefix in \
   'CONSTRAINT learner_objective_state_context_bounds_check CHECK (((char_length(btrim(course_title_at_time)) >= 1) AND (char_length(btrim(course_title_at_time)) <= 240) AND ((subject_at_time IS NULL)' \
-  'CONSTRAINT learning_evidence_context_bounds_check CHECK (((char_length(btrim(course_title_at_time)) >= 1) AND (char_length(btrim(course_title_at_time)) <= 240) AND ((char_length(btrim(lesson_title_at_time)) >= 1)'; do
+  'CONSTRAINT learning_evidence_context_bounds_check CHECK (((char_length(btrim(course_title_at_time)) >= 1) AND (char_length(btrim(course_title_at_time)) <= 240) AND ((char_length(btrim(lesson_title_at_time)) >= 1)' \
+  'CONSTRAINT choice_quiz_issue_context_check CHECK (((char_length(btrim(course_title_at_time)) >= 1) AND (char_length(btrim(course_title_at_time)) <= 240) AND ((char_length(btrim(lesson_title_at_time)) >= 1)' \
+  'CONSTRAINT choice_quiz_response_option_ids_check CHECK (((cardinality(selected_option_ids) >= 1) AND (cardinality(selected_option_ids) <= 20) AND (array_position(selected_option_ids, NULL::uuid) IS NULL))'; do
   if [[ "$(grep -Fc -- "${normalized_constraint_prefix}" "${TMP_PUBLIC}")" -ne 1 ]]; then
     echo "Refusing to refresh: legacy CHECK normalization is not exact for ${normalized_constraint_prefix}." >&2
     exit 1
@@ -3987,6 +4300,18 @@ for required in \
   "avatar_storage_path text" \
   "avatar_revision integer" \
   "avatar_updated_at timestamp with time zone" \
+  "CREATE TABLE public.lesson_homework (" \
+  "CREATE TABLE public.lesson_homework_item (" \
+  "ALTER TABLE public.lesson_homework ENABLE ROW LEVEL SECURITY;" \
+  "ALTER TABLE public.lesson_homework_item ENABLE ROW LEVEL SECURITY;" \
+  "lesson_homework_lesson_unique" \
+  "lesson_homework_item_position_unique" \
+  "lesson_homework_item_type_allowlist" \
+  "CREATE FUNCTION public.get_my_lesson_homework" \
+  "CREATE FUNCTION public.replace_my_lesson_homework" \
+  "CREATE FUNCTION public.build_lesson_homework_projection" \
+  "public.lesson_homework as homework" \
+  "public.lesson_homework_item as item" \
   "CREATE TABLE public.lesson_run" \
   "CREATE TABLE public.course_learner_enrollment" \
   "CREATE TABLE public.lesson_run_execution_capability" \
@@ -4288,6 +4613,59 @@ for required in \
     exit 1
   fi
 done
+
+if [[ "$(grep -Ec -- '^CREATE TABLE public[.]lesson_homework(_item)? [(]$' "${TMP_RESULT}")" -ne 2 ]]; then
+  echo "Refusing to replace snapshot: generated result has an incomplete or expanded Homework relation set." >&2
+  exit 1
+fi
+
+if grep -Eq \
+  '^CREATE POLICY .* ON public[.]lesson_homework(_item)?([ ;]|$)' \
+  "${TMP_RESULT}"; then
+  echo "Refusing to replace snapshot: generated result exposes a Homework raw-table policy." >&2
+  exit 1
+fi
+
+if grep -Eq \
+  '^GRANT .* ON TABLE public[.]lesson_homework(_item)? TO (anon|authenticated|service_role);$' \
+  "${TMP_RESULT}"; then
+  echo "Refusing to replace snapshot: generated result exposes raw Homework table privileges." >&2
+  exit 1
+fi
+
+for lesson_homework_authenticated_rpc_name in \
+  get_my_lesson_homework \
+  replace_my_lesson_homework; do
+  if [[ "$(grep -Ec -- "^REVOKE ALL ON FUNCTION public[.]${lesson_homework_authenticated_rpc_name}[(].*[)] FROM PUBLIC;$" "${TMP_RESULT}")" -ne 1 \
+    || "$(grep -Ec -- "^GRANT ALL ON FUNCTION public[.]${lesson_homework_authenticated_rpc_name}[(].*[)] TO postgres;$" "${TMP_RESULT}")" -ne 1 \
+    || "$(grep -Ec -- "^GRANT ALL ON FUNCTION public[.]${lesson_homework_authenticated_rpc_name}[(].*[)] TO authenticated;$" "${TMP_RESULT}")" -ne 1 ]]; then
+    echo "Refusing to replace snapshot: generated result has incomplete authenticated ACL for ${lesson_homework_authenticated_rpc_name}." >&2
+    exit 1
+  fi
+done
+
+if [[ "$(grep -Ec -- '^REVOKE ALL ON FUNCTION public[.]build_lesson_homework_projection[(].*[)] FROM PUBLIC;$' "${TMP_RESULT}")" -ne 1 \
+  || "$(grep -Ec -- '^GRANT ALL ON FUNCTION public[.]build_lesson_homework_projection[(].*[)] TO postgres;$' "${TMP_RESULT}")" -ne 1 ]]; then
+  echo "Refusing to replace snapshot: generated result has incomplete closed ACL for build_lesson_homework_projection." >&2
+  exit 1
+fi
+
+if grep -Eq \
+  '^GRANT .* ON FUNCTION public[.](get_my_lesson_homework|replace_my_lesson_homework|build_lesson_homework_projection)[(].*[)] TO (anon|service_role);$' \
+  "${TMP_RESULT}" \
+  || grep -Eq \
+    '^GRANT .* ON FUNCTION public[.]build_lesson_homework_projection[(].*[)] TO authenticated;$' \
+    "${TMP_RESULT}"; then
+  echo "Refusing to replace snapshot: generated result expands the Homework function boundary." >&2
+  exit 1
+fi
+
+if grep -Eq \
+  '^CREATE TABLE public[.](homework_assignment|homework_attempt|homework_response|lesson_homework_assignment|lesson_homework_attempt)([ (]|$)' \
+  "${TMP_RESULT}"; then
+  echo "Refusing to replace snapshot: generated result crosses P1.3 into learner Homework runtime." >&2
+  exit 1
+fi
 
 for choice_quiz_service_rpc_name in \
   issue_choice_quiz_definition_admin \

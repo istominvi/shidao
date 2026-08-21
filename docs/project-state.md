@@ -236,7 +236,9 @@ teacher comments, answer keys/evaluator config, objective/activity metadata,
 private data, authority IDs и raw unsafe JSON не выдаются. Presentation cursor
 не хранит response state и не расширяет compact `LearningRecord`. LA-M4 сама
 по себе не выполняет attempts/evaluation; current production LA-M5 добавляет
-их только для issued `choice_quiz`. Homework и `free_response` остаются LA-M6.
+их только для issued `choice_quiz`. P1.3 Homework authoring уже
+**CURRENT production DB/source/web**; learner
+issuance/attempts/review и `free_response` остаются LA-M6 **NEXT**.
 
 **CURRENT production DB/source/web — LA-M5 `choice_quiz`:** production DB и
 generated snapshot содержат полный additive online activity contract поверх
@@ -1705,8 +1707,25 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   learner-проекцию.
 - Student Screen Slide только группирует видимые ученику Components. У него
   нет собственного контента, названия или второго порядка компонентов.
-- Homework является отдельной поверхностью Lesson. Сейчас это честная
-  заглушка без сохранения данных.
+- Homework является отдельной поверхностью Lesson, а не Component group или
+  Student Screen projection. Current deployed UI содержит persisted P1.3
+  editor и read-only teacher preview.
+- Current production P1.3 DB хранит максимум один mutable authoring aggregate на
+  Lesson и отдельный ordered список items. Разрешены только четыре существующих
+  registry type/schema V1: `rich_text`, `image`, `external_link`, `file`;
+  второго registry нет.
+- Owner-only Homework API `/api/v2/lessons/[lessonId]/homework` предоставляет
+  `GET/PUT/DELETE` поверх узких authenticated RPC. `PUT` заменяет полный список
+  с compare-and-swap по `expectedRevision`; порядок задаётся ordinal массива.
+- Очистка существующего Homework удаляет items, но сохраняет пустой aggregate и
+  увеличивает revision. Это закрывает ABA: stale client не может повторно
+  создать старую версию после clear. Архивация Course сохраняет данные, но
+  закрывает read/mutation; удаление Lesson блокирует Homework после Lesson и
+  каскадно удаляет aggregate/items.
+- P1.3 preview read-only и не создаёт learner state. В slice нет assignment,
+  issuance, due date, individual override, answers/attempts, review,
+  `free_response`, evidence/profile updates, notifications или влияния на
+  LessonRun/Student Screen; всё это остаётся LA-M6 **NEXT**.
 - Материалы принадлежат Course целиком, а не отдельной Lesson.
 - Lesson является и редактируемым содержанием, и точкой назначения. LessonRun
   хранит только конкретное время/проведение, а не копию контента или второй
@@ -2237,7 +2256,8 @@ DB/source/web — в
 - После выбора Lesson backlink содержит название Course, а заголовок имеет
   формат `Урок {position}. {title}`.
 - Lesson содержит вкладки «План / Экран ученика / Домашнее задание / Материалы
-  / История».
+  / История». Current P1.3 source заменяет Homework placeholder owner-only
+  persisted editor/preview.
 - Lesson → «Материалы» является read-only проекцией course-wide attachments и
   не вводит владение файлами на уровне Lesson; «История» показывает реально
   завершённые LessonRun.
@@ -2751,15 +2771,16 @@ History-aware context развёрнут в release `9393080`; production provid
   enforcement, billing units, balance и AI change sets/undo; текущий
   `2 000 000` meter является только информационной тестовой проекцией;
 - parsing/RAG прикреплённых материалов;
-- persisted Homework editor;
+- P1.3 persisted Homework authoring current production DB/source/web после двух
+  forward migrations, postflight, snapshot и dependent application rollout;
 - Realtime/presence для live Student Screen; current production LA-M4 намеренно
   использует reload/reconnect и bounded request polling;
 - остальные deterministic activity engines и `free_response`: current
   production LA-M5 выполняет только `choice_quiz`; authenticated production
   teacher/learner lifecycle для его release **NOT RUN** без safe existing
   session/Run, но это evidence limitation, а не незавершённый rollout.
-  Следующий продуктовый этап — P1.3 persisted Homework authoring, затем LA-M6
-  Homework/`free_response`. Online evidence не подменяет LA-M3 teacher
+  Следующий после P1.3 продуктовый этап — LA-M6 immutable
+  Homework issuance/review и `free_response`. Online evidence не подменяет LA-M3 teacher
   observations, а `LearningRecord` остаётся compact LessonRun outcome, не
   metrics/event container;
 - Realtime/presence для messaging, push/email delivery, attachments,
