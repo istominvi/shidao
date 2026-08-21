@@ -115,7 +115,9 @@ structured observation учитель сначала подтверждает к
 - observation хранится отдельной строкой на LearningRecord + source Component
   и не расширяет compact LearningRecord, learner-safe history или Component
   payload;
-- persisted Homework и детский learner runtime ещё не реализованы.
+- persisted Homework ещё не реализован; child live runtime current в production
+  DB LA-M4 и реализован в repository source, но dependent source/web rollout ещё
+  не заявлен.
 
 Current production LA-M2 дополнительно реализует:
 
@@ -216,6 +218,90 @@ fast-forward push `main` и Coolify deployment `1005`
 postflight прошёл. Authenticated production no-write LA-M3 smoke недоступен в
 guest-only browser session и не заявляется. Последующий execution-record
 docs-only commit runtime не меняет.
+
+## CURRENT production DB / NEXT source/web rollout: LA-M4
+
+LA-M4 создаёт минимальный child live execution context без attempts или
+evaluation. Source contract добавляет:
+
+- explicit revocable Course enrollment для canonical LearnerProfile;
+- отдельную explicit execution capability для exact LessonRun roster row,
+  связанную с current enrollment revision;
+- persisted nullable Student Screen Slide cursor с monotonic CAS revision;
+- teacher access/cursor controls в focused Run workspace;
+- learner `/live/[lessonRunId]` surface с loading, waiting, reconnecting,
+  denied/reauthentication и ended states;
+- bounded request polling. Realtime/presence остаётся follow-up transport.
+
+Authority начинается с live authenticated Account/session и server-resolved
+exactly-one canonical profile. Ни Account/profile link, ни Course audience,
+Run roster, `teacher_learner`, observer grant или AI consent сами по себе не
+дают Course/Run access. Course audience/groups не являются grant prerequisite;
+им являются active linked Account и exact frozen Run roster row. Browser не
+выбирает learner Account/profile UUID.
+Service-only resolver повторно проверяет `auth.sessions`, Account status/session
+cutoff, active enrollment revision, active matching Run capability и Run
+lifecycle на каждом request.
+
+Active per-Run authority выдаётся только linked active member frozen roster
+после actual start. Course-only grant до start оставляет revoked exact-Run
+tombstone без learner authority; первый actual start инициализирует `NULL`
+cursor и активирует tombstone либо материализует capability для active Course
+enrollments exact roster. Уже started до migration Run требует явного teacher
+enable. Scheduled/not-actual-started Runs не отдают
+learner content; completed/cancelled Run возвращает только terminal `ended`
+ранее авторизованному learner. Explicit Course revoke или archive инвалидируют
+downstream capability. Audience/group membership не участвует в grant или
+revoke и не является authority. Смена Course owner запрещена, пока у Course
+есть active enrollments; их нужно явно отозвать до смены владельца.
+Merge/erasure физически удаляют source grants без переноса на target/new
+profile; unlink link-change trigger отзывает old-profile grants и даёт Account
+новый пустой profile без доступа. Переход profile в offline через изменение
+`account_id` немедленно отзывает active live grants; non-active linked Account
+в любом случае отклоняется resolver на каждом read.
+
+Cursor `NULL` означает waiting. Teacher update принимает expected revision;
+stale concurrent request получает conflict и не изменяет новый state. Удаление
+selected Slide устанавливает `NULL` и увеличивает revision; reorder сохраняет
+Slide identity, а projection заново использует current slide/component
+positions. Empty или invalid Slide fail closed в waiting. Completion/cancel
+дают terminal ended state уже авторизованному learner.
+
+Learner projection строится только для current Slide из его
+`learner_visible` Components в canonical Lesson order. Единый registry
+проверяет exact type/schema, отделяет learner delivery от evaluator config и
+fail closed на unsafe payload. Raw StoredFile IDs заменяются response-scoped
+refs. Asset bytes доступны только через opaque same-origin route: он на каждом
+GET заново проверяет session, enrollment, Run capability, current cursor и
+exact revision и не возвращает redirect, signed URL, filename или Storage path.
+Успешный resolver — точка линеаризации конкретного asset GET: каждый запрос,
+начатый после commit revoke/completion/cancel, отклоняется до Storage; уже
+пересекающийся с таким commit bounded stream может завершиться без удержания
+DB-lock на время передачи bytes.
+Delivery никогда не включает `staff_only`, другие Slides, Lesson summary/teacher
+comments, answer keys/evaluator config, objective/activity metadata, authority
+IDs, private data или raw source JSON.
+
+Presentation cursor существует отдельно от Attempt/Response/Evaluation и
+teacher Observation. Он не меняет authored Components/Slides и не расширяет
+compact `LearningRecord`. `choice_quiz` execution остаётся LA-M5, Homework и
+`free_response` — LA-M6.
+
+Production physical schema уже содержит LA-M4. Exact migration имеет `2535`
+строк и SHA-256
+`7fb531bc199b8d6a24afeb1e01ff2730c8e5388a0cbbd233e2679d8e7825319c`;
+production-derived PostgreSQL `15.8` clone прошёл observed `COMMIT`, rollback/
+unchanged replay, `134/134` functional assertions, `26/26` LA races и identity
+regressions. После verified backup production owner apply завершился observed
+`COMMIT`; canonical/publication tuples не изменились, LA-M4 relations остались
+`0/0/0`, а RLS/ACL/function-security и PostgREST probes прошли. Snapshot
+`2026-08-21T07:56:01Z` имеет `31440` строк, `69` public tables, `248` functions,
+SHA-256
+`15d4a432edf4737c189ab444699b15482c7dbb90b85eab4e1b6043f843b79f52`
+и exact body equality с clean clone/replay.
+
+Dependent application commit/push, deployed SHA/image/`SOURCE_COMMIT`,
+container/logs и post-deploy HTTP/browser evidence остаются NEXT.
 
 Ни локально правильный ответ в preview, ни просмотр видео в deployed web сейчас
 не изменяют учебный профиль. Нельзя показывать выдуманный mastery на основании
@@ -535,6 +621,14 @@ delivery payload его не содержит. Нельзя отдавать т�
 надеяться скрыть ключ CSS или JavaScript. Сервер принимает response, выполняет
 проверку и возвращает только разрешённый feedback/reveal.
 
+В current-source LA-M4 server отдаёт ещё более узкую read-only projection:
+только current Slide. Component и asset получают synthetic response-scoped
+refs, а не raw authority/storage IDs. Opaque same-origin asset GET повторяет
+всю live-authority/cursor-revision проверку и server-side проксирует bytes без
+Storage redirect/token/path. Другие Slides нельзя вычислить из response.
+Objective/activity metadata, teacher comment и evaluator fields не нужны для
+показа и исключаются до browser boundary.
+
 ## История и текущее состояние — разные данные
 
 ### История
@@ -774,7 +868,8 @@ contract tests, а не финальной косметической прове
    projections;
 3. **CURRENT:** history/evidence/objective-state projection и transparent
    recommendations для objective-aligned observations;
-4. **NEXT:** learner authorization и teacher-controlled live delivery;
+4. **CURRENT production DB / NEXT source/web rollout:** learner authorization и
+   teacher-controlled live delivery;
 5. **NEXT:** один полный `choice_quiz` через learner-safe delivery и server
    evaluation;
 6. **NEXT:** Homework/free-response review;

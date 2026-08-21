@@ -104,6 +104,33 @@ overlap races correction↔rebuild, merge↔correction/rebuild и erasure↔rebu
 обязательность обоих порядков. Current production DB LA-M3 gate имеет эти
 зелёные результаты. При будущем изменении contract их нужно повторить до apply.
 
+Для LA-M4 learner authorization/live delivery exact production-derived clone
+gate расширяется следующими обязательными проверками:
+
+- до каждого DB write повторить read-only identity/schema sanity и подтвердить
+  ShiDao production/clone, expected LA-M3 head и отсутствие неожиданных LA-M4
+  objects; использовать только project-local connection;
+- exact apply/rollback/apply forward migration, затем functional assertions для
+  explicit Course enrollment + per-Run execution capability, actual-start/open
+  lifecycle, NULL/waiting cursor, CAS conflict, slide delete/reorder/empty,
+  completion/cancel и immediate revoke;
+- raw Data API denial для `anon`, `authenticated` и service-role table access;
+  narrow owner RPC и service-only learner resolver должны разрешаться через
+  PostgREST с exact grants, empty `search_path` и внутренними actor/session/
+  profile/capability checks;
+- multi-session races минимум cursor update↔cursor update,
+  cursor update↔Slide delete/reorder, learner poll↔revoke, completion/cancel↔
+  poll, merge/erasure↔poll; stale cursor никогда не перезаписывает более новый;
+- полный identity functional/concurrency gate подтверждает, что merge/erasure
+  удаляют source capabilities без переноса, unlink отзывает old-profile grants
+  и создаёт fresh profile без access, а logout/session cutoff закрывает
+  следующий poll;
+- application gate: typecheck, lint, full unit/API suite, strict
+  production-mode browser teacher+learner flow, format check, diff check и
+  production build. Browser flow обязан пройти loading/waiting/live/reconnect/
+  denied/ended, accessibility, responsive и reduced-motion states без LA-M5/
+  LA-M6 persistence.
+
 Provider tests в AI-release используют только fake credentials и локальный
 mock. CI/build не получают реальный `ROUTERAI_API_KEY`; если сборка требует
 production secret, release останавливается как нарушение server-runtime
@@ -139,6 +166,166 @@ Worktree должен содержать только изменения тек�
 чужие локальные правки или `.local-backups`.
 
 ## 4. Если release содержит DB migration
+
+### LA-M4 learner authorization/live delivery — DB production execution record / pending web delivery
+
+**Статус: CURRENT production DB / NEXT source/web rollout.** DB apply и snapshot
+ниже основаны на наблюдаемом evidence; application commit/Coolify/post-deploy
+поля остаются `[PENDING]`. Значение `[PENDING]` заменяется только наблюдаемым
+результатом команды или read-only postflight; неизвестное не выводится из local
+success.
+
+Frozen inputs:
+
+- baseline local `HEAD`: `9db3a1fed405555f77864ecbd03c033c56374e43`;
+- verified `origin/main`: `9db3a1fed405555f77864ecbd03c033c56374e43`;
+- production functional source до rollout:
+  `6e3f97c230f688663abaa06a126a56d0d0e2c9c6`;
+- forward migration:
+  `20260821093000_lesson_run_live_delivery.sql`;
+- migration lines / SHA-256: `2535` /
+  `7fb531bc199b8d6a24afeb1e01ff2730c8e5388a0cbbd233e2679d8e7825319c`;
+- expected production DB head before apply:
+  `20260820132725_learning_activity_profile_history_skills_recommendations.sql`;
+- expected PostgreSQL/database/schema identity: PostgreSQL `15.8`, database
+  `postgres`, schema `public`, owner `supabase_admin`.
+
+Read-only sanity before every write:
+
+- current database/user/server version/search path: `postgres` /
+  `supabase_admin` / PostgreSQL `15.8` / `"$user", public, auth, extensions`;
+- canonical ShiDao Account/Course/Lesson/Component/LessonRun counts:
+  `19/6/22/84/2`; full Account/Course/Lesson/Component/LessonRun/
+  LearningRecord/objective/observation tuple `19/6/22/84/2/2/0/0`;
+- current production tables/functions/RLS signature: `66` public tables, `235`
+  functions; LA-M3 contract present/empty;
+- expected LA-M3 objects present and unexpected LA-M4 objects absent:
+  `PASS`;
+- project-local connection confirmed, secret-free captured output:
+  `PASS`; использован только ignored workspace-local
+  `.codex/ssh-db.local.toml`, значения credentials не выводились.
+
+Production-derived clone and rollback rehearsal:
+
+- source dump path / size / mode / restore-list count / SHA-256:
+  `/tmp/shidao-learning-activity-m4-production-source.dump` / `1726769` / `600`
+  / `1914` /
+  `01ff58886b41b40ec157783f995d3b5302466e193c961f86370b81c8822feeda`;
+  restore применил `1913` entries после исключения ровно одного несовместимого
+  GraphQL ACL TOC entry;
+- disposable clone identity and PostgreSQL version:
+  `shidao_learning_activity_test` / `supabase_admin` / PostgreSQL `15.8`;
+- exact owner apply observed `COMMIT`: `PASS`;
+- exact rollback/replay result: safe drop/recreate rollback proof и unchanged
+  apply — `PASS`;
+- functional assertions: `134/134`;
+- LA multi-session races: `26/26`;
+- identity functional/concurrency regressions: functional `PASS`, concurrency
+  `PASS`;
+- schema replay vs expected source contract: exact public body equality after
+  `auth.users`/session/Storage bootstrap и public owner/ACL normalization —
+  `PASS`;
+- disposable clone cleanup: `[PENDING]`.
+
+DB acceptance must explicitly record:
+
+- two-factor authority: Course enrollment + exact Run capability;
+- negative cases for linked profile, Course audience, Run roster,
+  `teacher_learner`, observer grant и AI consent without capabilities;
+- actual-start/open-only lifecycle, NULL/waiting default, reload/reconnect,
+  completion/cancel ended state;
+- deterministic CAS stale conflict, slide deletion → waiting + version,
+  reorder stable identity and empty/invalid slide waiting;
+- immediate explicit teacher revoke, Course archive и session revoke; отдельно
+  подтвердить, что изменение Course audience/group само по себе не создаёт и не
+  отзывает explicit LA-M4 authority;
+- Course owner change fail closed при active enrollments и становится допустим
+  только после их explicit revoke;
+- source merge/erasure cascade without transfer, unlink old-profile revoke и
+  new profile no access,
+  offline profile denial;
+- no raw Data API access and exact narrow RPC resolution through PostgREST.
+
+Application pre-rollout gate:
+
+- typecheck: `PASS` on the final tree after the production snapshot and
+  deterministic schema refresh;
+- lint: `PASS`, `0` warnings and `0` errors;
+- full unit/API result: `PASS`, `936/936`; the first sandbox run had `10`
+  loopback-listen `EPERM` environment failures, and the authorized loopback
+  rerun passed cleanly;
+- strict production-mode browser result including separate teacher/learner
+  sessions: `PASS`, `31/31`, duration `120632.691ms`; coverage includes the
+  LA-M4 teacher, authorized learner and outsider flows;
+- format check / `git diff --check`: `PASS` for the nine edited Markdown files /
+  `PASS` for the full worktree diff;
+- production build pages/result: `PASS`, compiled and generated `73/73`
+  static pages;
+- independent final scope/privacy/RLS-ACL/secrets/generated-artifacts audit:
+  `PASS`, no remaining P0/P1/P2 findings or blockers.
+
+Production backup and apply:
+
+- final pre-write sanity repeated: database `postgres`, user `supabase_admin`,
+  PostgreSQL `15.8`, search path `"$user", public, auth, extensions`; canonical
+  tuple `19/6/22/84/2/2/0/0`, inventory `66/235`, publication `1/9056` MD5
+  `4235054d4453665bfb804b089173b8b6`, LA-M3 present/empty, LA-M4 absent;
+- backup path / size / mode / restore-list count / SHA-256:
+  `/root/shidao-db-backups/shidao-before-learning-activity-live-delivery-20260821T071507Z.dump`
+  / `1726769` / `600` / `1914` /
+  `71b4b3e71c299558b3604918d4de770241595abd6fc98d8ecda1255ab04f2e82`;
+  backup retained;
+- exact tracked migration owner apply observed `COMMIT`: `PASS`;
+- pre/post canonical tuple and LA-M4 relation counts: canonical
+  `19/6/22/84/2/2/0/0` unchanged; publication `1/9056` with MD5
+  `4235054d4453665bfb804b089173b8b6` unchanged; LA-M4 `0/0/0`; inventory
+  `66/235 → 69/248`;
+- RLS/ACL/function owner/security/search-path/grant checks: `3` RLS relations,
+  `0` policies, `10` exact triggers; closed table ACL and exact function owner/
+  `SECURITY DEFINER`/empty `search_path`/grants — `PASS`;
+- raw anon/service table probes and narrow RPC probes:
+  anon raw `401/42501`, service raw `403/42501`, anon teacher RPC `401/42501`,
+  service resolver dummy subject `403/42501`; authenticated safe-session probe
+  remains pending;
+- identity violations and session/profile/capability negative probes:
+  `PASS`; production identity violations `0/0`, dummy resolver subject
+  отклонён `403/42501`, а exact session/profile/capability denials покрыты
+  production-derived functional и concurrency suites.
+
+Snapshot and delivery:
+
+- refreshed production-head snapshot timestamp/version/lines/tables/functions/
+  SHA-256: `2026-08-21T07:56:01Z` / PostgreSQL `15.8` / `31440` / `69` /
+  `248` /
+  `15d4a432edf4737c189ab444699b15482c7dbb90b85eab4e1b6043f843b79f52`;
+- production snapshot equals clean replayed clone snapshot: public body SHA-256
+  `a40e247a8b72ba61e42d2ec376be870f264df3648dabec3869bc20ccae76be8d`,
+  exact equality `PASS`; refresh script `3381` строк, SHA-256
+  `0ed79f6e49b9263e0818cf55e05ba6c21483baf02b69c66e70fc9cf6bd39f0aa`;
+- functional commit and normal fast-forward push result: `[PENDING]`;
+- Coolify deployment id/status: `[PENDING]`;
+- exact commit image tag / image ID / `SOURCE_COMMIT`: `[PENDING]`;
+- container running `StartedAt` / restart count / health: `[PENDING]`;
+- startup/runtime error log matches: `[PENDING]`.
+
+Production postflight:
+
+- host/Origin/CSRF/guest boundaries: `[PENDING]`;
+- unauthenticated teacher and learner live API denial: `[PENDING]`;
+- safe existing authenticated teacher/learner no-write or controlled flow:
+  `[PENDING — do not create production credentials/fixtures merely for smoke]`;
+- waiting/live/reconnect/revoke/ended UI and learner-safe response leak check:
+  `[PENDING]`;
+- browser console errors and mobile/desktop accessibility check: `[PENDING]`;
+- disposable remote/temp artifact cleanup: `[PENDING]`;
+- verified production backup retained: `PASS`, exact backup path, size, mode,
+  restore-list count and SHA-256 recorded above.
+
+Only after every remaining app, deploy, postflight and cleanup marker has
+observed evidence may project-state, roadmap and schema guide change LA-M4
+from `CURRENT production DB / NEXT source and web` to
+`CURRENT production DB, source and web`; skipped authenticated smoke remains
+explicitly unclaimed.
 
 ### LA-M3 profile/evidence/recommendations — production execution record
 
@@ -1386,6 +1573,43 @@ ShiDao V2 application:
   selection отсутствует;
 - signup/confirm/recovery проверяются при изменении Auth flow;
 - секреты и токены не появляются в client/logs.
+
+### LA-M4 live delivery
+
+- Guest получает login/`401` boundary на learner `/live/<run>` и teacher live
+  API; exact V2 Origin без session не обходит Auth;
+- teacher controls доступны только owner focused Run workspace; чужой Course/
+  Run и arbitrary learner UUID получают generic denial без existence leak;
+- Course access и Run capability включаются раздельно. Linked profile,
+  audience/roster, `teacher_learner`, observer grant или AI consent без обеих
+  capabilities не открывают learner surface; offline/non-active Account нельзя
+  включить;
+- scheduled Run остаётся denied, actual-started open Run начинает с waiting,
+  выбор Slide переходит в live, completion/cancel — в ended;
+- в двух browser sessions learner polling/reconnect повторяет persisted cursor,
+  stale teacher tab получает conflict и reload, а новый cursor не откатывается;
+- удаление current Slide даёт waiting с новой revision, reorder сохраняет
+  показ stable Slide и canonical component order, empty/invalid Slide не
+  раскрывает raw content;
+- learner response содержит только current `learner_visible` Components и
+  response-scoped asset refs. Каждый opaque same-origin asset GET повторно
+  проверяет session/capabilities/current cursor/exact revision, не отвечает
+  redirect и не раскрывает signed URL, исходный filename или Storage path.
+  Отдельно доказать linearization: resolver после committed revoke/terminal
+  state не вызывает Storage; уже начатый bounded stream не удерживает DB-lock.
+  Проверить filtered Range/security headers и отсутствие `staff_only`, других
+  Slides, Lesson summary/comments, answer/evaluator fields, objective/activity
+  metadata, Account/profile/Component/Slide/StoredFile IDs и raw JSON. Run UUID
+  допустим только как уже открытый route/asset-route parameter и не является
+  authority;
+- teacher revoke, Course archive, logout/session
+  revoke и subject lifecycle прекращают доступ на следующем poll;
+- learner surface на phone/tablet/desktop не имеет free prev/next navigation,
+  не создаёт document overflow, имеет keyboard/focus/screen-reader states и
+  соблюдает `prefers-reduced-motion`;
+- не создавать production learner/teacher credentials, roster или activity
+  records только ради postflight. При отсутствии безопасных existing sessions
+  записать authenticated smoke как непройденный, не заменяя его guest smoke.
 
 ### Course Builder
 

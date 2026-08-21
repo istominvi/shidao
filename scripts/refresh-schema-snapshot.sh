@@ -11,7 +11,7 @@ set -euo pipefail
 # The signature accepts exactly two learner-identity compatibility stages. Both
 # must contain every learner-identity M1-M3 object/invariant plus the M5/M6
 # Auth hardening. The generated snapshot must also contain the current
-# Learning Activity System schema through LA-M3. The expand stage requires the
+# Learning Activity System schema through LA-M4. The expand stage requires the
 # complete, known legacy compatibility contract; the final stage requires the
 # complete M4 helper/type/ACL cleanup. A partial stage is rejected.
 
@@ -124,6 +124,136 @@ SHIDAO_SCHEMA_SIGNATURE="$({
         values
           ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'), ('TRUNCATE'),
           ('REFERENCES'), ('TRIGGER')
+      ), live_delivery_table(table_name) as (
+        values
+          ('course_learner_enrollment'),
+          ('lesson_run_execution_capability'),
+          ('lesson_run_presentation_state')
+      ), live_delivery_teacher_rpc(signature) as (
+        values
+          ('public.get_lesson_run_live_delivery_admin(uuid)'),
+          ('public.set_lesson_run_live_access(uuid,uuid,boolean,boolean)'),
+          ('public.set_lesson_run_presentation_cursor(uuid,uuid,bigint)')
+      ), live_delivery_service_rpc(signature) as (
+        values
+          ('public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)')
+      ), live_delivery_lifecycle_rpc(signature) as (
+        values
+          ('public.start_lesson_run(uuid,timestamp with time zone)')
+      ), live_delivery_helper(signature) as (
+        values
+          ('public.guard_course_learner_enrollment()'),
+          ('public.guard_lesson_run_execution_capability()'),
+          ('public.guard_lesson_run_presentation_state()'),
+          ('public.clear_deleted_lesson_run_presentation_cursor()'),
+          ('public.revoke_course_learner_live_access(uuid,uuid,uuid,text)'),
+          ('public.revoke_live_access_after_learner_account_change()'),
+          ('public.guard_course_owner_change_with_live_access()'),
+          ('public.revoke_live_access_after_course_archive()'),
+          ('public.revoke_live_access_after_account_deactivation()')
+      ), live_delivery_function(signature) as (
+        select signature from live_delivery_teacher_rpc
+        union all
+        select signature from live_delivery_service_rpc
+        union all
+        select signature from live_delivery_lifecycle_rpc
+        union all
+        select signature from live_delivery_helper
+      ), live_delivery_trigger(
+        table_name,
+        trigger_name,
+        function_signature,
+        trigger_type,
+        column_names,
+        has_when_clause
+      ) as (
+        values
+          (
+            'course_learner_enrollment',
+            'trg_course_learner_enrollment_updated_at',
+            'public.set_updated_at()',
+            19::smallint,
+            array[]::text[],
+            false
+          ),
+          (
+            'lesson_run_execution_capability',
+            'trg_lesson_run_execution_capability_updated_at',
+            'public.set_updated_at()',
+            19::smallint,
+            array[]::text[],
+            false
+          ),
+          (
+            'course_learner_enrollment',
+            'trg_course_learner_enrollment_guard',
+            'public.guard_course_learner_enrollment()',
+            23::smallint,
+            array[]::text[],
+            false
+          ),
+          (
+            'lesson_run_execution_capability',
+            'trg_lesson_run_execution_capability_guard',
+            'public.guard_lesson_run_execution_capability()',
+            23::smallint,
+            array[
+              'course_id',
+              'enrollment_revision',
+              'learner_profile_id',
+              'lesson_run_id',
+              'status'
+            ]::text[],
+            false
+          ),
+          (
+            'lesson_run_presentation_state',
+            'trg_lesson_run_presentation_state_guard',
+            'public.guard_lesson_run_presentation_state()',
+            23::smallint,
+            array['lesson_run_id', 'student_slide_id']::text[],
+            false
+          ),
+          (
+            'lesson_student_slide',
+            'trg_lesson_student_slide_clear_live_cursor',
+            'public.clear_deleted_lesson_run_presentation_cursor()',
+            11::smallint,
+            array[]::text[],
+            false
+          ),
+          (
+            'learner_profile',
+            'trg_learner_profile_revoke_live_access_on_account_change',
+            'public.revoke_live_access_after_learner_account_change()',
+            17::smallint,
+            array['account_id']::text[],
+            true
+          ),
+          (
+            'course',
+            'trg_course_guard_live_access_owner_change',
+            'public.guard_course_owner_change_with_live_access()',
+            19::smallint,
+            array['owner_account_id']::text[],
+            false
+          ),
+          (
+            'course',
+            'trg_course_revoke_live_access_on_archive',
+            'public.revoke_live_access_after_course_archive()',
+            17::smallint,
+            array['archived_at']::text[],
+            false
+          ),
+          (
+            'account',
+            'trg_account_revoke_live_access_on_deactivation',
+            'public.revoke_live_access_after_account_deactivation()',
+            17::smallint,
+            array['status']::text[],
+            true
+          )
       ), communication_table(table_name) as (
         values
           ('communication_thread'),
@@ -270,6 +400,455 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and to_regclass('public.educator_course_revision_review') is not null
          and to_regclass('public.course_publication_self_enrollment') is not null
          and to_regclass('public.course_publication_lesson_completion') is not null
+         and exists (
+           select 1
+           from information_schema.columns
+           where table_schema = 'auth'
+             and table_name = 'sessions'
+             and column_name = 'not_after'
+             and data_type = 'timestamp with time zone'
+         )
+         and not exists (
+           select 1
+           from live_delivery_table as required_table
+           left join pg_class as relation
+             on relation.oid = to_regclass(
+               'public.' || required_table.table_name
+             )
+           where relation.oid is null
+              or relation.relkind <> 'r'
+              or not relation.relrowsecurity
+              or pg_get_userbyid(relation.relowner) <> 'supabase_admin'
+         )
+         and not exists (
+           select 1
+           from live_delivery_table as required_table
+           join pg_class as relation
+             on relation.oid = to_regclass(
+               'public.' || required_table.table_name
+             )
+           join pg_namespace as namespace
+             on namespace.oid = relation.relnamespace
+           join pg_policies as policy
+             on policy.schemaname = namespace.nspname
+            and policy.tablename = relation.relname
+         )
+         and not exists (
+           select 1
+           from live_delivery_table as required_table
+           join pg_class as relation
+             on relation.oid = to_regclass(
+               'public.' || required_table.table_name
+             )
+           cross join unnest(array['anon', 'authenticated', 'service_role'])
+             as actor(role_name)
+           cross join checked_table_privilege
+           where has_table_privilege(
+             actor.role_name,
+             relation.oid,
+             checked_table_privilege.privilege_name
+           )
+         )
+         and not exists (
+           select 1
+           from live_delivery_teacher_rpc as required_rpc
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           where procedure.oid is null
+              or not procedure.prosecdef
+              or procedure.proconfig is null
+              or not (procedure.proconfig @> array['search_path=\"\"'])
+         )
+         and not exists (
+           select 1
+           from live_delivery_teacher_rpc as required_rpc
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           where not has_function_privilege(
+             'authenticated',
+             procedure.oid,
+             'EXECUTE'
+           )
+              or not has_function_privilege(
+                'postgres',
+                procedure.oid,
+                'EXECUTE'
+              )
+         )
+         and not exists (
+           select 1
+           from live_delivery_teacher_rpc as required_rpc
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           cross join unnest(array['anon', 'service_role'])
+             as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             procedure.oid,
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from live_delivery_service_rpc as required_rpc
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           where procedure.oid is null
+              or not procedure.prosecdef
+              or procedure.proconfig is null
+              or not (procedure.proconfig @> array['search_path=\"\"'])
+         )
+         and not exists (
+           select 1
+           from live_delivery_service_rpc as required_rpc
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           where not has_function_privilege(
+             'service_role',
+             procedure.oid,
+             'EXECUTE'
+           )
+              or not has_function_privilege(
+                'postgres',
+                procedure.oid,
+                'EXECUTE'
+              )
+         )
+         and not exists (
+           select 1
+           from live_delivery_service_rpc as required_rpc
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           cross join unnest(array['anon', 'authenticated'])
+             as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             procedure.oid,
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from live_delivery_lifecycle_rpc as required_rpc
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           where procedure.oid is null
+              or not procedure.prosecdef
+              or procedure.proconfig is null
+              or not (procedure.proconfig @> array['search_path=\"\"'])
+         )
+         and not exists (
+           select 1
+           from live_delivery_lifecycle_rpc as required_rpc
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           cross join unnest(array['authenticated', 'service_role', 'postgres'])
+             as actor(role_name)
+           where not has_function_privilege(
+             actor.role_name,
+             procedure.oid,
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from live_delivery_lifecycle_rpc as required_rpc
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_rpc.signature)
+           where has_function_privilege(
+             'anon',
+             procedure.oid,
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from live_delivery_helper as required_helper
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_helper.signature)
+           where procedure.oid is null
+              or not procedure.prosecdef
+              or procedure.proconfig is null
+              or not (procedure.proconfig @> array['search_path=\"\"'])
+              or not has_function_privilege(
+                'postgres',
+                procedure.oid,
+                'EXECUTE'
+              )
+         )
+         and not exists (
+           select 1
+           from live_delivery_helper as required_helper
+           join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_helper.signature)
+           cross join unnest(array['anon', 'authenticated', 'service_role'])
+             as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             procedure.oid,
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from live_delivery_function as required_function
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required_function.signature)
+           where procedure.oid is null
+              or pg_get_userbyid(procedure.proowner) <> 'supabase_admin'
+         )
+         and not exists (
+           select 1
+           from live_delivery_trigger as required_trigger
+           left join pg_trigger as database_trigger
+             on database_trigger.tgrelid = to_regclass(
+               'public.' || required_trigger.table_name
+             )
+            and database_trigger.tgname = required_trigger.trigger_name
+            and not database_trigger.tgisinternal
+           where database_trigger.oid is null
+              or database_trigger.tgenabled <> 'O'
+              or database_trigger.tgfoid <>
+                to_regprocedure(required_trigger.function_signature)
+              or database_trigger.tgtype <> required_trigger.trigger_type
+              or coalesce((
+                select array_agg(
+                  attribute.attname::text
+                  order by attribute.attname::text
+                )
+                from unnest(database_trigger.tgattr::smallint[])
+                  as column_ref(attnum)
+                join pg_attribute as attribute
+                  on attribute.attrelid = database_trigger.tgrelid
+                 and attribute.attnum = column_ref.attnum
+              ), array[]::text[]) <> required_trigger.column_names
+              or (database_trigger.tgqual is not null) is distinct from
+                required_trigger.has_when_clause
+         )
+         and exists (
+           select 1
+           from pg_proc as procedure
+           where procedure.oid = to_regprocedure(
+             'public.cleanup_empty_lesson_student_slide()'
+           )
+             and not procedure.prosecdef
+             and procedure.proconfig @> array['search_path=\"\"']::text[]
+             and pg_get_userbyid(procedure.proowner) = 'supabase_admin'
+         )
+         and exists (
+           select 1
+           from pg_trigger as database_trigger
+           where database_trigger.tgrelid =
+               to_regclass('public.lesson_component')
+             and database_trigger.tgname =
+               'trg_lesson_component_cleanup_empty_student_slide'
+             and not database_trigger.tgisinternal
+             and database_trigger.tgenabled = 'O'
+             and database_trigger.tgfoid = to_regprocedure(
+               'public.cleanup_empty_lesson_student_slide()'
+             )
+             and database_trigger.tgtype = 25::smallint
+             and coalesce((
+               select array_agg(
+                 attribute.attname::text
+                 order by attribute.attname::text
+               )
+               from unnest(database_trigger.tgattr::smallint[])
+                 as column_ref(attnum)
+               join pg_attribute as attribute
+                 on attribute.attrelid = database_trigger.tgrelid
+                and attribute.attnum = column_ref.attnum
+             ), array[]::text[]) = array[
+               'lesson_id',
+               'student_slide_id',
+               'visibility'
+             ]::text[]
+             and database_trigger.tgqual is null
+         )
+         and position(
+           'delete from public.lesson_student_slide as slide'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.cleanup_empty_lesson_student_slide()'
+           )))
+         ) > 0
+         and position(
+           'component.visibility = ''learner_visible'''
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.cleanup_empty_lesson_student_slide()'
+           )))
+         ) > 0
+         and position(
+           'session.not_after'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+           )))
+         ) > 0
+         and position(
+           'lock_learning_activity_learners'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+           )))
+         ) > 0
+         and position(
+           'owner_account.status = ''active'''
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+           )))
+         ) > 0
+         and position(
+           'record.superseded_by_record_id is null'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.get_lesson_run_live_delivery_admin(uuid)'
+           )))
+         ) > 0
+         and position(
+           'capability_member.lesson_run_id = run.id'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.get_lesson_run_live_delivery_admin(uuid)'
+           )))
+         ) > 0
+         and regexp_count(
+           lower(pg_get_functiondef(to_regprocedure(
+             'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+           ))),
+           'for share of session'
+         ) = 2
+         and position(
+           'for share of account, profile'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+           )))
+         ) > 0
+         and position(
+           'for share of security'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+           )))
+         ) > 0
+         and lower(pg_get_functiondef(to_regprocedure(
+           'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+         ))) ~ (
+           'for share of security;[[:space:]]+if not found then'
+           || '[[:space:]]+raise exception '
+           || '''live_delivery_session_revoked'''
+         )
+         and lower(pg_get_functiondef(to_regprocedure(
+           'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+         ))) ~ (
+           'for share of[[:space:]]+owner_account,'
+           || '[[:space:]]+course,[[:space:]]+run,'
+           || '[[:space:]]+enrollment,[[:space:]]+capability'
+         )
+         and lower(pg_get_functiondef(to_regprocedure(
+           'public.set_lesson_run_presentation_cursor(uuid,uuid,bigint)'
+         ))) ~ 'for share of account;'
+         and lower(pg_get_functiondef(to_regprocedure(
+           'public.set_lesson_run_presentation_cursor(uuid,uuid,bigint)'
+         ))) ~ 'for share of course;'
+         and lower(pg_get_functiondef(to_regprocedure(
+           'public.set_lesson_run_presentation_cursor(uuid,uuid,bigint)'
+         ))) ~ 'for share of lesson;'
+         and position(
+           'for update of run'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.set_lesson_run_presentation_cursor(uuid,uuid,bigint)'
+           )))
+         ) > position(
+           'for share of lesson'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.set_lesson_run_presentation_cursor(uuid,uuid,bigint)'
+           )))
+         )
+         and position(
+           'for update of slide'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.set_lesson_run_presentation_cursor(uuid,uuid,bigint)'
+           )))
+         ) > 0
+         and position(
+           'for update of state'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.set_lesson_run_presentation_cursor(uuid,uuid,bigint)'
+           )))
+         ) > position(
+           'for update of slide'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.set_lesson_run_presentation_cursor(uuid,uuid,bigint)'
+           )))
+         )
+         and regexp_count(
+           lower(pg_get_functiondef(to_regprocedure(
+             'public.set_lesson_run_presentation_cursor(uuid,uuid,bigint)'
+           ))),
+           'if not found then'
+         ) >= 7
+         and position(
+           'order by account.id'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.set_lesson_run_live_access(uuid,uuid,boolean,boolean)'
+           )))
+         ) > 0
+         and position(
+           'for share of account'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.set_lesson_run_live_access(uuid,uuid,boolean,boolean)'
+           )))
+         ) > 0
+         and position(
+           'profile.account_id is not distinct from v_learner_account_id'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.set_lesson_run_live_access(uuid,uuid,boolean,boolean)'
+           )))
+         ) > 0
+         and position(
+           'run_capability_not_granted'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.set_lesson_run_live_access(uuid,uuid,boolean,boolean)'
+           )))
+         ) > 0
+         and lower(pg_get_functiondef(to_regprocedure(
+           'public.set_lesson_run_live_access(uuid,uuid,boolean,boolean)'
+         ))) ~ (
+           'if not v_has_current_record[[:space:]]+and not '
+           || '\([[:space:]]+not p_course_access_enabled'
+           || '[[:space:]]+and not p_run_capability_enabled'
+           || '[[:space:]]+and v_capability.lesson_run_id is not null'
+         )
+         and position(
+           'lesson_run_live_learner_not_eligible'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.set_lesson_run_live_access(uuid,uuid,boolean,boolean)'
+           )))
+         ) > position(
+           'perform record.id'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.set_lesson_run_live_access(uuid,uuid,boolean,boolean)'
+           )))
+         )
+         and position(
+           'v_learner_account_ids'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.start_lesson_run(uuid,timestamptz)'
+           )))
+         ) > 0
+         and position(
+           'for share of account'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.start_lesson_run(uuid,timestamptz)'
+           )))
+         ) > 0
+         and position(
+           'profile.account_id is not distinct from expected.account_id'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.start_lesson_run(uuid,timestamptz)'
+           )))
+         ) > 0
+         and position(
+           'on conflict (lesson_run_id, learner_profile_id) do update'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.start_lesson_run(uuid,timestamptz)'
+           )))
+         ) > 0
          and not exists (
            select 1
            from communication_table as required_table
@@ -2391,9 +2970,14 @@ SCHEMA_STAGE="${SHIDAO_SCHEMA_SIGNATURE#shidao-v2-}"
 TMP_PUBLIC="$(mktemp)"
 TMP_CROSS="$(mktemp)"
 TMP_RESULT="$(mktemp)"
+TMP_NORMALIZED="$(mktemp)"
 
 cleanup() {
-  rm -f "${TMP_PUBLIC}" "${TMP_CROSS}" "${TMP_RESULT}"
+  rm -f \
+    "${TMP_PUBLIC}" \
+    "${TMP_CROSS}" \
+    "${TMP_RESULT}" \
+    "${TMP_NORMALIZED}"
 }
 trap cleanup EXIT
 
@@ -2468,6 +3052,28 @@ else
     "${DATABASE_URL}" > "${TMP_PUBLIC}"
 fi
 
+# PostgreSQL 15 may add one redundant grouping parenthesis when these two
+# legacy LA-M3 CHECK expressions are dumped from the original database, then
+# remove it after dump -> restore -> dump. Normalize only the named constraint
+# prefixes so production, clone, and clean replay snapshots remain byte-stable
+# without mutating the live constraints for a formatting-only difference.
+sed \
+  -e 's/CONSTRAINT learner_objective_state_context_bounds_check CHECK ((((char_length/CONSTRAINT learner_objective_state_context_bounds_check CHECK (((char_length/' \
+  -e 's/CONSTRAINT learning_evidence_context_bounds_check CHECK ((((char_length/CONSTRAINT learning_evidence_context_bounds_check CHECK (((char_length/' \
+  -e '/CONSTRAINT learner_objective_state_context_bounds_check/ s/(char_length(btrim(course_title_at_time)) <= 240)) AND/(char_length(btrim(course_title_at_time)) <= 240) AND/' \
+  -e '/CONSTRAINT learning_evidence_context_bounds_check/ s/(char_length(btrim(course_title_at_time)) <= 240)) AND/(char_length(btrim(course_title_at_time)) <= 240) AND/' \
+  "${TMP_PUBLIC}" > "${TMP_NORMALIZED}"
+mv "${TMP_NORMALIZED}" "${TMP_PUBLIC}"
+
+for normalized_constraint_prefix in \
+  'CONSTRAINT learner_objective_state_context_bounds_check CHECK (((char_length(btrim(course_title_at_time)) >= 1) AND (char_length(btrim(course_title_at_time)) <= 240) AND ((subject_at_time IS NULL)' \
+  'CONSTRAINT learning_evidence_context_bounds_check CHECK (((char_length(btrim(course_title_at_time)) >= 1) AND (char_length(btrim(course_title_at_time)) <= 240) AND ((char_length(btrim(lesson_title_at_time)) >= 1)'; do
+  if [[ "$(grep -Fc -- "${normalized_constraint_prefix}" "${TMP_PUBLIC}")" -ne 1 ]]; then
+    echo "Refusing to refresh: legacy CHECK normalization is not exact for ${normalized_constraint_prefix}." >&2
+    exit 1
+  fi
+done
+
 {
   echo "-- CURRENT SCHEMA SNAPSHOT (post-migration reference)"
   echo "-- Generated by scripts/refresh-schema-snapshot.sh on $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
@@ -2521,6 +3127,12 @@ for required in \
   "avatar_revision integer" \
   "avatar_updated_at timestamp with time zone" \
   "CREATE TABLE public.lesson_run" \
+  "CREATE TABLE public.course_learner_enrollment" \
+  "CREATE TABLE public.lesson_run_execution_capability" \
+  "CREATE TABLE public.lesson_run_presentation_state" \
+  "ALTER TABLE public.course_learner_enrollment ENABLE ROW LEVEL SECURITY;" \
+  "ALTER TABLE public.lesson_run_execution_capability ENABLE ROW LEVEL SECURITY;" \
+  "ALTER TABLE public.lesson_run_presentation_state ENABLE ROW LEVEL SECURITY;" \
   "CREATE TABLE public.learning_record" \
   "CREATE TABLE public.lesson_component_observation" \
   "CREATE TABLE public.learning_objective" \
@@ -2628,6 +3240,56 @@ for required in \
   "CREATE FUNCTION public.get_my_learning_activity_profile" \
   "CREATE FUNCTION public.get_observed_learner_activity_profile" \
   "CREATE FUNCTION public.build_course_learning_activity_context" \
+  "CREATE FUNCTION public.guard_course_learner_enrollment" \
+  "CREATE FUNCTION public.guard_lesson_run_execution_capability" \
+  "CREATE FUNCTION public.guard_lesson_run_presentation_state" \
+  "CREATE FUNCTION public.clear_deleted_lesson_run_presentation_cursor" \
+  "CREATE FUNCTION public.cleanup_empty_lesson_student_slide" \
+  "CREATE FUNCTION public.revoke_course_learner_live_access" \
+  "CREATE FUNCTION public.revoke_live_access_after_learner_account_change" \
+  "CREATE FUNCTION public.guard_course_owner_change_with_live_access" \
+  "CREATE FUNCTION public.revoke_live_access_after_course_archive" \
+  "CREATE FUNCTION public.revoke_live_access_after_account_deactivation" \
+  "CREATE FUNCTION public.get_lesson_run_live_delivery_admin" \
+  "CREATE FUNCTION public.set_lesson_run_live_access" \
+  "CREATE FUNCTION public.set_lesson_run_presentation_cursor" \
+  "CREATE FUNCTION public.resolve_lesson_run_live_source_admin" \
+  "CREATE FUNCTION public.start_lesson_run" \
+  "session.not_after" \
+  "lock_learning_activity_learners" \
+  "owner_account.status = 'active'" \
+  "for share of session" \
+  "for share of account, profile" \
+  "for share of security" \
+  "for share of account;" \
+  "for share of course;" \
+  "for share of lesson;" \
+  "for share of" \
+  "owner_account," \
+  "capability;" \
+  "order by account.id" \
+  "v_learner_account_ids" \
+  "profile.account_id is not distinct from v_learner_account_id" \
+  "profile.account_id is not distinct from expected.account_id" \
+  "perform record.id" \
+  "lesson_run_live_learner_not_eligible" \
+  "capability_member.lesson_run_id = run.id" \
+  "v_has_current_record" \
+  "run_capability_not_granted" \
+  "on conflict (lesson_run_id, learner_profile_id) do update" \
+  "for update of slide" \
+  "for update of state" \
+  "CREATE TRIGGER trg_course_learner_enrollment_updated_at" \
+  "CREATE TRIGGER trg_lesson_run_execution_capability_updated_at" \
+  "CREATE TRIGGER trg_course_learner_enrollment_guard" \
+  "CREATE TRIGGER trg_lesson_run_execution_capability_guard" \
+  "CREATE TRIGGER trg_lesson_run_presentation_state_guard" \
+  "CREATE TRIGGER trg_learner_profile_revoke_live_access_on_account_change" \
+  "CREATE TRIGGER trg_course_guard_live_access_owner_change" \
+  "CREATE TRIGGER trg_course_revoke_live_access_on_archive" \
+  "CREATE TRIGGER trg_account_revoke_live_access_on_deactivation" \
+  "CREATE TRIGGER trg_lesson_student_slide_clear_live_cursor" \
+  "CREATE TRIGGER trg_lesson_component_cleanup_empty_student_slide" \
   "CREATE FUNCTION public.materialize_learning_evidence_for_records" \
   "CREATE FUNCTION public.capture_observation_component_visibility" \
   "CREATE FUNCTION public.rebuild_learner_objective_state_for_actor" \

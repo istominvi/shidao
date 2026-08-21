@@ -23,6 +23,12 @@ import {
 const APP_SESSION_SECRET = "e2e-app-session-secret-value-with-minimum-32-chars";
 const E2E_ADULT_USER_ID = "11111111-1111-4111-8111-111111111111";
 const E2E_ACCOUNT_ID = "22222222-2222-4222-8222-222222222222";
+const E2E_LIVE_LEARNER_USER_ID = "11111111-1111-4111-8111-111111111112";
+const E2E_LIVE_LEARNER_ACCOUNT_ID = "22222222-2222-4222-8222-222222222223";
+const E2E_LIVE_LEARNER_ACCESS_TOKEN = "e2e-live-learner-access-token";
+const E2E_LIVE_OUTSIDER_USER_ID = "11111111-1111-4111-8111-111111111113";
+const E2E_LIVE_OUTSIDER_ACCOUNT_ID = "22222222-2222-4222-8222-222222222224";
+const E2E_LIVE_OUTSIDER_ACCESS_TOKEN = "e2e-live-outsider-access-token";
 const E2E_TEACHER_ID = "55555555-5555-4555-8555-555555555555";
 const E2E_SCHOOL_ID = "66666666-6666-4666-8666-666666666666";
 const E2E_COURSE_ID = "33333333-3333-4333-8333-333333333333";
@@ -1836,6 +1842,7 @@ function buildSessionCookieValue(input: {
   uid: string;
   email: string;
   fullName: string;
+  accessToken?: string;
 }) {
   const issuedAt = Date.now();
   const previousSecret = process.env.APP_SESSION_SECRET;
@@ -1844,7 +1851,7 @@ function buildSessionCookieValue(input: {
   try {
     const supabaseSession = buildAppSessionSupabaseTokens(
       {
-        accessToken: E2E_SUPABASE_ACCESS_TOKEN,
+        accessToken: input.accessToken ?? E2E_SUPABASE_ACCESS_TOKEN,
         refreshToken: "e2e-supabase-user-refresh-token",
         expiresInSeconds: 3600,
       },
@@ -1876,6 +1883,24 @@ function authenticatedCookieValue() {
     uid: E2E_ADULT_USER_ID,
     email: "adult-e2e@example.test",
     fullName: "E2E Adult",
+  });
+}
+
+function liveLearnerCookieValue() {
+  return buildSessionCookieValue({
+    uid: E2E_LIVE_LEARNER_USER_ID,
+    email: "learner-live-e2e@example.test",
+    fullName: "Live Learner",
+    accessToken: E2E_LIVE_LEARNER_ACCESS_TOKEN,
+  });
+}
+
+function liveOutsiderCookieValue() {
+  return buildSessionCookieValue({
+    uid: E2E_LIVE_OUTSIDER_USER_ID,
+    email: "outsider-live-e2e@example.test",
+    fullName: "Live Outsider",
+    accessToken: E2E_LIVE_OUTSIDER_ACCESS_TOKEN,
   });
 }
 
@@ -2162,16 +2187,37 @@ async function handleMockSupabase(
   }
 
   if (requestUrl.pathname === "/rest/v1/rpc/current_account_auth_context") {
+    const authorization = request.headers.authorization ?? "";
+    const isLiveLearner = authorization.includes(E2E_LIVE_LEARNER_ACCESS_TOKEN);
+    const isLiveOutsider = authorization.includes(
+      E2E_LIVE_OUTSIDER_ACCESS_TOKEN,
+    );
     json(response, 200, [
       {
-        account_id: E2E_ACCOUNT_ID,
-        auth_user_id: E2E_ADULT_USER_ID,
-        verified_email: "adult-e2e@example.test",
-        display_name: "E2E Adult",
+        account_id: isLiveLearner
+          ? E2E_LIVE_LEARNER_ACCOUNT_ID
+          : isLiveOutsider
+            ? E2E_LIVE_OUTSIDER_ACCOUNT_ID
+            : E2E_ACCOUNT_ID,
+        auth_user_id: isLiveLearner
+          ? E2E_LIVE_LEARNER_USER_ID
+          : isLiveOutsider
+            ? E2E_LIVE_OUTSIDER_USER_ID
+            : E2E_ADULT_USER_ID,
+        verified_email: isLiveLearner
+          ? "learner-live-e2e@example.test"
+          : isLiveOutsider
+            ? "outsider-live-e2e@example.test"
+            : "adult-e2e@example.test",
+        display_name: isLiveLearner
+          ? "Live Learner"
+          : isLiveOutsider
+            ? "Live Outsider"
+            : "E2E Adult",
         locale: "ru",
         timezone: "Asia/Chita",
         has_pin: true,
-        can_author_educator_courses: true,
+        can_author_educator_courses: !isLiveLearner && !isLiveOutsider,
         sessions_invalid_before: null,
         avatar_kind: "preset",
         avatar_preset_key: "sd-avatar-v1-01",
@@ -13591,6 +13637,340 @@ test("browser smoke: mixed Course audience deduplicates direct and grouped learn
     );
   } finally {
     await runtime.close();
+  }
+});
+
+test("browser smoke: LA-M4 teacher cursor drives one authorized learner while outsider stays denied", async (t) => {
+  if (browserSmokeUnavailableReason) {
+    t.skip(browserSmokeUnavailableReason);
+    return;
+  }
+
+  resetE2eCompletionFlow();
+  resetE2eObservationFlow();
+  e2eScheduleFixtureVisible = false;
+  e2eObservationFixtureEnabled = true;
+  const runPath = `/courses/${E2E_COURSE_ID}/runs/${E2E_COMPLETION_PRIVATE_RUN_ID}`;
+  const livePath = `/live/${E2E_COMPLETION_PRIVATE_RUN_ID}`;
+  const teacher = await openPage({ cookie: authenticatedCookieValue() });
+  const learner = await openPage({ cookie: liveLearnerCookieValue() });
+  const outsider = await openPage({ cookie: liveOutsiderCookieValue() });
+  const guest = await openPage();
+  const slideId = E2E_STUDENT_SLIDE_ID;
+  const secondSlideId = "77777777-7777-4777-8777-777777777771";
+  const liveAssetRef = "00000000-0000-4000-8000-000000000001";
+  const forbiddenOwnerAccountId = "99999999-9999-4999-8999-999999999999";
+  let cursor = { slideId: null as string | null, revision: 1 };
+  let courseAccessEnabled = false;
+  let runCapabilityEnabled = false;
+
+  const delivery = () => ({
+    run: { started: true, ended: false },
+    cursor,
+    slides: [
+      { id: slideId, position: 1, componentCount: 2 },
+      { id: secondSlideId, position: 2, componentCount: 1 },
+    ],
+    learners: [
+      {
+        learnerProfileId: E2E_SELF_LEARNER_ID,
+        displayName: "Live Learner",
+        identityState: "claimed" as const,
+        courseAccessEnabled,
+        runCapabilityEnabled,
+      },
+    ],
+  });
+
+  try {
+    await teacher.page.route(
+      `**/api/v2/lesson-runs/${E2E_COMPLETION_PRIVATE_RUN_ID}/live-delivery**`,
+      async (route) => {
+        const url = new URL(route.request().url());
+        if (url.pathname.endsWith("/access")) {
+          const body = route.request().postDataJSON() as {
+            learnerProfileId: string;
+            courseAccessEnabled: boolean;
+            runCapabilityEnabled: boolean;
+          };
+          assert.equal(body.learnerProfileId, E2E_SELF_LEARNER_ID);
+          courseAccessEnabled = body.courseAccessEnabled;
+          runCapabilityEnabled = body.runCapabilityEnabled;
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ delivery: delivery() }),
+          });
+          return;
+        }
+        if (url.pathname.endsWith("/cursor")) {
+          const body = route.request().postDataJSON() as {
+            slideId: string | null;
+            expectedRevision: number;
+          };
+          assert.equal(body.expectedRevision, cursor.revision);
+          cursor = { slideId: body.slideId, revision: cursor.revision + 1 };
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ cursor }),
+          });
+          return;
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ delivery: delivery() }),
+        });
+      },
+    );
+
+    await learner.page.route(
+      `**/api/v2/me/live-runs/${E2E_COMPLETION_PRIVATE_RUN_ID}`,
+      async (route) => {
+        if (!courseAccessEnabled || !runCapabilityEnabled) {
+          await route.fulfill({
+            status: 404,
+            contentType: "application/json",
+            body: JSON.stringify({ error: "Live-урок недоступен." }),
+          });
+          return;
+        }
+        if (!cursor.slideId) {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              state: { kind: "waiting", cursorRevision: cursor.revision },
+            }),
+          });
+          return;
+        }
+        const activeSecondSlide = cursor.slideId === secondSlideId;
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            state: {
+              kind: "active",
+              cursorRevision: cursor.revision,
+              slide: {
+                position: activeSecondSlide ? 2 : 1,
+                componentCount: activeSecondSlide ? 1 : 2,
+                components: activeSecondSlide
+                  ? [
+                      {
+                        key: "component-3",
+                        typeKey: "rich_text",
+                        schemaVersion: 1,
+                        position: 3,
+                        payload: {
+                          content: "Второй live-слайд",
+                          format: "markdown",
+                        },
+                        placement: { width: "content", textAlign: "start" },
+                      },
+                    ]
+                  : [
+                      {
+                        key: "component-1",
+                        typeKey: "choice_quiz",
+                        schemaVersion: 1,
+                        position: 1,
+                        payload: {
+                          question: "Какой вариант обсуждаем?",
+                          options: [
+                            {
+                              id: "55555555-5555-4555-8555-555555555555",
+                              label: "Вариант A",
+                            },
+                            {
+                              id: "66666666-6666-4666-8666-666666666666",
+                              label: "Вариант B",
+                            },
+                          ],
+                          allowMultiple: false,
+                        },
+                        placement: { width: "content", compact: false },
+                      },
+                      {
+                        key: "component-2",
+                        typeKey: "file",
+                        schemaVersion: 1,
+                        position: 2,
+                        payload: {
+                          storedFileId: liveAssetRef,
+                          label: "Материал урока",
+                          openMode: "download",
+                        },
+                        placement: { width: "content", display: "link" },
+                      },
+                    ],
+              },
+              assets: activeSecondSlide
+                ? []
+                : [
+                    {
+                      ref: liveAssetRef,
+                      mimeType: "application/pdf",
+                      url: `/api/v2/me/live-runs/${E2E_COMPLETION_PRIVATE_RUN_ID}/assets/${liveAssetRef}?revision=${cursor.revision}`,
+                    },
+                  ],
+            },
+          }),
+        });
+      },
+    );
+    await outsider.page.route(
+      `**/api/v2/me/live-runs/${E2E_COMPLETION_PRIVATE_RUN_ID}`,
+      (route) =>
+        route.fulfill({
+          status: 404,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "Live-урок недоступен." }),
+        }),
+    );
+
+    await guest.page.goto(livePath, { waitUntil: "domcontentloaded" });
+    await guest.page.waitForURL(/\/login(?:\?|$)/);
+    const guestLoginUrl = new URL(guest.page.url());
+    assert.equal(guestLoginUrl.searchParams.get("next"), livePath);
+
+    await teacher.page.goto(runPath, { waitUntil: "networkidle" });
+    await teacher.page
+      .getByRole("heading", {
+        name: "Экран ученика в реальном времени",
+        exact: true,
+      })
+      .waitFor();
+    const courseAccessSaved = teacher.page.waitForResponse((response) =>
+      response
+        .url()
+        .endsWith(
+          `/api/v2/lesson-runs/${E2E_COMPLETION_PRIVATE_RUN_ID}/live-delivery/access`,
+        ),
+    );
+    await teacher.page
+      .getByRole("checkbox", {
+        name: "Доступ к курсу для Live Learner, ученик 1",
+        exact: true,
+      })
+      .click();
+    assert.equal((await courseAccessSaved).status(), 200);
+    assert.equal(courseAccessEnabled, true);
+    const runAccessSaved = teacher.page.waitForResponse((response) =>
+      response
+        .url()
+        .endsWith(
+          `/api/v2/lesson-runs/${E2E_COMPLETION_PRIVATE_RUN_ID}/live-delivery/access`,
+        ),
+    );
+    await teacher.page
+      .getByRole("checkbox", {
+        name: "Доступ к этому запуску для Live Learner, ученик 1",
+        exact: true,
+      })
+      .click();
+    assert.equal((await runAccessSaved).status(), 200);
+    assert.equal(runCapabilityEnabled, true);
+
+    await learner.page.goto(livePath, { waitUntil: "domcontentloaded" });
+    await learner.page
+      .getByRole("heading", { name: "Ждём следующий слайд", exact: true })
+      .waitFor();
+
+    await outsider.page.goto(livePath, { waitUntil: "domcontentloaded" });
+    await outsider.page
+      .getByRole("heading", { name: "Live-урок недоступен", exact: true })
+      .waitFor();
+
+    await teacher.page
+      .getByRole("button", { name: /Слайд 1.*2 компонентов/ })
+      .click();
+    await learner.page
+      .getByRole("heading", { name: "Слайд 1", exact: true })
+      .waitFor({ timeout: 8_000 });
+    assert.equal(
+      await learner.page.getByRole("radio", { name: "Вариант A" }).isEnabled(),
+      false,
+    );
+    const materialHref = await learner.page
+      .getByRole("link", { name: "Материал урока", exact: true })
+      .getAttribute("href");
+    assert.equal(
+      materialHref,
+      `/api/v2/me/live-runs/${E2E_COMPLETION_PRIVATE_RUN_ID}/assets/${liveAssetRef}?revision=${cursor.revision}`,
+    );
+    assert.doesNotMatch(
+      materialHref ?? "",
+      new RegExp(`${forbiddenOwnerAccountId}|storage|signed|token=`, "i"),
+    );
+    assert.equal(
+      await learner.page
+        .getByRole("button", { name: "Зафиксировать выбор" })
+        .isEnabled(),
+      false,
+    );
+    const learnerHtml = await learner.page.content();
+    assert.doesNotMatch(
+      learnerHtml,
+      /isCorrect|explanation|PRIVATE ACTIVITY NOTE|teacherComment/,
+    );
+    assert.equal(
+      await learner.page
+        .getByRole("button", { name: /Следующий слайд/ })
+        .count(),
+      0,
+    );
+
+    await teacher.page
+      .getByRole("button", { name: /Слайд 2.*1 компонентов/ })
+      .click();
+    await learner.page
+      .getByRole("heading", { name: "Слайд 2", exact: true })
+      .waitFor({ timeout: 8_000 });
+    await learner.page
+      .getByText("Второй live-слайд", { exact: true })
+      .waitFor();
+
+    await teacher.page.goto(runPath, { waitUntil: "networkidle" });
+    assert.equal(
+      await teacher.page
+        .getByRole("button", { name: /Слайд 2.*1 компонентов/ })
+        .getAttribute("aria-pressed"),
+      "true",
+    );
+    await learner.page.goto(livePath, { waitUntil: "domcontentloaded" });
+    await learner.page
+      .getByRole("heading", { name: "Слайд 2", exact: true })
+      .waitFor({ timeout: 8_000 });
+
+    const runAccessRevoked = teacher.page.waitForResponse((response) =>
+      response
+        .url()
+        .endsWith(
+          `/api/v2/lesson-runs/${E2E_COMPLETION_PRIVATE_RUN_ID}/live-delivery/access`,
+        ),
+    );
+    await teacher.page
+      .getByRole("checkbox", {
+        name: "Доступ к этому запуску для Live Learner, ученик 1",
+        exact: true,
+      })
+      .click();
+    assert.equal((await runAccessRevoked).status(), 200);
+    assert.equal(runCapabilityEnabled, false);
+    await learner.page
+      .getByRole("heading", { name: "Live-урок недоступен", exact: true })
+      .waitFor({ timeout: 8_000 });
+  } finally {
+    e2eObservationFixtureEnabled = false;
+    await Promise.all([
+      teacher.close(),
+      learner.close(),
+      outsider.close(),
+      guest.close(),
+    ]);
   }
 });
 

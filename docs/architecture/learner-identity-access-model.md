@@ -5,7 +5,7 @@ identity, teacher directory, observer access и consented AI history
 
 **Дата решения:** 9 августа 2026 года
 
-**Актуально на:** 15 августа 2026 года
+**Актуально на:** 21 августа 2026 года
 
 **Implementation state:** production содержит полный application/API/UI slice,
 M1–M6 contract schema и Account-avatar contract. Четыре verified backup, strict
@@ -26,6 +26,12 @@ landing является прямой ссылкой `/profile`, а единст
 LearnerProfile, session projection или authorization boundary и ещё не
 заявляется deployed behavior.
 
+**CURRENT production DB / NEXT source/web rollout — LA-M4:** identity boundary
+теперь имеет отдельные explicit
+`Course enrollment → per-Run execution capability` для child live delivery.
+Production identity schema уже содержит additive contract; dependent deployed
+application evidence остаётся NEXT.
+
 ## Product decision
 
 `Account` — единственная login identity. «Преподаватель», «учащийся» и
@@ -37,7 +43,9 @@ Account
 ├── exactly one linked canonical LearnerProfile
 ├── owns Course 0..N
 ├── TeacherLearner 0..N → LearnerProfile
-└── ObserverGrant 0..N → LearnerProfile
+├── ObserverGrant 0..N → LearnerProfile
+└── explicit Course enrollment 0..N
+    └── explicit LessonRun execution capability 0..N
 
 Offline LearnerProfile
 └── account_id IS NULL до recipient-bound claim/activation
@@ -238,6 +246,8 @@ same-LessonRun conflict resolutions. Confirm повторно проверяет
 - сохраняет target teacher-local name, source local name только в private
   metadata audit;
 - переносит source data в target и физически удаляет source profile;
+- LA-M4 Course enrollment и Run capabilities source profile удаляются по
+  canonical FK cascade и намеренно не переносятся на target;
 - создаёт immutable `learner_profile_alias` для старого UUID;
 - не изменяет observer/AI grants target;
 - fail closed, если source неожиданно имеет grants, open/running Run или draft
@@ -374,16 +384,19 @@ UI surfaces:
 ## Subject-only unlink и erasure
 
 Safe unlink — узкий recovery для ошибочной direct link. Он возможен только без
-merge lineage, LearningRecord и dependent grants. В одной transaction прежний
-profile становится offline, а Account получает новый empty profile, сохраняя
-exactly-one.
+merge lineage, LearningRecord и существующих identity/observer/consent/audience
+blockers. LA-M4 grants намеренно не переносятся и не становятся отдельным
+unlink blocker: в одной transaction Account-link-change trigger отзывает их у
+прежнего profile, прежний profile становится offline, а Account получает новый
+empty profile без enrollment/capability, сохраняя exactly-one.
 
 Learning-data erasure/reset требует recent reauthentication, preview counts,
 expiring fingerprint и повторного confirm. Оно охватывает current target и всю
 source lineage:
 
 - удаляет subject LearningRecord, teacher/group/Course links, invitations,
-  observer grants, AI consents и credential-recovery grants;
+  observer grants, AI consents, LA-M4 enrollments/Run capabilities и
+  credential-recovery grants;
 - физически удаляет aliases;
 - удаляет/pseudonymizes subject/profile IDs в audit без PII/private text;
 - не удаляет LearningRecord других learners, где Account был recorder;
@@ -423,6 +436,16 @@ closed как stale.
 - Actor обычного browser request определяется через encrypted app session,
   current Supabase JWT и `auth.uid()`.
 - Caller-supplied Auth/Account UUID не является authority.
+- Learner live route не принимает profile UUID как subject selector. Он
+  декодирует только trusted JWT `sub`/`session_id`, а service-only resolver
+  подтверждает их через `auth.sessions`, active Account,
+  `account_security.sessions_invalid_before` и exactly-one canonical profile.
+- Live authority требует одновременно current explicit Course enrollment и
+  matching active per-Run execution capability. Account/profile link,
+  Course audience/Run roster, `teacher_learner`, observer grant и AI consent
+  без этих capabilities не дают доступа. Course audience/groups не являются
+  prerequisite; prerequisite для grant — exact frozen `learning_record` roster
+  row и active linked Account.
 - Identity/observer/AI/credential tables имеют RLS и нулевые direct privileges
   `anon/authenticated`.
 - User-facing RPC возвращают strict allowlisted DTO. Repository валидирует
@@ -439,6 +462,10 @@ closed как stale.
   projection RPC, а не расширенную raw policy.
 - Email/link acceptance pages имеют `Cache-Control: no-store` и
   `Referrer-Policy: no-referrer`.
+- LA-M4 raw enrollment/capability/presentation tables не получают direct
+  `anon/authenticated` grants. Teacher использует owner-scoped narrow RPC;
+  learner source resolver доступен только service role, имеет пустой
+  `search_path` и повторяет exact session/profile/capability/Run checks.
 
 ## Physical implementation map
 
@@ -452,6 +479,8 @@ closed как stale.
   `20260809090000_learner_identity_provisional_auth_metadata_sync.sql`;
 - Account avatar contract:
   `20260814050347_account_profile_avatars.sql`;
+- current production DB LA-M4 forward contract:
+  `20260821093000_lesson_run_live_delivery.sql`;
 - domain/contracts/service/repositories:
   `src/modules/learner-identity/`;
 - learner-safe AI adapter:
@@ -475,8 +504,12 @@ closed как stale.
   `src/lib/server/profile-avatar-storage.ts` и
   `src/lib/server/profile-avatar-reconciliation.ts`;
 - current schema guide: `docs/database/current-schema.md`;
-- physical snapshot: `supabase/schema/current-schema.sql` after the applicable
-  verified expand/contract refresh.
+- LA-M4 module/routes:
+  `src/modules/live-delivery/`,
+  `src/app/api/v2/me/live-runs/[lessonRunId]`,
+  `src/app/api/v2/lesson-runs/[lessonRunId]/live-delivery/`;
+- physical snapshot: `supabase/schema/current-schema.sql`, refreshed from the
+  production LA-M4 head `2026-08-21T07:56:01Z`.
 
 ## Production verification
 
@@ -498,6 +531,19 @@ metadata. Admin delete также вернул HTTP `200`; cleanup assertions д
 `0|0|0|0`, без residue Auth/Account/bootstrap profile и disposable
 source/invitation fixtures. Fresh install, production-shape upgrade,
 concurrency, strict signature и DB acceptance matrices зелёные.
+
+LA-M4 production DB identity/access gate также завершён. Exact migration
+`20260821093000_lesson_run_live_delivery.sql` имеет `2535` строк и SHA-256
+`7fb531bc199b8d6a24afeb1e01ff2730c8e5388a0cbbd233e2679d8e7825319c`.
+Production-derived PostgreSQL `15.8` clone прошёл observed `COMMIT`, safe
+rollback/unchanged replay, `134/134` functional assertions, `26/26` LA races и
+identity functional/concurrency. После verified backup production owner apply
+завершился observed `COMMIT`; LA-M4 relations остались `0/0/0`, все три имеют
+RLS и закрытый raw ACL, а exact functions сохранили owner `supabase_admin`,
+`SECURITY DEFINER`, empty `search_path` и узкие grants. PostgREST подтвердил
+anon raw/teacher denial `401/42501`, service raw denial `403/42501` и service
+resolver dummy-subject denial `403/42501`. Authenticated safe-session
+application smoke и dependent web rollout пока не заявлены.
 
 ## Current / next / later
 
@@ -534,10 +580,21 @@ sign-out остаются в самом `/profile`; production rollout ещё н
 publication хранит собственные revision progress и аттестацию; это не является
 LearnerProfile enrollment и не расширяет Course audience.
 
-**Next / later, вне identity completion:** enrollment/consumption детских
-Course через LearnerProfile, teacher observations, objectives/activity evidence,
-live Student Screen, persisted Homework, communication delivery enhancements,
-billing and external MCP.
+**Current production DB / next source/web rollout LA-M4:** only active linked
+canonical profile может получить teacher-issued Course enrollment и active
+exact Run capability. Pre-start revoked exact-Run tombstone не является learner authority.
+Offline profile остаётся видимым teacher как roster identity, но grant
+отклоняется. Explicit revoke/Course archive инвалидируют authority; merge,
+erasure и unlink не переносят её. Course owner change блокируется до explicit
+revoke всех active enrollments. Audience/group не являются ни prerequisite, ни
+authority. Logout/session revocation закрывает следующий
+poll. Эти факты не расширяют observer или AI consent.
+
+**Next / later, вне identity completion:** dependent source/web rollout LA-M4,
+generalized child Course consumption/attempts за пределами teacher-controlled
+live Run, persisted Homework, communication delivery enhancements, billing and
+external MCP. Teacher observations и objective/activity evidence уже current
+production LA-M1–LA-M3.
 
 Lesson/Run authored invariants remain canonical in
 [`lesson-workflow-model.md`](./lesson-workflow-model.md). Provider transport and

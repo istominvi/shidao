@@ -53,6 +53,15 @@ Read migrations only when the task explicitly involves:
 - Current Account preference/security and learner-identity relations use the
   audited RLS/closed-ACL contract. Do not restore legacy `user_preference` /
   `user_security` dual-write or copy their historical broad-grant pattern.
+- For any ShiDao task whose user request explicitly includes a production
+  rollout, that instruction is sufficient authorization for the task-scoped
+  production apply and deploy; do not ask for a redundant second confirmation.
+  This does not broaden the requested scope or waive the read-only target/schema
+  sanity check before every database write, production-derived rehearsal,
+  passing task-relevant gates, a verified recoverable backup before production
+  mutation, required postflight/snapshot/docs updates, or stop-on-mismatch/failure
+  rules. It also does not bypass approvals enforced by the Codex platform,
+  sandbox, or tools; request those approvals whenever they are required.
 
 ## Lesson workflow policy
 

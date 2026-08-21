@@ -700,8 +700,9 @@ view-sort, начиная с `position ASC`. В action-cell остаётся о�
 типов: добавлены video/audio, расширенный quiz, пропуски, bank
 слов, порядок, категории, свободный ответ, HTTPS-ссылка, сборка слова и
 словарь; layout-only `divider` исключён. Текущая самопроверка живёт только
-в preview state; learner answer persistence/scoring не реализованы и
-последовательно входят в LA-M4/LA-M5. Продуктовый выбор и границы зафиксированы в
+в preview state; learner answer persistence/scoring не реализованы и входят в
+LA-M5. LA-M4 доставляет только authorization/read-only live projection.
+Продуктовый выбор и границы зафиксированы в
 [`docs/product/course-component-catalog.md`](./product/course-component-catalog.md).
 Current production palette больше не меняет размер между категориями: responsive
 panel ограничена viewport, а отдельный внутренний scroll сохраняет header и
@@ -1120,9 +1121,9 @@ Course только открывают этот же центр на нужно�
 
 **Next:** отдельными slices добавить durable action/job и token-usage ledger,
 quota reservation/settlement с distributed enforcement, reliable background
-completion producers, LA-M4 learner authorization/teacher-controlled live
-delivery, Realtime/presence и push/email delivery. Текущий тестовый meter не
-используется как billing balance.
+completion producers, dependent source/web rollout LA-M4 поверх уже current
+production DB, Realtime/presence и push/email delivery. Текущий тестовый meter
+не используется как billing balance.
 
 ## P0.4: reusable Course catalog
 
@@ -1418,8 +1419,9 @@ Functional task commit `6e3f97c230f688663abaa06a126a56d0d0e2c9c6` прошёл
 `SOURCE_COMMIT`, running container и restart count `0`. Production
 HTTP/API/CSRF/host guest postflight прошёл; authenticated production no-write
 LA-M3 smoke не выполнен из-за guest-only browser session и не заявляется.
-Последующий execution-record docs commit runtime не меняет. LA-M4–LA-M6
-остаются **NEXT**.
+Последующий execution-record docs commit runtime не меняет. LA-M4 имеет статус
+**CURRENT PRODUCTION DB / NEXT source/web rollout**; LA-M5–LA-M6 остаются
+**NEXT**.
 
 ## P1.3: persisted Homework authoring
 
@@ -1503,12 +1505,15 @@ claim/access slice. Заполненный `account_id` позволяет Accou
 собственную canonical identity row; Course, records и teacher-local data этим не
 открываются. Полный current/next/later boundary находится в
 [`docs/architecture/learner-identity-access-model.md`](./architecture/learner-identity-access-model.md).
-LearnerProfile-scoped consumption детского Course и live Student Screen не
-реализованы, не входят в P0.Identity и последовательно рассматриваются в
-LA-M4/LA-M5. Наличие linked
-profile/observer grant/AI consent не создаёт Course enrollment. Current
-Account-scoped self-learning educator Course — отдельный уже реализованный flow
-и не выдаёт доступ к детскому Course.
+LearnerProfile-scoped Course/live authority current в production DB LA-M4 и
+реализована в repository source, но dependent web ещё не заявлен deployed. Она
+не входит в P0.Identity: отдельный explicit Course enrollment и отдельная
+per-Run execution capability обязательны одновременно. Наличие linked profile,
+Course audience/Run roster,
+`teacher_learner`, observer grant или AI consent ни одну capability не создаёт;
+Course audience/groups не являются prerequisite для explicit grant.
+Current Account-scoped self-learning educator Course — отдельный уже
+реализованный flow и не выдаёт доступ к детскому Course.
 
 ## P2: LessonRun и live lesson
 
@@ -1528,18 +1533,60 @@ current product surfaces and learner-safe real-record progress are already
 implemented. Superseded visual specifications and rollout hashes belong to Git
 history and the deployment runbook, not to the forward roadmap.
 
-**Next — live:**
+**Current production DB / next source/web rollout — LA-M4 live:**
 
-- основной runtime cursor указывает на Student Screen Slide и не создаёт
-  authored Step;
-- cursor отвечает только за presentation; responses/evaluations хранятся в
-  отдельном activity execution contract;
-- teacher управляет learner screen по умолчанию;
-- learner-safe serializer никогда не отдаёт answer key или teacher data;
-- свободная learner navigation не включается автоматически;
-- Realtime используется после явной authorization модели;
-- Realtime/presence и learner authorization проектируются поверх открытого
-  LessonRun, а не через второй content-bearing LessonSession.
+Exact production migration `20260821093000_lesson_run_live_delivery.sql`
+(`2535` строк, SHA-256
+`7fb531bc199b8d6a24afeb1e01ff2730c8e5388a0cbbd233e2679d8e7825319c`)
+применена owner с наблюдаемым `COMMIT` после production-derived PostgreSQL
+`15.8` clone gate и verified backup. Postflight сохранил canonical/publication
+tuples, подтвердил закрытый RLS/ACL contract и пустые LA-M4 relations `0/0/0`.
+Snapshot `2026-08-21T07:56:01Z` содержит `69` public tables, `248` functions,
+`31440` строк и SHA-256
+`15d4a432edf4737c189ab444699b15482c7dbb90b85eab4e1b6043f843b79f52`;
+его public body exact совпадает с clean clone/replay. Final-tree pre-rollout
+gate прошёл typecheck, lint с `0` warnings/errors, `936/936` unit/API, build
+`73/73` и `31/31` strict production-mode Chromium teacher/authorized learner/
+outsider scenarios. Prettier по девяти изменённым Markdown-файлам и full-worktree
+`git diff --check` прошли; independent final audit, functional commit, Coolify
+и post-deploy evidence остаются NEXT.
+
+- explicit Course enrollment и отдельная per-Run execution capability дают
+  authority только canonical profile текущего authenticated Account; browser не
+  выбирает Account/profile UUID;
+- grant требует active linked Account и exact frozen Run roster row, но не
+  требует Course audience/group membership;
+- capabilities выдаются teacher только active linked roster member и
+  проверяются на каждом learner read вместе с live `auth.sessions` и Account
+  session cutoff; explicit revoke/archive/merge/erasure/session
+  invalidation прекращают доступ fail closed;
+- смена Course owner блокируется, пока прежний owner не отозвал все active
+  enrollments;
+- Run допускается только после actual start и до completion/cancel; scheduled
+  Run ничего не показывает. Course-only grant до start сохраняет revoked
+  exact-Run tombstone без learner authority; первый actual start создаёт
+  waiting state и активирует tombstone либо materialize-ит active exact-Run
+  capabilities из active Course enrollments frozen roster. Уже started до
+  migration Run требует explicit teacher enable;
+- основной persisted cursor указывает на stable Student Screen Slide identity и
+  не создаёт authored Step. `NULL` — waiting; update использует CAS revision,
+  stale writer не откатывает более новый cursor;
+- deletion выбранного Slide переводит cursor в waiting с новой revision,
+  reorder использует ту же identity и current canonical positions, empty или
+  invalid Slide fail closed;
+- teacher управляет learner screen, а learner reload/reconnect и bounded
+  polling читают persisted state; свободной learner navigation нет;
+- registry serializer отдаёт только текущий Slide и его `learner_visible`
+  Components. `staff_only`, другие Slides, teacher summary/comments, answer
+  keys/evaluator config, objective/activity metadata, private IDs и raw unsafe
+  JSON отсутствуют;
+- presentation cursor отделён от response/evaluation state и compact
+  `LearningRecord`; LA-M4 не добавляет attempts, scoring, Homework или
+  `free_response`.
+
+**Next после rollout:** Realtime/presence может заменить polling transport, не
+меняя authorization/cursor contract и не создавая content-bearing
+`LessonSession`.
 
 ## P3: online activities, adaptive learning и product scale
 

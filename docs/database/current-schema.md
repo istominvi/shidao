@@ -7,22 +7,58 @@ content-guard correction + U1 unified Text authored data + AV1 Account avatars
 и CC1 Communication Center database contract + A2 atomic Assistant schedule
 guard + LA-M1 learning activity foundation + LA-M2 Course objectives,
 Component alignment/publication snapshot V2 + LA-M3 correction/evidence/
-objective-state/recommendation contract. CC1, A2 и LA-M1–LA-M3 DB-first
-contracts применены. Current deployed functional application source
+objective-state/recommendation contract + LA-M4 explicit Course/Run live
+authority и presentation cursor. CC1, A2 и LA-M1–LA-M4 DB-first contracts
+применены. Current deployed functional application source
 `6e3f97c230f688663abaa06a126a56d0d0e2c9c6` включает LA-M3; Coolify deployment
 `1005` (`bgw36mvk1fz6opacg080drx2`) прошёл exact-source/image и production guest
 HTTP/API/CSRF/host postflight.
 
+**CURRENT production DB / NEXT source/web rollout — LA-M4:** forward migration
+`20260821093000_lesson_run_live_delivery.sql` реализует explicit Course
+enrollment, per-Run execution capability и CAS presentation cursor. Она current
+production schema head; dependent application commit/Coolify/post-deploy
+evidence ещё не заявлены.
+
 **Production schema head:**
-`20260820132725_learning_activity_profile_history_skills_recommendations.sql`,
+`20260821093000_lesson_run_live_delivery.sql`,
 exact SHA-256
-`a7e7dad7db4632f98cf0857597dae99b58cf653bd39ec57d0eb91f540c9793f8`,
-`5335` строк. Migration применена owner `supabase_admin` к production
+`7fb531bc199b8d6a24afeb1e01ff2730c8e5388a0cbbd233e2679d8e7825319c`,
+`2535` строк. Migration применена owner `supabase_admin` к production
 PostgreSQL `15.8` с наблюдаемым `COMMIT` 21 августа 2026 года после read-only
-sanity, production-derived clone rehearsal и verified backup. LA-M2 migrations
-`20260820085049_learning_objectives_component_alignment.sql` и
-`20260820090529_course_publication_snapshot_v2.sql` остаются предыдущим
-production head.
+sanity, production-derived clone rehearsal и verified backup. LA-M3 migration
+`20260820132725_learning_activity_profile_history_skills_recommendations.sql`
+остаётся предыдущим production head.
+
+Production-derived source dump
+`/tmp/shidao-learning-activity-m4-production-source.dump` имеет size `1726769`,
+mode `600`, `1914` restore-list entries и SHA-256
+`01ff58886b41b40ec157783f995d3b5302466e193c961f86370b81c8822feeda`.
+Disposable clone восстановил `1913` entries после исключения ровно одного
+несовместимого GraphQL ACL TOC entry. Clone `shidao_learning_activity_test` под
+`supabase_admin`/PostgreSQL `15.8` прошёл exact apply с наблюдаемым `COMMIT`, safe
+drop/recreate rollback proof, unchanged apply, `134/134` functional assertions,
+`26/26` real multi-session LA races и identity functional/concurrency. После
+bootstrap `auth.users`/sessions/Storage и нормализации public owner/ACL clean
+replay дал exact body equality.
+
+Pre-production sanity подтвердил database `postgres`, user `supabase_admin`,
+PostgreSQL `15.8`, search path `"$user", public, auth, extensions`, canonical
+tuple `19/6/22/84/2/2/0/0`, inventory `66` public tables / `235` functions,
+publication `1/9056` с MD5 `4235054d4453665bfb804b089173b8b6`, present/empty
+LA-M3 contract и отсутствие LA-M4 objects. Verified production backup
+`/root/shidao-db-backups/shidao-before-learning-activity-live-delivery-20260821T071507Z.dump`
+имеет size `1726769`, mode `600`, `1914` restore-list entries и SHA-256
+`71b4b3e71c299558b3604918d4de770241595abd6fc98d8ecda1255ab04f2e82`;
+он сохранён.
+
+Production postflight сохранил canonical/publication tuples, дал inventory `69`
+public tables / `248` functions и пустые LA-M4 relations `0/0/0`. Все `3`
+relations имеют RLS, policies отсутствуют; contract содержит `10` exact
+triggers, закрытые table ACL и проверенные function owner/`SECURITY DEFINER`/
+empty `search_path`/grants. PostgREST вернул anon raw `401/42501`, service raw
+`403/42501`, anon teacher RPC `401/42501` и service resolver dummy-subject
+`403/42501`. Authenticated safe-session smoke пока не выполнен и не заявляется.
 
 **Current production DB/source/web — LA-M3:** physical schema и deployed
 functional source содержат additive correction/evidence/objective-state/
@@ -68,14 +104,15 @@ Admin create/delete probe
 
 **SQL snapshot:**
 [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
-содержит current production-head LA-M3 public contract со strict signature
+содержит current production-head LA-M4 public contract со strict signature
 `shidao-v2-contract`. Он снят штатным script
-`2026-08-21T00:25:53Z` из production-head PostgreSQL `15.8`; SHA-256 snapshot —
-`a1768f22f829d58c01a5846b68cdb7be60a363ebb771869ed90fb83dd316cbc2`,
-длина — `29533` строки. Inventory содержит `66` public tables и `235`
-functions; body побайтово совпадает с snapshot, clean replayed из
-production-derived clone. Reviewed cross-schema Auth/Storage section сохранён
-script без изменения.
+`2026-08-21T07:56:01Z` из production-head PostgreSQL `15.8`; SHA-256 snapshot —
+`15d4a432edf4737c189ab444699b15482c7dbb90b85eab4e1b6043f843b79f52`,
+длина — `31440` строк. Inventory содержит `69` public tables и `248` functions;
+public body SHA-256
+`a40e247a8b72ba61e42d2ec376be870f264df3648dabec3869bc20ccae76be8d`
+побайтово совпадает с clean replayed production-derived clone snapshot.
+Reviewed cross-schema Auth/Storage section сохранён script без изменения.
 
 ## Read order для DB-задач
 
@@ -83,7 +120,9 @@ script без изменения.
 2. `supabase/schema/current-schema.sql` для последнего подтверждённого snapshot;
 3. шесть learner-identity migrations ниже, если задача касается
    rollout/backfill, compatibility или contract cleanup;
-4. остальные `supabase/migrations/*` только для compatibility, rollback или
+4. `20260821093000_lesson_run_live_delivery.sql`, если задача касается
+   current-source LA-M4 или его rollout;
+5. остальные `supabase/migrations/*` только для compatibility, rollback или
    debugging history.
 
 Политика изменений:
@@ -112,6 +151,7 @@ script без изменения.
 | LA-M1  | `20260819142602_learning_activity_foundation.sql`                      | applied production additive component-observation contract, recorder ACL/RPC и absent-completion guard                                         |
 | LA-M2A | `20260820085049_learning_objectives_component_alignment.sql`           | applied production: flat Course objectives, Component alignment/activity role и observation objective-at-time provenance                       |
 | LA-M2B | `20260820090529_course_publication_snapshot_v2.sql`                    | applied production: immutable publication V2 objectives/remap при exact V1 compatibility                                                       |
+| LA-M4  | `20260821093000_lesson_run_live_delivery.sql`                          | applied production DB / NEXT source-web: explicit Course/Run learner authority, persisted CAS Student Screen cursor и closed safe projections  |
 
 M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
 первого deploy и применена только после доказательства, что running и rollback
@@ -797,6 +837,88 @@ source `1d4e5deff83cbdc1b479b16e4220cf799327009f` сохраняет этот co
 актуальные A2 schema head и generated snapshot зафиксированы в начале
 документа.
 
+### CURRENT production DB / NEXT source/web LA-M4 contract
+
+Этот подраздел описывает current production physical contract. Dependent
+application source/web rollout остаётся NEXT.
+
+| Relation                          | Назначение                                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `course_learner_enrollment`       | explicit revocable Course delivery authority для canonical LearnerProfile с monotonic authority revision      |
+| `lesson_run_execution_capability` | exact frozen Run membership; только active row является execution authority, revoked row может быть tombstone |
+| `lesson_run_presentation_state`   | один persisted nullable Student Screen Slide cursor на Run с monotonic CAS version; `NULL` означает waiting   |
+
+Все три relation имеют RLS и нулевой broad raw table access для
+`anon/authenticated`. Supported mutation/read boundary — узкие functions:
+
+- owner-scoped `get_lesson_run_live_delivery_admin`,
+  `set_lesson_run_live_access` и
+  `set_lesson_run_presentation_cursor`;
+- service-role-only `resolve_lesson_run_live_source_admin`, который принимает
+  server-decoded Auth user/session identity, сам проверяет live
+  `auth.sessions`, `account_security.sessions_invalid_before`, exactly-one
+  canonical profile, active matching enrollment/capability и Run lifecycle;
+- internal trigger helpers с `SECURITY DEFINER`, empty `search_path`, fully
+  qualified objects и закрытым direct `EXECUTE`.
+
+Linked profile, `course_learner`/group audience, `learning_record` roster,
+`teacher_learner`, observer grant и AI consent не являются authority. Course
+audience/groups не входят в grant predicate. Требуются exact frozen
+`learning_record` roster row, active linked Account и обе explicit active
+capabilities. Browser learner request не принимает Account/profile UUID.
+Offline/не-active Account не может получить grant.
+
+Active capability выдаётся только для actual-started open Run и current frozen
+roster row. Course-only grant до старта сохраняет exact Run/profile membership
+как revoked tombstone (`run_capability_not_granted`), который сам по себе не
+даёт learner authority; first actual start атомарно активирует такой row против
+current enrollment revision. First actual start также создаёт
+`lesson_run_presentation_state` и материализует capabilities для active Course
+enrollments exact frozen roster;
+старый уже-started Run не получает silent backfill и требует explicit teacher
+action. Canonical cancellation удаляет draft `learning_record`, но сохраняет
+exact capability/tombstone для teacher workspace; после этого setter разрешает
+по retained membership только полный Course+Run revoke, но не re-grant. Это
+оставляет supported cleanup path и разблокирует owner transfer даже для
+scheduled Course grant, отменённого до start. Explicit Course revoke и Course
+archive инвалидируют все matching active Run capabilities. Audience/group
+membership не участвует в grant и не является authority. `owner_account_id`
+Course нельзя изменить при active enrollments; прежний owner сначала должен
+отозвать их через supported RPC.
+Source profile merge/erasure удаляет
+enrollment/capabilities через cascade без переноса на target/new profile; safe
+unlink/relink через Account-link-change trigger отзывает old-profile grants и
+оставляет новый canonical profile без доступа. Logout, removed Auth session и
+session cutoff закрывают следующий read.
+
+Presentation mutation revalidates and locks current Account → Course → Lesson
+with `FOR SHARE`, then locks Run → selected non-empty Slide → presentation
+state with `FOR UPDATE`. Selected Slide is always locked before state; only
+after that contract checks `expectedRevision` and increases version. Stale
+writer receives SQLSTATE `40001`/application conflict.
+Before-delete Slide trigger сначала ставит всем referencing cursors `NULL` и
+увеличивает version; FK затем сохраняет это waiting state. Reorder не копирует
+position в cursor: projections читают current Slide/Component positions.
+Canonical `trg_lesson_component_cleanup_empty_student_slide` после Component
+DELETE или смены `lesson_id`/visibility/Slide удаляет ставший пустым Slide и тем
+самым проходит через тот же cursor-clear trigger; insert/reveal никогда не
+выбирает Slide автоматически. Empty/invalid selected Slide fail closed в
+waiting. Completed/cancelled Run не отдаёт content и возвращает terminal ended
+только уже авторизованному subject.
+
+Learner resolver возвращает server-only source только current Slide и его
+`learner_visible` Components. Application registry serializer повторно
+проецирует payload, удаляет answer/evaluator и objective/activity metadata,
+заменяет StoredFile IDs synthetic response refs. Browser получает только opaque
+same-origin asset URL; отдельный GET повторно разрешает session/capabilities,
+current cursor и revision и проксирует Storage bytes server-side без redirect,
+signed token, исходного filename или path. `staff_only`, другие Slides, Lesson
+summary/teacher comments, private IDs и raw unsafe JSON не пересекают browser
+boundary.
+
+LA-M4 не создаёт attempt/response/evaluation tables, Homework persistence,
+second component order, Lesson Step или расширение `LearningRecord`.
+
 ## Current repository tables
 
 ### Communication Center (current CC1 + A2 database contract)
@@ -1274,6 +1396,7 @@ contacts, exact timestamps, foreign titles и private comments не возвра
 | Communication Center raw tables                | none for `anon/authenticated`; RLS enabled, policies absent                                                                     | 17 authenticated RPC + 2 service-only producer RPC           |
 | Account credential/identity/observer/AI tables | none for `anon/authenticated`                                                                                                   | narrow RPC/server adapter                                    |
 | learner-safe self/observer history             | no raw table access                                                                                                             | safe projection RPC                                          |
+| LA-M4 live tables (current production DB)      | none for `anon/authenticated`; RLS enabled, policies absent                                                                     | owner narrow RPC + service-only exact learner resolver       |
 
 E2A устранила прежнюю техническую блокировку owner-scoped
 Course/Component/Slide/File mutations nested helper ACL, не расширив целевую
@@ -1327,8 +1450,12 @@ guard.
 
 В current production model по-прежнему нет Methodology, Lesson Step/root Step,
 `lesson_run_participant`, operational LessonRun snapshot, persisted Run/Record
-status, Homework persistence, parsing/RAG, learner enrollment/consumption
-детского Course, live Student Screen, learner attempts или mastery percentage.
+status, Homework persistence, parsing/RAG, generalized learner consumption
+детского Course, learner attempts или mastery percentage. Current production DB
+LA-M4 содержит только узкий teacher-controlled live contract, описанный выше;
+dependent source/web rollout остаётся NEXT. В contract по-прежнему нет
+generalized child Course consumption, attempts/evaluation, Homework или mastery
+percentage.
 LA-M2 Course objectives/alignment существуют в current production DB/source/web.
 LA-M3 typed evidence/objective state/recommendation contract существует в
 current production DB/source/web. Четыре новые relation были пусты на DB
@@ -1348,7 +1475,7 @@ provider-backed explicit action executor доступны в current application
 stage: `expand` сохраняет полный legacy compatibility contract, `contract`
 требует завершённый M4 cleanup. Current production script дополнительно требует
 полный M1–M3 identity contract, M5/M6 Auth hardening, A1/E1/E2/CC1/A2 и
-LA-M1–LA-M3 database contracts. Contract snapshot сохраняет verified clone
+LA-M1–LA-M4 database contracts. Contract snapshot сохраняет verified clone
 provenance; отдельный production execution record подтверждает exact
 apply/postflight уже применённого production head. Current snapshot снят из
 production-head PostgreSQL `15.8`, а его public body побайтово совпадает с
@@ -1379,6 +1506,9 @@ clean replayed production-derived clone snapshot.
 - LA-M2 objective table/RLS/closed raw mutation ACL, objective/component RPC
   security и lock order, same-Course/archive/role constraints, observation
   objective-at-time retention и publication V1/V2 compatibility/remap;
+- LA-M4 closed enrollment/capability/presentation relations, exact trigger set,
+  owner/service RPC ACL, session/profile/capability predicates и canonical lock
+  order;
 - сохранность cross-schema Auth/Storage section.
 
 Перед refresh выполнить read-only ShiDao identity/schema sanity check:
@@ -1423,3 +1553,15 @@ owner apply final current snapshot снят `2026-08-21T00:25:53Z`; SHA-256
 последующий docs-only execution-record commit runtime не меняет и не заменяет
 functional source SHA
 `6e3f97c230f688663abaa06a126a56d0d0e2c9c6`.
+
+После LA-M4 production-derived PostgreSQL `15.8` clone rehearsal, verified
+backup и production owner apply current snapshot снят
+`2026-08-21T07:56:01Z`; SHA-256
+`15d4a432edf4737c189ab444699b15482c7dbb90b85eab4e1b6043f843b79f52`,
+`31440` строк, `69` public tables и `248` functions. Public body SHA-256
+`a40e247a8b72ba61e42d2ec376be870f264df3648dabec3869bc20ccae76be8d`
+exact совпадает с clean clone/replay. Refresh script имеет `3381` строк и
+SHA-256
+`0ed79f6e49b9263e0818cf55e05ba6c21483baf02b69c66e70fc9cf6bd39f0aa`.
+Production DB execution record current; dependent functional commit/Coolify/
+post-deploy evidence остаётся NEXT.

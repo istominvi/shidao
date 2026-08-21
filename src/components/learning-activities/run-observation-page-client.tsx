@@ -19,6 +19,7 @@ import {
   RunObservationWorkspace,
   type RunObservationWorkspaceHandle,
 } from "./run-observation-workspace";
+import { RunLiveDeliveryPanel } from "./run-live-delivery-panel";
 import styles from "./run-observation-workspace.module.css";
 
 function errorMessage(error: unknown) {
@@ -194,6 +195,11 @@ export function RunObservationPageClient({
           {loadError}
         </p>
       ) : null}
+
+      <RunLiveDeliveryPanel
+        key={`${lessonRunId}:${workspace.run.updatedAt}`}
+        lessonRunId={lessonRunId}
+      />
 
       <RunObservationWorkspace
         ref={workspaceRef}

@@ -1,0 +1,201 @@
+.statePage,
+.activePage {
+  min-height: 100dvh;
+  padding: clamp(1rem, 4vw, 2.5rem);
+  background:
+    radial-gradient(circle at 10% 8%, rgb(224 242 254 / 0.9), transparent 38%),
+    radial-gradient(circle at 90% 12%, rgb(237 233 254 / 0.9), transparent 42%),
+    #f8fafc;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+  white-space: nowrap;
+}
+
+.statePage {
+  display: grid;
+  place-items: center;
+}
+
+.stateCard {
+  display: grid;
+  width: min(100%, 38rem);
+  justify-items: center;
+  gap: 0.75rem;
+  padding: clamp(2rem, 7vw, 4rem);
+  border: 1px solid rgb(255 255 255 / 0.92);
+  border-radius: 2rem;
+  background: rgb(255 255 255 / 0.9);
+  box-shadow: 0 28px 80px rgb(15 23 42 / 0.12);
+  text-align: center;
+  backdrop-filter: blur(16px);
+}
+
+.stateCard > svg {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: #6d28d9;
+}
+
+.stateCard h1,
+.stateCard p,
+.stateCard small {
+  margin: 0;
+}
+
+.stateCard h1 {
+  color: #111827;
+  font-size: clamp(1.6rem, 5vw, 2.5rem);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+}
+
+.stateCard p {
+  max-width: 31rem;
+  color: #6b7280;
+  line-height: 1.65;
+}
+
+.stateCard small {
+  color: #6d28d9;
+  font-weight: 750;
+}
+
+.pulse {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  background: #8b5cf6;
+  box-shadow: 0 0 0 0 rgb(139 92 246 / 0.42);
+  animation: pulse 1.8s ease-out infinite;
+}
+
+.activePage {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+}
+
+.activeHeader,
+.activeFooter {
+  width: min(100%, 76rem);
+  margin-inline: auto;
+  border: 1px solid rgb(255 255 255 / 0.9);
+  border-radius: 1.25rem;
+  background: rgb(255 255 255 / 0.82);
+  box-shadow: 0 14px 42px rgb(15 23 42 / 0.07);
+  backdrop-filter: blur(14px);
+}
+
+.activeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+}
+
+.activeHeader p,
+.activeHeader h1 {
+  margin: 0;
+}
+
+.activeHeader p {
+  color: #6d28d9;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.activeHeader h1 {
+  margin-top: 0.2rem;
+  color: #111827;
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.activeHeader > span {
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: #ede9fe;
+  color: #5b21b6;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.slide {
+  display: grid;
+  width: min(100%, 76rem);
+  min-height: min(68dvh, 44rem);
+  align-content: center;
+  gap: clamp(1rem, 3vw, 2rem);
+  margin-inline: auto;
+  padding: clamp(1.25rem, 5vw, 4rem);
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.94);
+  border-radius: clamp(1.5rem, 4vw, 2.75rem);
+  background: #fff;
+  box-shadow: 0 28px 90px rgb(15 23 42 / 0.12);
+}
+
+.emptySlide {
+  margin: 0;
+  padding: 2rem;
+  border: 1px dashed #d1d5db;
+  border-radius: 1rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+.activeFooter {
+  padding: 0.8rem 1rem;
+  color: #6b7280;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  70% {
+    box-shadow: 0 0 0 1.2rem rgb(139 92 246 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(139 92 246 / 0);
+  }
+}
+
+@media (max-width: 640px) {
+  .activeHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .slide {
+    min-height: 70dvh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse,
+  .spin {
+    animation: none;
+  }
+}

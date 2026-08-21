@@ -102,6 +102,115 @@ DB migration —
 `6e3f97c230f688663abaa06a126a56d0d0e2c9c6`. Последующий docs-only
 execution-record commit runtime не меняет и не должен подменять этот SHA.
 
+**CURRENT production DB / NEXT source/web rollout — LA-M4 learner authorization
+и teacher-controlled live delivery:** production DB уже содержит additive
+forward migration `20260821093000_lesson_run_live_delivery.sql`, а repository
+source — typed module `src/modules/live-delivery/`, owner/learner API, teacher
+controls в focused Run workspace и отдельный `/live/[lessonRunId]` learner
+surface. Dependent application commit/push, Coolify image/`SOURCE_COMMIT` и
+post-deploy HTTP/browser evidence ещё не заявлены.
+
+Exact migration имеет `2535` строк и SHA-256
+`7fb531bc199b8d6a24afeb1e01ff2730c8e5388a0cbbd233e2679d8e7825319c`.
+Production-derived PostgreSQL `15.8` clone из dump
+`/tmp/shidao-learning-activity-m4-production-source.dump` размером `1726769`,
+mode `600`, SHA-256
+`01ff58886b41b40ec157783f995d3b5302466e193c961f86370b81c8822feeda`
+восстановил `1913` из `1914` TOC entries: исключён ровно один несовместимый
+GraphQL ACL TOC entry. Clone `shidao_learning_activity_test` под
+`supabase_admin` прошёл exact apply с наблюдаемым `COMMIT`, safe
+drop/recreate rollback proof, unchanged replay, `134/134` functional assertions,
+`26/26` настоящих multi-session LA races, identity functional и identity
+concurrency. После bootstrap `auth.users`/sessions/Storage и нормализации
+public owner/ACL clean replay дал exact body equality.
+
+Перед production apply read-only sanity подтвердил database `postgres`, owner
+`supabase_admin`, PostgreSQL `15.8`, search path `"$user", public, auth,
+extensions`, canonical tuple `19/6/22/84/2/2/0/0`, inventory `66/235`,
+publication `1/9056` с MD5 `4235054d4453665bfb804b089173b8b6`, present/empty
+LA-M3 contract и отсутствие LA-M4. Verified backup
+`/root/shidao-db-backups/shidao-before-learning-activity-live-delivery-20260821T071507Z.dump`
+имеет size `1726769`, mode `600`, `1914` restore-list entries и SHA-256
+`71b4b3e71c299558b3604918d4de770241595abd6fc98d8ecda1255ab04f2e82`;
+он сохранён. Production owner apply завершился видимым `COMMIT`.
+
+Postflight сохранил canonical/publication tuples, дал inventory `69/248` и
+пустые LA-M4 relations `0/0/0`; все `3` relations имеют RLS, `0` policies,
+contract включает `10` exact triggers и проверенные table/function ACL, owners,
+`SECURITY DEFINER`, empty `search_path` и grants. PostgREST probes: anon raw
+table — `401/42501`, service-role raw table — `403/42501`, anon teacher RPC —
+`401/42501`, service resolver с dummy subject — `403/42501`.
+
+Production-head snapshot снят `2026-08-21T07:56:01Z` из PostgreSQL `15.8`:
+SHA-256 файла
+`15d4a432edf4737c189ab444699b15482c7dbb90b85eab4e1b6043f843b79f52`,
+`31440` строк, `69` public tables и `248` functions. Public body SHA-256
+`a40e247a8b72ba61e42d2ec376be870f264df3648dabec3869bc20ccae76be8d`
+exact совпадает с clone/replay. Authenticated safe-session smoke пока не
+выполнен и не заявляется.
+
+Final-tree pre-rollout application gate прошёл typecheck, lint с `0` warnings/
+errors, `936/936` unit/API, production build `73/73` и `31/31` strict
+production-mode Chromium scenarios с отдельными teacher, authorized learner и
+outsider flows. После documentation edits Prettier по девяти изменённым
+Markdown-файлам и full-worktree `git diff --check` прошли; independent final
+scope audit и commit/push/Coolify/post-deploy evidence остаются NEXT.
+
+Frozen authority contract состоит из двух независимых явных capabilities:
+
+- `course_learner_enrollment` даёт отзывный Course access;
+- `lesson_run_execution_capability` даёт отзывное право участвовать в одном
+  frozen roster конкретного LessonRun и связано с текущей revision enrollment.
+
+Ни linked Account/profile, ни Course audience, frozen Run roster,
+`teacher_learner`, observer grant или AI consent сами по себе не дают live
+access. Course audience/groups не являются даже prerequisite для explicit
+grant; prerequisite — active linked Account и exact frozen Run roster row.
+Browser не передаёт Account/profile UUID как learner authority:
+server начинает с authenticated Account/session, разрешает его единственный
+canonical profile и повторно проверяет обе capabilities. Offline profile не
+может получить live capabilities. Course archive, explicit teacher revoke,
+canonical source-profile merge/erasure и session invalidation закрывают
+доступ fail closed; capability не переносится на merge target. Смена Course
+owner блокируется, пока существуют active enrollments: прежний owner сначала
+обязан явно отозвать их. Safe unlink
+link-change trigger отзывает grants прежнего профиля, оставляет его offline и
+создаёт Account новый пустой canonical profile без доступа.
+
+Live content доступен только для фактически запущенного open Run
+(`started_at_is_actual`, non-null `started_at`) без `ended_at` и
+`cancelled_at`; после completion/cancel ранее авторизованный learner получает
+только terminal `ended`. Course-only grant до start сохраняет revoked exact-Run
+tombstone без learner authority; первый actual start создаёт waiting cursor и
+активирует tombstone либо materialize-ит active Run capabilities для active
+Course enrollments exact frozen roster. Уже started до migration Run требует
+явного teacher enable. Persisted
+`lesson_run_presentation_state` хранит только
+nullable Slide identity и monotonic cursor version: `NULL` означает «учитель
+ещё не выбрал слайд». Teacher mutation использует compare-and-swap
+`expectedRevision`; stale конкурент получает conflict и не перезаписывает
+новый cursor. Удаление выбранного Slide атомарно переводит все связанные Runs
+в waiting и увеличивает version; reorder сохраняет стабильную Slide identity и
+читает canonical current positions; пустой/невалидный Slide fail closed в
+waiting. Reload, bounded polling и reconnect всегда заново читают persisted
+state; Realtime/presence в LA-M4 не добавлены.
+
+Learner response содержит только текущий Slide и его
+`learner_visible` Components в единственном Lesson component order. Единый
+registry строит strict learner-safe payload, подменяет raw StoredFile IDs
+на response-scoped refs, а bytes отдаёт только opaque same-origin asset route,
+который на каждом GET заново проверяет session, capabilities, current cursor и
+его exact revision, не делает redirect и не раскрывает signed URL/Storage path.
+Resolver служит точкой линеаризации asset GET: новые запросы после committed
+revoke/completion/cancel не доходят до Storage, а уже начатый bounded stream не
+удерживает DB-lock до завершения передачи.
+Projection fail closed при неизвестной версии/невалидном payload. `staff_only`,
+другие Slides, Lesson summary/
+teacher comments, answer keys/evaluator config, objective/activity metadata,
+private data, authority IDs и raw unsafe JSON не выдаются. Presentation cursor
+не хранит response state и не расширяет compact `LearningRecord`; attempts,
+evaluation, Homework и `free_response` остаются LA-M5/LA-M6.
+
 **Current source / next production — единый Auth и registration entry UI:**
 `/login`, `/join`, `/join/check-email`, `/forgot-password` и
 `/reset-password` теперь используют один route-owned `AuthPage` contract и
@@ -2158,7 +2267,8 @@ browser redirect без mutation. Authenticated production no-write editor smoke
 - Заголовок Lesson показывается всегда; `lesson.summary`, `staff_only`
   Components и непривязанные course attachments отсутствуют в learner-ответе.
 - Preview позволяет преподавателю проверить Lessons и Slides. Это не модель
-  навигации будущего live-ученика.
+  навигации live-ученика: current-source LA-M4 оставляет cursor под контролем
+  teacher.
 
 ### Component registry
 
@@ -2491,7 +2601,7 @@ no-write flows развёрнуты и проверены в production. Release
 History-aware context развёрнут в release `9393080`; production provider smoke
 с непустой учебной историей ещё не выполнялся.
 
-## 3. Что ещё не реализовано
+## 3. Что ещё не current production или намеренно позже
 
 - пользовательский выбор модели и persisted provider settings;
 - durable assistant action/job history и generalized tool calling за пределами
@@ -2503,11 +2613,14 @@ History-aware context развёрнут в release `9393080`; production provid
   `2 000 000` meter является только информационной тестовой проекцией;
 - parsing/RAG прикреплённых материалов;
 - persisted Homework editor;
-- LearnerProfile-scoped enrollment/consumption детского Course и настоящий live
-  Student Screen access; current production Account-scoped self-learning
-  educator Course описан отдельно и не является LessonRun/live flow;
-- live Student Screen sync, realtime presence и teacher-controlled runtime
-  cursor поверх открытого LessonRun;
+- dependent source/web rollout LA-M4: explicit LearnerProfile-scoped Course
+  enrollment, per-Run execution capability и teacher-controlled Student Screen
+  cursor уже current в production DB и реализованы в repository source, но
+  application commit/Coolify/post-deploy postflight ещё не заявлены; current
+  production Account-scoped self-learning educator Course остаётся отдельным
+  flow;
+- Realtime/presence для live Student Screen; current-source LA-M4 намеренно
+  использует reload/reconnect и bounded request polling;
 - versioned learner activity attempts и server-side evaluation; они остаются
   последующими LA-M5/LA-M6 slices и не подменяются LA-M3 teacher observations;
   `LearningRecord` остаётся compact LessonRun outcome, а не metrics/event
@@ -2654,10 +2767,18 @@ recorder с record; cancel cascade удаляет drafts, а nullable live Compo
 Current production LA-M2 schema дополнительно ввела
 `learning_objective`, Component `primary_learning_objective_id`/
 `activity_role`, observation objective-at-time columns и publication snapshot
-V2 function definitions. Current production physical head LA-M3 добавляет
+V2 function definitions. LA-M3 добавляет
 correction/evidence/objective-state/recommendation contract; matching
-production-derived clone и final snapshot остаются независимыми verified
-artifacts. Deployed functional web работает на exact source
+production-derived clone и snapshot остаются независимыми verified artifacts.
+Current production physical head LA-M4 поверх него добавляет три закрытые raw
+relation: explicit Course access `course_learner_enrollment`, explicit per-Run
+`lesson_run_execution_capability` и отдельный persisted presentation cursor
+`lesson_run_presentation_state`. Все три включают RLS без broad authenticated
+table access; поддерживаемые actor boundaries — узкие owner-scoped RPC и
+service-only learner resolver с exact authenticated
+Account/profile/session/capability проверками. Current snapshot содержит этот
+contract и exact совпадает с clean production-derived replay. Deployed
+functional web пока работает на exact source
 `6e3f97c230f688663abaa06a126a56d0d0e2c9c6`.
 
 Current Communication Center читает bounded finalized history и сохраняет
@@ -2836,6 +2957,16 @@ payloads, отдельный quota/billing ledger и durable action/job ledger �
   Dependent functional source
   `6e3f97c230f688663abaa06a126a56d0d0e2c9c6` доставлен Coolify deployment
   `1005`; production guest boundary postflight завершён.
+- `20260821093000_lesson_run_live_delivery.sql` — current production DB LA-M4
+  head: `2535` строк, SHA-256
+  `7fb531bc199b8d6a24afeb1e01ff2730c8e5388a0cbbd233e2679d8e7825319c`;
+  explicit Course enrollment, per-Run execution capability, CAS presentation
+  cursor, lifecycle revocation и closed learner/admin projection RPC. Owner
+  apply завершился наблюдаемым `COMMIT`; LA-M4 relations остались `0/0/0`, а
+  refreshed snapshot имеет `31440` строк, `69` public tables, `248` functions и
+  SHA-256
+  `15d4a432edf4737c189ab444699b15482c7dbb90b85eab4e1b6043f843b79f52`.
+  Dependent source/web rollout остаётся NEXT.
 
 Источники истины для текущего состояния:
 
@@ -2878,6 +3009,7 @@ positions, а плотность поддерживают текущие service
 | LessonRun UI                       | `src/components/lesson-runs/`                                                                                                                                                                                                                                                      |
 | Learning Activity module           | `src/modules/learning-activities/`                                                                                                                                                                                                                                                 |
 | Observation API/UI                 | `src/app/api/v2/lesson-runs/[lessonRunId]/observations/`, `src/app/(app)/courses/[courseId]/runs/[lessonRunId]/`, `src/components/learning-activities/`                                                                                                                            |
+| LA-M4 live delivery                | `src/modules/live-delivery/`, `src/app/api/v2/lesson-runs/[lessonRunId]/live-delivery/`, `src/app/api/v2/me/live-runs/`, `src/app/(live)/live/[lessonRunId]/`, `src/components/learning-activities/`                                                                               |
 | Learner identity contracts/service | `src/modules/learner-identity/`                                                                                                                                                                                                                                                    |
 | Learner identity UI/routes         | `src/app/(app)/profile/`, `src/components/profile/`, `src/components/learner-identity/`, `/profile`, `/students?tab=observing`, `/identity/invitations/*`; `/learning-profile`, `/settings/*` и `/observing` — compatibility redirects                                             |
 | Account profile/avatar UI          | `src/components/account/`, `src/components/account/avatar-settings-form.tsx`, `src/lib/navigation/profile-nav.ts`                                                                                                                                                                  |

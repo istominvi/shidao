@@ -1,7 +1,8 @@
 # План реализации Learning Activity System
 
 **Статус:** LA-M0 — CURRENT architecture; LA-M1–LA-M3 — CURRENT production;
-LA-M4–LA-M6 — NEXT; LA-M7–LA-M9 — LATER.
+LA-M4 — CURRENT production DB / NEXT source/web rollout; LA-M5–LA-M6 — NEXT;
+LA-M7–LA-M9 — LATER.
 **Актуально на:** 21 августа 2026 года
 **Архитектура:**
 [`learning-activity-system.md`](../architecture/learning-activity-system.md)
@@ -231,8 +232,8 @@ deployed-SHA HTTP/API/CSRF/browser guest smoke завершены.
 - activity role `practice | assessment | survey` только для поддерживаемых
   типов;
 - definition-level contracts разделяют author/evaluator payload и learner-safe
-  delivery shape; реальный learner runtime и server evaluation остаются LA-M4/
-  LA-M5;
+  delivery shape; read-only learner runtime реализован в current-source LA-M4,
+  а response persistence/server evaluation остаются LA-M5;
 - manual и AI используют один application contract;
 - новая publication snapshot version копирует objective definitions и
   Component alignments с remap IDs; старые immutable revisions продолжают
@@ -500,31 +501,168 @@ Learning Activity runtime не должен случайно смешать уж
 | ------------------------------ | --------------------------------------- | --------------------------------------------------------------------------------------- |
 | Teacher preview                | mutable Lesson Component                | preview-only; не пишет learner data                                                     |
 | Current educator self-learning | immutable approved publication revision | текущие Lesson completions остаются progress-only; attestation использует свой contract |
-| Child live LessonRun           | Lesson + Student Screen projection      | появляется в LA-M4; отдельный authorized learner context                                |
+| Child live LessonRun           | Lesson + Student Screen projection      | current-source LA-M4; отдельный explicitly authorized learner context                   |
 | Homework                       | immutable issued Homework snapshot      | появляется в LA-M6                                                                      |
 
 Обычные educator Course Components не становятся assessable attempts незаметно.
 Их перевод на общий activity runtime требует отдельного совместимого slice;
 current educator attestation при этом не переписывается задним числом.
 
-## LA-M4 — learner authorization и live delivery (**NEXT**)
+## LA-M4 — learner authorization и live delivery (**CURRENT production DB / NEXT source/web rollout**)
+
+### Implementation state
+
+Source vertical slice реализован в:
+
+- migration
+  `supabase/migrations/20260821093000_lesson_run_live_delivery.sql`;
+- domain/Zod/repository/service/server boundary `src/modules/live-delivery/`;
+- owner routes
+  `src/app/api/v2/lesson-runs/[lessonRunId]/live-delivery/` и learner route
+  `src/app/api/v2/me/live-runs/[lessonRunId]`;
+- focused teacher Run workspace и learner `/live/[lessonRunId]` surface в
+  `src/components/learning-activities/` и `src/app/(live)/`.
+
+DB production gate завершён. Exact migration имеет `2535` строк и SHA-256
+`7fb531bc199b8d6a24afeb1e01ff2730c8e5388a0cbbd233e2679d8e7825319c`.
+Production-derived PostgreSQL `15.8` clone прошёл observed `COMMIT`, safe
+drop/recreate rollback proof, unchanged replay, `134/134` functional assertions,
+`26/26` LA races и identity functional/concurrency. Verified production backup
+сохранён; production owner apply завершился observed `COMMIT`, сохранил
+canonical/publication tuples и оставил LA-M4 relations `0/0/0`. RLS/ACL/
+function-security и PostgREST raw-denial/narrow-RPC probes прошли.
+
+Production snapshot `2026-08-21T07:56:01Z` из PostgreSQL `15.8` имеет `31440`
+строк, `69` public tables, `248` functions и SHA-256
+`15d4a432edf4737c189ab444699b15482c7dbb90b85eab4e1b6043f843b79f52`;
+public body exact совпадает с clean clone/replay. Dependent functional
+commit/push, exact deployed image/`SOURCE_COMMIT`, independent final scope audit
+и post-deploy postflight ещё не заявлены. Pre-rollout application gate уже
+прошёл: typecheck, lint без warnings/errors, `936/936` unit/API, `31/31` strict
+production-mode Chromium и build `73/73`; Prettier по девяти изменённым
+Markdown-файлам и full-worktree `git diff --check` также прошли. До завершения
+remaining release gate LA-M5 не становится current.
 
 ### Цель
 
 Создать настоящий, явно авторизованный child learner execution context поверх
 open LessonRun.
 
-### Scope
+### Frozen authorization contract
 
-- learner access/enrollment capability для конкретного Course/Run;
-- teacher-controlled cursor указывает на persisted Student Screen Slide;
-- learner видит только assigned `learner_visible` Components;
-- teacher-private fields и answer keys отсутствуют в delivery payload;
-- обычные request/polling достаточно для первого slice; Realtime — follow-up;
-- free learner navigation не включается по умолчанию.
+Authority требует одновременно:
 
-Activity response state хранится отдельно от presentation cursor и не меняет
-authored Component/Slide order.
+1. live authenticated Account/session;
+2. его exactly-one canonical linked LearnerProfile;
+3. active explicit `course_learner_enrollment` для Course;
+4. active `lesson_run_execution_capability` для exact Run/profile, связанный с
+   current enrollment revision;
+5. фактически started и всё ещё open Run.
+
+Course audience, frozen Run roster, Account/profile link, `teacher_learner`,
+observer grant и AI consent сами по себе никогда не authority. Course
+audience/groups также не prerequisite для explicit grant; exact frozen
+LearningRecord roster row, active linked Account и явное teacher действие —
+обязательны.
+Browser не присылает Account или learner profile UUID для выбора subject:
+service-only resolver начинает с trusted Auth `sub` + `session_id`, проверяет
+`auth.sessions`, Account/session cutoff и только затем canonical profile и обе
+capabilities.
+
+Teacher может выдать Course access только active linked member frozen Run
+roster. Course enrollment может быть выдан до start и переживает отдельный Run.
+До start Course-only grant сохраняет exact-Run revoked tombstone, который не
+является authority и нужен только для безопасного последующего revoke. Первый
+actual start создаёт `NULL` presentation state и активирует tombstone либо
+materialize-ит active per-Run capability только для active enrolled + linked
+members exact frozen roster;
+один enrollment или roster без второй строки доступа не даёт. Для Run, уже
+actual-started до migration, teacher явно включает Run capability через focused
+workspace. Scheduled Run остаётся недоступным. Revoke Course access
+инвалидирует все его active Run capabilities. Course archive делает то же
+автоматически; повторная выдача создаёт новую revision и не оживляет stale
+capability. Audience/group membership не участвует в grant и её изменение не
+создаёт, не отзывает и не переносит explicit authority. Смена Course owner
+блокируется до explicit revoke всех active enrollments прежним owner.
+
+Source-profile merge/erasure удаляет enrollment/capability через canonical FK
+cascade и не переносит authority на target/new profile. Safe unlink оставляет
+старый profile offline, Account-link-change trigger отзывает его grants, а
+Account получает новый пустой canonical profile без доступа. Session
+logout/revocation и
+`account_security.sessions_invalid_before` проверяются на каждом learner read,
+поэтому доступ прекращается без ожидания UI reload.
+
+### Frozen Run/cursor lifecycle
+
+- `scheduled`, not-actual-started и cancelled-before-start не дают learner
+  delivery или active Run authority; revoked tombstone сам по себе не
+  capability доступа;
+- actual-started open Run начинается с persisted `NULL` cursor revision `0` —
+  learner видит waiting;
+- teacher выбирает current non-empty Student Screen Slide через CAS
+  `expectedRevision`; mismatch даёт deterministic conflict и никогда не
+  откатывает более новый cursor;
+- reload, reconnect и bounded polling читают persisted cursor заново; Realtime
+  в первом slice отсутствует;
+- удаление выбранного Slide атомарно ставит `NULL` и увеличивает revision;
+  reorder сохраняет stable Slide identity и берёт current Slide/Component
+  positions; пустой или переставший быть learner-visible Slide fail closed в
+  waiting;
+- completion/cancel возвращают ранее авторизованному learner terminal `ended`;
+  capability не превращает закрытый Run обратно в live;
+- cursor хранит только presentation state. Attempts, responses/evaluations и
+  future activity execution state хранятся отдельно и не меняют authored
+  Component/Slide order или compact `LearningRecord`.
+
+### Frozen learner projection и UX
+
+Learner получает только текущий Slide и его `learner_visible` Components в
+relative canonical Lesson order. Registry serializer повторно валидирует
+schema version, строит learner delivery, исключает server evaluator fields,
+подменяет StoredFile IDs response-scoped refs и выдаёт только opaque
+same-origin asset URLs. Каждый asset GET повторно проверяет session, explicit
+Course/Run authority, current cursor и exact revision, затем server-side
+проксирует bytes без redirect, signed token или Storage path. Projection fail
+closed при неизвестном/unsafe payload.
+
+Никогда не выдаются `staff_only`, другие Slides, Lesson summary/teacher
+comments, answer keys/evaluator config, objective IDs/activity role, Account/
+profile/Component/Slide/StoredFile authority IDs, private fields или raw unsafe
+JSON. Run UUID уже является частью открытого learner route и повторяется только
+в его same-origin asset URL; он не даёт authority. Synthetic component keys и
+asset refs также не являются authority.
+
+Teacher controls находятся внутри focused Run workspace. Learner surface имеет
+явные loading, waiting, reconnecting, denied/reauthentication и ended states,
+не показывает prev/next navigation, responsive на phone/tablet/desktop,
+keyboard/focus/screen-reader friendly и отключает необязательное движение при
+`prefers-reduced-motion`.
+
+### Definition of Done перед full production status
+
+- **DB COMPLETE:** migration прошла exact production-derived clone
+  apply/rollback,
+  functional lifecycle/ACL tests, multi-session access/cursor races и все
+  identity functional/concurrency regressions;
+- **DB COMPLETE:** raw Data API для трёх LA-M4 tables закрыт, узкие RPC имеют exact grants,
+  `SECURITY DEFINER`, пустой `search_path` и внутренние actor/capability checks;
+- **APP PRE-ROLLOUT COMPLETE:** typecheck, lint, `936/936` unit/API, `31/31`
+  strict production-mode browser teacher+learner/outsider flow и build `73/73`;
+- **FORMAT/DIFF COMPLETE:** Prettier по девяти изменённым Markdown-файлам и
+  full-worktree `git diff --check` прошли после documentation edits;
+- **NEXT:** independent final scope/secrets/generated-artifacts audit;
+- **DB COMPLETE:** до production apply создан verified backup; после него
+  обновлены
+  `docs/database/current-schema.md` и
+  `supabase/schema/current-schema.sql`, фиксируются exact counts/checksums;
+- **NEXT:** normal fast-forward `main` deploy подтверждает exact SHA/image/
+  `SOURCE_COMMIT`, running container/restarts/logs и HTTP/auth/CSRF/host smoke;
+  authenticated no-write smoke заявляется только при безопасной existing
+  session, без создания production fixtures.
+
+LA-M4 намеренно не реализует LA-M5 `choice_quiz` attempt/evaluation и LA-M6
+Homework/`free_response`.
 
 ## LA-M5 — первый полный online activity: `choice_quiz` (**NEXT**)
 

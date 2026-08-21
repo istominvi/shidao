@@ -16,8 +16,9 @@ history/progress, explicit shared comments, actual duration и consented
 cross-provider AI. Phased M1–M6 migrations, exact Coolify deploy и postflight
 завершены. Account-scoped самостоятельное прохождение approved educator
 publications с revision progress и аттестацией также является current
-production. Homework, enrollment/consumption детских Course через
-LearnerProfile и live Student Screen sync не реализованы; их sequencing
+production. Homework не реализован. LA-M4 Course enrollment и live Student
+Screen current в production DB и реализованы в repository source, но dependent
+source/web rollout ещё не заявлен; sequencing следующих activity slices
 зафиксирован в roadmap.
 
 Current production дополнительно реализует LA-M1: focused teacher workspace и
@@ -58,6 +59,23 @@ running state и restart count `0`; production guest HTTP/API/CSRF/host
 postflight прошёл. Authenticated production no-write LA-M3 smoke недоступен и
 не заявляется; последующий execution-record docs commit runtime не меняет.
 
+CURRENT production DB / NEXT source/web rollout LA-M4 добавляет только execution
+authority и presentation state поверх того же LessonRun: explicit Course
+enrollment, explicit per-Run execution capability и nullable versioned cursor
+на persisted Student Screen Slide. Это не второй content owner. Production
+schema/snapshot уже содержат LA-M4; deployed functional source/web остаются
+LA-M3 до dependent rollout.
+
+Exact migration `20260821093000_lesson_run_live_delivery.sql` (`2535` строк,
+SHA-256
+`7fb531bc199b8d6a24afeb1e01ff2730c8e5388a0cbbd233e2679d8e7825319c`)
+применена production owner с наблюдаемым `COMMIT` после production-derived
+PostgreSQL `15.8` clone gate и verified backup. Postflight сохранил canonical/
+publication tuples, подтвердил закрытый RLS/ACL contract и пустые LA-M4
+relations `0/0/0`. Refreshed snapshot `2026-08-21T07:56:01Z` имеет `31440`
+строк, `69` public tables, `248` functions и exact совпадает с clean
+clone/replay. Commit/Coolify/post-deploy evidence ещё не заявлены.
+
 Этот документ владеет authored hierarchy, Slides projection, Homework
 separation и compact LessonRun/LearningRecord boundary. Учебные цели, ответы,
 teacher observations, evidence, learner objective state и adaptive decisions
@@ -82,6 +100,7 @@ Account
     │   ├── direct LearnerProfile 0..N
     │   └── LearnerGroup 0..N
     ├── effective audience → unique active LearnerProfile 0..N
+    ├── explicit Course enrollment 0..N → LearnerProfile
     ├── course-wide attachments
     └── Lesson 0..N
         ├── ordered Components 0..N
@@ -89,6 +108,8 @@ Account
         ├── Student Screen projection
         │   └── ordered Slides 0..N → component references
         └── LessonRun 0..N
+            ├── presentation cursor 0..1 → nullable Student Screen Slide
+            ├── execution capability 0..N → enrolled roster LearnerProfile
             └── LearningRecord 0..N → LearnerProfile + recorded-by Account
                 └── LessonComponentObservation 0..N
                     └── source Component + optional Objective-at-time
@@ -559,7 +580,45 @@ teacher preview и learner projection. Новый Component всегда соз�
 Teacher-private компоненты и поля не должны присутствовать в learner response.
 
 Полноэкранный preview может позволять преподавателю переключать Lesson для
-проверки курса. Это не задаёт правила будущего live-режима для учащегося.
+проверки курса. Это не задаёт правила live-режима для учащегося.
+
+### LA-M4 live projection (CURRENT production DB / NEXT source/web rollout)
+
+Live surface не использует preview navigation. Teacher выбирает один current
+persisted Slide для фактически started open LessonRun; learner Account получает
+его только после server-side разрешения canonical profile и двух explicit
+capabilities: Course enrollment и exact Run execution capability. Effective
+audience, frozen roster, Account/profile link, `teacher_learner`, observer grant
+и AI consent без этих grants не дают доступа. Audience/groups не являются
+grant prerequisite; exact frozen roster row и active linked Account являются.
+Course-only grant до start оставляет revoked exact-Run tombstone без learner
+authority. Первый actual start создаёт waiting cursor и активирует tombstone
+либо materialize-ит active exact-Run capabilities из active Course enrollments
+этого frozen roster; старый уже started Run требует явного teacher enable.
+Course owner нельзя сменить при active enrollments: прежний owner сначала явно
+отзывает их.
+
+Persisted cursor хранит stable `student_slide_id | NULL` и monotonic revision.
+`NULL` — явное waiting state до выбора teacher. Update выполняется через
+compare-and-swap; stale teacher request получает conflict. Удаление выбранного
+Slide до его FK cleanup атомарно устанавливает `NULL` и увеличивает revision,
+поэтому reconnect не зависает на удалённом объекте. Reorder не меняет identity:
+projection заново читает current `slide.position` и единственный
+`component.position`. Empty или невалидный Slide fail closed в waiting.
+
+Learner response содержит только current Slide и его `learner_visible`
+Components. Current LA-M4 DTO не требует и не возвращает Lesson title;
+`lesson.summary`, teacher comments, другие Slides, `staff_only`,
+evaluator/answer fields, objective/activity metadata и raw database IDs/JSON
+также не входят. Registry serializer повторно валидирует exact type/schema и
+строит learner-safe payload; неизвестный или небезопасный Component закрывает
+projection, а не раскрывает source payload.
+
+Reload/reconnect и bounded polling всегда читают persisted state. Completion и
+cancel дают terminal ended state только ранее авторизованному learner;
+scheduled/not-actual-started Run не отдаёт learner content. Free learner
+navigation, Realtime/presence, attempts/evaluation и Homework в LA-M4
+отсутствуют.
 
 ## Course workspace navigation
 
@@ -1672,15 +1731,17 @@ Learner-identity consent/audit schema входит в отдельные M2–M3
 Полный provider, security, preview/apply и deployment contract находится в
 [`ai-provider-integration.md`](./ai-provider-integration.md).
 
-## Runtime and future live mode
+## Runtime and live mode
 
 Current production application реализует appointment/completion history, LA-M1
 teacher observation workspace, LA-M2 objective provenance/eligibility и LA-M3
-objective-state/profile workflow. Система по-прежнему не реализует learner live
-sync или attempts.
+objective-state/profile workflow. Production DB LA-M4 и current repository
+source дополнительно реализуют learner live delivery; dependent source/web
+rollout ещё NEXT. Attempts по-прежнему не реализованы.
+
 Открытый LessonRun уже является конкретным проведением; второй content-bearing
-`LessonSession` не нужен. Будущий operational presentation cursor может быть
-связан с открытым Run и текущим Student Screen Slide, не меняя authored
+`LessonSession` не нужен. Operational presentation cursor связан с
+actual-started open Run и текущим Student Screen Slide, не меняя authored
 hierarchy и не создавая Step entity.
 
 Presentation cursor отвечает только за то, что показывается. Current teacher
@@ -1691,6 +1752,15 @@ Activity contract. Ни observation, ни cursor, ни адаптивная ре
 В live mode по умолчанию teacher управляет learner surface; свободная
 предыдущая/следующая навигация учащегося не включается автоматически. Review
 может разрешить свободное изучение learner-visible компонентов.
+
+Authority не выводится из content relations: linked Account/profile,
+Course audience, Run roster, `teacher_learner`, observer grant и AI consent не
+заменяют explicit Course enrollment + per-Run execution capability. Learner
+resolver проверяет live Auth session, canonical profile, обе current revisions
+и open Run на каждом poll. Audience/groups не являются grant prerequisite.
+Merge/erasure удаляют source grants без переноса; unlink link-change trigger
+отзывает old-profile grants и создаёт новый профиль без доступа. Presentation
+cursor и activity state остаются разными contracts.
 
 ## Active V2 versus archive
 
@@ -1733,14 +1803,15 @@ application services и MCP не импортируют demo fixtures; все н
 - persistent AI quota/ledger, billing и change sets/undo;
 - parsing/RAG загруженных файлов;
 - persisted homework editor;
-- live Student Screen sync, realtime presence и runtime cursor;
+- dependent source/web rollout LA-M4 и Realtime/presence transport поверх уже
+  current production DB и реализованного request/polling live cursor;
 - versioned learner activity attempts и server-side evaluation; current
   production DB/source/web LA-M3 уже отделяет durable typed evidence, rebuildable
   objective state и transparent recommendations от compact `LearningRecord`,
-  а attempts/evaluation остаются LA-M4–LA-M6;
-- enrollment/consumption детских Course через LearnerProfile и live Student
-  Screen access; Account-scoped self-learning educator publications уже
-  реализован;
+  а attempts/evaluation остаются LA-M5–LA-M6;
+- learner attempts/evaluation и generalized child Course consumption за
+  пределами current-source teacher-controlled LA-M4; Account-scoped
+  self-learning educator publications уже реализован;
 - cross-provider history без явного subject grant (намеренно запрещена);
 - drag-and-drop, если надёжные кнопки «выше/ниже» уже обеспечивают reorder;
 - автоматическая адаптация каталожного Course под группу, merge новых
@@ -1752,9 +1823,10 @@ application services и MCP не импортируют demo fixtures; все н
 Roleless Account bootstrap, invitation/claim, physical profile merge,
 self/observer history, real-record progress и consented cross-provider AI уже
 реализованы в current production и не меняют authored hierarchy Lesson. Phased
-release/postflight завершены. Enrollment/consumption детских Course через
-LearnerProfile и live Student Screen не реализованы; их sequencing находится в
-roadmap. Educator self-learning является current production.
+release/postflight завершены. Explicit enrollment + per-Run learner live
+Student Screen являются CURRENT production DB / NEXT source/web rollout LA-M4;
+broader child Course consumption и attempts находятся в roadmap. Educator
+self-learning является current production.
 
 ## Shipped acceptance baseline
 

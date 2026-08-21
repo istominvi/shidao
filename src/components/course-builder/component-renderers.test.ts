@@ -111,3 +111,17 @@ test("teacher activity renderers retain author preview while student paths do no
   );
   assert.doesNotMatch(source, /Math\.random|crypto\.randomUUID/);
 });
+
+test("live presentation mode disables response controls without a privacy overlay", () => {
+  assert.match(source, /interaction\?: "enabled" \| "presentation"/);
+  assert.match(
+    source,
+    /interaction !== "presentation" \|\| !definition\.activityFacet/,
+  );
+  assert.match(
+    source,
+    /<fieldset[\s\S]*?disabled[\s\S]*?data-course-component-interaction="presentation"/,
+  );
+  assert.match(source, /Во время live-показа ответы пока не сохраняются/);
+  assert.doesNotMatch(source, /pointer-events:\s*none|absolute inset-0/);
+});

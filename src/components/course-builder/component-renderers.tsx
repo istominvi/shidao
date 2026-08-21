@@ -39,6 +39,12 @@ export type CourseComponentRendererProps = {
   component: CourseComponentRendererComponent;
   assets: SignedCourseComponentAssetMap;
   mode: CourseComponentRenderMode;
+  /**
+   * Live delivery is presentation-only until learner attempts are implemented.
+   * Native form disabling keeps every registered response control inert without
+   * inventing a second renderer or relying on a visual overlay.
+   */
+  interaction?: "enabled" | "presentation";
 };
 
 type RegisteredRendererProps = CourseComponentRendererProps;
@@ -1943,6 +1949,7 @@ export function CourseComponentRenderer({
   component,
   assets,
   mode,
+  interaction = "enabled",
 }: CourseComponentRendererProps) {
   const definition = findComponentDefinition(component.typeKey);
   if (!definition) return <InvalidComponent />;
@@ -1966,12 +1973,36 @@ export function CourseComponentRenderer({
     placement: placement.data as Record<string, unknown>,
   };
 
-  return (
+  const rendered = (
     <div
       data-course-component-type={definition.key}
       data-course-component-mode={mode}
     >
       <Renderer component={normalizedComponent} assets={assets} mode={mode} />
     </div>
+  );
+
+  // Passive/media components keep their own controls (playback, transcript,
+  // slideshow paging). Only registered activity components are made inert so
+  // LA-M4 cannot look like an attempt/evaluation surface.
+  if (interaction !== "presentation" || !definition.activityFacet) {
+    return rendered;
+  }
+
+  return (
+    <fieldset
+      disabled
+      className="m-0 min-w-0 border-0 p-0"
+      data-course-component-interaction="presentation"
+      aria-describedby={`live-presentation-note-${component.id}`}
+    >
+      {rendered}
+      <p
+        id={`live-presentation-note-${component.id}`}
+        className="mt-3 text-center text-xs leading-5 text-neutral-500"
+      >
+        Во время live-показа ответы пока не сохраняются.
+      </p>
+    </fieldset>
   );
 }

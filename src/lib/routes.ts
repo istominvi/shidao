@@ -10,6 +10,7 @@ export const PRIVATE_ROUTE_PREFIXES = [
   ROUTES.profile,
   ROUTES.learningProfile,
   ROUTES.observing,
+  ROUTES.live,
 ] as const;
 
 export function isRouteWithin(

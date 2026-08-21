@@ -23,6 +23,7 @@ export const ROUTES = {
   // Compatibility route. New UI links must use `profile`.
   learningProfile: "/learning-profile",
   observing: "/observing",
+  live: "/live",
   settings: "/settings",
   settingsSecurity: "/settings/security",
   settingsProfile: "/settings/profile",
@@ -87,4 +88,8 @@ export function toCourseStudentPreviewRoute(courseId: string) {
 
 export function toLessonRunRoute(courseId: string, lessonRunId: string) {
   return `${toCourseRoute(courseId)}/runs/${encodeURIComponent(lessonRunId)}`;
+}
+
+export function toLearnerLiveRoute(lessonRunId: string) {
+  return `${ROUTES.live}/${encodeURIComponent(lessonRunId)}`;
 }

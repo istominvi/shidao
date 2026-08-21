@@ -12,6 +12,7 @@ import {
   toCourseRoute,
   toCourseStudentPreviewRoute,
   toLessonRunRoute,
+  toLearnerLiveRoute,
 } from "../auth";
 import {
   PROFILE_NAV_ITEMS,
@@ -58,6 +59,7 @@ test("isProtectedAppRoute covers private app trees", () => {
   assert.equal(isProtectedAppRoute(`${ROUTES.learningProfile}/history`), true);
   assert.equal(isProtectedAppRoute(ROUTES.observing), true);
   assert.equal(isProtectedAppRoute(`${ROUTES.observing}/profile-1`), true);
+  assert.equal(isProtectedAppRoute(`${ROUTES.live}/run-1`), true);
   assert.equal(isProtectedAppRoute("/settings-security"), false);
   assert.equal(isProtectedAppRoute("/login"), false);
   assert.equal(isProtectedAppRoute(null), false);
@@ -73,6 +75,7 @@ test("course route helpers encode ids and share one workspace route", () => {
     toLessonRunRoute("course/id", "run/id"),
     "/courses/course%2Fid/runs/run%2Fid",
   );
+  assert.equal(toLearnerLiveRoute("run/id"), "/live/run%2Fid");
 });
 
 test("settings routes are recognized only via settings tree helper", () => {

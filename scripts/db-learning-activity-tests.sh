@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Transactional acceptance harness for LA-M3 learning activities.
+# Transactional acceptance harness through LA-M4 learning activities.
 #
 # This script is deliberately impossible to point at the live ShiDao database:
 # the connected database name must be exactly `shidao_learning_activity_test`.
@@ -24,7 +24,7 @@ db_name="$(
     'select current_database()'
 )"
 if [[ "$db_name" != "shidao_learning_activity_test" ]]; then
-  echo "Refusing LA-M3 fixtures for database '$db_name'; expected exactly 'shidao_learning_activity_test'." >&2
+  echo "Refusing LA-M4 fixtures for database '$db_name'; expected exactly 'shidao_learning_activity_test'." >&2
   exit 2
 fi
 
@@ -43,6 +43,18 @@ schema_marker="$(
        and to_regclass('public.learner_objective_state') is not null
        and to_regclass('public.learner_objective_state_evidence') is not null
        and to_regclass('public.learner_recommendation_override') is not null
+       and to_regclass('public.course_learner_enrollment') is not null
+       and to_regclass('public.lesson_run_execution_capability') is not null
+       and to_regclass('public.lesson_run_presentation_state') is not null
+       and to_regclass('auth.sessions') is not null
+       and exists (
+         select 1
+         from information_schema.columns
+         where table_schema = 'auth'
+           and table_name = 'sessions'
+           and column_name = 'not_after'
+           and data_type = 'timestamp with time zone'
+       )
        and exists (
          select 1
          from information_schema.columns
@@ -121,6 +133,21 @@ schema_marker="$(
        and to_regprocedure(
          'public.build_cross_provider_learner_context(uuid,uuid)'
        ) is not null
+       and to_regprocedure(
+         'public.get_lesson_run_live_delivery_admin(uuid)'
+       ) is not null
+       and to_regprocedure(
+         'public.set_lesson_run_live_access(uuid,uuid,boolean,boolean)'
+       ) is not null
+       and to_regprocedure(
+         'public.set_lesson_run_presentation_cursor(uuid,uuid,bigint)'
+       ) is not null
+       and to_regprocedure(
+         'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+       ) is not null
+       and to_regprocedure(
+         'public.revoke_live_access_after_account_deactivation()'
+       ) is not null
        and position(
          'lesson_run_absent_learner_has_observation'
          in pg_get_functiondef(to_regprocedure(
@@ -156,10 +183,10 @@ schema_marker="$(
            'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
          )))
        )
-     then 'shidao-learning-activity-la-m3' else '' end"
+     then 'shidao-learning-activity-la-m4' else '' end"
 )"
-if [[ "$schema_marker" != "shidao-learning-activity-la-m3" ]]; then
-  echo "Refusing fixtures: '$db_name' is not a fully migrated ShiDao LA-M3 test database." >&2
+if [[ "$schema_marker" != "shidao-learning-activity-la-m4" ]]; then
+  echo "Refusing fixtures: '$db_name' is not a fully migrated ShiDao LA-M4 test database." >&2
   exit 2
 fi
 
@@ -194,6 +221,18 @@ begin
     or to_regclass('public.learner_objective_state') is null
     or to_regclass('public.learner_objective_state_evidence') is null
     or to_regclass('public.learner_recommendation_override') is null
+    or to_regclass('public.course_learner_enrollment') is null
+    or to_regclass('public.lesson_run_execution_capability') is null
+    or to_regclass('public.lesson_run_presentation_state') is null
+    or to_regclass('auth.sessions') is null
+    or not exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'auth'
+        and table_name = 'sessions'
+        and column_name = 'not_after'
+        and data_type = 'timestamp with time zone'
+    )
     or not exists (
       select 1
       from information_schema.columns
@@ -251,6 +290,21 @@ begin
     ) is null
     or to_regprocedure(
       'public.build_course_learning_activity_context(uuid,uuid)'
+    ) is null
+    or to_regprocedure(
+      'public.get_lesson_run_live_delivery_admin(uuid)'
+    ) is null
+    or to_regprocedure(
+      'public.set_lesson_run_live_access(uuid,uuid,boolean,boolean)'
+    ) is null
+    or to_regprocedure(
+      'public.set_lesson_run_presentation_cursor(uuid,uuid,bigint)'
+    ) is null
+    or to_regprocedure(
+      'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+    ) is null
+    or to_regprocedure(
+      'public.revoke_live_access_after_account_deactivation()'
     ) is null
     or position(
       'for update of component'
@@ -337,6 +391,136 @@ select pg_temp.assert_true(
 -- -------------------------------------------------------------------------
 -- Physical security and lifecycle contract.
 -- -------------------------------------------------------------------------
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from (
+      values
+        ('course_learner_enrollment'),
+        ('lesson_run_execution_capability'),
+        ('lesson_run_presentation_state')
+    ) as expected(table_name)
+    where not exists (
+      select 1
+      from pg_class as relation
+      join pg_namespace as namespace on namespace.oid = relation.relnamespace
+      where namespace.nspname = 'public'
+        and relation.relname = expected.table_name
+        and relation.relrowsecurity
+    )
+      or exists (
+        select 1
+        from pg_policies as policy
+        where policy.schemaname = 'public'
+          and policy.tablename = expected.table_name
+      )
+      or has_table_privilege(
+        'anon', 'public.' || expected.table_name, 'SELECT'
+      )
+      or has_table_privilege(
+        'authenticated', 'public.' || expected.table_name, 'SELECT'
+      )
+      or has_table_privilege(
+        'service_role', 'public.' || expected.table_name, 'SELECT'
+      )
+      or has_table_privilege(
+        'authenticated', 'public.' || expected.table_name, 'INSERT'
+      )
+      or has_table_privilege(
+        'service_role', 'public.' || expected.table_name, 'UPDATE'
+      )
+  ),
+  'LA-M4 raw table RLS/ACL is not closed'
+);
+
+select pg_temp.assert_true(
+  has_function_privilege(
+    'authenticated',
+    'public.get_lesson_run_live_delivery_admin(uuid)',
+    'EXECUTE'
+  )
+    and has_function_privilege(
+      'authenticated',
+      'public.set_lesson_run_live_access(uuid,uuid,boolean,boolean)',
+      'EXECUTE'
+    )
+    and has_function_privilege(
+      'authenticated',
+      'public.set_lesson_run_presentation_cursor(uuid,uuid,bigint)',
+      'EXECUTE'
+    )
+    and not has_function_privilege(
+      'authenticated',
+      'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)',
+      'EXECUTE'
+    )
+    and has_function_privilege(
+      'service_role',
+      'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)',
+      'EXECUTE'
+    )
+    and not has_function_privilege(
+      'service_role',
+      'public.get_lesson_run_live_delivery_admin(uuid)',
+      'EXECUTE'
+    )
+    and not has_function_privilege(
+      'anon',
+      'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)',
+      'EXECUTE'
+    ),
+  'LA-M4 teacher/service resolver RPC ACL is wrong'
+);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from unnest(array[
+      'public.guard_course_learner_enrollment()',
+      'public.guard_lesson_run_execution_capability()',
+      'public.guard_lesson_run_presentation_state()',
+      'public.clear_deleted_lesson_run_presentation_cursor()',
+      'public.revoke_course_learner_live_access(uuid,uuid,uuid,text)',
+      'public.revoke_live_access_after_learner_account_change()',
+      'public.guard_course_owner_change_with_live_access()',
+      'public.revoke_live_access_after_course_archive()',
+      'public.revoke_live_access_after_account_deactivation()'
+    ]) as helper(signature)
+    cross join unnest(array['anon', 'authenticated', 'service_role'])
+      as actor(role_name)
+    where has_function_privilege(
+      actor.role_name,
+      helper.signature,
+      'EXECUTE'
+    )
+  ),
+  'LA-M4 internal trigger/helper EXECUTE ACL is open'
+);
+
+select pg_temp.assert_true(
+  (
+    select count(*) = 4
+      and bool_and(procedure.prosecdef)
+      and bool_and(
+        procedure.proconfig @> array['search_path=""']::text[]
+      )
+    from pg_proc as procedure
+    where procedure.oid in (
+      to_regprocedure('public.get_lesson_run_live_delivery_admin(uuid)'),
+      to_regprocedure(
+        'public.set_lesson_run_live_access(uuid,uuid,boolean,boolean)'
+      ),
+      to_regprocedure(
+        'public.set_lesson_run_presentation_cursor(uuid,uuid,bigint)'
+      ),
+      to_regprocedure(
+        'public.resolve_lesson_run_live_source_admin(uuid,uuid,uuid)'
+      )
+    )
+  ),
+  'LA-M4 RPC SECURITY DEFINER/search_path contract is wrong'
+);
 
 select pg_temp.assert_true(
   exists (
@@ -1255,6 +1439,219 @@ values (
   'direct',
   null,
   '2026-08-19 10:01:00+09',
+  'b2000000-0000-4000-8000-000000000001'
+);
+
+-- LA-M4 uses a separate Course with no effective learner audience to prove
+-- that explicit enrollment plus the frozen Run roster is authority; Course
+-- audience is deliberately not consulted. One roster learner is linked to an
+-- active Account and one remains offline.
+insert into public.account_security (
+  account_id,
+  sessions_invalid_before
+) values
+  (
+    'b2000000-0000-4000-8000-000000000002',
+    null
+  ),
+  (
+    'b2000000-0000-4000-8000-000000000003',
+    null
+  )
+on conflict (account_id) do update
+set sessions_invalid_before = null;
+
+insert into auth.sessions (
+  id,
+  user_id,
+  created_at,
+  updated_at,
+  not_after
+)
+values
+  (
+    'bf100000-0000-4000-8000-000000000001',
+    'b1000000-0000-4000-8000-000000000003',
+    '2026-08-19 09:00:00+09',
+    '2026-08-19 09:00:00+09',
+    null
+  ),
+  (
+    'bf100000-0000-4000-8000-000000000002',
+    'b1000000-0000-4000-8000-000000000002',
+    '2026-08-19 09:00:00+09',
+    '2026-08-19 09:00:00+09',
+    null
+  ),
+  (
+    'bf100000-0000-4000-8000-000000000003',
+    'b1000000-0000-4000-8000-000000000003',
+    '2026-08-19 08:00:00+09',
+    '2026-08-19 08:00:00+09',
+    '2026-08-19 08:30:00+09'
+  );
+
+insert into public.course (
+  id,
+  owner_account_id,
+  title,
+  subject,
+  audience_type,
+  learning_audience
+) values (
+  'bf400000-0000-4000-8000-000000000001',
+  'b2000000-0000-4000-8000-000000000001',
+  'LA-M4 no-audience live-delivery fixture',
+  'Русский язык',
+  'none',
+  'children'
+);
+
+insert into public.lesson (id, course_id, position, title)
+values
+  (
+    'bf500000-0000-4000-8000-000000000001',
+    'bf400000-0000-4000-8000-000000000001',
+    1,
+    'LA-M4 live delivery'
+  ),
+  (
+    'bf500000-0000-4000-8000-000000000002',
+    'bf400000-0000-4000-8000-000000000001',
+    2,
+    'LA-M4 cancellation delivery'
+  );
+
+insert into public.lesson_student_slide (id, lesson_id, position)
+values (
+  'bf550000-0000-4000-8000-000000000001',
+  'bf500000-0000-4000-8000-000000000001',
+  1
+);
+
+insert into public.lesson_component (
+  id,
+  lesson_id,
+  position,
+  type_key,
+  payload,
+  placement_config,
+  visibility,
+  student_slide_id
+) values
+  (
+    'bf600000-0000-4000-8000-000000000001',
+    'bf500000-0000-4000-8000-000000000001',
+    1,
+    'rich_text',
+    '{"content":"LA_M4_LEARNER_LIVE_SENTINEL"}'::jsonb,
+    '{}'::jsonb,
+    'learner_visible',
+    'bf550000-0000-4000-8000-000000000001'
+  ),
+  (
+    'bf600000-0000-4000-8000-000000000003',
+    'bf500000-0000-4000-8000-000000000001',
+    2,
+    'discussion',
+    '{"prompt":"LA_M4_STAFF_ONLY_SENTINEL"}'::jsonb,
+    '{}'::jsonb,
+    'staff_only',
+    null
+  );
+
+insert into public.lesson_run (
+  id,
+  lesson_id,
+  scheduled_at,
+  planned_duration_minutes
+) values
+  (
+    'bf700000-0000-4000-8000-000000000001',
+    'bf500000-0000-4000-8000-000000000001',
+    '2026-08-19 11:00:00+09',
+    45
+  ),
+  (
+    'bf700000-0000-4000-8000-000000000002',
+    'bf500000-0000-4000-8000-000000000002',
+    '2026-08-19 12:00:00+09',
+    45
+  );
+
+insert into public.learning_record (
+  id,
+  learner_profile_id,
+  lesson_run_id,
+  source_course_id,
+  source_lesson_id,
+  source_course_id_at_time,
+  source_lesson_id_at_time,
+  source_lesson_run_id_at_time,
+  recorded_by_account_id
+) values
+  (
+    'bf800000-0000-4000-8000-000000000001',
+    'b3000000-0000-4000-8000-000000000003',
+    'bf700000-0000-4000-8000-000000000001',
+    'bf400000-0000-4000-8000-000000000001',
+    'bf500000-0000-4000-8000-000000000001',
+    'bf400000-0000-4000-8000-000000000001',
+    'bf500000-0000-4000-8000-000000000001',
+    'bf700000-0000-4000-8000-000000000001',
+    'b2000000-0000-4000-8000-000000000001'
+  ),
+  (
+    'bf800000-0000-4000-8000-000000000002',
+    'b3000000-0000-4000-8000-000000000002',
+    'bf700000-0000-4000-8000-000000000001',
+    'bf400000-0000-4000-8000-000000000001',
+    'bf500000-0000-4000-8000-000000000001',
+    'bf400000-0000-4000-8000-000000000001',
+    'bf500000-0000-4000-8000-000000000001',
+    'bf700000-0000-4000-8000-000000000001',
+    'b2000000-0000-4000-8000-000000000001'
+  ),
+  (
+    'bf800000-0000-4000-8000-000000000003',
+    'b3000000-0000-4000-8000-000000000003',
+    'bf700000-0000-4000-8000-000000000002',
+    'bf400000-0000-4000-8000-000000000001',
+    'bf500000-0000-4000-8000-000000000002',
+    'bf400000-0000-4000-8000-000000000001',
+    'bf500000-0000-4000-8000-000000000002',
+    'bf700000-0000-4000-8000-000000000002',
+    'b2000000-0000-4000-8000-000000000001'
+  );
+
+-- Preserve a superseded row on the live Run, as LA-M3 correction does.  The
+-- teacher workspace and start roster must project only the canonical-current
+-- replacement, never duplicate the learner because history remains attached
+-- to the same Run/profile.
+update public.learning_record
+set superseded_by_record_id =
+  'bf800000-0000-4000-8000-000000000004'
+where id = 'bf800000-0000-4000-8000-000000000001';
+
+insert into public.learning_record (
+  id,
+  learner_profile_id,
+  lesson_run_id,
+  source_course_id,
+  source_lesson_id,
+  source_course_id_at_time,
+  source_lesson_id_at_time,
+  source_lesson_run_id_at_time,
+  recorded_by_account_id
+) values (
+  'bf800000-0000-4000-8000-000000000004',
+  'b3000000-0000-4000-8000-000000000003',
+  'bf700000-0000-4000-8000-000000000001',
+  'bf400000-0000-4000-8000-000000000001',
+  'bf500000-0000-4000-8000-000000000001',
+  'bf400000-0000-4000-8000-000000000001',
+  'bf500000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001',
   'b2000000-0000-4000-8000-000000000001'
 );
 
@@ -3364,6 +3761,1301 @@ select pg_temp.assert_true(
     ),
   'merge rewrote correction ancestry or selected a non-active conflict vertex'
 );
+
+-- The earlier erasure acceptance intentionally destroys the linked subject's
+-- profile and every attached LearningRecord, including the predeclared M4
+-- roster rows. Re-seed a fresh deterministic linked profile and only those M4
+-- records after the erasure assertions, so live-delivery acceptance does not
+-- accidentally depend on data that the erasure contract correctly removed.
+set local session_replication_role = replica;
+
+update public.learner_profile
+set id = 'b3000000-0000-4000-8000-000000000003'
+where account_id = 'b2000000-0000-4000-8000-000000000003';
+
+-- Isolated lifecycle fixture: an actual Run cancellation removes its draft
+-- LearningRecord, while the exact capability row must retain enough bounded
+-- membership for the owner to perform a full Course revoke and unblock owner
+-- transfer. It is independent of the main live-delivery Run assertions.
+insert into public.course (
+  id,
+  owner_account_id,
+  title,
+  subject,
+  audience_type,
+  learning_audience
+) values (
+  'bf400000-0000-4000-8000-000000000002',
+  'b2000000-0000-4000-8000-000000000001',
+  'LA-M4 cancelled grant cleanup fixture',
+  'Русский язык',
+  'none',
+  'children'
+);
+
+insert into public.lesson (id, course_id, position, title)
+values (
+  'bf500000-0000-4000-8000-000000000003',
+  'bf400000-0000-4000-8000-000000000002',
+  1,
+  'Cancelled grant cleanup'
+);
+
+insert into public.lesson_run (
+  id,
+  lesson_id,
+  scheduled_at,
+  planned_duration_minutes
+) values (
+  'bf700000-0000-4000-8000-000000000003',
+  'bf500000-0000-4000-8000-000000000003',
+  '2026-08-19 13:00:00+09',
+  45
+);
+
+insert into public.learning_record (
+  id,
+  learner_profile_id,
+  lesson_run_id,
+  source_course_id,
+  source_lesson_id,
+  source_course_id_at_time,
+  source_lesson_id_at_time,
+  source_lesson_run_id_at_time,
+  recorded_by_account_id,
+  superseded_by_record_id
+) values
+  (
+    'bf800000-0000-4000-8000-000000000001',
+    'b3000000-0000-4000-8000-000000000003',
+    'bf700000-0000-4000-8000-000000000001',
+    'bf400000-0000-4000-8000-000000000001',
+    'bf500000-0000-4000-8000-000000000001',
+    'bf400000-0000-4000-8000-000000000001',
+    'bf500000-0000-4000-8000-000000000001',
+    'bf700000-0000-4000-8000-000000000001',
+    'b2000000-0000-4000-8000-000000000001',
+    'bf800000-0000-4000-8000-000000000004'
+  ),
+  (
+    'bf800000-0000-4000-8000-000000000003',
+    'b3000000-0000-4000-8000-000000000003',
+    'bf700000-0000-4000-8000-000000000002',
+    'bf400000-0000-4000-8000-000000000001',
+    'bf500000-0000-4000-8000-000000000002',
+    'bf400000-0000-4000-8000-000000000001',
+    'bf500000-0000-4000-8000-000000000002',
+    'bf700000-0000-4000-8000-000000000002',
+    'b2000000-0000-4000-8000-000000000001',
+    null
+  ),
+  (
+    'bf800000-0000-4000-8000-000000000004',
+    'b3000000-0000-4000-8000-000000000003',
+    'bf700000-0000-4000-8000-000000000001',
+    'bf400000-0000-4000-8000-000000000001',
+    'bf500000-0000-4000-8000-000000000001',
+    'bf400000-0000-4000-8000-000000000001',
+    'bf500000-0000-4000-8000-000000000001',
+    'bf700000-0000-4000-8000-000000000001',
+    'b2000000-0000-4000-8000-000000000001',
+    null
+  ),
+  (
+    'bf800000-0000-4000-8000-000000000005',
+    'b3000000-0000-4000-8000-000000000003',
+    'bf700000-0000-4000-8000-000000000003',
+    'bf400000-0000-4000-8000-000000000002',
+    'bf500000-0000-4000-8000-000000000003',
+    'bf400000-0000-4000-8000-000000000002',
+    'bf500000-0000-4000-8000-000000000003',
+    'bf700000-0000-4000-8000-000000000003',
+    'b2000000-0000-4000-8000-000000000001',
+    null
+  );
+
+set local session_replication_role = origin;
+
+-- -------------------------------------------------------------------------
+-- LA-M4 explicit enrollment, Run capability and persisted cursor delivery.
+-- -------------------------------------------------------------------------
+
+set local role service_role;
+select pg_temp.assert_raises(
+  $sql$
+    select public.resolve_lesson_run_live_source_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  'P0002',
+  'lesson_run_live_not_found',
+  'scheduled Run was learner-readable before explicit execution authority'
+);
+
+select pg_temp.assert_raises(
+  $sql$
+    select public.resolve_lesson_run_live_source_admin(
+      'b1000000-0000-4000-8000-000000000002',
+      'bf100000-0000-4000-8000-000000000002',
+      'bf700000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  'P0002',
+  'lesson_run_live_not_found',
+  'observer grant was treated as live learner authority'
+);
+
+select pg_temp.assert_raises(
+  $sql$
+    select public.resolve_lesson_run_live_source_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000002',
+      'bf700000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  '42501',
+  'live_delivery_session_revoked',
+  'session id belonging to another auth user was accepted'
+);
+
+select pg_temp.assert_raises(
+  $sql$
+    select public.resolve_lesson_run_live_source_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000003',
+      'bf700000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  '42501',
+  'live_delivery_session_revoked',
+  'expired auth.sessions.not_after was accepted'
+);
+reset role;
+
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000002',
+  true
+);
+set local role authenticated;
+select pg_temp.assert_raises(
+  $sql$
+    select public.get_lesson_run_live_delivery_admin(
+      'bf700000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  'P0002',
+  'lesson_run_live_not_found',
+  'cross-owner teacher read the live delivery workspace'
+);
+select pg_temp.assert_raises(
+  $sql$
+    select public.set_lesson_run_live_access(
+      'bf700000-0000-4000-8000-000000000001',
+      'b3000000-0000-4000-8000-000000000003',
+      true,
+      false
+    )
+  $sql$,
+  'P0002',
+  'lesson_run_live_not_found',
+  'cross-owner teacher changed live learner access'
+);
+select pg_temp.assert_raises(
+  $sql$
+    select public.set_lesson_run_presentation_cursor(
+      'bf700000-0000-4000-8000-000000000001',
+      null,
+      0
+    )
+  $sql$,
+  'P0002',
+  'lesson_run_live_not_found',
+  'cross-owner teacher changed the live cursor'
+);
+reset role;
+
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+
+select pg_temp.assert_raises(
+  $sql$
+    select public.set_lesson_run_live_access(
+      'bf700000-0000-4000-8000-000000000001',
+      'b3000000-0000-4000-8000-000000000001',
+      true,
+      false
+    )
+  $sql$,
+  'P0002',
+  'lesson_run_live_not_found',
+  'existing offline Profile outside the exact Run roster leaked eligibility'
+);
+
+select public.get_lesson_run_live_delivery_admin(
+  'bf700000-0000-4000-8000-000000000001'
+)::text as m4_initial_workspace
+\gset
+
+select pg_temp.assert_true(
+  (
+    select count(*) = 4
+      and bool_and(key in ('run', 'cursor', 'slides', 'learners'))
+    from jsonb_object_keys(:'m4_initial_workspace'::jsonb) as root(key)
+  )
+    and not (:'m4_initial_workspace'::jsonb -> 'run' ->> 'started')::boolean
+    and not (:'m4_initial_workspace'::jsonb -> 'run' ->> 'ended')::boolean
+    and :'m4_initial_workspace'::jsonb -> 'cursor' -> 'slideId' = 'null'::jsonb
+    and (:'m4_initial_workspace'::jsonb -> 'cursor'
+      ->> 'revision')::bigint = 0
+    and jsonb_array_length(
+      :'m4_initial_workspace'::jsonb -> 'slides'
+    ) = 1
+    and jsonb_array_length(
+      :'m4_initial_workspace'::jsonb -> 'learners'
+    ) = 2
+    and (
+      select count(*)
+      from jsonb_array_elements(
+        :'m4_initial_workspace'::jsonb -> 'learners'
+      ) as learner(value)
+      where learner.value ->> 'learnerProfileId' =
+        'b3000000-0000-4000-8000-000000000003'
+    ) = 1
+    and exists (
+      select 1
+      from public.learning_record as source_record
+      join public.learning_record as replacement_record
+        on replacement_record.id = source_record.superseded_by_record_id
+       and replacement_record.lesson_run_id = source_record.lesson_run_id
+       and replacement_record.learner_profile_id =
+         source_record.learner_profile_id
+      where source_record.id =
+        'bf800000-0000-4000-8000-000000000001'
+        and replacement_record.id =
+          'bf800000-0000-4000-8000-000000000004'
+    )
+    and exists (
+      select 1
+      from jsonb_array_elements(
+        :'m4_initial_workspace'::jsonb -> 'learners'
+      ) as learner(value)
+      where learner.value ->> 'learnerProfileId' =
+          'b3000000-0000-4000-8000-000000000003'
+        and learner.value ->> 'identityState' = 'claimed'
+        and not (learner.value ->> 'courseAccessEnabled')::boolean
+        and not (learner.value ->> 'runCapabilityEnabled')::boolean
+    )
+    and exists (
+      select 1
+      from jsonb_array_elements(
+        :'m4_initial_workspace'::jsonb -> 'learners'
+      ) as learner(value)
+      where learner.value ->> 'learnerProfileId' =
+          'b3000000-0000-4000-8000-000000000002'
+        and learner.value ->> 'identityState' = 'offline'
+    ),
+  'teacher live workspace violated its strict scheduled/offline DTO'
+);
+
+select public.set_lesson_run_live_access(
+  'bf700000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003',
+  true,
+  false
+);
+
+select pg_temp.assert_raises(
+  $sql$
+    select * from public.course_learner_enrollment
+  $sql$,
+  '42501',
+  'permission denied for table course_learner_enrollment',
+  'authenticated role received raw enrollment table access'
+);
+
+reset role;
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.course_learner_enrollment as enrollment
+    where enrollment.course_id =
+        'bf400000-0000-4000-8000-000000000001'
+      and enrollment.learner_profile_id =
+        'b3000000-0000-4000-8000-000000000003'
+      and enrollment.status = 'active'
+      and enrollment.revision = 1
+  )
+    and exists (
+      select 1
+      from public.lesson_run_execution_capability as capability
+      where capability.lesson_run_id =
+          'bf700000-0000-4000-8000-000000000001'
+        and capability.learner_profile_id =
+          'b3000000-0000-4000-8000-000000000003'
+        and capability.status = 'revoked'
+        and capability.enrollment_revision = 1
+        and capability.revision = 1
+        and capability.revocation_reason = 'run_capability_not_granted'
+    )
+    and not exists (
+      select 1
+      from public.lesson_run_presentation_state as state
+      where state.lesson_run_id =
+        'bf700000-0000-4000-8000-000000000001'
+    ),
+  'scheduled Course grant did not persist an exact revoked membership tombstone'
+);
+
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.start_lesson_run(
+  'bf700000-0000-4000-8000-000000000001',
+  '2026-08-19 11:05:00+09'
+);
+reset role;
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.lesson_run_presentation_state as state
+    where state.lesson_run_id =
+        'bf700000-0000-4000-8000-000000000001'
+      and state.student_slide_id is null
+      and state.cursor_version = 0
+  )
+    and (
+      select count(*)
+      from public.lesson_run_execution_capability as capability
+      where capability.lesson_run_id =
+        'bf700000-0000-4000-8000-000000000001'
+        and capability.status = 'active'
+    ) = 1
+    and exists (
+      select 1
+      from public.lesson_run_execution_capability as capability
+      where capability.lesson_run_id =
+          'bf700000-0000-4000-8000-000000000001'
+        and capability.learner_profile_id =
+          'b3000000-0000-4000-8000-000000000003'
+        and capability.status = 'active'
+        and capability.enrollment_revision = 1
+        and capability.revision = 2
+        and capability.revocation_reason is null
+    )
+    and not exists (
+      select 1
+      from public.lesson_run_execution_capability as capability
+      where capability.lesson_run_id =
+          'bf700000-0000-4000-8000-000000000001'
+        and capability.learner_profile_id =
+          'b3000000-0000-4000-8000-000000000002'
+    ),
+  'actual start did not activate the exact enrollment/frozen-roster intersection'
+);
+
+-- A repeated actual start must not reset the cursor or duplicate capability.
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.start_lesson_run(
+  'bf700000-0000-4000-8000-000000000001',
+  '2026-08-19 11:06:00+09'
+);
+reset role;
+
+select pg_temp.assert_true(
+  (
+    select count(*)
+    from public.lesson_run_execution_capability as capability
+    where capability.lesson_run_id =
+      'bf700000-0000-4000-8000-000000000001'
+  ) = 1
+    and (
+      select state.cursor_version = 0
+      from public.lesson_run_presentation_state as state
+      where state.lesson_run_id =
+        'bf700000-0000-4000-8000-000000000001'
+    ),
+  'idempotent start duplicated capability or reset cursor'
+);
+
+-- The superseded pair above is a focused projection/start regression. Real
+-- correction history is created only after completion, so canonical
+-- completion never sees a superseded draft in an open Run. Remove the
+-- synthetic ancestor now and retain the canonical-current replacement for
+-- the remaining live lifecycle assertions.
+delete from public.learning_record
+where id = 'bf800000-0000-4000-8000-000000000001'
+  and superseded_by_record_id =
+    'bf800000-0000-4000-8000-000000000004';
+
+set local role service_role;
+select public.resolve_lesson_run_live_source_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001'
+)::text as m4_waiting_source
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  :'m4_waiting_source'::jsonb =
+    '{"state":"waiting","cursorRevision":0}'::jsonb,
+  'initial learner delivery was not the exact waiting DTO'
+);
+
+-- Cancel is a close transition, not an authorization revoke. The frozen Run
+-- capability survives cancellation even though canonical cancellation removes
+-- its draft LearningRecord, so the learner receives only the safe ended DTO.
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.start_lesson_run(
+  'bf700000-0000-4000-8000-000000000002',
+  '2026-08-19 12:05:00+09'
+);
+select public.cancel_lesson_run(
+  'bf700000-0000-4000-8000-000000000002',
+  '2026-08-19 12:10:00+09'
+);
+reset role;
+
+set local role service_role;
+select public.resolve_lesson_run_live_source_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000002'
+)::text as m4_cancelled_source
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  :'m4_cancelled_source'::jsonb = '{"state":"ended"}'::jsonb
+    and not exists (
+      select 1
+      from public.learning_record
+      where lesson_run_id =
+        'bf700000-0000-4000-8000-000000000002'
+    ),
+  'cancelled authorized Run did not return exact ended DTO'
+);
+
+-- Cancellation removes the draft LearningRecord, but the exact capability
+-- remains a bounded membership record for the teacher workspace. It must not
+-- permit any post-cancellation re-grant.
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.get_lesson_run_live_delivery_admin(
+  'bf700000-0000-4000-8000-000000000002'
+)::text as m4_cancelled_workspace
+\gset
+
+select pg_temp.assert_true(
+  (:'m4_cancelled_workspace'::jsonb -> 'run' ->> 'ended')::boolean
+    and jsonb_array_length(
+      :'m4_cancelled_workspace'::jsonb -> 'learners'
+    ) = 1
+    and exists (
+      select 1
+      from jsonb_array_elements(
+        :'m4_cancelled_workspace'::jsonb -> 'learners'
+      ) as learner(value)
+      where learner.value ->> 'learnerProfileId' =
+          'b3000000-0000-4000-8000-000000000003'
+        and (learner.value ->> 'courseAccessEnabled')::boolean
+        and (learner.value ->> 'runCapabilityEnabled')::boolean
+    ),
+  'cancelled actual Run lost its exact retained learner membership'
+);
+
+select pg_temp.assert_raises(
+  $sql$
+    select public.set_lesson_run_live_access(
+      'bf700000-0000-4000-8000-000000000002',
+      'b3000000-0000-4000-8000-000000000003',
+      true,
+      true
+    )
+  $sql$,
+  'P0002',
+  'lesson_run_live_not_found',
+  'cancelled exact capability allowed a post-cancellation re-grant'
+);
+
+-- A Course-only grant made before actual start creates no execution authority,
+-- but does retain exact scheduled-Run membership as a revoked tombstone. After
+-- canonical cancellation deletes the draft roster, the owner can still perform
+-- the one supported operation: a full Course+Run revoke.
+select public.set_lesson_run_live_access(
+  'bf700000-0000-4000-8000-000000000003',
+  'b3000000-0000-4000-8000-000000000003',
+  true,
+  false
+);
+select public.cancel_lesson_run(
+  'bf700000-0000-4000-8000-000000000003',
+  '2026-08-19 13:10:00+09'
+);
+
+select public.get_lesson_run_live_delivery_admin(
+  'bf700000-0000-4000-8000-000000000003'
+)::text as m4_scheduled_cancelled_workspace
+\gset
+
+select pg_temp.assert_true(
+  (:'m4_scheduled_cancelled_workspace'::jsonb -> 'run'
+    ->> 'ended')::boolean
+    and jsonb_array_length(
+      :'m4_scheduled_cancelled_workspace'::jsonb -> 'learners'
+    ) = 1
+    and exists (
+      select 1
+      from jsonb_array_elements(
+        :'m4_scheduled_cancelled_workspace'::jsonb -> 'learners'
+      ) as learner(value)
+      where learner.value ->> 'learnerProfileId' =
+          'b3000000-0000-4000-8000-000000000003'
+        and (learner.value ->> 'courseAccessEnabled')::boolean
+        and not (learner.value ->> 'runCapabilityEnabled')::boolean
+    ),
+  'scheduled cancellation lost its non-authoritative membership tombstone'
+);
+
+reset role;
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from public.learning_record as record
+    where record.lesson_run_id =
+      'bf700000-0000-4000-8000-000000000003'
+  )
+    and exists (
+      select 1
+      from public.lesson_run_execution_capability as capability
+      where capability.lesson_run_id =
+          'bf700000-0000-4000-8000-000000000003'
+        and capability.learner_profile_id =
+          'b3000000-0000-4000-8000-000000000003'
+        and capability.status = 'revoked'
+        and capability.revocation_reason = 'run_capability_not_granted'
+    ),
+  'scheduled cancellation deleted its exact membership tombstone'
+);
+
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.set_lesson_run_live_access(
+  'bf700000-0000-4000-8000-000000000003',
+  'b3000000-0000-4000-8000-000000000003',
+  false,
+  false
+);
+reset role;
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.course_learner_enrollment as enrollment
+    where enrollment.course_id =
+        'bf400000-0000-4000-8000-000000000002'
+      and enrollment.learner_profile_id =
+        'b3000000-0000-4000-8000-000000000003'
+      and enrollment.status = 'revoked'
+      and enrollment.revocation_reason = 'teacher_revoked_course_access'
+  )
+    and exists (
+      select 1
+      from public.lesson_run_execution_capability as capability
+      where capability.lesson_run_id =
+          'bf700000-0000-4000-8000-000000000003'
+        and capability.learner_profile_id =
+          'b3000000-0000-4000-8000-000000000003'
+        and capability.status = 'revoked'
+    ),
+  'full revoke after scheduled cancellation left active delivery authority'
+);
+
+update public.course
+set owner_account_id = 'b2000000-0000-4000-8000-000000000002'
+where id = 'bf400000-0000-4000-8000-000000000002';
+
+select pg_temp.assert_true(
+  (
+    select course.owner_account_id =
+      'b2000000-0000-4000-8000-000000000002'
+    from public.course as course
+    where course.id = 'bf400000-0000-4000-8000-000000000002'
+  ),
+  'full revoke after scheduled cancellation did not unblock owner transfer'
+);
+
+update public.course
+set owner_account_id = 'b2000000-0000-4000-8000-000000000001'
+where id = 'bf400000-0000-4000-8000-000000000002';
+
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.set_lesson_run_presentation_cursor(
+  'bf700000-0000-4000-8000-000000000001',
+  'bf550000-0000-4000-8000-000000000001',
+  0
+)::text as m4_cursor_one
+\gset
+
+select pg_temp.assert_true(
+  :'m4_cursor_one'::jsonb = jsonb_build_object(
+    'slideId', 'bf550000-0000-4000-8000-000000000001'::uuid,
+    'revision', 1
+  ),
+  'cursor CAS did not persist exact Slide/revision response'
+);
+
+select pg_temp.assert_raises(
+  $sql$
+    select public.set_lesson_run_presentation_cursor(
+      'bf700000-0000-4000-8000-000000000001',
+      null,
+      0
+    )
+  $sql$,
+  '40001',
+  'lesson_run_cursor_stale',
+  'stale cursor revision was accepted'
+);
+reset role;
+
+set local role service_role;
+select public.resolve_lesson_run_live_source_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001'
+)::text as m4_live_source
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  :'m4_live_source'::jsonb ->> 'state' = 'live'
+    and (:'m4_live_source'::jsonb ->> 'cursorRevision')::bigint = 1
+    and (
+      select count(*) = 4
+        and bool_and(key in (
+          'state', 'cursorRevision', 'slide', 'assets'
+        ))
+      from jsonb_object_keys(:'m4_live_source'::jsonb) as root(key)
+    )
+    and jsonb_array_length(
+      :'m4_live_source'::jsonb -> 'slide' -> 'components'
+    ) = 1
+    and :'m4_live_source'::jsonb -> 'slide' -> 'components' -> 0
+      ->> 'typeKey' = 'rich_text'
+    and :'m4_live_source'::jsonb -> 'slide' -> 'components' -> 0
+      -> 'payload' ->> 'content' = 'LA_M4_LEARNER_LIVE_SENTINEL'
+    and :'m4_live_source'::jsonb -> 'assets' = '[]'::jsonb
+    and position('bf600000-0000-4000-8000-000000000001'
+      in :'m4_live_source') = 0
+    and position('bf550000-0000-4000-8000-000000000001'
+      in :'m4_live_source') = 0
+    and position('LA_M4_STAFF_ONLY_SENTINEL'
+      in :'m4_live_source') = 0,
+  'learner resolver leaked IDs/staff content or violated current-Slide DTO'
+);
+
+-- Reordering follows the stable selected Slide id while both Slide and
+-- Component positions remain the one canonical Lesson order. Content assigned
+-- to a different Slide must never enter the source projection.
+insert into public.lesson_student_slide (id, lesson_id, position)
+values (
+  'bf550000-0000-4000-8000-000000000002',
+  'bf500000-0000-4000-8000-000000000001',
+  2
+);
+
+insert into public.lesson_component (
+  id,
+  lesson_id,
+  position,
+  type_key,
+  payload,
+  placement_config,
+  visibility,
+  student_slide_id
+) values (
+  'bf600000-0000-4000-8000-000000000002',
+  'bf500000-0000-4000-8000-000000000001',
+  3,
+  'rich_text',
+  '{"content":"LA_M4_OTHER_SLIDE_SENTINEL"}'::jsonb,
+  '{}'::jsonb,
+  'learner_visible',
+  'bf550000-0000-4000-8000-000000000002'
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.lesson_run_presentation_state as state
+    where state.lesson_run_id =
+        'bf700000-0000-4000-8000-000000000001'
+      and state.student_slide_id =
+        'bf550000-0000-4000-8000-000000000001'
+      and state.cursor_version = 1
+  ),
+  'inserting/revealing another learner Slide changed cursor implicitly'
+);
+
+update public.lesson_student_slide
+set position = 3
+where id = 'bf550000-0000-4000-8000-000000000001';
+update public.lesson_student_slide
+set position = 1
+where id = 'bf550000-0000-4000-8000-000000000002';
+update public.lesson_student_slide
+set position = 2
+where id = 'bf550000-0000-4000-8000-000000000001';
+
+set local role service_role;
+select public.resolve_lesson_run_live_source_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001'
+)::text as m4_reordered_source
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  (:'m4_reordered_source'::jsonb #>> '{slide,position}')::integer = 2
+    and position('LA_M4_LEARNER_LIVE_SENTINEL'
+      in :'m4_reordered_source') > 0
+    and position('LA_M4_OTHER_SLIDE_SENTINEL'
+      in :'m4_reordered_source') = 0
+    and position('LA_M4_STAFF_ONLY_SENTINEL'
+      in :'m4_reordered_source') = 0,
+  'Slide reorder changed cursor identity or leaked another/staff Slide'
+);
+
+-- Deleting the selected Slide deterministically returns the Run to waiting
+-- and advances the persisted version instead of leaving a dangling cursor.
+update public.lesson_component as component
+set visibility = 'staff_only',
+    student_slide_id = null
+where component.id = 'bf600000-0000-4000-8000-000000000001';
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.lesson_run_presentation_state as state
+    where state.lesson_run_id =
+        'bf700000-0000-4000-8000-000000000001'
+      and state.student_slide_id is null
+      and state.cursor_version = 2
+  ),
+  'empty selected Slide did not atomically clear and bump cursor'
+);
+
+delete from public.lesson_student_slide as slide
+where slide.id = 'bf550000-0000-4000-8000-000000000001';
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.lesson_run_presentation_state as state
+    where state.lesson_run_id =
+        'bf700000-0000-4000-8000-000000000001'
+      and state.student_slide_id is null
+      and state.cursor_version = 2
+  ),
+  'selected Slide deletion did not atomically clear and bump cursor'
+);
+
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.set_lesson_run_live_access(
+  'bf700000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003',
+  true,
+  false
+);
+reset role;
+
+set local role service_role;
+select pg_temp.assert_raises(
+  $sql$
+    select public.resolve_lesson_run_live_source_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  'P0002',
+  'lesson_run_live_not_found',
+  'explicit Run capability revoke did not close learner delivery'
+);
+reset role;
+
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.set_lesson_run_live_access(
+  'bf700000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003',
+  true,
+  true
+);
+select public.set_lesson_run_live_access(
+  'bf700000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003',
+  false,
+  false
+);
+reset role;
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.course_learner_enrollment as enrollment
+    where enrollment.course_id =
+        'bf400000-0000-4000-8000-000000000001'
+      and enrollment.learner_profile_id =
+        'b3000000-0000-4000-8000-000000000003'
+      and enrollment.status = 'revoked'
+      and enrollment.revision = 2
+  )
+    and exists (
+      select 1
+      from public.lesson_run_execution_capability as capability
+      where capability.lesson_run_id =
+          'bf700000-0000-4000-8000-000000000001'
+        and capability.learner_profile_id =
+          'b3000000-0000-4000-8000-000000000003'
+        and capability.status = 'revoked'
+        and capability.revocation_reason =
+          'teacher_revoked_course_access'
+    ),
+  'Course enrollment revoke did not invalidate active Run capability'
+);
+
+-- A learner Account status transition revokes durable authority. Returning it
+-- to active cannot silently revive either Course or Run access.
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.set_lesson_run_live_access(
+  'bf700000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003',
+  true,
+  true
+);
+reset role;
+
+update public.account
+set status = 'suspended'
+where id = 'b2000000-0000-4000-8000-000000000003';
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.course_learner_enrollment as enrollment
+    where enrollment.course_id =
+        'bf400000-0000-4000-8000-000000000001'
+      and enrollment.learner_profile_id =
+        'b3000000-0000-4000-8000-000000000003'
+      and enrollment.status = 'revoked'
+      and enrollment.revocation_reason = 'learner_account_deactivated'
+  )
+    and not exists (
+      select 1
+      from public.lesson_run_execution_capability as capability
+      where capability.lesson_run_id =
+          'bf700000-0000-4000-8000-000000000001'
+        and capability.learner_profile_id =
+          'b3000000-0000-4000-8000-000000000003'
+        and capability.status = 'active'
+    ),
+  'learner Account deactivation left live authority active'
+);
+
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.get_lesson_run_live_delivery_admin(
+  'bf700000-0000-4000-8000-000000000001'
+)::text as m4_suspended_workspace
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from jsonb_array_elements(
+      :'m4_suspended_workspace'::jsonb -> 'learners'
+    ) as learner(value)
+    where learner.value ->> 'learnerProfileId' =
+        'b3000000-0000-4000-8000-000000000003'
+      and learner.value ->> 'identityState' = 'offline'
+      and not (learner.value ->> 'courseAccessEnabled')::boolean
+      and not (learner.value ->> 'runCapabilityEnabled')::boolean
+  ),
+  'suspended learner DTO remained offline-but-enabled'
+);
+
+update public.account
+set status = 'active'
+where id = 'b2000000-0000-4000-8000-000000000003';
+
+set local role service_role;
+select pg_temp.assert_raises(
+  $sql$
+    select public.resolve_lesson_run_live_source_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  'P0002',
+  'lesson_run_live_not_found',
+  'learner Account reactivation silently revived old authority'
+);
+reset role;
+
+-- A fresh explicit owner grant is required after reactivation; subsequent
+-- unlink/relink must revoke rather than transfer that grant.
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.set_lesson_run_live_access(
+  'bf700000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003',
+  true,
+  true
+);
+reset role;
+
+select set_config('app.learner_profile_link_mutation', 'on', true);
+update public.learner_profile as profile
+set account_id = null
+where profile.id = 'b3000000-0000-4000-8000-000000000003';
+select set_config('app.learner_profile_link_mutation', 'off', true);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.course_learner_enrollment as enrollment
+    where enrollment.course_id =
+        'bf400000-0000-4000-8000-000000000001'
+      and enrollment.learner_profile_id =
+        'b3000000-0000-4000-8000-000000000003'
+      and enrollment.status = 'revoked'
+      and enrollment.revocation_reason = 'learner_account_changed'
+  )
+    and not exists (
+      select 1
+      from public.lesson_run_execution_capability as capability
+      where capability.lesson_run_id =
+          'bf700000-0000-4000-8000-000000000001'
+        and capability.learner_profile_id =
+          'b3000000-0000-4000-8000-000000000003'
+        and capability.status = 'active'
+    ),
+  'learner Account unlink left enrollment or Run capability active'
+);
+
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.get_lesson_run_live_delivery_admin(
+  'bf700000-0000-4000-8000-000000000001'
+)::text as m4_unlinked_workspace
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from jsonb_array_elements(
+      :'m4_unlinked_workspace'::jsonb -> 'learners'
+    ) as learner(value)
+    where learner.value ->> 'learnerProfileId' =
+        'b3000000-0000-4000-8000-000000000003'
+      and learner.value ->> 'identityState' = 'offline'
+      and not (learner.value ->> 'courseAccessEnabled')::boolean
+      and not (learner.value ->> 'runCapabilityEnabled')::boolean
+  ),
+  'teacher workspace retained enabled authority for unlinked profile'
+);
+
+set local role service_role;
+select pg_temp.assert_raises(
+  $sql$
+    select public.resolve_lesson_run_live_source_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  'P0002',
+  'lesson_run_live_not_found',
+  'unlinked Account retained learner delivery'
+);
+reset role;
+
+select set_config('app.learner_profile_link_mutation', 'on', true);
+update public.learner_profile as profile
+set account_id = 'b2000000-0000-4000-8000-000000000003'
+where profile.id = 'b3000000-0000-4000-8000-000000000003';
+select set_config('app.learner_profile_link_mutation', 'off', true);
+
+-- A relink does not restore authority; only a fresh explicit owner grant does.
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.set_lesson_run_live_access(
+  'bf700000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003',
+  true,
+  true
+);
+
+-- Complete and retain only the safe ended state.
+select public.complete_lesson_run_v2(
+  'bf700000-0000-4000-8000-000000000001',
+  '[
+    {
+      "learnerProfileId":"b3000000-0000-4000-8000-000000000002",
+      "wasPresent":false
+    },
+    {
+      "learnerProfileId":"b3000000-0000-4000-8000-000000000003",
+      "wasPresent":true
+    }
+  ]'::jsonb,
+  null,
+  '2026-08-19 11:30:00+09',
+  25
+);
+reset role;
+
+set local role service_role;
+select public.resolve_lesson_run_live_source_admin(
+  'b1000000-0000-4000-8000-000000000003',
+  'bf100000-0000-4000-8000-000000000001',
+  'bf700000-0000-4000-8000-000000000001'
+)::text as m4_ended_source
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  :'m4_ended_source'::jsonb = '{"state":"ended"}'::jsonb,
+  'completed authorized Run exposed content instead of exact ended DTO'
+);
+
+update public.account
+set status = 'suspended'
+where id = 'b2000000-0000-4000-8000-000000000001';
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.course_learner_enrollment as enrollment
+    where enrollment.course_id =
+        'bf400000-0000-4000-8000-000000000001'
+      and enrollment.learner_profile_id =
+        'b3000000-0000-4000-8000-000000000003'
+      and enrollment.status = 'revoked'
+      and enrollment.revocation_reason =
+        'course_owner_account_deactivated'
+  ),
+  'Course owner Account deactivation retained dormant live authority'
+);
+
+set local role service_role;
+select pg_temp.assert_raises(
+  $sql$
+    select public.resolve_lesson_run_live_source_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  'P0002',
+  'lesson_run_live_not_found',
+  'inactive Course owner left ended learner access readable'
+);
+reset role;
+
+update public.account
+set status = 'active'
+where id = 'b2000000-0000-4000-8000-000000000001';
+
+set local role service_role;
+select pg_temp.assert_raises(
+  $sql$
+    select public.resolve_lesson_run_live_source_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  'P0002',
+  'lesson_run_live_not_found',
+  'Course owner Account reactivation silently revived authority'
+);
+reset role;
+
+-- Recreate Course authority explicitly so owner-transfer/archive guards are
+-- still exercised on the ended Run. Run capability cannot be regranted after
+-- close and remains revoked.
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.set_lesson_run_live_access(
+  'bf700000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000003',
+  true,
+  false
+);
+reset role;
+
+select pg_temp.assert_raises(
+  $sql$
+    update public.course
+    set owner_account_id = 'b2000000-0000-4000-8000-000000000002'
+    where id = 'bf400000-0000-4000-8000-000000000001'
+  $sql$,
+  '55000',
+  'course_live_access_owner_change_blocked',
+  'Course owner transfer moved active learner authority'
+);
+
+update public.course as course
+set archived_at = clock_timestamp()
+where course.id = 'bf400000-0000-4000-8000-000000000001';
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.course_learner_enrollment as enrollment
+    where enrollment.course_id =
+        'bf400000-0000-4000-8000-000000000001'
+      and enrollment.status = 'revoked'
+      and enrollment.revocation_reason = 'course_archived'
+  )
+    and not exists (
+      select 1
+      from public.lesson_run_execution_capability as capability
+      where capability.course_id =
+          'bf400000-0000-4000-8000-000000000001'
+        and capability.status = 'active'
+    ),
+  'Course archive left live enrollment or Run capability active'
+);
+
+insert into public.account_security (
+  account_id,
+  sessions_invalid_before
+) values (
+  'b2000000-0000-4000-8000-000000000003',
+  '2026-08-20 00:00:00+09'
+)
+on conflict (account_id) do update
+set sessions_invalid_before = excluded.sessions_invalid_before;
+
+set local role service_role;
+select pg_temp.assert_raises(
+  $sql$
+    select public.resolve_lesson_run_live_source_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  '42501',
+  'live_delivery_session_revoked',
+  'Supabase session cutoff did not produce the dedicated revocation token'
+);
+
+select pg_temp.assert_raises(
+  $sql$
+    select * from public.lesson_run_execution_capability
+  $sql$,
+  '42501',
+  'permission denied for table lesson_run_execution_capability',
+  'service_role received raw capability table access'
+);
+reset role;
+
+delete from public.account_security
+where account_id = 'b2000000-0000-4000-8000-000000000003';
+
+set local role service_role;
+select pg_temp.assert_raises(
+  $sql$
+    select public.resolve_lesson_run_live_source_admin(
+      'b1000000-0000-4000-8000-000000000003',
+      'bf100000-0000-4000-8000-000000000001',
+      'bf700000-0000-4000-8000-000000000001'
+    )
+  $sql$,
+  '42501',
+  'live_delivery_session_revoked',
+  'missing account_security row failed open'
+);
+reset role;
 
 -- Multi-session race recipe (intentionally not executed here because this
 -- rollback-only transaction cannot expose fixtures to a second session):
