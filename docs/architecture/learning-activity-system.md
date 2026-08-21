@@ -115,9 +115,8 @@ structured observation учитель сначала подтверждает к
 - observation хранится отдельной строкой на LearningRecord + source Component
   и не расширяет compact LearningRecord, learner-safe history или Component
   payload;
-- persisted Homework ещё не реализован; child live runtime current в production
-  DB LA-M4 и реализован в repository source, но dependent source/web rollout ещё
-  не заявлен.
+- persisted Homework ещё не реализован; child live runtime current production
+  в DB/source/web LA-M4.
 
 Current production LA-M2 дополнительно реализует:
 
@@ -219,7 +218,7 @@ postflight прошёл. Authenticated production no-write LA-M3 smoke недо�
 guest-only browser session и не заявляется. Последующий execution-record
 docs-only commit runtime не меняет.
 
-## CURRENT production DB / NEXT source/web rollout: LA-M4
+## CURRENT production DB/source/web: LA-M4
 
 LA-M4 создаёт минимальный child live execution context без attempts или
 evaluation. Source contract добавляет:
@@ -300,8 +299,16 @@ SHA-256
 `15d4a432edf4737c189ab444699b15482c7dbb90b85eab4e1b6043f843b79f52`
 и exact body equality с clean clone/replay.
 
-Dependent application commit/push, deployed SHA/image/`SOURCE_COMMIT`,
-container/logs и post-deploy HTTP/browser evidence остаются NEXT.
+Functional source `e09631d2fa00ad1c4b91ad0584392efb748cf235` доставлен
+normal fast-forward push и Coolify deployment `1007`
+(`flg9786e15llusgj6kgz7pwk`). Exact image/`SOURCE_COMMIT`, running container с
+restart count `0`, clean runtime logs, guest host/Origin/CSRF/API postflight,
+final DB contract, retained backup и cleanup подтверждены. Independent final
+audit не нашёл blockers, secrets, learner-private leaks или unexpected
+generated artifacts. Безопасной existing authenticated production session/Run
+не было, поэтому authenticated production UI smoke **NOT RUN** и не заявляется;
+локальный strict production-mode Chromium `31/31` покрывает live states,
+privacy/mobile/accessibility, но не подменяет этот smoke.
 
 Ни локально правильный ответ в preview, ни просмотр видео в deployed web сейчас
 не изменяют учебный профиль. Нельзя показывать выдуманный mastery на основании
@@ -621,7 +628,7 @@ delivery payload его не содержит. Нельзя отдавать т�
 надеяться скрыть ключ CSS или JavaScript. Сервер принимает response, выполняет
 проверку и возвращает только разрешённый feedback/reveal.
 
-В current-source LA-M4 server отдаёт ещё более узкую read-only projection:
+В current production LA-M4 server отдаёт ещё более узкую read-only projection:
 только current Slide. Component и asset получают synthetic response-scoped
 refs, а не raw authority/storage IDs. Opaque same-origin asset GET повторяет
 всю live-authority/cursor-revision проверку и server-side проксирует bytes без
@@ -868,7 +875,7 @@ contract tests, а не финальной косметической прове
    projections;
 3. **CURRENT:** history/evidence/objective-state projection и transparent
    recommendations для objective-aligned observations;
-4. **CURRENT production DB / NEXT source/web rollout:** learner authorization и
+4. **CURRENT production DB/source/web:** learner authorization и
    teacher-controlled live delivery;
 5. **NEXT:** один полный `choice_quiz` через learner-safe delivery и server
    evaluation;

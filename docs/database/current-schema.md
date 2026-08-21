@@ -10,15 +10,14 @@ Component alignment/publication snapshot V2 + LA-M3 correction/evidence/
 objective-state/recommendation contract + LA-M4 explicit Course/Run live
 authority и presentation cursor. CC1, A2 и LA-M1–LA-M4 DB-first contracts
 применены. Current deployed functional application source
-`6e3f97c230f688663abaa06a126a56d0d0e2c9c6` включает LA-M3; Coolify deployment
-`1005` (`bgw36mvk1fz6opacg080drx2`) прошёл exact-source/image и production guest
+`e09631d2fa00ad1c4b91ad0584392efb748cf235` включает LA-M4; Coolify deployment
+`1007` (`flg9786e15llusgj6kgz7pwk`) прошёл exact-source/image и production guest
 HTTP/API/CSRF/host postflight.
 
-**CURRENT production DB / NEXT source/web rollout — LA-M4:** forward migration
+**CURRENT production DB/source/web — LA-M4:** forward migration
 `20260821093000_lesson_run_live_delivery.sql` реализует explicit Course
 enrollment, per-Run execution capability и CAS presentation cursor. Она current
-production schema head; dependent application commit/Coolify/post-deploy
-evidence ещё не заявлены.
+production schema head и обслуживается current deployed application.
 
 **Production schema head:**
 `20260821093000_lesson_run_live_delivery.sql`,
@@ -120,8 +119,8 @@ Reviewed cross-schema Auth/Storage section сохранён script без изм
 2. `supabase/schema/current-schema.sql` для последнего подтверждённого snapshot;
 3. шесть learner-identity migrations ниже, если задача касается
    rollout/backfill, compatibility или contract cleanup;
-4. `20260821093000_lesson_run_live_delivery.sql`, если задача касается
-   current-source LA-M4 или его rollout;
+4. `20260821093000_lesson_run_live_delivery.sql`, если задача касается current
+   production LA-M4 contract;
 5. остальные `supabase/migrations/*` только для compatibility, rollback или
    debugging history.
 
@@ -151,7 +150,7 @@ Reviewed cross-schema Auth/Storage section сохранён script без изм
 | LA-M1  | `20260819142602_learning_activity_foundation.sql`                      | applied production additive component-observation contract, recorder ACL/RPC и absent-completion guard                                         |
 | LA-M2A | `20260820085049_learning_objectives_component_alignment.sql`           | applied production: flat Course objectives, Component alignment/activity role и observation objective-at-time provenance                       |
 | LA-M2B | `20260820090529_course_publication_snapshot_v2.sql`                    | applied production: immutable publication V2 objectives/remap при exact V1 compatibility                                                       |
-| LA-M4  | `20260821093000_lesson_run_live_delivery.sql`                          | applied production DB / NEXT source-web: explicit Course/Run learner authority, persisted CAS Student Screen cursor и closed safe projections  |
+| LA-M4  | `20260821093000_lesson_run_live_delivery.sql`                          | applied production DB/source/web: explicit Course/Run learner authority, persisted CAS Student Screen cursor и closed safe projections         |
 
 M1–M3 являются additive/compatible expand для roleless web. M4 была withheld из
 первого deploy и применена только после доказательства, что running и rollback
@@ -837,10 +836,10 @@ source `1d4e5deff83cbdc1b479b16e4220cf799327009f` сохраняет этот co
 актуальные A2 schema head и generated snapshot зафиксированы в начале
 документа.
 
-### CURRENT production DB / NEXT source/web LA-M4 contract
+### CURRENT production DB/source/web LA-M4 contract
 
-Этот подраздел описывает current production physical contract. Dependent
-application source/web rollout остаётся NEXT.
+Этот подраздел описывает current production physical и deployed application
+contract.
 
 | Relation                          | Назначение                                                                                                    |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -1453,9 +1452,8 @@ guard.
 status, Homework persistence, parsing/RAG, generalized learner consumption
 детского Course, learner attempts или mastery percentage. Current production DB
 LA-M4 содержит только узкий teacher-controlled live contract, описанный выше;
-dependent source/web rollout остаётся NEXT. В contract по-прежнему нет
-generalized child Course consumption, attempts/evaluation, Homework или mastery
-percentage.
+его source/web rollout current. В contract по-прежнему нет generalized child
+Course consumption, attempts/evaluation, Homework или mastery percentage.
 LA-M2 Course objectives/alignment существуют в current production DB/source/web.
 LA-M3 typed evidence/objective state/recommendation contract существует в
 current production DB/source/web. Четыре новые relation были пусты на DB
@@ -1563,5 +1561,12 @@ backup и production owner apply current snapshot снят
 exact совпадает с clean clone/replay. Refresh script имеет `3381` строк и
 SHA-256
 `0ed79f6e49b9263e0818cf55e05ba6c21483baf02b69c66e70fc9cf6bd39f0aa`.
-Production DB execution record current; dependent functional commit/Coolify/
-post-deploy evidence остаётся NEXT.
+Production DB/source/web execution record current. Functional source
+`e09631d2fa00ad1c4b91ad0584392efb748cf235` доставлен normal fast-forward push
+и Coolify deployment `1007` с exact image/`SOURCE_COMMIT`, running container и
+restart count `0`. Final DB postflight после cleanup сохранил inventory `69/248`,
+canonical tuple `19/6/22/84/2/2/0/0`, LA-M4 rows `0/0/0`, RLS `3`, policies
+`0`, triggers `10` и exact ACL/grant matrix; identity violations `0/0` и
+session/profile/capability negative boundary прошли. Backup retained и повторно
+verified. Authenticated production UI smoke **NOT RUN** без safe existing
+session/Run и не заявляется.

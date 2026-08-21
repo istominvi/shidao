@@ -17,9 +17,8 @@ cross-provider AI. Phased M1–M6 migrations, exact Coolify deploy и postflight
 завершены. Account-scoped самостоятельное прохождение approved educator
 publications с revision progress и аттестацией также является current
 production. Homework не реализован. LA-M4 Course enrollment и live Student
-Screen current в production DB и реализованы в repository source, но dependent
-source/web rollout ещё не заявлен; sequencing следующих activity slices
-зафиксирован в roadmap.
+Screen current production в DB/source/web; sequencing следующих activity
+slices зафиксирован в roadmap.
 
 Current production дополнительно реализует LA-M1: focused teacher workspace и
 recorder-owned component observations поверх фактически started LessonRun.
@@ -59,12 +58,10 @@ running state и restart count `0`; production guest HTTP/API/CSRF/host
 postflight прошёл. Authenticated production no-write LA-M3 smoke недоступен и
 не заявляется; последующий execution-record docs commit runtime не меняет.
 
-CURRENT production DB / NEXT source/web rollout LA-M4 добавляет только execution
-authority и presentation state поверх того же LessonRun: explicit Course
+CURRENT production DB/source/web LA-M4 добавляет только execution authority и
+presentation state поверх того же LessonRun: explicit Course
 enrollment, explicit per-Run execution capability и nullable versioned cursor
-на persisted Student Screen Slide. Это не второй content owner. Production
-schema/snapshot уже содержат LA-M4; deployed functional source/web остаются
-LA-M3 до dependent rollout.
+на persisted Student Screen Slide. Это не второй content owner.
 
 Exact migration `20260821093000_lesson_run_live_delivery.sql` (`2535` строк,
 SHA-256
@@ -74,7 +71,16 @@ PostgreSQL `15.8` clone gate и verified backup. Postflight сохранил can
 publication tuples, подтвердил закрытый RLS/ACL contract и пустые LA-M4
 relations `0/0/0`. Refreshed snapshot `2026-08-21T07:56:01Z` имеет `31440`
 строк, `69` public tables, `248` functions и exact совпадает с clean
-clone/replay. Commit/Coolify/post-deploy evidence ещё не заявлены.
+clone/replay.
+
+Functional source `e09631d2fa00ad1c4b91ad0584392efb748cf235` доставлен
+normal fast-forward push и Coolify deployment `1007`
+(`flg9786e15llusgj6kgz7pwk`). Exact image/`SOURCE_COMMIT`, running container,
+guest/host/Origin/CSRF/API postflight, final DB contract, cleanup и retained
+backup подтверждены; independent final audit зелёный. Authenticated production
+UI smoke **NOT RUN** без safe existing session/Run и не заявляется. Local strict
+Chromium `31/31` подтверждает live-state/privacy/mobile/accessibility contract,
+но не является authenticated production evidence.
 
 Этот документ владеет authored hierarchy, Slides projection, Homework
 separation и compact LessonRun/LearningRecord boundary. Учебные цели, ответы,
@@ -582,7 +588,7 @@ Teacher-private компоненты и поля не должны присут�
 Полноэкранный preview может позволять преподавателю переключать Lesson для
 проверки курса. Это не задаёт правила live-режима для учащегося.
 
-### LA-M4 live projection (CURRENT production DB / NEXT source/web rollout)
+### LA-M4 live projection (CURRENT production DB/source/web)
 
 Live surface не использует preview navigation. Teacher выбирает один current
 persisted Slide для фактически started open LessonRun; learner Account получает
@@ -1735,9 +1741,9 @@ Learner-identity consent/audit schema входит в отдельные M2–M3
 
 Current production application реализует appointment/completion history, LA-M1
 teacher observation workspace, LA-M2 objective provenance/eligibility и LA-M3
-objective-state/profile workflow. Production DB LA-M4 и current repository
-source дополнительно реализуют learner live delivery; dependent source/web
-rollout ещё NEXT. Attempts по-прежнему не реализованы.
+objective-state/profile workflow. Current production DB/source/web LA-M4
+дополнительно реализует learner live delivery. Attempts по-прежнему не
+реализованы.
 
 Открытый LessonRun уже является конкретным проведением; второй content-bearing
 `LessonSession` не нужен. Operational presentation cursor связан с
@@ -1803,8 +1809,8 @@ application services и MCP не импортируют demo fixtures; все н
 - persistent AI quota/ledger, billing и change sets/undo;
 - parsing/RAG загруженных файлов;
 - persisted homework editor;
-- dependent source/web rollout LA-M4 и Realtime/presence transport поверх уже
-  current production DB и реализованного request/polling live cursor;
+- Realtime/presence transport поверх current production request/polling LA-M4
+  live cursor;
 - versioned learner activity attempts и server-side evaluation; current
   production DB/source/web LA-M3 уже отделяет durable typed evidence, rebuildable
   objective state и transparent recommendations от compact `LearningRecord`,
@@ -1824,9 +1830,9 @@ Roleless Account bootstrap, invitation/claim, physical profile merge,
 self/observer history, real-record progress и consented cross-provider AI уже
 реализованы в current production и не меняют authored hierarchy Lesson. Phased
 release/postflight завершены. Explicit enrollment + per-Run learner live
-Student Screen являются CURRENT production DB / NEXT source/web rollout LA-M4;
-broader child Course consumption и attempts находятся в roadmap. Educator
-self-learning является current production.
+Student Screen являются CURRENT production DB/source/web LA-M4; broader child
+Course consumption и attempts находятся в roadmap. Educator self-learning
+является current production.
 
 ## Shipped acceptance baseline
 

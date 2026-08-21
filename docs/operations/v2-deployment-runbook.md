@@ -167,13 +167,13 @@ Worktree должен содержать только изменения тек�
 
 ## 4. Если release содержит DB migration
 
-### LA-M4 learner authorization/live delivery — DB production execution record / pending web delivery
+### LA-M4 learner authorization/live delivery — production execution record
 
-**Статус: CURRENT production DB / NEXT source/web rollout.** DB apply и snapshot
-ниже основаны на наблюдаемом evidence; application commit/Coolify/post-deploy
-поля остаются `[PENDING]`. Значение `[PENDING]` заменяется только наблюдаемым
-результатом команды или read-only postflight; неизвестное не выводится из local
-success.
+**Статус: CURRENT PRODUCTION DB/SOURCE/WEB.** DB apply, snapshot, exact
+functional source, Coolify image/container, guest boundary postflight и cleanup
+ниже основаны на наблюдаемом evidence. Authenticated production UI smoke явно
+не заявлен, потому что безопасной existing session/Run не было и production
+fixtures не создавались.
 
 Frozen inputs:
 
@@ -202,8 +202,9 @@ Read-only sanity before every write:
 - expected LA-M3 objects present and unexpected LA-M4 objects absent:
   `PASS`;
 - project-local connection confirmed, secret-free captured output:
-  `PASS`; использован только ignored workspace-local
-  `.codex/ssh-db.local.toml`, значения credentials не выводились.
+  `PASS`; DB SSH операции использовали только ignored workspace-local
+  `.codex/ssh-db.local.toml`, mode `0600`; DB MCP отсутствует, значения
+  credentials не выводились.
 
 Production-derived clone and rollback rehearsal:
 
@@ -225,7 +226,7 @@ Production-derived clone and rollback rehearsal:
 - schema replay vs expected source contract: exact public body equality after
   `auth.users`/session/Storage bootstrap и public owner/ACL normalization —
   `PASS`;
-- disposable clone cleanup: `[PENDING]`.
+- disposable clone cleanup: `PASS`, exact disposable database count `0`.
 
 DB acceptance must explicitly record:
 
@@ -257,12 +258,14 @@ Application pre-rollout gate:
 - strict production-mode browser result including separate teacher/learner
   sessions: `PASS`, `31/31`, duration `120632.691ms`; coverage includes the
   LA-M4 teacher, authorized learner and outsider flows;
-- format check / `git diff --check`: `PASS` for the nine edited Markdown files /
-  `PASS` for the full worktree diff;
+- format check / `git diff --check`: `PASS` for the eight edited LA-M4 Markdown
+  files / `PASS` for the full worktree diff;
 - production build pages/result: `PASS`, compiled and generated `73/73`
   static pages;
 - independent final scope/privacy/RLS-ACL/secrets/generated-artifacts audit:
-  `PASS`, no remaining P0/P1/P2 findings or blockers.
+  `PASS`, exact LA-M4 scope; no P0/P1/P2 findings or blockers, secret/
+  high-entropy leaks, unexpected generated artifacts, raw UUID/answer-key/
+  private-metadata/`storage_path`/signed-URL learner leaks.
 
 Production backup and apply:
 
@@ -286,7 +289,7 @@ Production backup and apply:
 - raw anon/service table probes and narrow RPC probes:
   anon raw `401/42501`, service raw `403/42501`, anon teacher RPC `401/42501`,
   service resolver dummy subject `403/42501`; authenticated safe-session probe
-  remains pending;
+  **NOT RUN** без safe existing session/Run и не заявляется;
 - identity violations and session/profile/capability negative probes:
   `PASS`; production identity violations `0/0`, dummy resolver subject
   отклонён `403/42501`, а exact session/profile/capability denials покрыты
@@ -302,30 +305,59 @@ Snapshot and delivery:
   `a40e247a8b72ba61e42d2ec376be870f264df3648dabec3869bc20ccae76be8d`,
   exact equality `PASS`; refresh script `3381` строк, SHA-256
   `0ed79f6e49b9263e0818cf55e05ba6c21483baf02b69c66e70fc9cf6bd39f0aa`;
-- functional commit and normal fast-forward push result: `[PENDING]`;
-- Coolify deployment id/status: `[PENDING]`;
-- exact commit image tag / image ID / `SOURCE_COMMIT`: `[PENDING]`;
-- container running `StartedAt` / restart count / health: `[PENDING]`;
-- startup/runtime error log matches: `[PENDING]`.
+- functional commit and normal fast-forward push result:
+  `e09631d2fa00ad1c4b91ad0584392efb748cf235`; normal FF
+  `9db3a1f..e09631d main -> main`, post-push worktree clean;
+- Coolify deployment id/status: `1007` / `flg9786e15llusgj6kgz7pwk` /
+  `finished`; created `2026-08-21T08:14:18Z`, finished
+  `2026-08-21T08:19:25Z`, `webhook=true`, `api=false`, PR `0`,
+  `restart_only=false`, `rollback=false`;
+- application SSH provenance: only ignored workspace-local
+  `.codex/ssh.local.toml`, mode `0600`; values не выводились;
+- exact container/image evidence: container
+  `g9x4d9zn60jv35r7zf0xl6xj-081418165873`, tag
+  `g9x4d9zn60jv35r7zf0xl6xj:e09631d2fa00ad1c4b91ad0584392efb748cf235`,
+  image ID
+  `sha256:7c39f70d3b4bf888bf2cea5e3f048af3f84e20f14b33980bc00644d51fbb6d33`,
+  `SOURCE_COMMIT=e09631d2fa00ad1c4b91ad0584392efb748cf235`;
+- container state: `StartedAt=2026-08-21T08:19:22.932339352Z`, running,
+  restart count `0`, health `none`;
+- startup/runtime logs: `12` inspected lines, error-pattern matches `0`.
 
 Production postflight:
 
-- host/Origin/CSRF/guest boundaries: `[PENDING]`;
-- unauthenticated teacher and learner live API denial: `[PENDING]`;
+- external host/Origin/CSRF/guest boundaries: V2 login `200`, `robots.txt` `200`,
+  protected courses `307` with `Location: /login`; landing root `200`, landing
+  login `503`, unknown host `503`; missing Origin `403`, cross Origin `403`,
+  exact V2 Origin дошёл до expected guest `401` — `PASS`;
+- in-container boundaries: V2 login `200`, learner guest `401`, landing login
+  `503`, unknown host `421` fail closed — `PASS`;
+- unauthenticated teacher and learner live API denial: both `401` with private,
+  `no-store` response headers — `PASS`;
 - safe existing authenticated teacher/learner no-write or controlled flow:
-  `[PENDING — do not create production credentials/fixtures merely for smoke]`;
+  **NOT RUN / explicitly unclaimed**; no safe existing authenticated production
+  session/Run was available, and no credentials, learners, Runs or fixtures
+  were created merely for smoke;
 - waiting/live/reconnect/revoke/ended UI and learner-safe response leak check:
-  `[PENDING]`;
-- browser console errors and mobile/desktop accessibility check: `[PENDING]`;
-- disposable remote/temp artifact cleanup: `[PENDING]`;
-- verified production backup retained: `PASS`, exact backup path, size, mode,
-  restore-list count and SHA-256 recorded above.
+  strict local production-mode Chromium `31/31` covers waiting/live/change/
+  reload/reconnect/revoke/ended and privacy; **not claimed** as authenticated
+  production UI evidence;
+- browser console errors and mobile/desktop accessibility check: covered by the
+  same strict local Chromium `31/31`; **not claimed** as authenticated
+  production UI evidence;
+- final DB postflight after cleanup: inventory `69/248`, canonical tuple
+  `19/6/22/84/2/2/0/0`, LA-M4 rows `0/0/0`, RLS `3`, policies `0`, triggers
+  `10`, exact ACL/function owner/security/search-path/grant matrix — `PASS`;
+- disposable remote/temp artifact cleanup: disposable DB count `0`, container
+  temp artifacts `0`, local `/private/tmp` LA-M4 artifacts `0` — `PASS`;
+- verified production backup retained: reverified size `1726769`, mode `600`,
+  restore-list entries `1914`, SHA-256
+  `71b4b3e71c299558b3604918d4de770241595abd6fc98d8ecda1255ab04f2e82` —
+  `PASS`.
 
-Only after every remaining app, deploy, postflight and cleanup marker has
-observed evidence may project-state, roadmap and schema guide change LA-M4
-from `CURRENT production DB / NEXT source and web` to
-`CURRENT production DB, source and web`; skipped authenticated smoke remains
-explicitly unclaimed.
+LA-M4 production execution record complete: DB/source/web current. Skipped
+authenticated UI smoke remains explicitly unclaimed and не подменяется local
+Chromium evidence.
 
 ### LA-M3 profile/evidence/recommendations — production execution record
 

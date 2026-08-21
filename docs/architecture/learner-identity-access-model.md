@@ -26,11 +26,9 @@ landing является прямой ссылкой `/profile`, а единст
 LearnerProfile, session projection или authorization boundary и ещё не
 заявляется deployed behavior.
 
-**CURRENT production DB / NEXT source/web rollout — LA-M4:** identity boundary
-теперь имеет отдельные explicit
+**CURRENT production DB/source/web — LA-M4:** identity boundary имеет отдельные explicit
 `Course enrollment → per-Run execution capability` для child live delivery.
-Production identity schema уже содержит additive contract; dependent deployed
-application evidence остаётся NEXT.
+Production identity schema и deployed application содержат additive contract.
 
 ## Product decision
 
@@ -543,7 +541,16 @@ RLS и закрытый raw ACL, а exact functions сохранили owner `su
 `SECURITY DEFINER`, empty `search_path` и узкие grants. PostgREST подтвердил
 anon raw/teacher denial `401/42501`, service raw denial `403/42501` и service
 resolver dummy-subject denial `403/42501`. Authenticated safe-session
-application smoke и dependent web rollout пока не заявлены.
+application smoke пока не заявлен.
+
+Dependent functional source `e09631d2fa00ad1c4b91ad0584392efb748cf235`
+доставлен normal fast-forward push и Coolify deployment `1007`
+(`flg9786e15llusgj6kgz7pwk`). Exact image/`SOURCE_COMMIT`, guest auth/host/
+Origin/CSRF postflight, final DB identity violations `0/0`, session/profile/
+capability negative boundary, ACL/grant matrix, cleanup и retained backup
+подтверждены. Independent final audit не нашёл auth/privacy leaks или blockers.
+Без safe existing authenticated production session/Run UI smoke **NOT RUN** и
+не заявляется; credentials или fixtures не создавались.
 
 ## Current / next / later
 
@@ -580,7 +587,7 @@ sign-out остаются в самом `/profile`; production rollout ещё н
 publication хранит собственные revision progress и аттестацию; это не является
 LearnerProfile enrollment и не расширяет Course audience.
 
-**Current production DB / next source/web rollout LA-M4:** only active linked
+**Current production DB/source/web LA-M4:** only active linked
 canonical profile может получить teacher-issued Course enrollment и active
 exact Run capability. Pre-start revoked exact-Run tombstone не является learner authority.
 Offline profile остаётся видимым teacher как roster identity, но grant
@@ -590,11 +597,11 @@ revoke всех active enrollments. Audience/group не являются ни pr
 authority. Logout/session revocation закрывает следующий
 poll. Эти факты не расширяют observer или AI consent.
 
-**Next / later, вне identity completion:** dependent source/web rollout LA-M4,
-generalized child Course consumption/attempts за пределами teacher-controlled
-live Run, persisted Homework, communication delivery enhancements, billing and
-external MCP. Teacher observations и objective/activity evidence уже current
-production LA-M1–LA-M3.
+**Next / later, вне identity completion:** generalized child Course
+consumption/attempts за пределами teacher-controlled live Run, persisted
+Homework, communication delivery enhancements, billing and external MCP.
+Teacher observations и objective/activity evidence уже current production
+LA-M1–LA-M3.
 
 Lesson/Run authored invariants remain canonical in
 [`lesson-workflow-model.md`](./lesson-workflow-model.md). Provider transport and

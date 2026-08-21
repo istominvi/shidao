@@ -1,7 +1,7 @@
 # План реализации Learning Activity System
 
 **Статус:** LA-M0 — CURRENT architecture; LA-M1–LA-M3 — CURRENT production;
-LA-M4 — CURRENT production DB / NEXT source/web rollout; LA-M5–LA-M6 — NEXT;
+LA-M4 — CURRENT production DB/source/web; LA-M5–LA-M6 — NEXT;
 LA-M7–LA-M9 — LATER.
 **Актуально на:** 21 августа 2026 года
 **Архитектура:**
@@ -232,7 +232,7 @@ deployed-SHA HTTP/API/CSRF/browser guest smoke завершены.
 - activity role `practice | assessment | survey` только для поддерживаемых
   типов;
 - definition-level contracts разделяют author/evaluator payload и learner-safe
-  delivery shape; read-only learner runtime реализован в current-source LA-M4,
+  delivery shape; read-only learner runtime реализован в current production LA-M4,
   а response persistence/server evaluation остаются LA-M5;
 - manual и AI используют один application contract;
 - новая publication snapshot version копирует objective definitions и
@@ -501,14 +501,14 @@ Learning Activity runtime не должен случайно смешать уж
 | ------------------------------ | --------------------------------------- | --------------------------------------------------------------------------------------- |
 | Teacher preview                | mutable Lesson Component                | preview-only; не пишет learner data                                                     |
 | Current educator self-learning | immutable approved publication revision | текущие Lesson completions остаются progress-only; attestation использует свой contract |
-| Child live LessonRun           | Lesson + Student Screen projection      | current-source LA-M4; отдельный explicitly authorized learner context                   |
+| Child live LessonRun           | Lesson + Student Screen projection      | current production LA-M4; отдельный explicitly authorized learner context               |
 | Homework                       | immutable issued Homework snapshot      | появляется в LA-M6                                                                      |
 
 Обычные educator Course Components не становятся assessable attempts незаметно.
 Их перевод на общий activity runtime требует отдельного совместимого slice;
 current educator attestation при этом не переписывается задним числом.
 
-## LA-M4 — learner authorization и live delivery (**CURRENT production DB / NEXT source/web rollout**)
+## LA-M4 — learner authorization и live delivery (**CURRENT production DB/source/web**)
 
 ### Implementation state
 
@@ -536,12 +536,22 @@ Production snapshot `2026-08-21T07:56:01Z` из PostgreSQL `15.8` имеет `31
 строк, `69` public tables, `248` functions и SHA-256
 `15d4a432edf4737c189ab444699b15482c7dbb90b85eab4e1b6043f843b79f52`;
 public body exact совпадает с clean clone/replay. Dependent functional
-commit/push, exact deployed image/`SOURCE_COMMIT`, independent final scope audit
-и post-deploy postflight ещё не заявлены. Pre-rollout application gate уже
-прошёл: typecheck, lint без warnings/errors, `936/936` unit/API, `31/31` strict
-production-mode Chromium и build `73/73`; Prettier по девяти изменённым
-Markdown-файлам и full-worktree `git diff --check` также прошли. До завершения
-remaining release gate LA-M5 не становится current.
+source `e09631d2fa00ad1c4b91ad0584392efb748cf235` доставлен normal
+fast-forward push `9db3a1f..e09631d main -> main`. Coolify deployment `1007`
+(`flg9786e15llusgj6kgz7pwk`) завершился `finished` с exact
+image/`SOURCE_COMMIT`, running container, restart count `0` и чистыми runtime
+logs. External/in-container guest/host/Origin/CSRF postflight, final DB
+contract, retained backup и cleanup прошли. Independent final audit не нашёл
+P0/P1/P2/blockers, secrets, leaks или unexpected generated artifacts.
+
+Pre-rollout application gate прошёл: typecheck, lint без warnings/errors,
+`936/936` unit/API, `31/31` strict production-mode Chromium и build `73/73`.
+Безопасной existing authenticated production session/Run не было, поэтому
+authenticated production UI smoke **NOT RUN** и не заявляется; credentials,
+learners, Runs и fixtures не создавались. Локальный `31/31` покрывает
+waiting/live/reload/reconnect/revoke/ended/privacy/mobile/accessibility, но не
+подменяет этот production smoke. LA-M4 current; LA-M5 от этого автоматически
+не становится current.
 
 ### Цель
 
@@ -639,7 +649,7 @@ Teacher controls находятся внутри focused Run workspace. Learner 
 keyboard/focus/screen-reader friendly и отключает необязательное движение при
 `prefers-reduced-motion`.
 
-### Definition of Done перед full production status
+### Definition of Done — production execution record
 
 - **DB COMPLETE:** migration прошла exact production-derived clone
   apply/rollback,
@@ -649,17 +659,19 @@ keyboard/focus/screen-reader friendly и отключает необязател
   `SECURITY DEFINER`, пустой `search_path` и внутренние actor/capability checks;
 - **APP PRE-ROLLOUT COMPLETE:** typecheck, lint, `936/936` unit/API, `31/31`
   strict production-mode browser teacher+learner/outsider flow и build `73/73`;
-- **FORMAT/DIFF COMPLETE:** Prettier по девяти изменённым Markdown-файлам и
-  full-worktree `git diff --check` прошли после documentation edits;
-- **NEXT:** independent final scope/secrets/generated-artifacts audit;
+- **FORMAT/DIFF COMPLETE:** Prettier по восьми LA-M4 Markdown-файлам и
+  full-worktree `git diff --check` прошли после final execution-record edits;
+- **FINAL AUDIT COMPLETE:** P0/P1/P2/blockers отсутствуют; scope, secrets,
+  generated artifacts и learner privacy boundary зелёные;
 - **DB COMPLETE:** до production apply создан verified backup; после него
   обновлены
   `docs/database/current-schema.md` и
   `supabase/schema/current-schema.sql`, фиксируются exact counts/checksums;
-- **NEXT:** normal fast-forward `main` deploy подтверждает exact SHA/image/
-  `SOURCE_COMMIT`, running container/restarts/logs и HTTP/auth/CSRF/host smoke;
-  authenticated no-write smoke заявляется только при безопасной existing
-  session, без создания production fixtures.
+- **ROLLOUT COMPLETE:** normal fast-forward `main`, exact SHA/image/
+  `SOURCE_COMMIT`, running container/restarts/logs, guest HTTP/auth/CSRF/host
+  smoke, cleanup и retained backup подтверждены;
+- **EXPLICITLY UNCLAIMED:** authenticated production UI smoke не выполнялся без
+  безопасной existing session/Run; production fixtures не создавались.
 
 LA-M4 намеренно не реализует LA-M5 `choice_quiz` attempt/evaluation и LA-M6
 Homework/`free_response`.

@@ -5,7 +5,7 @@
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
 **Current deployed functional source:**
-`6e3f97c230f688663abaa06a126a56d0d0e2c9c6`
+`e09631d2fa00ad1c4b91ad0584392efb748cf235`
 **Initial Communication Center functional application source (historical):**
 `2efaa86851fffc7e444af904fb900d9984caa6a8`
 (`704/704` unit/API, `27/27` strict production-mode browser scenarios,
@@ -102,13 +102,12 @@ DB migration —
 `6e3f97c230f688663abaa06a126a56d0d0e2c9c6`. Последующий docs-only
 execution-record commit runtime не меняет и не должен подменять этот SHA.
 
-**CURRENT production DB / NEXT source/web rollout — LA-M4 learner authorization
-и teacher-controlled live delivery:** production DB уже содержит additive
-forward migration `20260821093000_lesson_run_live_delivery.sql`, а repository
-source — typed module `src/modules/live-delivery/`, owner/learner API, teacher
-controls в focused Run workspace и отдельный `/live/[lessonRunId]` learner
-surface. Dependent application commit/push, Coolify image/`SOURCE_COMMIT` и
-post-deploy HTTP/browser evidence ещё не заявлены.
+**CURRENT production DB/source/web — LA-M4 learner authorization и
+teacher-controlled live delivery:** production DB содержит additive forward
+migration `20260821093000_lesson_run_live_delivery.sql`; deployed functional
+source `e09631d2fa00ad1c4b91ad0584392efb748cf235` содержит typed module
+`src/modules/live-delivery/`, owner/learner API, teacher controls в focused Run
+workspace и отдельный `/live/[lessonRunId]` learner surface.
 
 Exact migration имеет `2535` строк и SHA-256
 `7fb531bc199b8d6a24afeb1e01ff2730c8e5388a0cbbd233e2679d8e7825319c`.
@@ -152,9 +151,36 @@ exact совпадает с clone/replay. Authenticated safe-session smoke по�
 Final-tree pre-rollout application gate прошёл typecheck, lint с `0` warnings/
 errors, `936/936` unit/API, production build `73/73` и `31/31` strict
 production-mode Chromium scenarios с отдельными teacher, authorized learner и
-outsider flows. После documentation edits Prettier по девяти изменённым
-Markdown-файлам и full-worktree `git diff --check` прошли; independent final
-scope audit и commit/push/Coolify/post-deploy evidence остаются NEXT.
+outsider flows. После final execution-record edits Prettier по восьми LA-M4
+Markdown-файлам и full-worktree `git diff --check` прошли.
+Independent final app/security audit завершён GREEN: P0/P1/P2/blockers
+отсутствуют, scope exact LA-M4, secret/high-entropy и generated-artifact scans
+clean, learner projection не раскрывает raw UUID, answer key, private metadata,
+`storage_path` или signed URL.
+
+Functional commit `e09631d2fa00ad1c4b91ad0584392efb748cf235` доставлен
+normal fast-forward push `9db3a1f..e09631d main -> main` из clean worktree.
+Coolify deployment `1007` (`flg9786e15llusgj6kgz7pwk`) завершился `finished`
+21 августа 2026 года в `08:19:25Z`; exact tag, image ID и `SOURCE_COMMIT`
+совпали с functional commit. Container
+`g9x4d9zn60jv35r7zf0xl6xj-081418165873` запущен с restart count `0`, а `12`
+startup/runtime log lines не содержат error-pattern matches.
+
+External и in-container guest/host/Origin/CSRF smoke прошёл: V2 login `200`,
+teacher и learner guest API `401` с private/no-store, landing app route закрыт,
+unknown host fail closed, missing/cross Origin отклонены `403`, exact V2 Origin
+дошёл до ожидаемого guest `401`. Безопасной existing authenticated production
+session и подходящего Run не было, поэтому authenticated production UI smoke
+**NOT RUN** и не заявляется; credentials, learners, Runs и fixtures не
+создавались. Waiting/live/change/reload/reconnect/revoke/ended, privacy,
+mobile и accessibility подтверждены локальным strict production-mode Chromium
+`31/31`, но не выдаются за authenticated production UI evidence.
+
+Cleanup подтвердил `0` disposable databases, `0` container temp artifacts и
+`0` local `/private/tmp` LA-M4 artifacts. Final DB postflight сохранил inventory
+`69/248`, canonical tuple `19/6/22/84/2/2/0/0`, LA-M4 rows `0/0/0`, RLS `3`,
+policies `0`, triggers `10` и exact ACL/function contract. Verified backup
+повторно подтверждён и сохранён с теми же size/mode/entries/SHA-256.
 
 Frozen authority contract состоит из двух независимых явных capabilities:
 
@@ -2267,7 +2293,7 @@ browser redirect без mutation. Authenticated production no-write editor smoke
 - Заголовок Lesson показывается всегда; `lesson.summary`, `staff_only`
   Components и непривязанные course attachments отсутствуют в learner-ответе.
 - Preview позволяет преподавателю проверить Lessons и Slides. Это не модель
-  навигации live-ученика: current-source LA-M4 оставляет cursor под контролем
+  навигации live-ученика: current production LA-M4 оставляет cursor под контролем
   teacher.
 
 ### Component registry
@@ -2613,13 +2639,7 @@ History-aware context развёрнут в release `9393080`; production provid
   `2 000 000` meter является только информационной тестовой проекцией;
 - parsing/RAG прикреплённых материалов;
 - persisted Homework editor;
-- dependent source/web rollout LA-M4: explicit LearnerProfile-scoped Course
-  enrollment, per-Run execution capability и teacher-controlled Student Screen
-  cursor уже current в production DB и реализованы в repository source, но
-  application commit/Coolify/post-deploy postflight ещё не заявлены; current
-  production Account-scoped self-learning educator Course остаётся отдельным
-  flow;
-- Realtime/presence для live Student Screen; current-source LA-M4 намеренно
+- Realtime/presence для live Student Screen; current production LA-M4 намеренно
   использует reload/reconnect и bounded request polling;
 - versioned learner activity attempts и server-side evaluation; они остаются
   последующими LA-M5/LA-M6 slices и не подменяются LA-M3 teacher observations;
@@ -2966,7 +2986,11 @@ payloads, отдельный quota/billing ledger и durable action/job ledger �
   refreshed snapshot имеет `31440` строк, `69` public tables, `248` functions и
   SHA-256
   `15d4a432edf4737c189ab444699b15482c7dbb90b85eab4e1b6043f843b79f52`.
-  Dependent source/web rollout остаётся NEXT.
+  Dependent functional source
+  `e09631d2fa00ad1c4b91ad0584392efb748cf235` доставлен normal fast-forward push
+  и Coolify deployment `1007`; exact image/`SOURCE_COMMIT`, guest/host/CSRF
+  postflight, cleanup и retained backup подтверждены. Authenticated production
+  UI smoke не выполнялся без безопасной existing session/Run и не заявляется.
 
 Источники истины для текущего состояния:
 

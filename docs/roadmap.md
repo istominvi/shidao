@@ -1121,9 +1121,9 @@ Course только открывают этот же центр на нужно�
 
 **Next:** отдельными slices добавить durable action/job и token-usage ledger,
 quota reservation/settlement с distributed enforcement, reliable background
-completion producers, dependent source/web rollout LA-M4 поверх уже current
-production DB, Realtime/presence и push/email delivery. Текущий тестовый meter
-не используется как billing balance.
+completion producers, Realtime/presence и push/email delivery. LA-M4
+source/web rollout уже current production. Текущий тестовый meter не
+используется как billing balance.
 
 ## P0.4: reusable Course catalog
 
@@ -1420,8 +1420,7 @@ Functional task commit `6e3f97c230f688663abaa06a126a56d0d0e2c9c6` прошёл
 HTTP/API/CSRF/host guest postflight прошёл; authenticated production no-write
 LA-M3 smoke не выполнен из-за guest-only browser session и не заявляется.
 Последующий execution-record docs commit runtime не меняет. LA-M4 имеет статус
-**CURRENT PRODUCTION DB / NEXT source/web rollout**; LA-M5–LA-M6 остаются
-**NEXT**.
+**CURRENT PRODUCTION DB/SOURCE/WEB**; LA-M5–LA-M6 остаются **NEXT**.
 
 ## P1.3: persisted Homework authoring
 
@@ -1505,10 +1504,9 @@ claim/access slice. Заполненный `account_id` позволяет Accou
 собственную canonical identity row; Course, records и teacher-local data этим не
 открываются. Полный current/next/later boundary находится в
 [`docs/architecture/learner-identity-access-model.md`](./architecture/learner-identity-access-model.md).
-LearnerProfile-scoped Course/live authority current в production DB LA-M4 и
-реализована в repository source, но dependent web ещё не заявлен deployed. Она
-не входит в P0.Identity: отдельный explicit Course enrollment и отдельная
-per-Run execution capability обязательны одновременно. Наличие linked profile,
+LearnerProfile-scoped Course/live authority current production в DB/source/web
+LA-M4. Она не входит в P0.Identity: отдельный explicit Course enrollment и
+отдельная per-Run execution capability обязательны одновременно. Наличие linked profile,
 Course audience/Run roster,
 `teacher_learner`, observer grant или AI consent ни одну capability не создаёт;
 Course audience/groups не являются prerequisite для explicit grant.
@@ -1533,7 +1531,7 @@ current product surfaces and learner-safe real-record progress are already
 implemented. Superseded visual specifications and rollout hashes belong to Git
 history and the deployment runbook, not to the forward roadmap.
 
-**Current production DB / next source/web rollout — LA-M4 live:**
+**Current production DB/source/web — LA-M4 live:**
 
 Exact production migration `20260821093000_lesson_run_live_delivery.sql`
 (`2535` строк, SHA-256
@@ -1547,9 +1545,19 @@ Snapshot `2026-08-21T07:56:01Z` содержит `69` public tables, `248` funct
 его public body exact совпадает с clean clone/replay. Final-tree pre-rollout
 gate прошёл typecheck, lint с `0` warnings/errors, `936/936` unit/API, build
 `73/73` и `31/31` strict production-mode Chromium teacher/authorized learner/
-outsider scenarios. Prettier по девяти изменённым Markdown-файлам и full-worktree
-`git diff --check` прошли; independent final audit, functional commit, Coolify
-и post-deploy evidence остаются NEXT.
+outsider scenarios. Prettier по восьми LA-M4 Markdown-файлам и full-worktree
+`git diff --check` прошли. Independent final app/security audit не нашёл
+P0/P1/P2/blockers, secret/leak или generated-artifact findings.
+
+Functional commit `e09631d2fa00ad1c4b91ad0584392efb748cf235` доставлен
+normal fast-forward push `9db3a1f..e09631d main -> main`; Coolify deployment
+`1007` (`flg9786e15llusgj6kgz7pwk`) завершился `finished` с exact
+image/`SOURCE_COMMIT`, running container и restart count `0`. External и
+in-container guest/host/Origin/CSRF postflight прошёл, production DB contract
+после cleanup остался exact, backup повторно verified. Безопасной existing
+authenticated production session/Run не было: такой UI smoke **NOT RUN**, а
+локальный strict Chromium `31/31` не выдаётся за authenticated production
+evidence. Disposable DB/container/local LA-M4 temp counts равны `0`.
 
 - explicit Course enrollment и отдельная per-Run execution capability дают
   authority только canonical profile текущего authenticated Account; browser не
