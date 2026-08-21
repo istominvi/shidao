@@ -24,6 +24,10 @@ import type {
 } from "@/modules/learner-identity/domain";
 import type { CourseSummary } from "@/modules/course-builder/domain";
 import type { AccountAttestationCredential } from "@/modules/course-attestations/domain";
+export {
+  loadObservedActivityProfile,
+  loadSelfActivityProfile,
+} from "@/components/learning-activities/activity-profile-client";
 
 export class IdentityClientError extends Error {
   readonly status: number;

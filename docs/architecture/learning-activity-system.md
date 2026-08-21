@@ -1,7 +1,7 @@
 # Learning Activity System
 
 **Статус:** каноническое архитектурное решение; CURRENT / NEXT / LATER
-**Актуально на:** 20 августа 2026 года
+**Актуально на:** 21 августа 2026 года
 **Область:** Course components, учебные цели, ответы, наблюдения, evidence,
 учебный профиль, адаптивность, offline/live и языковые активности
 
@@ -94,7 +94,7 @@ structured observation учитель сначала подтверждает к
 
 ## CURRENT: что уже существует
 
-В подтверждённом current production application baseline LA-M1/LA-M2:
+В подтверждённом deployed production application baseline LA-M1/LA-M2:
 
 - Course напрямую владеет Lessons, а Lesson — одним ordered списком Components;
 - Student Screen Slides являются только learner-facing presentation projection;
@@ -103,8 +103,9 @@ structured observation учитель сначала подтверждает к
 - payload, placement, defaults и capabilities валидируются общими Zod
   contracts;
 - ответы интерактивных renderer сейчас живут только в локальном preview state;
-- learner attempts, evaluations, durable typed evidence и skill state ещё не
-  сохраняются;
+- learner attempts и evaluations ещё не сохраняются; deployed web пока не
+  создаёт durable typed evidence или skill state, хотя их LA-M3 physical DB
+  contract уже current;
 - LessonRun и compact LearningRecord уже сохраняют факт занятия, посещаемость,
   teacher comment и рекомендацию повторения;
 - learner-safe history/progress уже отделены от teacher-private raw history;
@@ -159,8 +160,61 @@ LA-M1 доставлен DB-first 20 августа 2026 года: exact migrati
 развёрнут Coolify deployment `1001`, а DB/HTTP/API/CSRF/browser postflight
 завершён. Полный execution record находится в deployment runbook.
 
-Поэтому ни локально правильный ответ в preview, ни просмотр видео сейчас не
-изменяют учебный профиль. Нельзя показывать выдуманный mastery на основании
+## CURRENT PRODUCTION DB / DEPENDENT WEB ROLLOUT PENDING: LA-M3
+
+Production physical schema и текущий task tree реализуют учебный профиль поверх
+LA-M1/LA-M2. DB delivery доказана, а dependent application/UI rollout ещё
+pending. Границы LA-M3:
+
+- finalized LearningRecord/observation history остаётся append-only source of
+  truth; correction создаёт reciprocal superseding chain и клонирует at-time
+  provenance вместо in-place update;
+- durable typed evidence создаётся только из finalized, present,
+  non-superseded, objective-aligned observation с подтверждённым criterion и
+  `direct | bulk_confirmed` entry method;
+- `objective-state-v1` является deterministic versioned projection без mastery
+  percentage: latest negative/support оставляет цель `forming`, а `confirmed`
+  требует independent evidence из двух разных stable LessonRun opportunities;
+  при точной boundary `asOf >= latestEvidenceAt + 90 days` состояние становится
+  `recheck_due`;
+- persisted state существует только при active evidence. `no_data` —
+  synthesized projection доступной objective: nullable `stateId` и
+  `lastEvidenceAt`, пустые evidence links, `no_eligible_evidence` и отсутствие
+  recommendation/teacher override action;
+- recommendation — versioned deterministic read projection; persisted только
+  explicit teacher replace/dismiss override и private reason. Она не планирует
+  очередь и не меняет Course/Lesson/Component/Slide order;
+- teacher читает recorder-owned raw history/evidence, а subject/active observer
+  получают отдельный bounded DTO с opaque references без private note,
+  override private reason, recorder/Account UUID и evaluator/policy payloads;
+- AI получает только отдельную bounded activity projection. Её RPC выполняет
+  deterministic server-derived refresh и audit как часть logical read, но не
+  предоставляет модели прямого evidence/state/recommendation mutation action.
+  Manual UI остаётся полностью рабочим без AI.
+
+Exact migration SHA-256
+`a7e7dad7db4632f98cf0857597dae99b58cf653bd39ec57d0eb91f540c9793f8`
+(`5335` строк) прошла observed `COMMIT` на production-derived PostgreSQL `15.8`
+clone, `85` functional assertions, `11/11` LA races и identity
+functional/concurrency. Verified backup создан; production owner apply также
+завершился observed `COMMIT`. Pre/post canonical tuple
+`19/6/22/84/2/2/0/0`, publication
+`1/9056/2832fcf2ee1a4c3ccdf01501fc4f60f3` и четыре пустые LA-M3 relations
+`0/0/0/0` не изменились; обе source LearningRecord сохранили empty
+correction/supersession metadata. RLS `4/4`, `4` policies,
+ACL/RPC/security, `0` identity violations и PostgREST probes прошли. Final
+production-head PostgreSQL `15.8` snapshot сгенерирован
+`2026-08-21T00:25:53Z`: SHA-256
+`a1768f22f829d58c01a5846b68cdb7be60a363ebb771869ed90fb83dd316cbc2`,
+`29533` строки, `66` public tables и `235` functions; body побайтово совпадает
+с snapshot, replayed из production-derived clone.
+
+Task commit/push, Coolify exact-SHA deploy и production HTTP/API/browser smoke
+ещё **PENDING**. Поэтому текущий deployed web/source остаётся LA-M2 и пока не
+создаёт LA-M3 profile rows через application workflow.
+
+Ни локально правильный ответ в preview, ни просмотр видео в deployed web сейчас
+не изменяют учебный профиль. Нельзя показывать выдуманный mastery на основании
 этих сигналов.
 
 ## Неподвижные архитектурные границы
@@ -286,8 +340,8 @@ learners действительно наблюдались. LA-M1 сохраня
 становится отдельным signal только если будущий evidence policy объяснит его
 шкалу и назначение.
 
-Current production LA-M1 и LA-M2 вместе реализуют только
-component-level history и objective provenance:
+Current deployed LA-M1/LA-M2 web реализует component-level history и objective
+provenance:
 
 - ровно одна текущая строка на `LearningRecord + source Component`;
 - nullable live Component FK и стабильный source UUID-at-time;
@@ -299,7 +353,9 @@ component-level history и objective provenance:
   пока Run фактически started и открыт, finalized history read-only;
 - LA-M2 pure projection может назвать observation eligible/ineligible и вернуть
   reason codes, support/direction, но не создаёт durable evidence, objective
-  state, recommendation или mastery; это остаётся LA-M3.
+  state, recommendation или mastery через deployed LA-M2 web. Current
+  production DB LA-M3 уже содержит durable evidence/state/recommendation
+  contract; его dependent web rollout остаётся отдельным pending gate.
 
 Retention contract: archive objective сохраняет существующие alignment и
 history, но запрещает новое назначение archived objective. При физическом
@@ -712,8 +768,9 @@ contract tests, а не финальной косметической прове
 2. **CURRENT:** Course objectives, одна optional primary objective на Component,
    activity role и optional registry `activityFacet` с learner-safe/evaluator
    projections;
-3. **NEXT:** history/objective-state projection для objective-aligned
-   observations;
+3. **CURRENT PRODUCTION DB / DEPENDENT WEB ROLLOUT PENDING:**
+   history/evidence/objective-state projection и transparent recommendations
+   для objective-aligned observations;
 4. **NEXT:** learner authorization и teacher-controlled live delivery;
 5. **NEXT:** один полный `choice_quiz` через learner-safe delivery и server
    evaluation;

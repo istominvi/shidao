@@ -1,7 +1,14 @@
 "use client";
 
-import { Eye, History, LoaderCircle, UserRound } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import {
+  BookOpenCheck,
+  Eye,
+  History,
+  Lightbulb,
+  LoaderCircle,
+  UserRound,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AppPageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,17 +21,20 @@ import type {
   LearnerSafeHistoryItem,
   ObserverGrant,
 } from "@/modules/learner-identity/domain";
+import type { LearnerSafeActivityProfile } from "@/modules/learning-activities";
 import {
   actOnObserver,
   loadObservedHistory,
+  loadObservedActivityProfile,
   loadObservedProfiles,
   loadObservedProgress,
 } from "./identity-client";
 import { IdentityEmpty, IdentityError, IdentityLoading } from "./identity-ui";
 import { ProgressSummary } from "./progress-summary";
 import { SafeHistoryList } from "./safe-history-list";
+import { SafeActivityProfileSection } from "@/components/learning-activities/activity-profile-sections";
 
-type Surface = "progress" | "history";
+type Surface = "progress" | "history" | "skills" | "recommendations";
 
 const OBSERVING_PROJECTION_TABS_ID = "observing-projection";
 
@@ -32,6 +42,14 @@ type ObservingWorkspaceProps = {
   embedded?: boolean;
   onProfileCountChange?: (count: number) => void;
 };
+
+function isProjectionAccessFailure(error: unknown) {
+  if (!error || typeof error !== "object" || !("status" in error)) {
+    return false;
+  }
+  const status = (error as { status?: unknown }).status;
+  return status === 401 || status === 403 || status === 404;
+}
 
 export function ObservingWorkspace({
   embedded = false,
@@ -42,10 +60,17 @@ export function ObservingWorkspace({
   const [surface, setSurface] = useState<Surface>("progress");
   const [progress, setProgress] = useState<LearnerProgress | null>(null);
   const [history, setHistory] = useState<LearnerSafeHistoryItem[]>([]);
+  const [activityProfile, setActivityProfile] =
+    useState<LearnerSafeActivityProfile | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loadingProjection, setLoadingProjection] = useState(false);
+  const [loadingActivityProfile, setLoadingActivityProfile] = useState(false);
+  const [activityError, setActivityError] = useState<string | null>(null);
+  const [projectionReload, setProjectionReload] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const projectionGenerationRef = useRef(0);
+  const selectedIdRef = useRef<string | null>(null);
 
   const loadProfiles = useCallback(async () => {
     setError(null);
@@ -76,39 +101,174 @@ export function ObservingWorkspace({
 
   useEffect(() => {
     if (!selectedId) {
+      projectionGenerationRef.current += 1;
+      selectedIdRef.current = null;
       setProgress(null);
       setHistory([]);
+      setActivityProfile(null);
       setNextCursor(null);
+      setActivityError(null);
+      setLoadingProjection(false);
+      setLoadingActivityProfile(false);
+      setBusy(false);
       return;
     }
+    const learnerProfileId = selectedId;
+    const generation = ++projectionGenerationRef.current;
+    selectedIdRef.current = learnerProfileId;
     let active = true;
     setLoadingProjection(true);
+    setLoadingActivityProfile(true);
+    setBusy(false);
     setError(null);
-    void Promise.all([
-      loadObservedProgress(selectedId),
-      loadObservedHistory(selectedId),
-    ])
-      .then(([nextProgress, page]) => {
-        if (!active) return;
-        setProgress(nextProgress);
-        setHistory(page.items);
-        setNextCursor(page.nextCursor);
+    setProgress(null);
+    setHistory([]);
+    setActivityProfile(null);
+    setNextCursor(null);
+    setActivityError(null);
+    const isCurrent = () =>
+      active &&
+      generation === projectionGenerationRef.current &&
+      selectedIdRef.current === learnerProfileId;
+    const failClosed = (reason: unknown) => {
+      if (!isCurrent()) return;
+      projectionGenerationRef.current += 1;
+      selectedIdRef.current = null;
+      setProgress(null);
+      setHistory([]);
+      setActivityProfile(null);
+      setNextCursor(null);
+      setProfiles(null);
+      setSelectedId(null);
+      setLoadingProjection(false);
+      setLoadingActivityProfile(false);
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Доступ к профилю больше недоступен.",
+      );
+      void loadProfiles();
+    };
+
+    void loadObservedActivityProfile(learnerProfileId)
+      .then((nextActivityProfile) => {
+        if (!isCurrent()) return;
+        setActivityProfile(nextActivityProfile);
       })
-      .catch((caught) => {
-        if (active)
-          setError(
-            caught instanceof Error
-              ? caught.message
-              : "Доступ к профилю больше недоступен.",
-          );
+      .catch((caught: unknown) => {
+        if (!isCurrent()) return;
+        if (isProjectionAccessFailure(caught)) {
+          failClosed(caught);
+          return;
+        }
+        setActivityError(
+          caught instanceof Error
+            ? caught.message
+            : "Не удалось загрузить навыки и рекомендации.",
+        );
       })
       .finally(() => {
-        if (active) setLoadingProjection(false);
+        if (isCurrent()) setLoadingActivityProfile(false);
+      });
+
+    void Promise.allSettled([
+      loadObservedProgress(learnerProfileId),
+      loadObservedHistory(learnerProfileId),
+    ])
+      .then(([progressResult, historyResult]) => {
+        if (!isCurrent()) return;
+        const accessFailure = [progressResult, historyResult].find(
+          (result) =>
+            result.status === "rejected" &&
+            isProjectionAccessFailure(result.reason),
+        );
+        if (accessFailure?.status === "rejected") {
+          failClosed(accessFailure.reason);
+          return;
+        }
+        if (
+          progressResult.status === "rejected" ||
+          historyResult.status === "rejected"
+        ) {
+          setProgress(null);
+          setHistory([]);
+          setNextCursor(null);
+          const reason =
+            progressResult.status === "rejected"
+              ? progressResult.reason
+              : historyResult.status === "rejected"
+                ? historyResult.reason
+                : null;
+          setError(
+            reason instanceof Error
+              ? reason.message
+              : "Не удалось загрузить доступные данные профиля.",
+          );
+          return;
+        }
+        setProgress(progressResult.value);
+        setHistory(historyResult.value.items);
+        setNextCursor(historyResult.value.nextCursor);
+      })
+      .finally(() => {
+        if (isCurrent()) setLoadingProjection(false);
       });
     return () => {
       active = false;
     };
-  }, [selectedId]);
+  }, [loadProfiles, projectionReload, selectedId]);
+
+  async function retryActivityProfile() {
+    if (!selectedId || loadingActivityProfile) return;
+    const learnerProfileId = selectedId;
+    const generation = projectionGenerationRef.current;
+    setLoadingActivityProfile(true);
+    setActivityError(null);
+    try {
+      const nextActivityProfile =
+        await loadObservedActivityProfile(learnerProfileId);
+      if (
+        generation !== projectionGenerationRef.current ||
+        selectedIdRef.current !== learnerProfileId
+      )
+        return;
+      setActivityProfile(nextActivityProfile);
+    } catch (caught) {
+      if (
+        generation !== projectionGenerationRef.current ||
+        selectedIdRef.current !== learnerProfileId
+      )
+        return;
+      if (isProjectionAccessFailure(caught)) {
+        projectionGenerationRef.current += 1;
+        selectedIdRef.current = null;
+        setProgress(null);
+        setHistory([]);
+        setActivityProfile(null);
+        setNextCursor(null);
+        setProfiles(null);
+        setSelectedId(null);
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "Доступ к профилю больше недоступен.",
+        );
+        void loadProfiles();
+      } else {
+        setActivityError(
+          caught instanceof Error
+            ? caught.message
+            : "Не удалось загрузить навыки и рекомендации.",
+        );
+      }
+    } finally {
+      if (
+        generation === projectionGenerationRef.current &&
+        selectedIdRef.current === learnerProfileId
+      )
+        setLoadingActivityProfile(false);
+    }
+  }
 
   const selectedGrant =
     profiles?.find((item) => item.learnerProfileId === selectedId) ?? null;
@@ -121,12 +281,30 @@ export function ObservingWorkspace({
       )
     )
       return;
+    const leavingLearnerProfileId = selectedGrant.learnerProfileId;
+    const remainingProfiles = (profiles ?? []).filter(
+      (grant) => grant.id !== selectedGrant.id,
+    );
+    projectionGenerationRef.current += 1;
+    selectedIdRef.current = null;
+    setSelectedId(null);
     setBusy(true);
     setError(null);
+    setProgress(null);
+    setHistory([]);
+    setActivityProfile(null);
+    setNextCursor(null);
+    setLoadingProjection(false);
+    setLoadingActivityProfile(false);
     try {
       await actOnObserver(selectedGrant.id, "leave");
-      await loadProfiles();
+      const nextSelectedId = remainingProfiles[0]?.learnerProfileId ?? null;
+      setProfiles(remainingProfiles);
+      selectedIdRef.current = nextSelectedId;
+      setSelectedId(nextSelectedId);
     } catch (caught) {
+      selectedIdRef.current = leavingLearnerProfileId;
+      setSelectedId(leavingLearnerProfileId);
       setError(
         caught instanceof Error
           ? caught.message
@@ -139,19 +317,53 @@ export function ObservingWorkspace({
 
   async function loadMore() {
     if (!selectedId || !nextCursor || busy) return;
+    const learnerProfileId = selectedId;
+    const generation = projectionGenerationRef.current;
+    const cursor = nextCursor;
     setBusy(true);
     try {
-      const page = await loadObservedHistory(selectedId, nextCursor);
+      const page = await loadObservedHistory(learnerProfileId, cursor);
+      if (
+        generation !== projectionGenerationRef.current ||
+        selectedIdRef.current !== learnerProfileId
+      )
+        return;
       setHistory((current) => [...current, ...page.items]);
       setNextCursor(page.nextCursor);
     } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "Не удалось продолжить историю.",
-      );
+      if (
+        generation !== projectionGenerationRef.current ||
+        selectedIdRef.current !== learnerProfileId
+      )
+        return;
+      if (isProjectionAccessFailure(caught)) {
+        projectionGenerationRef.current += 1;
+        selectedIdRef.current = null;
+        setProgress(null);
+        setHistory([]);
+        setActivityProfile(null);
+        setNextCursor(null);
+        setProfiles(null);
+        setSelectedId(null);
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "Доступ к профилю больше недоступен.",
+        );
+        void loadProfiles();
+      } else {
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "Не удалось продолжить историю.",
+        );
+      }
     } finally {
-      setBusy(false);
+      if (
+        generation === projectionGenerationRef.current &&
+        selectedIdRef.current === learnerProfileId
+      )
+        setBusy(false);
     }
   }
 
@@ -166,7 +378,13 @@ export function ObservingWorkspace({
         />
       ) : null}
       {error ? (
-        <IdentityError message={error} onRetry={() => void loadProfiles()} />
+        <IdentityError
+          message={error}
+          onRetry={() => {
+            void loadProfiles();
+            setProjectionReload((current) => current + 1);
+          }}
+        />
       ) : null}
       {profiles === null ? (
         <IdentityLoading>Проверяем доступные профили…</IdentityLoading>
@@ -185,7 +403,11 @@ export function ObservingWorkspace({
                 key={grant.id}
                 type="button"
                 className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${selectedId === grant.learnerProfileId ? "border-sky-300 bg-sky-50" : "border-neutral-200 bg-white"}`}
-                onClick={() => setSelectedId(grant.learnerProfileId)}
+                onClick={() => {
+                  projectionGenerationRef.current += 1;
+                  selectedIdRef.current = grant.learnerProfileId;
+                  setSelectedId(grant.learnerProfileId);
+                }}
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100">
                   <UserRound className="h-4 w-4" aria-hidden="true" />
@@ -238,6 +460,26 @@ export function ObservingWorkspace({
                   icon: History,
                   count: history.length,
                 },
+                {
+                  value: "skills",
+                  label: "Навыки",
+                  icon: BookOpenCheck,
+                  ...(activityProfile === null
+                    ? {}
+                    : { count: activityProfile.states.length }),
+                },
+                {
+                  value: "recommendations",
+                  label: "Рекомендации",
+                  icon: Lightbulb,
+                  ...(activityProfile === null
+                    ? {}
+                    : {
+                        count: activityProfile.states.filter(
+                          (state) => state.recommendation !== null,
+                        ).length,
+                      }),
+                },
               ]}
             />
             {loadingProjection ? (
@@ -273,6 +515,65 @@ export function ObservingWorkspace({
                   nextCursor={nextCursor}
                   loadingMore={busy}
                   onLoadMore={() => void loadMore()}
+                />
+              ) : null}
+            </div>
+            <div
+              id={workspaceTabPanelId(OBSERVING_PROJECTION_TABS_ID, "skills")}
+              role="tabpanel"
+              aria-labelledby={workspaceTabId(
+                OBSERVING_PROJECTION_TABS_ID,
+                "skills",
+              )}
+              hidden={surface !== "skills"}
+              tabIndex={0}
+            >
+              {!loadingProjection && surface === "skills" && activityError ? (
+                <IdentityError
+                  message={`Навыки временно недоступны: ${activityError}`}
+                  onRetry={() => void retryActivityProfile()}
+                />
+              ) : null}
+              {loadingActivityProfile && surface === "skills" ? (
+                <IdentityLoading>Обновляем навыки…</IdentityLoading>
+              ) : null}
+              {!loadingProjection && surface === "skills" && activityProfile ? (
+                <SafeActivityProfileSection
+                  profile={activityProfile}
+                  section="skills"
+                />
+              ) : null}
+            </div>
+            <div
+              id={workspaceTabPanelId(
+                OBSERVING_PROJECTION_TABS_ID,
+                "recommendations",
+              )}
+              role="tabpanel"
+              aria-labelledby={workspaceTabId(
+                OBSERVING_PROJECTION_TABS_ID,
+                "recommendations",
+              )}
+              hidden={surface !== "recommendations"}
+              tabIndex={0}
+            >
+              {!loadingProjection &&
+              surface === "recommendations" &&
+              activityError ? (
+                <IdentityError
+                  message={`Рекомендации временно недоступны: ${activityError}`}
+                  onRetry={() => void retryActivityProfile()}
+                />
+              ) : null}
+              {loadingActivityProfile && surface === "recommendations" ? (
+                <IdentityLoading>Обновляем рекомендации…</IdentityLoading>
+              ) : null}
+              {!loadingProjection &&
+              surface === "recommendations" &&
+              activityProfile ? (
+                <SafeActivityProfileSection
+                  profile={activityProfile}
+                  section="recommendations"
                 />
               ) : null}
             </div>

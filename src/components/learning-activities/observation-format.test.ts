@@ -19,6 +19,8 @@ function observation(
   return {
     id: `observation-${learningRecordId}`,
     learningRecordId,
+    correctedFromObservationId: null,
+    supersededByObservationId: null,
     lessonComponentId: "component-1",
     sourceComponentIdAtTime: "component-1",
     learningObjectiveId: null,

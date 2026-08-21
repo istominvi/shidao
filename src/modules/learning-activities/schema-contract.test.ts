@@ -10,6 +10,10 @@ const objectiveMigration = readFileSync(
   "supabase/migrations/20260820085049_learning_objectives_component_alignment.sql",
   "utf8",
 );
+const profileMigration = readFileSync(
+  "supabase/migrations/20260820132725_learning_activity_profile_history_skills_recommendations.sql",
+  "utf8",
+);
 const snapshot = readFileSync("supabase/schema/current-schema.sql", "utf8");
 const refreshScript = readFileSync(
   "scripts/refresh-schema-snapshot.sh",
@@ -22,6 +26,14 @@ function tableBody(name: string) {
   const end = migration.indexOf("\n);", start);
   assert.notEqual(end, -1, `unterminated table ${name}`);
   return migration.slice(start, end + 3);
+}
+
+function profileTableBody(name: string) {
+  const start = profileMigration.indexOf(`create table public.${name} (`);
+  assert.notEqual(start, -1, `missing LA-M3 table ${name}`);
+  const end = profileMigration.indexOf("\n);", start);
+  assert.notEqual(end, -1, `unterminated LA-M3 table ${name}`);
+  return profileMigration.slice(start, end + 3);
 }
 
 function functionBodyIn(source: string, name: string) {
@@ -811,4 +823,395 @@ test("learner and observer snapshot projections cannot expose private observatio
     assert.doesNotMatch(body, /lesson_component_observation/);
     assert.doesNotMatch(body, /private_note/);
   }
+});
+
+test("LA-M3 is one additive guarded migration with closed raw-table ACL", () => {
+  assert.match(profileMigration, /^begin;\n/);
+  assert.match(
+    profileMigration,
+    /\nnotify pgrst, 'reload schema';\n\ncommit;\n$/,
+  );
+  assert.equal((profileMigration.match(/^begin;$/gm) ?? []).length, 1);
+  assert.equal((profileMigration.match(/^commit;$/gm) ?? []).length, 1);
+  assert.doesNotMatch(
+    profileMigration,
+    /drop\s+(?:table|function|schema)[^;]*\bcascade\b/i,
+  );
+
+  for (const tableName of [
+    "learning_evidence",
+    "learner_objective_state",
+    "learner_objective_state_evidence",
+    "learner_recommendation_override",
+  ]) {
+    assert.ok(profileTableBody(tableName));
+    assert.match(
+      profileMigration,
+      new RegExp(
+        `alter table public\\.${tableName} enable row level security;`,
+      ),
+    );
+  }
+
+  const rawGrant = profileMigration.slice(
+    profileMigration.indexOf("grant all on table\n  public.learning_evidence"),
+    profileMigration.indexOf(
+      "-- Every workflow which can change the evidence set",
+    ),
+  );
+  assert.match(rawGrant, /to postgres;/);
+  assert.match(rawGrant, /grant select on table[\s\S]*?to authenticated;/);
+  assert.doesNotMatch(rawGrant, /to service_role;/);
+  assert.match(
+    profileMigration,
+    /has_table_privilege\(\s*'service_role', 'public\.learning_evidence', 'SELECT'/,
+  );
+  for (const tableName of [
+    "learner_objective_state",
+    "learner_objective_state_evidence",
+    "learner_recommendation_override",
+  ]) {
+    assert.match(
+      profileMigration,
+      new RegExp(
+        `has_table_privilege\\(\\s*'service_role', 'public\\.${tableName}', 'SELECT'`,
+      ),
+    );
+  }
+});
+
+test("LA-M3 evidence is identity-consistent, immutable, and deletion-safe", () => {
+  const evidence = profileTableBody("learning_evidence");
+  const links = profileTableBody("learner_objective_state_evidence");
+  assert.match(evidence, /component_visibility_at_time text not null/);
+  assert.match(
+    evidence,
+    /component_visibility_at_time in \('learner_visible', 'staff_only'\)/,
+  );
+  assert.match(
+    profileMigration,
+    /add column component_visibility_at_time text null[\s\S]*?lesson_component_observation_visibility_at_time_check/,
+  );
+  const visibilityCapture = functionBodyIn(
+    profileMigration,
+    "capture_observation_component_visibility",
+  );
+  assert.match(
+    visibilityCapture,
+    /new\.corrected_from_observation_id is not null/,
+  );
+  assert.match(visibilityCapture, /component\.visibility/);
+  assert.match(
+    profileMigration,
+    /create trigger trg_observation_component_visibility[\s\S]*?component_label_at_time/,
+  );
+  for (const constraint of [
+    "learning_evidence_record_identity_fkey",
+    "learning_evidence_observation_identity_fkey",
+    "learning_evidence_state_identity_unique",
+    "learning_evidence_supersedes_fkey",
+    "learning_evidence_superseded_by_fkey",
+  ]) {
+    assert.match(evidence, new RegExp(`constraint ${constraint}`));
+  }
+  assert.match(
+    links,
+    /learner_objective_state_evidence_state_identity_fkey[\s\S]*?learner_objective_state_evidence_fact_identity_fkey/,
+  );
+
+  const immutable = functionBodyIn(
+    profileMigration,
+    "guard_learning_evidence_immutable",
+  ).toLowerCase();
+  assert.match(immutable, /old\.lesson_component_id is not null/);
+  assert.match(immutable, /new\.lesson_component_id is null/);
+  assert.match(immutable, /old\.learning_objective_id is not null/);
+  assert.match(immutable, /new\.learning_objective_id is null/);
+  assert.match(immutable, /new\.component_visibility_at_time/);
+  assert.match(immutable, /app\.learner_identity_merge/);
+  assert.match(immutable, /app\.learning_activity_materialization/);
+  assert.match(immutable, /app\.learner_identity_erasure/);
+
+  const supersession = functionBodyIn(
+    profileMigration,
+    "assert_learning_evidence_supersession_chain",
+  ).toLowerCase();
+  assert.match(supersession, /prior\.superseded_by_evidence_id = new\.id/);
+  assert.match(supersession, /replacement\.supersedes_evidence_id = new\.id/);
+  for (const identityPart of [
+    "recorded_by_account_id",
+    "learner_profile_id",
+    "source_course_id_at_time",
+    "source_learning_objective_id_at_time",
+  ]) {
+    assert.match(supersession, new RegExp(identityPart));
+  }
+  assert.match(
+    profileMigration,
+    /create constraint trigger trg_learning_evidence_supersession_chain[\s\S]*?deferrable initially deferred/,
+  );
+});
+
+test("LA-M3 completion, rebuild and correction preserve chronology contracts", () => {
+  const completion = functionBodyIn(
+    profileMigration,
+    "complete_lesson_run_v2",
+  ).toLowerCase();
+  const learnerLock = completion.indexOf("lock_learning_activity_learners");
+  const lessonLock = completion.indexOf("for update of lesson;");
+  assert.equal(learnerLock >= 0 && learnerLock < lessonLock, true);
+  assert.match(completion, /materialize_learning_evidence_for_records/);
+  assert.match(completion, /rebuild_learner_objective_state_for_actor/);
+  assert.match(
+    profileMigration,
+    /grant execute on function public\.complete_lesson_run_v2\([\s\S]*?\) to postgres, authenticated, service_role;/,
+  );
+
+  const materialize = functionBodyIn(
+    profileMigration,
+    "materialize_learning_evidence_for_records",
+  ).toLowerCase();
+  for (const eligibility of [
+    "record.occurred_at is not null",
+    "record.was_present",
+    "record.superseded_by_record_id is null",
+    "observation.superseded_by_observation_id is null",
+    "observation.source_learning_objective_id_at_time is not null",
+  ]) {
+    assert.match(materialize, new RegExp(eligibility.replaceAll(".", "\\.")));
+  }
+  assert.match(
+    materialize,
+    /observation\.component_visibility_at_time = 'learner_visible'[\s\S]*?else 'staff_only'/,
+  );
+
+  const rebuild = functionBodyIn(
+    profileMigration,
+    "rebuild_learner_objective_state_for_actor",
+  );
+  for (const policyMarker of [
+    "latest_not_yet",
+    "latest_with_support",
+    "independent_opportunities_missing",
+    "multiple_independent_opportunities",
+    "confirmed_evidence_stale",
+    "interval '90 days'",
+    "count(distinct evidence.source_lesson_run_id_at_time)",
+  ]) {
+    assert.equal(rebuild.includes(policyMarker), true, policyMarker);
+  }
+  assert.doesNotMatch(profileTableBody("learner_objective_state"), /no_data/);
+
+  const correction = functionBodyIn(
+    profileMigration,
+    "correct_finalized_lesson_component_observation",
+  );
+  assert.match(correction, /v_corrected_at timestamptz := clock_timestamp\(\)/);
+  assert.match(correction, /correction_idempotency_conflict/g);
+  assert.match(correction, /learning_observation_correction_no_change/);
+  assert.match(
+    correction,
+    /p_rating is not distinct from v_source_observation\.rating[\s\S]*?p_private_note[\s\S]*?v_source_observation\.private_note/,
+  );
+  assert.match(
+    correction,
+    /v_replay_observation\.rating is distinct from p_rating/,
+  );
+  assert.match(
+    correction,
+    /v_replay_observation\.private_note is distinct from[\s\S]*?nullif\(btrim\(p_private_note\), ''\)/,
+  );
+  assert.match(
+    correction,
+    /component_visibility_at_time[\s\S]*?v_old_observation\.component_visibility_at_time/,
+  );
+  assert.match(
+    profileMigration,
+    /correct_finalized_lesson_component_observation\(\s*uuid, uuid, uuid, text, text, text, uuid, timestamptz/,
+  );
+
+  const correctionHistory = functionBodyIn(
+    profileMigration,
+    "get_teacher_learning_record_correction_history",
+  );
+  assert.match(
+    correctionHistory,
+    /cardinality\(p_active_learning_record_ids\)/,
+  );
+  assert.match(correctionHistory, /v_input_count not between 1 and 200/);
+  assert.match(correctionHistory, /lock_learning_activity_learners/);
+  assert.match(correctionHistory, /for share of profile/);
+  assert.match(correctionHistory, /with recursive lineage/);
+  assert.match(correctionHistory, /lineage\.depth < 201/);
+  assert.match(correctionHistory, /limit 201/);
+  assert.match(correctionHistory, /'activeLearningRecordId'/);
+  assert.match(correctionHistory, /'oldPrivateNote'/);
+  assert.match(correctionHistory, /'newPrivateNote'/);
+  assert.match(correctionHistory, /'correctionReason'/);
+  assert.match(correctionHistory, /'truncated'/);
+  assert.match(
+    profileMigration,
+    /grant execute on function public\.get_teacher_learning_record_correction_history\([\s\S]*?uuid\[\][\s\S]*?\) to postgres, authenticated;/,
+  );
+});
+
+test("LA-M3 profile DTOs synthesize bounded no_data without private notes", () => {
+  const teacher = functionBodyIn(
+    profileMigration,
+    "teacher_learning_activity_profile_projection",
+  );
+  assert.match(teacher, /'no_data'::text/);
+  assert.match(teacher, /null::uuid/);
+  assert.match(teacher, /limit 200/i);
+  assert.match(teacher, /'stateId', projected\.state_id/);
+
+  const safe = functionBodyIn(
+    profileMigration,
+    "safe_learning_activity_profile_projection",
+  );
+  assert.match(safe, /'no_data'::text/);
+  assert.match(safe, /limit 200/i);
+  assert.match(safe, /limit 5/i);
+  assert.match(safe, /'las_' \|\| encode/);
+  assert.match(safe, /'lae_' \|\| encode/);
+  assert.doesNotMatch(safe, /private_reason/i);
+  assert.doesNotMatch(safe, /private_note/i);
+  assert.match(
+    safe,
+    /evidence\.component_visibility_at_time = 'learner_visible'/,
+  );
+  assert.match(safe, /Служебный компонент преподавателя/);
+  assert.match(safe, /Служебный критерий преподавателя/);
+
+  const observer = functionBodyIn(
+    profileMigration,
+    "get_observed_learner_activity_profile",
+  );
+  assert.match(observer, /for share of grant_row/i);
+  assert.match(observer, /learner_observer_activity_profile_read/);
+});
+
+test("Course activity AI RPC is own-recorder/current-Course and service-only", () => {
+  const projection = functionBodyIn(
+    profileMigration,
+    "course_learning_activity_projection",
+  );
+  assert.match(
+    projection,
+    /state\.recorded_by_account_id = p_recorded_by_account_id/,
+  );
+  assert.match(projection, /state\.source_course_id_at_time = p_course_id/);
+  assert.match(
+    projection,
+    /where not exists \([\s\S]*?state\.learner_profile_id = profiles\.id[\s\S]*?state\.recorded_by_account_id = p_recorded_by_account_id[\s\S]*?state\.source_course_id_at_time = course\.id/,
+  );
+  assert.match(projection, /limit 80/i);
+  assert.match(projection, /limit 3/i);
+  assert.match(projection, /'las_' \|\| encode/);
+  assert.match(projection, /'lae_' \|\| encode/);
+  assert.match(
+    projection,
+    /evidence\.component_visibility_at_time = 'learner_visible'/,
+  );
+  assert.match(projection, /Служебный компонент преподавателя/);
+  assert.match(projection, /Служебный критерий преподавателя/);
+  assert.doesNotMatch(projection, /private_reason/i);
+  assert.doesNotMatch(projection, /private_note/i);
+
+  const builder = functionBodyIn(
+    profileMigration,
+    "build_course_learning_activity_context",
+  );
+  assert.match(builder, /course\.owner_account_id = v_actor_account_id/);
+  assert.match(builder, /from public\.course_learner as direct/);
+  assert.match(builder, /from public\.course_learner_group as course_group/);
+  assert.match(builder, /v_actor_account_id,[\s\S]*?v_generated_at/);
+  assert.match(builder, /'revision', repeat\('0', 64\)/);
+  assert.match(builder, /'projectionVersion', 1/);
+  assert.match(builder, /'includedStateCount'/);
+  assert.match(builder, /'evidenceReferenceCount'/);
+  assert.match(
+    builder,
+    /v_total_state_count::text \|\| ':' \|\| v_states::text/,
+  );
+  assert.doesNotMatch(builder, /learner_ai_consent/);
+  assert.doesNotMatch(builder, /valid_consents/);
+  assert.doesNotMatch(
+    profileMigration,
+    /create function public\.build_cross_provider_learning_activity_context/,
+  );
+  assert.match(
+    profileMigration,
+    /to_regprocedure\(\s*'public\.build_cross_provider_learner_context\(uuid,uuid\)'\s*\) is null/,
+  );
+  assert.match(
+    profileMigration,
+    /not has_function_privilege\(\s*'service_role',\s*'public\.build_cross_provider_learner_context\(uuid,uuid\)',\s*'EXECUTE'/,
+  );
+  assert.match(
+    profileMigration,
+    /has_function_privilege\(\s*'authenticated',\s*'public\.build_cross_provider_learner_context\(uuid,uuid\)',\s*'EXECUTE'/,
+  );
+  assert.match(
+    profileMigration,
+    /grant execute on function public\.build_course_learning_activity_context\([\s\S]*?\) to postgres, service_role;/,
+  );
+  assert.match(
+    profileMigration,
+    /has_function_privilege\(\s*'authenticated',[\s\S]*?'public\.build_course_learning_activity_context\(uuid,uuid\)'/,
+  );
+});
+
+test("LA-M3 merge and erasure bind scope and preserve active correction chains", () => {
+  const preview = functionBodyIn(
+    profileMigration,
+    "learner_profile_merge_preview_for_actor",
+  );
+  assert.match(preview, /source_record\.superseded_by_record_id is null/);
+  assert.match(preview, /target_record\.superseded_by_record_id is null/);
+  assert.match(preview, /for update of operation/);
+  assert.match(preview, /v_operation\.status = 'cancelled'/);
+  assert.match(preview, /operation\.status in \('pending', 'ready'\)/);
+  assert.match(preview, /get diagnostics v_update_count = row_count/);
+
+  const merge = functionBodyIn(
+    profileMigration,
+    "execute_learner_profile_merge_for_actor",
+  );
+  assert.match(merge, /source_record\.superseded_by_record_id is null/);
+  assert.match(merge, /target_record\.superseded_by_record_id is null/);
+  assert.match(merge, /learning_activity_scope_fingerprint/);
+  assert.match(merge, /lock_learning_activity_learners/);
+  assert.match(merge, /app\.learner_identity_merge/);
+
+  const erasure = functionBodyIn(
+    profileMigration,
+    "confirm_my_learning_data_erasure",
+  );
+  assert.match(erasure, /learning_activity_scope_fingerprint/);
+  assert.match(erasure, /lock_learning_activity_learners/);
+  assert.match(erasure, /delete from public\.learner_objective_state_evidence/);
+  assert.match(erasure, /delete from public\.learner_recommendation_override/);
+  assert.match(erasure, /delete from public\.learner_objective_state/);
+  assert.match(erasure, /delete from public\.learning_evidence/);
+});
+
+test("schema refresh gate requires the LA-M3 signatures without snapshot edits", () => {
+  for (const marker of [
+    "learning_evidence",
+    "learner_objective_state",
+    "learner_objective_state_evidence",
+    "learner_recommendation_override",
+    "correct_finalized_lesson_component_observation(uuid,uuid,uuid,text,text,text,uuid,timestamp with time zone)",
+    "get_teacher_learner_activity_profile(uuid)",
+    "get_my_learning_activity_profile()",
+    "get_observed_learner_activity_profile(uuid)",
+    "build_course_learning_activity_context(uuid,uuid)",
+  ]) {
+    assert.equal(refreshScript.includes(marker), true, marker);
+  }
+  assert.match(
+    refreshScript,
+    /has_function_privilege\(\s*'service_role',\s*'public\.complete_lesson_run_v2\(uuid,jsonb,text,timestamptz,integer\)'/,
+  );
 });

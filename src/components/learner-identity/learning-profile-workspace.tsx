@@ -2,8 +2,10 @@
 
 import {
   BadgeCheck,
+  BookOpenCheck,
   BrainCircuit,
   History,
+  Lightbulb,
   LoaderCircle,
   LogOut,
   Settings,
@@ -36,6 +38,7 @@ import type {
   SelfLearningProfile,
   ShareCode,
 } from "@/modules/learner-identity/domain";
+import type { LearnerSafeActivityProfile } from "@/modules/learning-activities";
 import type { AccountAttestationCredential } from "@/modules/course-attestations/domain";
 import { signOutViaServer } from "@/lib/auth-flow";
 import { profileTabHref, type ProfileTab } from "@/lib/navigation/profile-nav";
@@ -47,10 +50,12 @@ import {
   loadAiConsents,
   loadConnections,
   loadSelfHistory,
+  loadSelfActivityProfile,
   loadSelfLearningProfile,
   loadSelfProgress,
   rotateSelfShareCode,
 } from "./identity-client";
+import { SafeActivityProfileSection } from "@/components/learning-activities/activity-profile-sections";
 import { DestructiveProfileDialog } from "./destructive-profile-dialog";
 import {
   AiConsentStatusBadge,
@@ -82,6 +87,11 @@ export function LearningProfileWorkspace({
   const [profile, setProfile] = useState<SelfLearningProfile | null>(null);
   const [progress, setProgress] = useState<LearnerProgress | null>(null);
   const [history, setHistory] = useState<LearnerSafeHistoryItem[]>([]);
+  const [activityProfile, setActivityProfile] =
+    useState<LearnerSafeActivityProfile | null>(null);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const [activityError, setActivityError] = useState<string | null>(null);
+  const activityRequestGenerationRef = useRef(0);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [attestations, setAttestations] = useState<
     AccountAttestationCredential[] | null
@@ -140,12 +150,34 @@ export function LearningProfileWorkspace({
         ? "Профиль · Наблюдатели"
         : surface === "settings"
           ? "Профиль · Настройки"
-          : `Профиль · ${surface === "profile" ? "Профиль" : surface === "history" ? "История" : "Аттестация"}`,
+          : `Профиль · ${surface === "profile" ? "Профиль" : surface === "history" ? "История" : surface === "skills" ? "Навыки" : surface === "recommendations" ? "Рекомендации" : "Аттестация"}`,
   });
 
   const load = useCallback(async () => {
+    const activityGeneration = ++activityRequestGenerationRef.current;
     setLoading(true);
     setError(null);
+    setActivityProfile(null);
+    setActivityLoading(true);
+    setActivityError(null);
+    void loadSelfActivityProfile()
+      .then((nextActivityProfile) => {
+        if (activityGeneration !== activityRequestGenerationRef.current) return;
+        setActivityProfile(nextActivityProfile);
+      })
+      .catch((caught: unknown) => {
+        if (activityGeneration !== activityRequestGenerationRef.current) return;
+        setActivityError(
+          caught instanceof Error
+            ? caught.message
+            : "Не удалось загрузить навыки и рекомендации.",
+        );
+      })
+      .finally(() => {
+        if (activityGeneration === activityRequestGenerationRef.current) {
+          setActivityLoading(false);
+        }
+      });
     try {
       const [
         profileResult,
@@ -217,7 +249,32 @@ export function LearningProfileWorkspace({
 
   useEffect(() => {
     void load();
+    return () => {
+      activityRequestGenerationRef.current += 1;
+    };
   }, [load]);
+
+  const retryActivityProfile = useCallback(async () => {
+    const generation = ++activityRequestGenerationRef.current;
+    setActivityLoading(true);
+    setActivityError(null);
+    try {
+      const nextActivityProfile = await loadSelfActivityProfile();
+      if (generation !== activityRequestGenerationRef.current) return;
+      setActivityProfile(nextActivityProfile);
+    } catch (caught) {
+      if (generation !== activityRequestGenerationRef.current) return;
+      setActivityError(
+        caught instanceof Error
+          ? caught.message
+          : "Не удалось загрузить навыки и рекомендации.",
+      );
+    } finally {
+      if (generation === activityRequestGenerationRef.current) {
+        setActivityLoading(false);
+      }
+    }
+  }, []);
 
   const loadAttestations = useCallback(async () => {
     if (attestationRequestInFlightRef.current) return;
@@ -356,6 +413,11 @@ export function LearningProfileWorkspace({
           : cachedProfileSummary
             ? `Записей: ${cachedProfileSummary.finalizedRunCount} · посещено: ${cachedProfileSummary.attendedRunCount}`
             : undefined;
+      case "skills":
+      case "recommendations":
+        return activityProfile
+          ? `Учебных целей: ${activityProfile.states.length}`
+          : undefined;
       case "attestation":
         return attestations ? `Аттестаций: ${attestations.length}` : undefined;
       case "observers":
@@ -380,6 +442,8 @@ export function LearningProfileWorkspace({
       switch (surface) {
         case "profile":
         case "history":
+        case "skills":
+        case "recommendations":
           return loading && error === null;
         case "attestation":
           return attestations === null && attestationsError === null;
@@ -435,6 +499,26 @@ export function LearningProfileWorkspace({
                     progress?.finalizedRunCount ??
                     cachedProfileSummary?.finalizedRunCount ??
                     0,
+                }),
+          },
+          {
+            value: "skills",
+            label: "Навыки",
+            icon: BookOpenCheck,
+            ...(activityProfile === null
+              ? {}
+              : { count: activityProfile.states.length }),
+          },
+          {
+            value: "recommendations",
+            label: "Рекомендации",
+            icon: Lightbulb,
+            ...(activityProfile === null
+              ? {}
+              : {
+                  count: activityProfile.states.filter(
+                    (state) => state.recommendation !== null,
+                  ).length,
                 }),
           },
           {
@@ -565,6 +649,55 @@ export function LearningProfileWorkspace({
               )}
             </ProfileSurface>
           </div>
+        ) : null}
+      </div>
+      <div
+        id={workspaceTabPanelId(LEARNING_PROFILE_TABS_ID, "skills")}
+        role="tabpanel"
+        aria-labelledby={workspaceTabId(LEARNING_PROFILE_TABS_ID, "skills")}
+        hidden={surface !== "skills"}
+        tabIndex={0}
+      >
+        {!loading && surface === "skills" && activityLoading ? (
+          <IdentityLoading>Загружаем навыки…</IdentityLoading>
+        ) : null}
+        {!loading && surface === "skills" && activityError ? (
+          <IdentityError
+            message={`Навыки временно недоступны: ${activityError}`}
+            onRetry={() => void retryActivityProfile()}
+          />
+        ) : null}
+        {!loading && surface === "skills" && activityProfile ? (
+          <SafeActivityProfileSection
+            profile={activityProfile}
+            section="skills"
+          />
+        ) : null}
+      </div>
+      <div
+        id={workspaceTabPanelId(LEARNING_PROFILE_TABS_ID, "recommendations")}
+        role="tabpanel"
+        aria-labelledby={workspaceTabId(
+          LEARNING_PROFILE_TABS_ID,
+          "recommendations",
+        )}
+        hidden={surface !== "recommendations"}
+        tabIndex={0}
+      >
+        {!loading && surface === "recommendations" && activityLoading ? (
+          <IdentityLoading>Загружаем рекомендации…</IdentityLoading>
+        ) : null}
+        {!loading && surface === "recommendations" && activityError ? (
+          <IdentityError
+            message={`Рекомендации временно недоступны: ${activityError}`}
+            onRetry={() => void retryActivityProfile()}
+          />
+        ) : null}
+        {!loading && surface === "recommendations" && activityProfile ? (
+          <SafeActivityProfileSection
+            profile={activityProfile}
+            section="recommendations"
+          />
         ) : null}
       </div>
       <div

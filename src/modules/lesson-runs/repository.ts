@@ -587,7 +587,7 @@ export function createLessonRunsRepository(
           POSTGREST_IN_FILTER_CHUNK_SIZE,
         ).map((batch) =>
           request<LearningRecordRow[]>(
-            `/rest/v1/learning_record?select=*&lesson_run_id=in.(${inFilter(batch)})${teacherAccountId ? `&recorded_by_account_id=eq.${encodeFilter(teacherAccountId)}` : ""}&order=created_at.asc,id.asc`,
+            `/rest/v1/learning_record?select=*&lesson_run_id=in.(${inFilter(batch)})&superseded_by_record_id=is.null${teacherAccountId ? `&recorded_by_account_id=eq.${encodeFilter(teacherAccountId)}` : ""}&order=created_at.asc,id.asc`,
           ),
         ),
       ).then((batches) => batches.flat()),

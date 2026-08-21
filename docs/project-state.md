@@ -1,7 +1,7 @@
 # Текущее состояние ShiDao V2
 
 **Статус:** главный входной документ для разработки
-**Актуально на:** 20 августа 2026 года
+**Актуально на:** 21 августа 2026 года
 **Активная ветка:** `main`
 **Рабочее приложение:** `https://v2.shidao.ru`
 **Initial Communication Center functional application source:**
@@ -19,6 +19,65 @@ publication snapshot V2 и learner-safe application workflow доставлен�
 source `014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0`. Coolify deployment `1003`
 завершён с matching image/`SOURCE_COMMIT`, running container и restart
 count `0`; HTTP/API/CSRF/browser guest postflight прошёл без mutation.
+
+**Current production DB / dependent web rollout pending — LA-M3 учебный
+профиль:** production physical schema теперь содержит append-only correction
+finalized observations, durable typed evidence, deterministic
+`objective-state-v1`, transparent `recommendation-rules-v1`, explicit teacher
+override, teacher/self/active-observer profile projections и bounded AI
+context. AI RPC выполняет только deterministic server-derived refresh/audit как
+часть logical read; модель не получает прямого
+evidence/state/recommendation mutation action. Teacher projection также
+принимает synthesized `no_data`: у такой строки нет persisted state ID,
+evidence, last-evidence date или recommendation.
+
+Exact migration
+`20260820132725_learning_activity_profile_history_skills_recommendations.sql`
+имеет `5335` строк и SHA-256
+`a7e7dad7db4632f98cf0857597dae99b58cf653bd39ec57d0eb91f540c9793f8`.
+Production-derived PostgreSQL `15.8` clone из source dump SHA-256
+`6db636b32c1256efaf7b70321a031e3e93196788d265368561d4dbe239b456c1`
+(`1801` restore-list entries) прошёл exact apply с наблюдаемым `COMMIT`, `85`
+functional assertions, `11/11` LA races и identity functional/concurrency.
+Production backup
+`/root/shidao-db-backups/shidao-before-learning-activity-profile-20260821T002135Z.dump`
+имеет size `1552941`, mode `600`, `1801` restore-list entries и SHA-256
+`0d89e0be74aba44f20b0ee82ad5cafb6f887da1f55821350e84959a502f8a88e`;
+owner apply завершился наблюдаемым `COMMIT`.
+
+Pre/post tuple Account/Course/Lesson/Component/LessonRun/LearningRecord/
+LearningObjective/Observation остался `19/6/22/84/2/2/0/0`, immutable
+publication tuple — `1/9056/2832fcf2ee1a4c3ccdf01501fc4f60f3`. Четыре
+новые LA-M3 relation остались пустыми `0/0/0/0`, а обе source LearningRecord
+сохранили empty correction/supersession metadata. Postflight подтвердил RLS на
+`4/4` relations, `4` policies,
+ACL/RPC/security contract и `0` identity violations. PostgREST raw access
+закрыт: anon получил `401/42501`, service role — `403/42501`; narrow service
+RPC разрешился до ожидаемого domain `P0002` (`500`), а не schema-cache
+`PGRST202`.
+
+Final production-head snapshot сгенерирован `2026-08-21T00:25:53Z` из
+PostgreSQL `15.8`: SHA-256
+`a1768f22f829d58c01a5846b68cdb7be60a363ebb771869ed90fb83dd316cbc2`,
+`29533` строки, `66` public tables и `235` functions; его body побайтово
+совпадает с snapshot, replayed из production-derived clone. Dependent
+application/UI source
+реализован в task tree; local gate прошёл `893/893` unit/API, `30/30` strict
+browser scenarios, typecheck, lint и production build. Task commit/push,
+Coolify exact-SHA deploy и production HTTP/API/browser smoke ещё **PENDING**.
+Поэтому production DB уже LA-M3, а deployed web/source остаётся LA-M2 до
+отдельного rollout evidence.
+
+Local source locations: domain/Zod/policies/repository/service находятся в
+`src/modules/learning-activities/`; teacher/self/observer API — в
+`src/app/api/v2/learner-profiles/[learnerProfileId]/activity-profile/`,
+`src/app/api/v2/me/learning-profile/activity-profile/` и
+`src/app/api/v2/observations/[learnerProfileId]/activity-profile/`; manual UI —
+в existing learner history, `/profile` и observing workspaces; bounded AI
+projection — `src/modules/ai/learning-activity-context.ts`. Current production
+DB migration —
+`supabase/migrations/20260820132725_learning_activity_profile_history_skills_recommendations.sql`.
+Наличие application-файлов не подменяет dependent web deploy evidence.
 
 **Current source / next production — единый Auth и registration entry UI:**
 `/login`, `/join`, `/join/check-email`, `/forgot-password` и
@@ -1397,7 +1456,8 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
   Component, compact position/type/label/criterion-at-time, rating, entry method,
   private note и recorder. Отсутствие строки означает «не наблюдал»;
   полного Component/Lesson snapshot нет.
-- Current production LA-M2 добавляет плоские Course-scoped objectives, одну
+- Current production LA-M2 web/source добавляет плоские Course-scoped
+  objectives, одну
   optional primary objective и activity role на Component, а новым
   observations — nullable live objective FK и стабильные ID/title-at-time.
   Старые rows остаются с `NULL` без backfill; eligible observation ещё не
@@ -1418,8 +1478,8 @@ Offline LearnerProfile 0..N (account_id IS NULL до recipient-bound claim)
 
 Полные Lesson/Run invariants зафиксированы в
 [`docs/architecture/lesson-workflow-model.md`](./architecture/lesson-workflow-model.md),
-канонический contract учебных активностей, current production LA-M1 и LA-M2 —
-в
+канонический contract учебных активностей, current production LA-M1/LA-M2 web
+и current production DB LA-M3 — в
 [`docs/architecture/learning-activity-system.md`](./architecture/learning-activity-system.md),
 а identity/access boundary — в
 [`docs/architecture/learner-identity-access-model.md`](./architecture/learner-identity-access-model.md).
@@ -2425,9 +2485,12 @@ History-aware context развёрнут в release `9393080`; production provid
   educator Course описан отдельно и не является LessonRun/live flow;
 - live Student Screen sync, realtime presence и teacher-controlled runtime
   cursor поверх открытого LessonRun;
-- production rollout current-source Course objectives/Component alignment;
-- versioned learner activity attempts, server-side evaluation, typed evidence,
-  rebuildable learner-objective state и adaptive recommendations;
+- dependent web rollout LA-M3 typed evidence, rebuildable learner-objective
+  state, correction/recommendation profile workflow и bounded AI projection;
+  production DB и DB postflight current, но task commit/push, Coolify deploy и
+  production HTTP/API/browser smoke ещё не заявлены;
+- versioned learner activity attempts и server-side evaluation; они остаются
+  последующими LA-M5/LA-M6 slices и не подменяются LA-M3 teacher observations;
   `LearningRecord` остаётся compact LessonRun outcome, а не metrics/event
   container;
 - Realtime/presence для messaging, push/email delivery, attachments,
@@ -2743,6 +2806,14 @@ payloads, отдельный quota/billing ledger и durable action/job ledger �
   `e77ac1abfa333856fcf9022ef7a0666f`. Exact source
   `014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0` доставлен normal fast-forward
   push и Coolify deployment `1003` с restart count `0`.
+- `20260820132725_learning_activity_profile_history_skills_recommendations.sql`
+  — current production DB LA-M3 schema head; exact SHA-256
+  `a7e7dad7db4632f98cf0857597dae99b58cf653bd39ec57d0eb91f540c9793f8`,
+  `5335` строк. Owner apply завершился наблюдаемым `COMMIT`; pre/post canonical
+  tuple `19/6/22/84/2/2/0/0`, publication
+  `1/9056/2832fcf2ee1a4c3ccdf01501fc4f60f3`, четыре LA-M3 relation `0/0/0/0`, а
+  обе source LearningRecord сохранили empty correction/supersession metadata.
+  Dependent web rollout ещё pending.
 
 Источники истины для текущего состояния:
 

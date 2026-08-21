@@ -11,6 +11,7 @@ const publicationV2Migration = readFileSync(
   "utf8",
 );
 const snapshot = readFileSync("supabase/schema/current-schema.sql", "utf8");
+const snapshotLower = snapshot.toLowerCase();
 const schemaGuide = readFileSync("docs/database/current-schema.md", "utf8");
 
 function migrationFunction(name: string) {
@@ -60,7 +61,7 @@ test("publication catalog is one forward-only transactional migration mirrored i
       `migration missing ${table}`,
     );
     assert.equal(
-      snapshot.includes(`create table public.${table} (`),
+      snapshotLower.includes(`create table public.${table} (`),
       true,
       `snapshot missing ${table}`,
     );
@@ -405,7 +406,11 @@ test("catalog list uses compact denormalized rows, DB filters and global facets"
     "material_count integer not null",
   ]) {
     assert.equal(migration.includes(column), true, `missing ${column}`);
-    assert.equal(snapshot.includes(column), true, `snapshot missing ${column}`);
+    assert.equal(
+      snapshotLower.includes(column),
+      true,
+      `snapshot missing ${column}`,
+    );
   }
 
   assert.doesNotMatch(catalog, /revision\.snapshot|publication_revision/);
@@ -498,7 +503,7 @@ test("authoring descendants touch the publication clock and repository docs desc
     "trg_stored_file_touch_courses",
   ]) {
     assert.match(migration, new RegExp(`create trigger ${trigger}`));
-    assert.match(snapshot, new RegExp(`create trigger ${trigger}`));
+    assert.match(snapshot, new RegExp(`create trigger ${trigger}`, "i"));
   }
 
   assert.match(schemaGuide, /Course publication repository contract/);
@@ -507,7 +512,18 @@ test("authoring descendants touch the publication clock and repository docs desc
   assert.match(schemaGuide, /source_content_updated_at/);
   assert.match(schemaGuide, /list_course_publication_catalog_admin/);
   assert.match(schemaGuide, /shidao_catalog_reuse_v1/);
-  assert.match(schemaGuide, /применена к production/);
+  assert.match(
+    schemaGuide,
+    /Обе migrations[\s\S]*production apply\/postflight и dependent web rollout выполнены/,
+  );
+  assert.match(
+    schemaGuide,
+    /Current production DB \/ dependent web rollout pending — LA-M3/,
+  );
+  assert.match(
+    schemaGuide,
+    /Production schema head:[\s\S]*20260820132725_learning_activity_profile_history_skills_recommendations\.sql/,
+  );
   assert.match(
     schemaGuide,
     /2b1a3f475074940e69e1dee6ba12edc8d3103a23a01c640ec342e3cb31f0af46/,

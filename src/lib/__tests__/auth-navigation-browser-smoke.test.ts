@@ -42,6 +42,17 @@ const E2E_SECOND_LESSON_ID = "44444444-4444-4444-8444-444444444445";
 const E2E_COMPONENT_ID = "77777777-7777-4777-8777-777777777771";
 const E2E_EXERCISE_COMPONENT_ID = "77777777-7777-4777-8777-777777777773";
 const E2E_LEARNING_OBJECTIVE_ID = "77777777-7777-4777-8777-777777777774";
+const E2E_ACTIVITY_STATE_ID = "a1111111-1111-4111-8111-111111111111";
+const E2E_ACTIVITY_OBSERVATION_ID = "a2222222-2222-4222-8222-222222222222";
+const E2E_ACTIVITY_EVIDENCE_ID = "a3333333-3333-4333-8333-333333333333";
+const E2E_ACTIVITY_RECOMMENDATION_ID = "a4444444-4444-4444-8444-444444444444";
+const E2E_ACTIVITY_SAFE_STATE_KEY = `las_${"8".repeat(64)}`;
+const E2E_ACTIVITY_SAFE_EVIDENCE_KEY = `lae_${"9".repeat(64)}`;
+const E2E_ACTIVITY_CORRECTED_RECORD_ID = "a5555555-5555-4555-8555-555555555555";
+const E2E_ACTIVITY_CORRECTED_OBSERVATION_ID =
+  "a6666666-6666-4666-8666-666666666666";
+const E2E_ACTIVITY_CORRECTED_EVIDENCE_ID =
+  "a7777777-7777-4777-8777-777777777777";
 const E2E_STUDENT_SLIDE_ID = "77777777-7777-4777-8777-777777777770";
 const E2E_STORED_FILE_ID = "77777777-7777-4777-8777-777777777772";
 const E2E_LEARNER_ANNA_ID = "88888888-8888-4888-8888-888888888881";
@@ -81,6 +92,10 @@ const E2E_PUBLISHED_SELF_COMMENT =
   "Опубликованный комментарий E2E Adult из completion UI.";
 const E2E_PRIVATE_OBSERVED_COMMENT =
   "PRIVATE OBSERVED COMMENT — только преподавателю";
+const E2E_ACTIVITY_PRIVATE_NOTE =
+  "PRIVATE ACTIVITY NOTE — только recorder teacher";
+const E2E_ACTIVITY_OVERRIDE_PRIVATE_REASON =
+  "PRIVATE OVERRIDE REASON — только recorder teacher";
 const E2E_RAISED_CONTROL_SHADOW = "oklch(0 0 0 / 0.05) 0px 1px 6px 0px";
 const E2E_RAISED_CONTROL_HOVER_SHADOW = "oklch(0 0 0 / 0.16) 0px 4px 10px -2px";
 const E2E_RAISED_CONTROL_PRESSED_SHADOW = "oklch(0 0 0 / 0.14) 0px 1px 3px 0px";
@@ -749,6 +764,8 @@ type E2EObservationRpcPayload = {
 type E2ELessonComponentObservationRow = {
   id: string;
   learning_record_id: string;
+  corrected_from_observation_id: string | null;
+  superseded_by_observation_id: string | null;
   lesson_component_id: string | null;
   source_lesson_component_id_at_time: string;
   learning_objective_id: string | null;
@@ -870,6 +887,21 @@ const e2eCompletedLearningRecordRows: E2ELearningRecordRow[] = [];
 let e2eObservationFixtureEnabled = false;
 const e2eObservationRpcPayloads: E2EObservationRpcPayload[] = [];
 const e2eObservationRows: E2ELessonComponentObservationRow[] = [];
+let e2eActivityCorrectionApplied = false;
+let e2eActivityOverride: {
+  action: "replace" | "dismiss";
+  recommendationType: string | null;
+  privateReason: string;
+  updatedAt: string;
+} | null = null;
+let e2eObservedActivityProfileUnavailable = false;
+let e2eObservedActivityProfileGate: Promise<void> | null = null;
+let e2eObservedActivityProfileRequestObserved: (() => void) | null = null;
+let e2eActivityCorrectionPayload: Record<string, unknown> | null = null;
+let e2eActivityCorrectionTransportFailurePending = false;
+let e2eActivityCorrectionCreationCount = 0;
+const e2eActivityCorrectionAttemptKeys: string[] = [];
+let e2eActivityOverridePayload: Record<string, unknown> | null = null;
 
 function resetE2eCompletionFlow() {
   e2eCompletionPhase = 0;
@@ -906,6 +938,8 @@ function applyE2eObservationPayload(payload: E2EObservationRpcPayload) {
     const row: E2ELessonComponentObservationRow = {
       id: existing?.id ?? E2E_OBSERVATION_IDS[recordIndex]!,
       learning_record_id: submitted.learningRecordId,
+      corrected_from_observation_id: null,
+      superseded_by_observation_id: null,
       lesson_component_id: payload.p_lesson_component_id,
       source_lesson_component_id_at_time: payload.p_lesson_component_id,
       learning_objective_id: null,
@@ -1046,10 +1080,275 @@ function e2eExpectedCompletionRecords(): E2ELearningRecordRow[] {
 
 function e2eAllLearningRecordRows() {
   return [
-    ...E2E_LEARNING_RECORD_ROWS,
+    ...E2E_LEARNING_RECORD_ROWS.map((row) =>
+      e2eActivityCorrectionApplied && row.id === E2E_LEARNING_RECORD_ROWS[0]!.id
+        ? { ...row, superseded_by_record_id: E2E_ACTIVITY_CORRECTED_RECORD_ID }
+        : row,
+    ),
+    ...(e2eActivityCorrectionApplied
+      ? [
+          {
+            ...E2E_LEARNING_RECORD_ROWS[0]!,
+            id: E2E_ACTIVITY_CORRECTED_RECORD_ID,
+            occurred_at: "2026-08-06T09:10:00.000Z",
+            teacher_comment: "Исправленный итог наблюдения.",
+            superseded_by_record_id: null,
+            created_at: "2026-08-21T09:00:00.000Z",
+            updated_at: "2026-08-21T09:00:00.000Z",
+          },
+        ]
+      : []),
     ...e2eCompletedLearningRecordRows,
     ...e2eExpectedCompletionRecords(),
   ];
+}
+
+function e2eActivityObservationRow(): E2ELessonComponentObservationRow {
+  return {
+    id: e2eActivityCorrectionApplied
+      ? E2E_ACTIVITY_CORRECTED_OBSERVATION_ID
+      : E2E_ACTIVITY_OBSERVATION_ID,
+    learning_record_id: e2eActivityCorrectionApplied
+      ? E2E_ACTIVITY_CORRECTED_RECORD_ID
+      : E2E_LEARNING_RECORD_ROWS[0]!.id,
+    corrected_from_observation_id: e2eActivityCorrectionApplied
+      ? E2E_ACTIVITY_OBSERVATION_ID
+      : null,
+    superseded_by_observation_id: null,
+    lesson_component_id: E2E_COMPONENT_ID,
+    source_lesson_component_id_at_time: E2E_COMPONENT_ID,
+    learning_objective_id: E2E_LEARNING_OBJECTIVE_ID,
+    source_learning_objective_id_at_time: E2E_LEARNING_OBJECTIVE_ID,
+    learning_objective_title_at_time: "Использует Present Perfect в диалоге",
+    component_position_at_time: 1,
+    component_type_key_at_time: "file",
+    component_label_at_time: "Карточка жизненного опыта",
+    observable_criterion_at_time:
+      "Рассказывает об опыте, используя Present Perfect",
+    rating: e2eActivityCorrectionApplied ? "not_yet" : "with_support",
+    entry_method: "direct",
+    private_note: e2eActivityCorrectionApplied
+      ? "Исправленная личная заметка"
+      : E2E_ACTIVITY_PRIVATE_NOTE,
+    observed_at: e2eActivityCorrectionApplied
+      ? "2026-08-21T08:58:00.000Z"
+      : "2026-08-06T08:58:00.000Z",
+    recorded_by_account_id: E2E_ACCOUNT_ID,
+    created_at: e2eActivityCorrectionApplied
+      ? "2026-08-21T09:00:00.000Z"
+      : "2026-08-06T09:00:00.000Z",
+    updated_at: e2eActivityCorrectionApplied
+      ? "2026-08-21T09:00:00.000Z"
+      : "2026-08-06T09:00:00.000Z",
+  };
+}
+
+function e2eActivityCorrectionHistory() {
+  if (!e2eActivityCorrectionApplied) {
+    return { items: [], truncated: false };
+  }
+  return {
+    items: [
+      {
+        activeLearningRecordId: E2E_ACTIVITY_CORRECTED_RECORD_ID,
+        learningRecordId: E2E_ACTIVITY_CORRECTED_RECORD_ID,
+        correctedFromLearningRecordId: E2E_LEARNING_RECORD_ROWS[0]!.id,
+        observationId: E2E_ACTIVITY_CORRECTED_OBSERVATION_ID,
+        correctedFromObservationId: E2E_ACTIVITY_OBSERVATION_ID,
+        componentPositionAtTime: 1,
+        componentLabelAtTime: "Карточка жизненного опыта",
+        oldRating: "with_support",
+        newRating: "not_yet",
+        oldPrivateNote: E2E_ACTIVITY_PRIVATE_NOTE,
+        newPrivateNote: "Исправленная личная заметка",
+        correctionReason: "Исходная отметка была выбрана по ошибке",
+        correctedAt: "2026-08-21T09:00:00.000Z",
+      },
+    ],
+    truncated: false,
+  };
+}
+
+function e2eActivityEvidenceRow() {
+  const observation = e2eActivityObservationRow();
+  return {
+    id: e2eActivityCorrectionApplied
+      ? E2E_ACTIVITY_CORRECTED_EVIDENCE_ID
+      : E2E_ACTIVITY_EVIDENCE_ID,
+    learner_profile_id: E2E_LEARNER_ANNA_ID,
+    recorded_by_account_id: E2E_ACCOUNT_ID,
+    learning_record_id: observation.learning_record_id,
+    source_observation_id: observation.id,
+    source_course_id_at_time: E2E_COURSE_ID,
+    source_lesson_id_at_time: E2E_LESSON_ID,
+    source_lesson_run_id_at_time: E2E_COMPLETION_PRIVATE_RUN_ID,
+    source_component_id_at_time: E2E_COMPONENT_ID,
+    source_learning_objective_id_at_time: E2E_LEARNING_OBJECTIVE_ID,
+    lesson_component_id: E2E_COMPONENT_ID,
+    learning_objective_id: E2E_LEARNING_OBJECTIVE_ID,
+    course_title_at_time: E2E_COURSE_TITLE,
+    lesson_title_at_time: E2E_LESSON_TITLE,
+    subject_at_time: "Английский язык",
+    component_type_at_time: "file",
+    component_label_at_time: "Карточка жизненного опыта",
+    objective_title_at_time: "Использует Present Perfect в диалоге",
+    criterion_at_time: "Рассказывает об опыте, используя Present Perfect",
+    direction: e2eActivityCorrectionApplied ? "negative" : "positive",
+    support: e2eActivityCorrectionApplied ? null : "with_support",
+    observed_at: observation.observed_at,
+    finalized_at: e2eActivityCorrectionApplied
+      ? "2026-08-21T09:00:00.000Z"
+      : "2026-08-06T09:00:00.000Z",
+    materialized_at: e2eActivityCorrectionApplied
+      ? "2026-08-21T09:00:01.000Z"
+      : "2026-08-06T09:00:01.000Z",
+    evidence_version: 1,
+    eligibility_policy_version: 1,
+    reason_code: e2eActivityCorrectionApplied
+      ? "not_yet_negative_evidence"
+      : "supported_positive_evidence",
+    supersedes_evidence_id: e2eActivityCorrectionApplied
+      ? E2E_ACTIVITY_EVIDENCE_ID
+      : null,
+    superseded_by_evidence_id: null,
+  };
+}
+
+function e2eTeacherActivityProfile() {
+  const evidence = e2eActivityEvidenceRow();
+  const baseType = e2eActivityCorrectionApplied
+    ? "repeat"
+    : "try_without_support";
+  const baseReasonCode = e2eActivityCorrectionApplied
+    ? "repeat_after_not_yet"
+    : "try_without_support_after_supported_success";
+  const baseReasonText = e2eActivityCorrectionApplied
+    ? "После результата «пока не получилось» стоит повторить задание."
+    : "После успеха с поддержкой стоит попробовать без подсказки.";
+  const override = e2eActivityOverride;
+  return {
+    projection_version: 1,
+    learner_profile_id: E2E_LEARNER_ANNA_ID,
+    generated_at: override?.updatedAt ?? "2026-08-21T09:05:00.000Z",
+    states: [
+      {
+        state_id: E2E_ACTIVITY_STATE_ID,
+        learning_objective_id: E2E_LEARNING_OBJECTIVE_ID,
+        source_learning_objective_id_at_time: E2E_LEARNING_OBJECTIVE_ID,
+        source_course_id_at_time: E2E_COURSE_ID,
+        course_title_at_time: E2E_COURSE_TITLE,
+        subject_at_time: "Английский язык",
+        objective_title_at_time: "Использует Present Perfect в диалоге",
+        status: "forming",
+        reason_code: e2eActivityCorrectionApplied
+          ? "latest_not_yet"
+          : "latest_with_support",
+        reason_text: e2eActivityCorrectionApplied
+          ? "Последнее наблюдение показывает, что навык пока формируется."
+          : "Навык проявлен с поддержкой и пока формируется.",
+        policy_version: 1,
+        evaluated_at: e2eActivityCorrectionApplied
+          ? "2026-08-21T09:05:00.000Z"
+          : "2026-08-21T09:00:00.000Z",
+        last_evidence_at: evidence.observed_at,
+        freshness_due_at: null,
+        evidence: [evidence],
+        recommendation: {
+          recommendation_id: E2E_ACTIVITY_RECOMMENDATION_ID,
+          type: baseType,
+          reason_code: baseReasonCode,
+          reason_text: baseReasonText,
+          rule_version: 1,
+          generated_at: e2eActivityCorrectionApplied
+            ? "2026-08-21T09:05:00.000Z"
+            : "2026-08-21T09:00:00.000Z",
+          evidence_ids: [evidence.id],
+          effective_type:
+            override?.action === "dismiss"
+              ? null
+              : (override?.recommendationType ?? baseType),
+          effective_reason_text:
+            override?.action === "dismiss"
+              ? null
+              : override
+                ? "Следующий шаг выбран преподавателем."
+                : baseReasonText,
+          source: override ? "teacher_override" : "rule",
+          override: override
+            ? {
+                action: override.action,
+                recommendation_type: override.recommendationType,
+                private_reason: override.privateReason,
+                updated_at: override.updatedAt,
+              }
+            : null,
+        },
+      },
+    ],
+  };
+}
+
+function e2eSafeActivityProfile() {
+  const evidence = e2eActivityEvidenceRow();
+  const correction = e2eActivityCorrectionApplied;
+  const override = e2eActivityOverride;
+  const recommendationType =
+    override?.action === "dismiss"
+      ? null
+      : (override?.recommendationType ??
+        (correction ? "repeat" : "try_without_support"));
+  return {
+    projection_version: 1,
+    generated_at: override?.updatedAt ?? "2026-08-21T09:05:00.000Z",
+    states: [
+      {
+        key: E2E_ACTIVITY_SAFE_STATE_KEY,
+        course_title: E2E_COURSE_TITLE,
+        subject: "Английский язык",
+        objective_title: "Использует Present Perfect в диалоге",
+        state: "forming",
+        reason_code: correction ? "latest_not_yet" : "latest_with_support",
+        reason_text: correction
+          ? "Последнее наблюдение показывает, что навык пока формируется."
+          : "Навык проявлен с поддержкой и пока формируется.",
+        evaluated_at: correction
+          ? "2026-08-21T09:05:00.000Z"
+          : "2026-08-21T09:00:00.000Z",
+        last_evidence_at: evidence.observed_at,
+        freshness_due_at: null,
+        evidence_references: [
+          {
+            key: E2E_ACTIVITY_SAFE_EVIDENCE_KEY,
+            direction: evidence.direction,
+            support: evidence.support,
+            observed_at: evidence.observed_at,
+            evidence_at: evidence.materialized_at,
+            course_title: E2E_COURSE_TITLE,
+            lesson_title: E2E_LESSON_TITLE,
+            component_label: "Служебный компонент преподавателя",
+            objective_title: "Использует Present Perfect в диалоге",
+            criterion: "Служебный критерий преподавателя",
+          },
+        ],
+        recommendation: recommendationType
+          ? {
+              type: recommendationType,
+              reason_code: correction
+                ? "repeat_after_not_yet"
+                : "try_without_support_after_supported_success",
+              reason_text: override
+                ? "Следующий шаг выбран преподавателем."
+                : correction
+                  ? "Стоит повторить задание и попробовать снова."
+                  : "Попробуйте выполнить похожее задание без подсказки.",
+              source: override ? "teacher_override" : "rule",
+              generated_at: override?.updatedAt ?? "2026-08-21T09:05:00.000Z",
+              evidence_reference_keys: [E2E_ACTIVITY_SAFE_EVIDENCE_KEY],
+            }
+          : null,
+      },
+    ],
+  };
 }
 
 function e2eCompletionSafeHistory(learnerProfileId: string) {
@@ -2041,6 +2340,11 @@ async function handleMockSupabase(
     return;
   }
 
+  if (requestUrl.pathname === "/rest/v1/rpc/get_my_learning_activity_profile") {
+    json(response, 200, [{ result: e2eSafeActivityProfile() }]);
+    return;
+  }
+
   if (requestUrl.pathname === "/rest/v1/rpc/list_my_learner_ai_consents") {
     json(response, 200, [e2eAiConsent()]);
     return;
@@ -2112,6 +2416,145 @@ async function handleMockSupabase(
 
   if (requestUrl.pathname === "/rest/v1/rpc/get_observed_learner_progress") {
     json(response, 200, E2E_PROGRESS);
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/get_observed_learner_activity_profile"
+  ) {
+    e2eObservedActivityProfileRequestObserved?.();
+    if (e2eObservedActivityProfileGate) {
+      await e2eObservedActivityProfileGate;
+    }
+    if (e2eObservedGrantLeft) {
+      json(response, 403, {
+        code: "observer_access_denied",
+        message: "Доступ к профилю больше недоступен.",
+      });
+      return;
+    }
+    if (e2eObservedActivityProfileUnavailable) {
+      json(response, 503, {
+        code: "activity_profile_unavailable",
+        message: "Проекция навыков временно недоступна.",
+      });
+      return;
+    }
+    json(response, 200, [{ result: e2eSafeActivityProfile() }]);
+    return;
+  }
+
+  if (
+    requestUrl.pathname === "/rest/v1/rpc/get_teacher_learner_activity_profile"
+  ) {
+    const body = await readJsonBody(request);
+    if (body.p_learner_profile_id !== E2E_LEARNER_ANNA_ID) {
+      json(response, 404, { message: "learner profile not found" });
+      return;
+    }
+    json(response, 200, [{ result: e2eTeacherActivityProfile() }]);
+    return;
+  }
+
+  if (
+    requestUrl.pathname ===
+      "/rest/v1/rpc/get_teacher_learning_record_correction_history" &&
+    request.method === "POST"
+  ) {
+    const body = await readJsonBody(request);
+    if (
+      !Array.isArray(body.p_active_learning_record_ids) ||
+      body.p_active_learning_record_ids.length === 0 ||
+      body.p_active_learning_record_ids.length > 200
+    ) {
+      json(response, 400, { message: "unexpected correction history input" });
+      return;
+    }
+    json(response, 200, [{ result: e2eActivityCorrectionHistory() }]);
+    return;
+  }
+
+  if (
+    requestUrl.pathname ===
+      "/rest/v1/rpc/correct_finalized_lesson_component_observation" &&
+    request.method === "POST"
+  ) {
+    const body = await readJsonBody(request);
+    const idempotencyKey = String(body.p_idempotency_key ?? "");
+    const replay =
+      e2eActivityCorrectionApplied &&
+      e2eActivityCorrectionAttemptKeys[0] === idempotencyKey;
+    if (
+      body.p_learner_profile_id !== E2E_LEARNER_ANNA_ID ||
+      body.p_observation_id !== E2E_ACTIVITY_OBSERVATION_ID ||
+      body.p_rating !== "not_yet" ||
+      typeof body.p_correction_reason !== "string" ||
+      body.p_correction_reason.length === 0 ||
+      !idempotencyKey ||
+      (e2eActivityCorrectionApplied && !replay)
+    ) {
+      json(response, 400, { message: "unexpected correction payload" });
+      return;
+    }
+    e2eActivityCorrectionAttemptKeys.push(idempotencyKey);
+    e2eActivityCorrectionPayload = body;
+    if (!e2eActivityCorrectionApplied) {
+      e2eActivityCorrectionApplied = true;
+      e2eActivityCorrectionCreationCount += 1;
+    }
+    if (e2eActivityCorrectionTransportFailurePending) {
+      e2eActivityCorrectionTransportFailurePending = false;
+      json(response, 503, { message: "transport failed after commit" });
+      return;
+    }
+    json(response, 200, [
+      {
+        idempotency_key: body.p_idempotency_key,
+        new_learning_record_id: E2E_ACTIVITY_CORRECTED_RECORD_ID,
+        new_observation_id: E2E_ACTIVITY_CORRECTED_OBSERVATION_ID,
+        corrected_at: "2026-08-21T09:00:00.000Z",
+        replayed: replay,
+      },
+    ]);
+    return;
+  }
+
+  if (
+    requestUrl.pathname ===
+      "/rest/v1/rpc/set_learner_recommendation_override" &&
+    request.method === "POST"
+  ) {
+    const body = await readJsonBody(request);
+    if (
+      body.p_learner_profile_id !== E2E_LEARNER_ANNA_ID ||
+      body.p_source_learning_objective_id_at_time !==
+        E2E_LEARNING_OBJECTIVE_ID ||
+      !["replace", "dismiss", "clear"].includes(String(body.p_action))
+    ) {
+      json(response, 400, { message: "unexpected override payload" });
+      return;
+    }
+    e2eActivityOverridePayload = body;
+    const updatedAt = "2026-08-21T09:10:00.000Z";
+    e2eActivityOverride =
+      body.p_action === "clear"
+        ? null
+        : {
+            action: body.p_action as "replace" | "dismiss",
+            recommendationType:
+              typeof body.p_recommendation_type === "string"
+                ? body.p_recommendation_type
+                : null,
+            privateReason: String(body.p_private_reason ?? ""),
+            updatedAt,
+          };
+    json(response, 200, [
+      {
+        action: body.p_action,
+        state_id: E2E_ACTIVITY_STATE_ID,
+        updated_at: updatedAt,
+      },
+    ]);
     return;
   }
 
@@ -3132,13 +3575,43 @@ async function handleMockSupabase(
 
   if (requestUrl.pathname === "/rest/v1/lesson_component_observation") {
     const requestedRecordIds = readInFilter(requestUrl, "learning_record_id");
-    const matchingRows = (
-      e2eObservationFixtureEnabled ? e2eObservationRows : []
-    ).filter(
+    const matchingRows = [
+      e2eActivityObservationRow(),
+      ...(e2eObservationFixtureEnabled ? e2eObservationRows : []),
+    ].filter(
       (row) =>
         !requestedRecordIds ||
         requestedRecordIds.includes(row.learning_record_id),
     );
+    const requestedRange =
+      typeof request.headers.range === "string"
+        ? /^(\d+)-(\d+)$/.exec(request.headers.range)
+        : null;
+    const rangeStart = Number(requestedRange?.[1] ?? 0);
+    const rangeEnd = Number(
+      requestedRange?.[2] ?? Math.max(0, matchingRows.length - 1),
+    );
+    const page = matchingRows.slice(rangeStart, rangeEnd + 1);
+    response.writeHead(200, {
+      "Content-Type": "application/json",
+      "Content-Range":
+        matchingRows.length === 0
+          ? "*/0"
+          : `${rangeStart}-${rangeStart + page.length - 1}/${matchingRows.length}`,
+      "Range-Unit": "items",
+    });
+    response.end(JSON.stringify(page));
+    return;
+  }
+
+  if (requestUrl.pathname === "/rest/v1/learning_evidence") {
+    const requestedRecordIds = readInFilter(requestUrl, "learning_record_id");
+    const evidence = e2eActivityEvidenceRow();
+    const matchingRows =
+      !requestedRecordIds ||
+      requestedRecordIds.includes(evidence.learning_record_id)
+        ? [evidence]
+        : [];
     const requestedRange =
       typeof request.headers.range === "string"
         ? /^(\d+)-(\d+)$/.exec(request.headers.range)
@@ -7877,6 +8350,13 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
   }
 
   e2eAiConsentRequested = false;
+  e2eActivityCorrectionApplied = false;
+  e2eActivityOverride = null;
+  e2eActivityCorrectionPayload = null;
+  e2eActivityCorrectionTransportFailurePending = true;
+  e2eActivityCorrectionCreationCount = 0;
+  e2eActivityCorrectionAttemptKeys.length = 0;
+  e2eActivityOverridePayload = null;
   const teacherCookie = authenticatedCookieValue();
   const runtime = await openPage({ cookie: teacherCookie });
   let releaseDelayedStudentsContent: (() => void) | null = null;
@@ -11524,6 +12004,124 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     await runtime.page
       .getByText("Уверенно использует Present Perfect.", { exact: true })
       .waitFor();
+    await runtime.page
+      .getByText(E2E_ACTIVITY_PRIVATE_NOTE, { exact: false })
+      .waitFor();
+    await runtime.page
+      .getByText(/Свидетельство профиля:/, { exact: false })
+      .waitFor();
+    await runtime.page
+      .getByRole("heading", { name: "Навыки", exact: true, level: 2 })
+      .waitFor();
+    await runtime.page
+      .getByRole("heading", {
+        name: "Рекомендации",
+        exact: true,
+        level: 2,
+      })
+      .waitFor();
+
+    await runtime.page
+      .getByRole("button", { name: "Исправить итог", exact: true })
+      .click();
+    await runtime.page
+      .getByLabel("Исправленный результат")
+      .selectOption({ label: "Пока не получилось" });
+    await runtime.page
+      .getByLabel("Личная заметка")
+      .fill("Исправленная личная заметка");
+    await runtime.page
+      .getByLabel("Причина исправления")
+      .fill("Исходная отметка была выбрана по ошибке");
+    await runtime.page
+      .getByRole("button", { name: "Сохранить исправление", exact: true })
+      .click();
+    await runtime.page
+      .getByText("Учебный профиль временно недоступен.", { exact: true })
+      .waitFor();
+    assert.equal(e2eActivityCorrectionApplied, true);
+    assert.equal(e2eActivityCorrectionCreationCount, 1);
+    assert.equal(e2eActivityCorrectionAttemptKeys.length, 1);
+    await runtime.page
+      .getByRole("button", { name: "Сохранить исправление", exact: true })
+      .click();
+    await runtime.page
+      .getByText("Явное исправление предыдущего результата", { exact: true })
+      .waitFor();
+    await runtime.page
+      .getByText("Журнал исправлений", { exact: true })
+      .waitFor();
+    await runtime.page
+      .getByText("Исходная отметка была выбрана по ошибке", { exact: false })
+      .waitFor();
+    assert.equal(e2eActivityCorrectionCreationCount, 1);
+    assert.equal(e2eActivityCorrectionAttemptKeys.length, 2);
+    assert.equal(
+      e2eActivityCorrectionAttemptKeys[0],
+      e2eActivityCorrectionAttemptKeys[1],
+      "transport retry must reuse the persisted correction idempotency key",
+    );
+    assert.equal(
+      (e2eActivityCorrectionPayload as Record<string, unknown> | null)?.[
+        "p_rating"
+      ],
+      "not_yet",
+    );
+    assert.equal(
+      (e2eActivityCorrectionPayload as Record<string, unknown> | null)?.[
+        "p_correction_reason"
+      ],
+      "Исходная отметка была выбрана по ошибке",
+    );
+
+    await runtime.page
+      .getByLabel("Следующий шаг")
+      .selectOption({ label: "Перейти дальше" });
+    await runtime.page
+      .getByLabel("Личное основание преподавателя")
+      .fill(E2E_ACTIVITY_OVERRIDE_PRIVATE_REASON);
+    await runtime.page
+      .getByRole("button", { name: "Заменить рекомендацию", exact: true })
+      .click();
+    await runtime.page
+      .getByText(/Источник: решение преподавателя/, { exact: false })
+      .waitFor();
+    assert.equal(
+      (e2eActivityOverridePayload as Record<string, unknown> | null)?.[
+        "p_action"
+      ],
+      "replace",
+    );
+    assert.equal(
+      (e2eActivityOverridePayload as Record<string, unknown> | null)?.[
+        "p_recommendation_type"
+      ],
+      "move_forward",
+    );
+    assert.equal(
+      (e2eActivityOverridePayload as Record<string, unknown> | null)?.[
+        "p_private_reason"
+      ],
+      E2E_ACTIVITY_OVERRIDE_PRIVATE_REASON,
+    );
+
+    await runtime.page
+      .getByRole("dialog", { name: "Редактировать ученика", exact: true })
+      .getByRole("button", { name: "Закрыть", exact: true })
+      .click();
+    await runtime.page
+      .getByRole("button", {
+        name: "Профиль ученика Анна Петрова",
+        exact: true,
+      })
+      .click();
+    await runtime.page
+      .getByRole("tab", { name: "История", exact: true })
+      .click();
+    await runtime.page
+      .getByText(E2E_ACTIVITY_OVERRIDE_PRIVATE_REASON, { exact: false })
+      .waitFor();
+    await runtime.page.locator('p:text-is("Перейти дальше")').waitFor();
     html = await runtime.page.content();
     assert.doesNotMatch(html, /FOREIGN TRAP RECORD|Чужой курс/);
     await runtime.page
@@ -11735,6 +12333,13 @@ test("browser smoke: Account navigates Schedule → Students with honest V2 stat
     e2eScheduleFixtureRunCount = 1;
     e2eStudentDirectoryRpcDelayMs = 0;
     e2eStudentDirectoryRpcReleaseAt = 0;
+    e2eActivityCorrectionApplied = false;
+    e2eActivityOverride = null;
+    e2eActivityCorrectionPayload = null;
+    e2eActivityCorrectionTransportFailurePending = false;
+    e2eActivityCorrectionCreationCount = 0;
+    e2eActivityCorrectionAttemptKeys.length = 0;
+    e2eActivityOverridePayload = null;
     await runtime.close();
   }
 });
@@ -12106,6 +12711,59 @@ test("browser smoke: self profile exposes only learner-safe history and controls
     assert.doesNotMatch(html, /FOREIGN TRAP RECORD|Чужой курс/);
     await assertProfileSurfaceContract("История");
 
+    await runtime.page.getByRole("tab", { name: /^Навыки/ }).click();
+    await runtime.page
+      .getByRole("heading", {
+        name: "Использует Present Perfect в диалоге",
+        exact: true,
+        level: 3,
+      })
+      .waitFor();
+    await runtime.page.getByText("Формируется", { exact: true }).waitFor();
+    await runtime.page.getByText("Свидетельства: 1", { exact: true }).waitFor();
+    html = await runtime.page.content();
+    assert.doesNotMatch(
+      html,
+      new RegExp(
+        `${E2E_ACTIVITY_PRIVATE_NOTE}|${E2E_ACTIVITY_OVERRIDE_PRIVATE_REASON}|${E2E_ACTIVITY_STATE_ID}|${E2E_ACTIVITY_EVIDENCE_ID}|recordedByAccountId|policyVersion|evaluator|mastery`,
+        "i",
+      ),
+    );
+
+    await runtime.page.goto(
+      "/learning-profile?tab=skills&source=e2e&tag=one&tag=two",
+      { waitUntil: "networkidle" },
+    );
+    await runtime.page.waitForURL(/\/profile\?tab=skills/);
+    const compatibilityUrl = new URL(runtime.page.url());
+    assert.equal(compatibilityUrl.pathname, "/profile");
+    assert.equal(compatibilityUrl.searchParams.get("tab"), "skills");
+    assert.equal(compatibilityUrl.searchParams.get("source"), "e2e");
+    assert.deepEqual(compatibilityUrl.searchParams.getAll("tag"), [
+      "one",
+      "two",
+    ]);
+    await runtime.page
+      .getByRole("heading", {
+        name: "Использует Present Perfect в диалоге",
+        exact: true,
+        level: 3,
+      })
+      .waitFor();
+
+    await runtime.page.getByRole("tab", { name: /^Рекомендации/ }).click();
+    await runtime.page
+      .getByText("Попробовать без поддержки", { exact: true })
+      .waitFor();
+    html = await runtime.page.content();
+    assert.doesNotMatch(
+      html,
+      new RegExp(
+        `${E2E_ACTIVITY_PRIVATE_NOTE}|${E2E_ACTIVITY_OVERRIDE_PRIVATE_REASON}|${E2E_ACTIVITY_OBSERVATION_ID}|${E2E_ACTIVITY_EVIDENCE_ID}`,
+      ),
+    );
+    await assertProfileSurfaceContract("Рекомендации");
+
     await runtime.page
       .getByRole("tab", { name: /^Аттестация/, exact: false })
       .click();
@@ -12283,6 +12941,18 @@ test("browser smoke: observer reads published history only and can leave immedia
   }
 
   e2eObservedGrantLeft = false;
+  e2eObservedActivityProfileUnavailable = true;
+  let releaseObservedActivity: (() => void) | null = null;
+  const observedActivityRequest = new Promise<void>((resolve) => {
+    e2eObservedActivityProfileRequestObserved = resolve;
+  });
+  e2eObservedActivityProfileGate = new Promise<void>((resolve) => {
+    releaseObservedActivity = resolve;
+  });
+  const releaseObservedActivityGate = () => {
+    releaseObservedActivity?.();
+    releaseObservedActivity = null;
+  };
   const runtime = await openPage({ cookie: authenticatedCookieValue() });
   try {
     await runtime.page.goto("/students", { waitUntil: "networkidle" });
@@ -12294,6 +12964,21 @@ test("browser smoke: observer reads published history only and can leave immedia
       runtime.page.waitForURL(/\/students\?tab=observing$/),
       observingEntryTab.click(),
     ]);
+    await observedActivityRequest;
+    await runtime.page
+      .getByRole("heading", { name: "Борис Волков", exact: true, level: 2 })
+      .waitFor();
+    await runtime.page.getByRole("tab", { name: /^История/ }).click();
+    await runtime.page
+      .getByText("Опубликованный комментарий для учебного профиля.", {
+        exact: true,
+      })
+      .waitFor();
+    releaseObservedActivityGate();
+    e2eObservedActivityProfileGate = null;
+    e2eObservedActivityProfileRequestObserved = null;
+    await runtime.page.getByRole("tab", { name: /^Навыки/ }).click();
+    await runtime.page.getByText(/Навыки временно недоступны:/).waitFor();
     await runtime.page.goto("/observing", { waitUntil: "networkidle" });
     await runtime.page.waitForURL(/\/students\?tab=observing$/);
     await runtime.page
@@ -12353,6 +13038,62 @@ test("browser smoke: observer reads published history only and can leave immedia
       /FOREIGN TRAP RECORD|Чужой курс|Редактировать результат|Назначить урок|Запустить урок/,
     );
 
+    await runtime.page.getByRole("tab", { name: /^Навыки/ }).click();
+    await runtime.page.getByText(/Навыки временно недоступны:/).waitFor();
+    await runtime.page.getByRole("tab", { name: /^История/ }).click();
+    assert.equal(
+      await runtime.page
+        .getByText("Опубликованный комментарий для учебного профиля.", {
+          exact: true,
+        })
+        .count(),
+      1,
+      "transient activity failure must preserve already loaded history",
+    );
+    await runtime.page.getByRole("tab", { name: /^Навыки/ }).click();
+    e2eObservedActivityProfileUnavailable = false;
+    await runtime.page
+      .getByRole("button", { name: "Повторить", exact: true })
+      .click();
+    await runtime.page
+      .getByRole("heading", {
+        name: "Использует Present Perfect в диалоге",
+        exact: true,
+        level: 3,
+      })
+      .waitFor();
+    await runtime.page.getByRole("tab", { name: /^Рекомендации/ }).click();
+    await runtime.page
+      .getByText("Попробовать без поддержки", { exact: true })
+      .waitFor();
+    const safeActivityHtml = await runtime.page.content();
+    assert.doesNotMatch(
+      safeActivityHtml,
+      new RegExp(
+        `${E2E_ACTIVITY_PRIVATE_NOTE}|${E2E_ACTIVITY_OVERRIDE_PRIVATE_REASON}|${E2E_ACTIVITY_STATE_ID}|${E2E_ACTIVITY_EVIDENCE_ID}|Карточка жизненного опыта|Рассказывает об опыте, используя Present Perfect`,
+      ),
+    );
+
+    const staleActivityRequest = new Promise<void>((resolve) => {
+      e2eObservedActivityProfileRequestObserved = resolve;
+    });
+    e2eObservedActivityProfileGate = new Promise<void>((resolve) => {
+      releaseObservedActivity = resolve;
+    });
+    await runtime.page.goto(runtime.page.url(), {
+      waitUntil: "domcontentloaded",
+    });
+    await staleActivityRequest;
+    await runtime.page
+      .getByRole("heading", { name: "Борис Волков", exact: true, level: 2 })
+      .waitFor();
+    await runtime.page.getByRole("tab", { name: /^История/ }).click();
+    await runtime.page
+      .getByText("Опубликованный комментарий для учебного профиля.", {
+        exact: true,
+      })
+      .waitFor();
+
     await runtime.page.evaluate(() => {
       window.confirm = () => true;
     });
@@ -12363,6 +13104,21 @@ test("browser smoke: observer reads published history only and can leave immedia
       .getByText("Нет активного наблюдения", { exact: true })
       .waitFor();
     assert.equal(e2eObservedGrantLeft, true);
+    releaseObservedActivityGate();
+    e2eObservedActivityProfileGate = null;
+    e2eObservedActivityProfileRequestObserved = null;
+    await runtime.page.waitForTimeout(100);
+    assert.equal(
+      await runtime.page
+        .getByRole("heading", {
+          name: "Использует Present Perfect в диалоге",
+          exact: true,
+          level: 3,
+        })
+        .count(),
+      0,
+      "deferred activity fetch must not repaint after observer leave",
+    );
     await runtime.page
       .getByRole("tab", { name: "Наблюдение", exact: true })
       .waitFor();
@@ -12373,6 +13129,10 @@ test("browser smoke: observer reads published history only and can leave immedia
       0,
     );
   } finally {
+    releaseObservedActivityGate();
+    e2eObservedActivityProfileGate = null;
+    e2eObservedActivityProfileRequestObserved = null;
+    e2eObservedActivityProfileUnavailable = false;
     await runtime.close();
   }
 });

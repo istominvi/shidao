@@ -12,15 +12,24 @@ import { CourseBuilderRepositoryError } from "@/modules/course-builder/repositor
 import type { CourseBuilderApplicationService } from "@/modules/course-builder/service";
 import { findComponentDefinition } from "@/modules/course-builder/registry/contracts";
 import type { LessonRunsApplicationService } from "@/modules/lesson-runs/service";
+import type { LearningRecord } from "@/modules/lesson-runs/domain";
 import {
   OBSERVATION_COMPONENT_LABEL_MAX_LENGTH,
   OBSERVATION_COMPONENT_PROMPT_MAX_LENGTH,
+  correctFinalizedObservationInputSchema,
   historyObservationLearningRecordIdsSchema,
   parseLearningActivitiesContract,
   saveLessonComponentObservationsInputSchema,
+  setRecommendationOverrideInputSchema,
+  type CorrectFinalizedObservationInput,
   type SaveLessonComponentObservationsInput,
+  type SetRecommendationOverrideInput,
 } from "./contracts";
 import type { RunObservationWorkspace } from "./domain";
+import {
+  systemLearningActivityClock,
+  type LearningActivityClock,
+} from "./objective-state-v1";
 import type { LearningActivitiesRepository } from "./repository";
 
 type CourseReader = Pick<CourseBuilderApplicationService, "getCourse">;
@@ -30,6 +39,7 @@ export type LearningActivitiesServiceDependencies = {
   repository: LearningActivitiesRepository;
   courseBuilderService: CourseReader;
   lessonRunsService: LessonRunReader;
+  clock?: LearningActivityClock;
 };
 
 export type LearningActivitiesApplicationService = ReturnType<
@@ -86,7 +96,12 @@ export function observationComponentLabel(component: LessonComponent) {
 export function createLearningActivitiesService(
   dependencies: LearningActivitiesServiceDependencies,
 ) {
-  const { repository, courseBuilderService, lessonRunsService } = dependencies;
+  const {
+    repository,
+    courseBuilderService,
+    lessonRunsService,
+    clock = systemLearningActivityClock,
+  } = dependencies;
 
   async function readOwnedWorkspace(
     actor: CourseBuilderActor,
@@ -183,6 +198,35 @@ export function createLearningActivitiesService(
           );
         }
         if (
+          /(?:observation|learning_record|learner_profile|objective_state|recommendation)_access_denied|(?:observation|learning_record|learner_profile|objective_state)_not_found|finalized_observation_not_found|learner_recommendation_override_not_found|observer_(?:grant_)?(?:inactive|revoked)/.test(
+            error.message,
+          )
+        ) {
+          throw new CourseBuilderAccessError(
+            "Учебный профиль или выбранная запись недоступны.",
+          );
+        }
+        if (
+          /correction_(?:source_superseded|expected_record_mismatch|idempotency_conflict)|observation_already_superseded|finalized_observation_changed/.test(
+            error.message,
+          )
+        ) {
+          throw new CourseBuilderConflictError(
+            "Наблюдение уже изменилось. Обновите историю и повторите действие.",
+            "observation_correction_conflict",
+          );
+        }
+        if (
+          /recommendation_(?:state_stale|override_stale)|objective_state_updated_at_mismatch|learner_recommendation_override_state_changed/.test(
+            error.message,
+          )
+        ) {
+          throw new CourseBuilderConflictError(
+            "Состояние навыка уже обновилось. Обновите профиль.",
+            "recommendation_state_stale",
+          );
+        }
+        if (
           /lesson_run_not_started|observation_run_not_started/.test(
             error.message,
           )
@@ -217,6 +261,15 @@ export function createLearningActivitiesService(
             "Проверьте критерий и отметки наблюдения.",
           );
         }
+        if (
+          /correction_(?:input|reason|rating|note|corrected_at)_invalid|learning_observation_correction_no_change|recommendation_override_(?:input|action|type|reason)_invalid|finalized_observation_correction_invalid|learner_recommendation_override_invalid/.test(
+            error.message,
+          )
+        ) {
+          throw new CourseBuilderValidationError(
+            "Проверьте данные исправления или рекомендации.",
+          );
+        }
       }
       throw error;
     }
@@ -232,6 +285,72 @@ export function createLearningActivitiesService(
         learningRecordIdsValue,
       );
       return repository.listByLearningRecordIds(learningRecordIds);
+    },
+
+    async listHistoryEvidence(
+      _actor: CourseBuilderActor,
+      learningRecordIdsValue: string[] | unknown,
+    ) {
+      const learningRecordIds = parseLearningActivitiesContract(
+        historyObservationLearningRecordIdsSchema,
+        learningRecordIdsValue,
+      );
+      return repository.listEvidenceByLearningRecordIds(learningRecordIds);
+    },
+
+    async listHistoryCorrections(
+      _actor: CourseBuilderActor,
+      records: Array<Pick<LearningRecord, "id" | "recordedByAccountId">>,
+    ) {
+      const learningRecordIds = parseLearningActivitiesContract(
+        historyObservationLearningRecordIdsSchema,
+        records.map((record) => record.id),
+      );
+      if (learningRecordIds.length === 0) {
+        return { items: [], truncated: false };
+      }
+      return repository.listHistoryCorrections(learningRecordIds);
+    },
+
+    async getTeacherLearnerActivityProfile(
+      _actor: CourseBuilderActor,
+      learnerProfileIdValue: string,
+    ) {
+      const learnerProfileId = parseLearningActivitiesContract(
+        uuidSchema,
+        learnerProfileIdValue,
+      );
+      return repository.getTeacherLearnerActivityProfile(learnerProfileId);
+    },
+
+    async getMyLearningActivityProfile(_actor: CourseBuilderActor) {
+      return repository.getMyLearningActivityProfile();
+    },
+
+    async getMyActivityProfile(_actor: CourseBuilderActor) {
+      return repository.getMyLearningActivityProfile();
+    },
+
+    async getObservedLearnerActivityProfile(
+      _actor: CourseBuilderActor,
+      learnerProfileIdValue: string,
+    ) {
+      const learnerProfileId = parseLearningActivitiesContract(
+        uuidSchema,
+        learnerProfileIdValue,
+      );
+      return repository.getObservedLearnerActivityProfile(learnerProfileId);
+    },
+
+    async getObservedActivityProfile(
+      _actor: CourseBuilderActor,
+      learnerProfileIdValue: string,
+    ) {
+      const learnerProfileId = parseLearningActivitiesContract(
+        uuidSchema,
+        learnerProfileIdValue,
+      );
+      return repository.getObservedLearnerActivityProfile(learnerProfileId);
     },
 
     async getRunWorkspace(
@@ -268,6 +387,53 @@ export function createLearningActivitiesService(
 
       return repository.listByLearningRecordIds(
         workspace.run.records.map((record) => record.id),
+      );
+    },
+
+    async correctFinalizedObservation(
+      _actor: CourseBuilderActor,
+      learnerProfileIdValue: string,
+      rawInput: CorrectFinalizedObservationInput | unknown,
+    ) {
+      const learnerProfileId = parseLearningActivitiesContract(
+        uuidSchema,
+        learnerProfileIdValue,
+      );
+      const input = parseLearningActivitiesContract(
+        correctFinalizedObservationInputSchema,
+        rawInput,
+      );
+      const correctedAt = clock.now();
+      if (!Number.isFinite(correctedAt.getTime())) {
+        throw new CourseBuilderConflictError(
+          "Не удалось определить время исправления.",
+          "learning_activity_clock_invalid",
+        );
+      }
+      return runMutation(() =>
+        repository.correctFinalizedObservation({
+          ...input,
+          learnerProfileId,
+          correctedAt: correctedAt.toISOString(),
+        }),
+      );
+    },
+
+    async setRecommendationOverride(
+      _actor: CourseBuilderActor,
+      learnerProfileIdValue: string,
+      rawInput: SetRecommendationOverrideInput | unknown,
+    ) {
+      const learnerProfileId = parseLearningActivitiesContract(
+        uuidSchema,
+        learnerProfileIdValue,
+      );
+      const input = parseLearningActivitiesContract(
+        setRecommendationOverrideInputSchema,
+        rawInput,
+      );
+      return runMutation(() =>
+        repository.setRecommendationOverride({ learnerProfileId, ...input }),
       );
     },
   };

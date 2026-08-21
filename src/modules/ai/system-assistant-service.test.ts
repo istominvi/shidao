@@ -618,6 +618,93 @@ test("provider receives bounded context without technical or Storage secrets", a
   assert.equal(state.addLessonCalls, 0);
 });
 
+test("system assistant receives the separate safe learning-activity projection", async () => {
+  const state = inMemoryCourseService();
+  const stateKey = `las_${"5".repeat(64)}`;
+  let serializedMessages = "";
+  await createSystemAssistantService({
+    actor: ACTOR,
+    courseService: state.service,
+    learningActivityContextProvider: {
+      async load(actorAuthUserId, courseId) {
+        assert.equal(actorAuthUserId, ACTOR.authUserId);
+        assert.equal(courseId, COURSE_ID);
+        return {
+          used: true,
+          revision: "e".repeat(64),
+          projectionVersion: 1,
+          summary: {
+            totalStateCount: 1,
+            includedStateCount: 1,
+            formingCount: 0,
+            confirmedCount: 1,
+            recheckDueCount: 0,
+            evidenceReferenceCount: 0,
+            truncated: false,
+          },
+          states: [
+            {
+              key: stateKey,
+              courseTitle: "Английский для путешествий",
+              subject: "Английский язык",
+              objectiveTitle: "Приветствует собеседника",
+              state: "confirmed",
+              reasonCode: "multiple_independent_opportunities",
+              reasonText: "Навык подтверждён в нескольких ситуациях.",
+              evaluatedAt: "2026-08-20T12:00:00.000Z",
+              lastEvidenceAt: "2026-08-20T11:00:00.000Z",
+              freshnessDueAt: "2026-11-18T11:00:00.000Z",
+              evidenceReferences: [],
+              recommendation: {
+                type: "move_forward",
+                reasonCode: "move_forward_after_confirmation",
+                reasonText: "Можно перейти к следующей цели.",
+                source: "rule",
+                generatedAt: "2026-08-20T12:00:00.000Z",
+                evidenceReferenceKeys: [],
+              },
+            },
+          ],
+        };
+      },
+    },
+    provider: provider(answerTurn(), (input) => {
+      serializedMessages = JSON.stringify(input.messages);
+    }),
+    audit: () => undefined,
+  }).chat(request("course"));
+
+  assert.match(serializedMessages, /learningActivityProfile/);
+  assert.match(serializedMessages, /las_5555|Приветствует собеседника/);
+  assert.doesNotMatch(
+    serializedMessages,
+    /learnerProfileId|recordedByAccountId|privateNote|policyVersion|evaluator/,
+  );
+});
+
+test("system assistant keeps answering when activity projection is unavailable", async () => {
+  const state = inMemoryCourseService();
+  let serializedMessages = "";
+  const reply = await createSystemAssistantService({
+    actor: ACTOR,
+    courseService: state.service,
+    learningActivityContextProvider: {
+      async load() {
+        throw new Error("temporary activity projection failure");
+      },
+    },
+    provider: provider(answerTurn(), (input) => {
+      serializedMessages = JSON.stringify(input.messages);
+    }),
+    audit: () => undefined,
+  }).chat(request("course"));
+
+  assert.equal(reply.message.content, "У курса один урок.");
+  assert.match(serializedMessages, /learningActivityProfile/);
+  assert.equal(serializedMessages.includes("0".repeat(64)), true);
+  assert.equal(serializedMessages.includes('\\"used\\":false'), true);
+});
+
 test("Students and Schedule projections expose useful labels without internal rows", async () => {
   const state = inMemoryCourseService();
   const learnerId = "12121212-1212-4212-8212-121212121212";

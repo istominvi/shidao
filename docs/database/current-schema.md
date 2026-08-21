@@ -6,17 +6,36 @@ catalog + Course Component D1 + A1 atomic Course archive + E1 educator Course
 content-guard correction + U1 unified Text authored data + AV1 Account avatars
 и CC1 Communication Center database contract + A2 atomic Assistant schedule
 guard + LA-M1 learning activity foundation + LA-M2 Course objectives,
-Component alignment и publication snapshot V2. CC1, A2, LA-M1 и LA-M2
-DB-first contracts применены; dependent functional application source
-`014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0` развёрнут Coolify deployment
-`1003` и прошёл deployed-SHA HTTP/API/CSRF/browser guest postflight.
+Component alignment/publication snapshot V2 + LA-M3 correction/evidence/
+objective-state/recommendation contract. CC1, A2 и LA-M1–LA-M3 DB-first
+contracts применены. Последний deployed functional application source
+`014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0` остаётся LA-M2: Coolify deployment
+`1003` прошёл deployed-SHA HTTP/API/CSRF/browser guest postflight; dependent
+LA-M3 web rollout ещё pending.
 
 **Production schema head:**
-`20260820090529_course_publication_snapshot_v2.sql`, применённая после
-`20260820085049_learning_objectives_component_alignment.sql`. Обе применены к
-production PostgreSQL `15.8` owner `supabase_admin` с наблюдаемыми `COMMIT` 20
-августа 2026 года после read-only sanity, production-derived clone rehearsal и
-verified backup.
+`20260820132725_learning_activity_profile_history_skills_recommendations.sql`,
+exact SHA-256
+`a7e7dad7db4632f98cf0857597dae99b58cf653bd39ec57d0eb91f540c9793f8`,
+`5335` строк. Migration применена owner `supabase_admin` к production
+PostgreSQL `15.8` с наблюдаемым `COMMIT` 21 августа 2026 года после read-only
+sanity, production-derived clone rehearsal и verified backup. LA-M2 migrations
+`20260820085049_learning_objectives_component_alignment.sql` и
+`20260820090529_course_publication_snapshot_v2.sql` остаются предыдущим
+production head.
+
+**Current production DB / dependent web rollout pending — LA-M3:** physical
+schema содержит additive correction/evidence/objective-state/override contract.
+Production-derived PostgreSQL `15.8` clone из source dump SHA-256
+`6db636b32c1256efaf7b70321a031e3e93196788d265368561d4dbe239b456c1`
+(`1801` restore-list entries) прошёл exact apply с наблюдаемым `COMMIT`, `85`
+functional assertions, `11/11` LA races и identity functional/concurrency.
+Verified production backup
+`/root/shidao-db-backups/shidao-before-learning-activity-profile-20260821T002135Z.dump`
+имеет size `1552941`, mode `600`, `1801` restore-list entries и SHA-256
+`0d89e0be74aba44f20b0ee82ad5cafb6f887da1f55821350e84959a502f8a88e`.
+Production owner apply завершился наблюдаемым `COMMIT`; dependent application/UI
+task commit/push, Coolify deploy и production browser smoke ещё pending.
 
 **LA-M2 production migration set:**
 
@@ -48,16 +67,14 @@ Admin create/delete probe
 
 **SQL snapshot:**
 [`supabase/schema/current-schema.sql`](../../supabase/schema/current-schema.sql)
-содержит LA-M2 contract, соответствующий current production physical head. Он
-снят штатным script в `2026-08-20T09:54:46Z` из изолированного PostgreSQL
-`15.8` production-derived clone после exact rollback/apply обеих migrations,
-functional harness и восьми multi-session race checks. Strict signature —
-`shidao-v2-contract`, SHA-256 snapshot —
-`46aabae2c1a00723c2c4a3322060cb49bd48f40a0ac23d7f8a294c64c630b8b3`.
-
-Clone provenance snapshot не подменяет production execution evidence. Exact
-LA-M2 production backup/apply/postflight и dependent deployed-source
-verification зафиксированы ниже.
+содержит current production-head LA-M3 public contract со strict signature
+`shidao-v2-contract`. Он снят штатным script
+`2026-08-21T00:25:53Z` из production-head PostgreSQL `15.8`; SHA-256 snapshot —
+`a1768f22f829d58c01a5846b68cdb7be60a363ebb771869ed90fb83dd316cbc2`,
+длина — `29533` строки. Inventory содержит `66` public tables и `235`
+functions; body побайтово совпадает с snapshot, clean replayed из
+production-derived clone. Reviewed cross-schema Auth/Storage section сохранён
+script без изменения.
 
 ## Read order для DB-задач
 
@@ -284,6 +301,42 @@ Production execution evidence, 20 августа 2026 года:
   exact temp-path содержал четыре snapshot-файла (`1108` KiB), был удалён, и
   final host/container post-check подтвердил отсутствие обоих paths. Verified
   production backup выше сохранён и не удалялся.
+
+### Current production DB LA-M3 — dependent web rollout pending
+
+Forward migration расширяет compact `learning_record` stable Course/Lesson/Run
+identity и explicit correction metadata, добавляет reciprocal correction links
+наблюдений и отдельные typed relations `learning_evidence`,
+`learner_objective_state`, `learner_objective_state_evidence` и
+`learner_recommendation_override`. Current contract оставляет raw mutations
+закрытыми, строит evidence только из finalized/present/eligible active
+observations, сохраняет stable provenance после удаления live Component/
+objective и перестраивает state через narrow lifecycle/identity functions.
+
+`no_data` физически не хранится: teacher/self/observer projection синтезирует
+его для разрешённой live objective без eligible evidence. Поэтому такой DTO
+имеет nullable state ID/last-evidence, пустой evidence list и не содержит
+recommendation или override action. Persisted state допускает только
+`forming | confirmed | recheck_due`.
+
+Exact migration SHA-256
+`a7e7dad7db4632f98cf0857597dae99b58cf653bd39ec57d0eb91f540c9793f8`
+(`5335` строк) прошла preflight → postflight → наблюдаемый `COMMIT` на
+production-derived PostgreSQL `15.8` clone; functional harness прошёл `85`
+assertions, LA concurrency — `11/11` реальных multi-session races, identity
+functional/concurrency — без ошибок. После verified backup production owner
+apply также завершился наблюдаемым `COMMIT`.
+
+Pre/post tuple Account/Course/Lesson/Component/LessonRun/LearningRecord/
+LearningObjective/Observation остался `19/6/22/84/2/2/0/0`, immutable
+publication tuple — `1/9056/2832fcf2ee1a4c3ccdf01501fc4f60f3`. Новые LA-M3
+relations остались `0/0/0/0`, а обе source LearningRecord сохранили empty
+correction/supersession metadata.
+Postflight подтвердил RLS `4/4`, `4` policies, ACL/RPC/security contract и `0`
+identity violations. PostgREST raw access возвращает anon `401/42501` и
+service role `403/42501`; service RPC разрешается до ожидаемого domain `P0002`
+(`500`), а не schema-cache `PGRST202`. Dependent web commit/push, Coolify
+deploy и production browser smoke остаются **PENDING**.
 
 ### Production CC1 Communication Center
 
@@ -1255,12 +1308,14 @@ guard.
 
 ## Absent from active model
 
-В active model по-прежнему нет Methodology, Lesson Step/root Step,
+В current production model по-прежнему нет Methodology, Lesson Step/root Step,
 `lesson_run_participant`, operational LessonRun snapshot, persisted Run/Record
 status, Homework persistence, parsing/RAG, learner enrollment/consumption
-детского Course, live Student Screen, learner attempts, durable typed evidence
-или mastery/objective-state persistence. LA-M2 Course objectives/alignment
-существуют в current production DB/source/web.
+детского Course, live Student Screen, learner attempts или mastery percentage.
+LA-M2 Course objectives/alignment существуют в current production DB/source/web.
+LA-M3 typed evidence/objective state/recommendation contract существует в
+current production DB, но четыре новые relation пока пусты, а deployed LA-M2
+web ещё не создаёт и не показывает эти projections до dependent rollout.
 E2 educator self-learning progress —
 отдельный Account-scoped contract без roster/Run. Observer capability не
 является Parent/Guardian role, а
@@ -1274,13 +1329,14 @@ provider-backed explicit action executor доступны в current application
 
 `scripts/refresh-schema-snapshot.sh` принимает ровно два строгих compatibility
 stage: `expand` сохраняет полный legacy compatibility contract, `contract`
-требует завершённый M4 cleanup. Current script дополнительно требует
-полный M1–M3 identity contract, M5/M6 Auth hardening, A1/E1/E2/CC1/A2, LA-M1 и
-LA-M2 database contracts. Contract snapshot сохраняет verified clone
+требует завершённый M4 cleanup. Current production script дополнительно требует
+полный M1–M3 identity contract, M5/M6 Auth hardening, A1/E1/E2/CC1/A2 и
+LA-M1–LA-M3 database contracts. Contract snapshot сохраняет verified clone
 provenance; отдельный production execution record подтверждает exact
-apply/postflight только для уже применённого production head.
-В обоих
-signature проверяет:
+apply/postflight уже применённого production head. Current snapshot снят из
+production-head PostgreSQL `15.8`, а его public body побайтово совпадает с
+clean replayed production-derived clone snapshot.
+В обоих stage signature проверяет:
 
 - все M1–M3 tables/functions/columns и exactly-one invariant;
 - M5/M6 `SECURITY DEFINER` owner/ACL boundaries, exact Auth trigger shape и
@@ -1342,3 +1398,9 @@ snapshot снят `2026-08-20T09:54:46Z`; SHA-256
 `46aabae2c1a00723c2c4a3322060cb49bd48f40a0ac23d7f8a294c64c630b8b3`.
 LA-M2 production apply/postflight и dependent web execution record завершены и
 зафиксированы выше.
+
+После LA-M3 production-derived PostgreSQL `15.8` clone rehearsal и production
+owner apply final current snapshot снят `2026-08-21T00:25:53Z`; SHA-256
+`a1768f22f829d58c01a5846b68cdb7be60a363ebb771869ed90fb83dd316cbc2`,
+`29533` строки. DB execution record current; dependent LA-M3 web execution
+record остаётся pending.

@@ -636,6 +636,7 @@ test("Lesson history has a hard limit and hydrates Run IDs in bounded chunks", a
         const ids = request.url.match(/lesson_run_id=in\.\(([^)]*)\)/)?.[1];
         assert.ok(ids);
         assert.ok(ids.split(",").length <= 50);
+        assert.match(request.url, /superseded_by_record_id=is\.null/);
       }
     },
   );

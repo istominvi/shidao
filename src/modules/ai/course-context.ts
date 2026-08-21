@@ -9,6 +9,10 @@ import type {
   LearningRecord,
   LessonRun,
 } from "@/modules/lesson-runs/domain";
+import {
+  EMPTY_LEARNING_ACTIVITY_AI_CONTEXT,
+  type LearningActivityAiContext,
+} from "./learning-activity-context";
 
 export type CourseLearningHistory = {
   runs: LessonRun[];
@@ -404,6 +408,20 @@ function learningHistoryContext(
   };
 }
 
+function learningActivityProfileContext(
+  projection: LearningActivityAiContext = EMPTY_LEARNING_ACTIVITY_AI_CONTEXT,
+) {
+  return {
+    used: projection.used,
+    revision: projection.revision,
+    projectionVersion: projection.projectionVersion,
+    summary: projection.summary,
+    states: projection.states,
+    privacyBoundary:
+      "Это ограниченная обезличенная проекция: opaque-ссылки не являются идентификаторами, личные заметки и служебные поля исключены. Evidence references объясняют состояние, но не являются полными исходными записями.",
+  };
+}
+
 export function buildCoursePlanningContext(
   course: CourseWorkspace,
   audience: CourseAudience = EMPTY_COURSE_AUDIENCE,
@@ -427,6 +445,7 @@ export function buildLessonPlanningContext(
   proposedTitle: string,
   learningHistory: CourseLearningHistory = { runs: [], records: [] },
   sharedHistory: SharedLearnerHistoryContext = EMPTY_SHARED_LEARNER_HISTORY,
+  learningActivityProfile: LearningActivityAiContext = EMPTY_LEARNING_ACTIVITY_AI_CONTEXT,
 ) {
   return boundAiContext({
     course: courseBasics(course),
@@ -446,6 +465,9 @@ export function buildLessonPlanningContext(
     })),
     learningObjectives: learningObjectivesContext(course),
     learningHistory: learningHistoryContext(learningHistory),
+    learningActivityProfile: learningActivityProfileContext(
+      learningActivityProfile,
+    ),
     sharedCanonicalHistory: sharedHistory.used
       ? {
           projectionVersion: sharedHistory.projectionVersion,
@@ -465,6 +487,7 @@ export function buildAssistantContext(
   selectedLesson: CourseLesson | null,
   learningHistory: CourseLearningHistory = { runs: [], records: [] },
   sharedHistory: SharedLearnerHistoryContext = EMPTY_SHARED_LEARNER_HISTORY,
+  learningActivityProfile: LearningActivityAiContext = EMPTY_LEARNING_ACTIVITY_AI_CONTEXT,
 ) {
   return boundAiContext({
     course: courseBasics(course),
@@ -481,6 +504,9 @@ export function buildAssistantContext(
       ? selectedLessonContext(selectedLesson, course.learningObjectives)
       : null,
     learningHistory: learningHistoryContext(learningHistory),
+    learningActivityProfile: learningActivityProfileContext(
+      learningActivityProfile,
+    ),
     sharedCanonicalHistory: sharedHistory.used
       ? {
           projectionVersion: sharedHistory.projectionVersion,

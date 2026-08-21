@@ -88,7 +88,11 @@ import type {
   LearnerProfile,
   LessonRun,
 } from "@/modules/lesson-runs/domain";
-import type { LessonComponentObservation } from "@/modules/learning-activities";
+import type {
+  LearningEvidence,
+  LessonObservationCorrection,
+  LessonComponentObservation,
+} from "@/modules/learning-activities";
 import type { SystemAssistantActionResult } from "@/modules/ai/system-assistant-contracts";
 
 type CourseWorkspaceClientProps = {
@@ -110,6 +114,11 @@ async function loadOwnedCourseProjection(courseId: string) {
       workspace,
       runs: [] as LessonRun[],
       observations: [] as LessonComponentObservation[],
+      corrections: [] as LessonObservationCorrection[],
+      correctionsTruncated: false,
+      correctionsUnavailable: false,
+      evidence: [] as LearningEvidence[],
+      evidenceUnavailable: false,
       audience: EMPTY_COURSE_AUDIENCE,
     };
   }
@@ -121,6 +130,11 @@ async function loadOwnedCourseProjection(courseId: string) {
     workspace,
     runs: history.runs,
     observations: history.observations,
+    corrections: history.corrections,
+    correctionsTruncated: history.correctionsTruncated,
+    correctionsUnavailable: history.correctionsUnavailable,
+    evidence: history.evidence,
+    evidenceUnavailable: history.evidenceUnavailable,
     audience,
   };
 }
@@ -1056,14 +1070,32 @@ function CourseAboutPanel({
 function CourseHistoryPanel({
   runs,
   observations,
+  corrections,
+  correctionsTruncated,
+  correctionsUnavailable,
+  evidence,
+  evidenceUnavailable,
+  onReload,
 }: {
   runs: LessonRun[];
   observations: LessonComponentObservation[];
+  corrections: LessonObservationCorrection[];
+  correctionsTruncated: boolean;
+  correctionsUnavailable: boolean;
+  evidence: LearningEvidence[];
+  evidenceUnavailable: boolean;
+  onReload: () => void;
 }) {
   return (
     <RunHistoryList
       runs={runs.filter((run) => Boolean(run.endedAt))}
       observations={observations}
+      corrections={corrections}
+      correctionsTruncated={correctionsTruncated}
+      correctionsUnavailable={correctionsUnavailable}
+      evidence={evidence}
+      evidenceUnavailable={evidenceUnavailable}
+      onReload={onReload}
       showLessonTitle
       emptyTitle="Курс ещё не проводился"
       emptyDescription="Назначьте время любому уроку. После завершения здесь появятся проведения всего курса, отчёты и результаты учеников."
@@ -1081,6 +1113,16 @@ export function CourseWorkspaceClient({
   const [courseObservations, setCourseObservations] = useState<
     LessonComponentObservation[]
   >([]);
+  const [courseCorrections, setCourseCorrections] = useState<
+    LessonObservationCorrection[]
+  >([]);
+  const [courseCorrectionsTruncated, setCourseCorrectionsTruncated] =
+    useState(false);
+  const [courseCorrectionsUnavailable, setCourseCorrectionsUnavailable] =
+    useState(false);
+  const [courseEvidence, setCourseEvidence] = useState<LearningEvidence[]>([]);
+  const [courseEvidenceUnavailable, setCourseEvidenceUnavailable] =
+    useState(false);
   const [courseAudience, setCourseAudience] = useState<CourseAudience>(
     EMPTY_COURSE_AUDIENCE,
   );
@@ -1096,11 +1138,25 @@ export function CourseWorkspaceClient({
   const mutationInFlightRef = useRef(false);
 
   const reload = useCallback(async () => {
-    const { workspace, runs, observations, audience } =
-      await loadOwnedCourseProjection(courseId);
+    const {
+      workspace,
+      runs,
+      observations,
+      corrections,
+      correctionsTruncated,
+      correctionsUnavailable,
+      evidence,
+      evidenceUnavailable,
+      audience,
+    } = await loadOwnedCourseProjection(courseId);
     setCourse(workspace);
     setCourseRuns(runs);
     setCourseObservations(observations);
+    setCourseCorrections(corrections);
+    setCourseCorrectionsTruncated(correctionsTruncated);
+    setCourseCorrectionsUnavailable(correctionsUnavailable);
+    setCourseEvidence(evidence);
+    setCourseEvidenceUnavailable(evidenceUnavailable);
     setCourseAudience(audience);
     setNavigation((current) =>
       reconcileCourseWorkspaceNavigation(
@@ -1114,66 +1170,85 @@ export function CourseWorkspaceClient({
   useEffect(() => {
     let active = true;
     void loadOwnedCourseProjection(courseId)
-      .then(({ workspace, runs, audience }) => {
-        if (!active) return;
-        setCourse(workspace);
-        setCourseRuns(runs);
-        setCourseAudience(audience);
-        const searchParams = new URL(window.location.href).searchParams;
-        const requestedLessonId = searchParams.get("lesson");
-        const availableTabs = courseWorkspaceTabs(
-          workspace.learningAudience === "educators",
-        );
-        const requestedCourseSurface = availableTabs.find(
-          (item) => item.value === searchParams.get("tab"),
-        )?.value;
-        const audienceRequested =
-          workspace.learningAudience === "children" &&
-          searchParams.get("audience") === "1";
-        const validRequestedLesson = Boolean(
-          requestedLessonId &&
-          workspace.lessons.some((lesson) => lesson.id === requestedLessonId),
-        );
-        if (requestedLessonId && validRequestedLesson) {
-          setNavigation((current) =>
-            openCourseWorkspaceLesson(current, requestedLessonId),
+      .then(
+        ({
+          workspace,
+          runs,
+          observations,
+          corrections,
+          correctionsTruncated,
+          correctionsUnavailable,
+          evidence,
+          evidenceUnavailable,
+          audience,
+        }) => {
+          if (!active) return;
+          setCourse(workspace);
+          setCourseRuns(runs);
+          setCourseObservations(observations);
+          setCourseCorrections(corrections);
+          setCourseCorrectionsTruncated(correctionsTruncated);
+          setCourseCorrectionsUnavailable(correctionsUnavailable);
+          setCourseEvidence(evidence);
+          setCourseEvidenceUnavailable(evidenceUnavailable);
+          setCourseAudience(audience);
+          const searchParams = new URL(window.location.href).searchParams;
+          const requestedLessonId = searchParams.get("lesson");
+          const availableTabs = courseWorkspaceTabs(
+            workspace.learningAudience === "educators",
           );
-        } else if (audienceRequested || requestedCourseSurface) {
-          const nextSurface = audienceRequested
-            ? "about"
-            : (requestedCourseSurface ?? "lessons");
-          setNavigation((current) => ({
-            ...current,
-            courseSurface: nextSurface,
-          }));
-          setMountedCourseSurfaces((current) =>
-            new Set(current).add(nextSurface),
+          const requestedCourseSurface = availableTabs.find(
+            (item) => item.value === searchParams.get("tab"),
+          )?.value;
+          const audienceRequested =
+            workspace.learningAudience === "children" &&
+            searchParams.get("audience") === "1";
+          const validRequestedLesson = Boolean(
+            requestedLessonId &&
+            workspace.lessons.some((lesson) => lesson.id === requestedLessonId),
           );
-        }
-        if (requestedLessonId || audienceRequested) {
-          const nextUrl = new URL(window.location.href);
-          nextUrl.searchParams.delete("lesson");
-          nextUrl.searchParams.delete("audience");
-          if (validRequestedLesson) nextUrl.searchParams.delete("tab");
-          else if (audienceRequested) nextUrl.searchParams.set("tab", "about");
-          window.history.replaceState(
-            null,
-            "",
-            `${nextUrl.pathname}${nextUrl.search}`,
-          );
-        }
-        if (audienceRequested) {
-          window.requestAnimationFrame(() => {
+          if (requestedLessonId && validRequestedLesson) {
+            setNavigation((current) =>
+              openCourseWorkspaceLesson(current, requestedLessonId),
+            );
+          } else if (audienceRequested || requestedCourseSurface) {
+            const nextSurface = audienceRequested
+              ? "about"
+              : (requestedCourseSurface ?? "lessons");
+            setNavigation((current) => ({
+              ...current,
+              courseSurface: nextSurface,
+            }));
+            setMountedCourseSurfaces((current) =>
+              new Set(current).add(nextSurface),
+            );
+          }
+          if (requestedLessonId || audienceRequested) {
+            const nextUrl = new URL(window.location.href);
+            nextUrl.searchParams.delete("lesson");
+            nextUrl.searchParams.delete("audience");
+            if (validRequestedLesson) nextUrl.searchParams.delete("tab");
+            else if (audienceRequested)
+              nextUrl.searchParams.set("tab", "about");
+            window.history.replaceState(
+              null,
+              "",
+              `${nextUrl.pathname}${nextUrl.search}`,
+            );
+          }
+          if (audienceRequested) {
             window.requestAnimationFrame(() => {
-              const heading = document.getElementById(
-                "course-audience-heading",
-              );
-              heading?.focus({ preventScroll: true });
-              heading?.scrollIntoView({ block: "start" });
+              window.requestAnimationFrame(() => {
+                const heading = document.getElementById(
+                  "course-audience-heading",
+                );
+                heading?.focus({ preventScroll: true });
+                heading?.scrollIntoView({ block: "start" });
+              });
             });
-          });
-        }
-      })
+          }
+        },
+      )
       .catch((caught: unknown) => {
         if (!active) return;
         setError(
@@ -1209,6 +1284,17 @@ export function CourseWorkspaceClient({
     },
     [reload],
   );
+
+  const retryHistory = useCallback(() => {
+    setError(null);
+    void reload().catch((caught: unknown) => {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Не удалось обновить историю.",
+      );
+    });
+  }, [reload]);
 
   const selectedLesson =
     course?.lessons.find(
@@ -1354,6 +1440,12 @@ export function CourseWorkspaceClient({
           onOpenRun={openRunWorkspace}
           runs={courseRuns.filter((run) => run.lessonId === selectedLesson.id)}
           observations={courseObservations}
+          corrections={courseCorrections}
+          correctionsTruncated={courseCorrectionsTruncated}
+          correctionsUnavailable={courseCorrectionsUnavailable}
+          evidence={courseEvidence}
+          evidenceUnavailable={courseEvidenceUnavailable}
+          onReloadHistory={retryHistory}
           learners={courseAudience.effectiveLearners}
         />
       ) : (
@@ -1441,6 +1533,12 @@ export function CourseWorkspaceClient({
               <CourseHistoryPanel
                 runs={courseRuns}
                 observations={courseObservations}
+                corrections={courseCorrections}
+                correctionsTruncated={courseCorrectionsTruncated}
+                correctionsUnavailable={courseCorrectionsUnavailable}
+                evidence={courseEvidence}
+                evidenceUnavailable={courseEvidenceUnavailable}
+                onReload={retryHistory}
               />
             ) : null}
             {mounted && item.value === "attestation" ? (

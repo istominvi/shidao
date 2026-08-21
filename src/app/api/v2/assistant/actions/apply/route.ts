@@ -16,6 +16,7 @@ import {
 import { systemAssistantApplyRequestSchema } from "@/modules/ai/system-assistant-contracts";
 import { createSystemAssistantService } from "@/modules/ai/system-assistant-service";
 import { createAiCourseBuilderService } from "@/modules/ai/course-builder-service";
+import { learningActivityContextProvider } from "@/modules/ai/learning-activity-context";
 import { sharedHistoryProvider } from "@/modules/ai/shared-history";
 import { createLessonRunsServiceForActor } from "@/modules/lesson-runs/server-context";
 import { verifySystemAssistantActionProposal } from "@/modules/ai/system-assistant-proposal-signature";
@@ -59,6 +60,7 @@ export async function POST(request: NextRequest) {
       service,
       learningHistoryService: learningService,
       sharedHistoryProvider,
+      learningActivityContextProvider,
     });
     const assistant = createSystemAssistantService({
       actor,

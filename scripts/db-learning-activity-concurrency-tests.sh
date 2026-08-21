@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Real multi-session concurrency acceptance harness for LA-M2.
+# Real multi-session concurrency acceptance harness through LA-M3.
 #
 # This suite commits deliberately disposable fixtures so that independent psql
 # sessions can see them. It is guarded by the exact database name below and a
@@ -22,7 +22,7 @@ db_name="$(
     'select current_database()'
 )"
 if [[ "$db_name" != "shidao_learning_activity_test" ]]; then
-  echo "Refusing LA-M2 concurrency fixtures for database '$db_name'; expected exactly 'shidao_learning_activity_test'." >&2
+  echo "Refusing LA-M3 concurrency fixtures for database '$db_name'; expected exactly 'shidao_learning_activity_test'." >&2
   exit 2
 fi
 
@@ -37,6 +37,10 @@ schema_marker="$(
        and to_regclass('public.learning_record') is not null
        and to_regclass('public.lesson_component_observation') is not null
        and to_regclass('public.learning_objective') is not null
+       and to_regclass('public.learning_evidence') is not null
+       and to_regclass('public.learner_objective_state') is not null
+       and to_regclass('public.learner_objective_state_evidence') is not null
+       and to_regclass('public.learner_recommendation_override') is not null
        and exists (
          select 1
          from information_schema.columns
@@ -79,6 +83,24 @@ schema_marker="$(
        ) is not null
        and to_regprocedure(
          'public.complete_lesson_run_v2(uuid,jsonb,text,timestamp with time zone,integer)'
+       ) is not null
+       and to_regprocedure(
+         'public.correct_finalized_lesson_component_observation(uuid,uuid,uuid,text,text,text,uuid,timestamp with time zone)'
+       ) is not null
+       and to_regprocedure(
+         'public.get_teacher_learner_activity_profile(uuid)'
+       ) is not null
+       and to_regprocedure(
+         'public.preview_learner_profile_merge(uuid)'
+       ) is not null
+       and to_regprocedure(
+         'public.confirm_learner_profile_merge(uuid,text)'
+       ) is not null
+       and to_regprocedure(
+         'public.preview_my_learning_data_erasure()'
+       ) is not null
+       and to_regprocedure(
+         'public.confirm_my_learning_data_erasure(uuid,text)'
        ) is not null
        and to_regprocedure(
          'public.publish_course_revision_admin(uuid,uuid,uuid,uuid,text,jsonb,jsonb,boolean)'
@@ -149,10 +171,10 @@ schema_marker="$(
              'course_publication_revision_snapshot_check'
            and pg_get_constraintdef(constraint_row.oid) like '%schemaVersion%2%'
        )
-     then 'shidao-learning-activity-la-m2-publication-v2' else '' end"
+     then 'shidao-learning-activity-la-m3-publication-v2' else '' end"
 )"
-if [[ "$schema_marker" != "shidao-learning-activity-la-m2-publication-v2" ]]; then
-  echo "Refusing fixtures: '$db_name' is not a fully migrated ShiDao LA-M2/publication-V2 test database." >&2
+if [[ "$schema_marker" != "shidao-learning-activity-la-m3-publication-v2" ]]; then
+  echo "Refusing fixtures: '$db_name' is not a fully migrated ShiDao LA-M3/publication-V2 test database." >&2
   exit 2
 fi
 
@@ -173,6 +195,12 @@ race_seven_publish_log="$task_log_dir/race-seven-publish.log"
 race_seven_objective_log="$task_log_dir/race-seven-objective.log"
 race_eight_objective_log="$task_log_dir/race-eight-objective.log"
 race_eight_publish_log="$task_log_dir/race-eight-publish.log"
+race_nine_refresh_log="$task_log_dir/race-nine-refresh.log"
+race_nine_correction_log="$task_log_dir/race-nine-correction.log"
+race_ten_refresh_log="$task_log_dir/race-ten-refresh.log"
+race_ten_merge_log="$task_log_dir/race-ten-merge.log"
+race_eleven_refresh_log="$task_log_dir/race-eleven-refresh.log"
+race_eleven_erasure_log="$task_log_dir/race-eleven-erasure.log"
 
 race_one_save_pid=""
 race_one_completion_pid=""
@@ -190,6 +218,12 @@ race_seven_publish_pid=""
 race_seven_objective_pid=""
 race_eight_objective_pid=""
 race_eight_publish_pid=""
+race_nine_refresh_pid=""
+race_nine_correction_pid=""
+race_ten_refresh_pid=""
+race_ten_merge_pid=""
+race_eleven_refresh_pid=""
+race_eleven_erasure_pid=""
 
 cleanup_fixtures() {
   psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 >/dev/null <<'SQL'
@@ -208,25 +242,84 @@ $guard$;
 
 set local session_replication_role = replica;
 
+delete from public.learner_objective_state_evidence as link
+using public.learner_objective_state as state
+where link.learner_objective_state_id = state.id
+  and state.recorded_by_account_id =
+    'ca200000-0000-4000-8000-000000000001';
+
+delete from public.learner_recommendation_override
+where recorded_by_account_id =
+  'ca200000-0000-4000-8000-000000000001';
+
+delete from public.learner_objective_state
+where recorded_by_account_id =
+  'ca200000-0000-4000-8000-000000000001';
+
+delete from public.learning_evidence
+where recorded_by_account_id =
+  'ca200000-0000-4000-8000-000000000001';
+
+delete from public.learner_profile_merge_conflict
+where merge_operation_id =
+  'cac00000-0000-4000-8000-000000000001';
+
+delete from public.learner_profile_merge_private_detail
+where merge_operation_id =
+  'cac00000-0000-4000-8000-000000000001';
+
+delete from public.learner_profile_merge
+where id = 'cac00000-0000-4000-8000-000000000001';
+
+delete from public.learner_erasure_request
+where account_id = 'ca200000-0000-4000-8000-000000000002';
+
+delete from public.learner_profile_alias
+where source_learner_profile_id in (
+    'ca300000-0000-4000-8000-000000000001',
+    'ca300000-0000-4000-8000-000000000002'
+  )
+   or target_learner_profile_id in (
+    'ca300000-0000-4000-8000-000000000001',
+    'ca300000-0000-4000-8000-000000000002'
+  );
+
+delete from public.learner_identity_audit_event
+where actor_account_id in (
+    'ca200000-0000-4000-8000-000000000001',
+    'ca200000-0000-4000-8000-000000000002'
+  )
+   or subject_account_id in (
+    'ca200000-0000-4000-8000-000000000001',
+    'ca200000-0000-4000-8000-000000000002'
+  );
+
 delete from public.lesson_component_observation
-where learning_record_id in (
-  'ca800000-0000-4000-8000-000000000001',
-  'ca800000-0000-4000-8000-000000000002',
-  'ca800000-0000-4000-8000-000000000003',
-  'ca800000-0000-4000-8000-000000000004',
-  'ca800000-0000-4000-8000-000000000005',
-  'ca800000-0000-4000-8000-000000000006'
-);
+where recorded_by_account_id =
+  'ca200000-0000-4000-8000-000000000001';
 
 delete from public.learning_record
-where id in (
-  'ca800000-0000-4000-8000-000000000001',
-  'ca800000-0000-4000-8000-000000000002',
-  'ca800000-0000-4000-8000-000000000003',
-  'ca800000-0000-4000-8000-000000000004',
-  'ca800000-0000-4000-8000-000000000005',
-  'ca800000-0000-4000-8000-000000000006'
-);
+where recorded_by_account_id =
+  'ca200000-0000-4000-8000-000000000001';
+
+-- Cleanup runs with replication triggers disabled so it cannot rely on FK
+-- cascades after a merge/erasure rewrites or removes the original profiles.
+delete from public.course_learner
+where course_id in (
+    'ca400000-0000-4000-8000-000000000001',
+    'cb400000-0000-4000-8000-000000000001',
+    'cb400000-0000-4000-8000-000000000002'
+  )
+   or learner_profile_id in (
+    'ca300000-0000-4000-8000-000000000001',
+    'ca300000-0000-4000-8000-000000000002'
+  )
+   or learner_profile_id in (
+    select profile.id
+    from public.learner_profile as profile
+    where profile.account_id =
+      'ca200000-0000-4000-8000-000000000002'
+  );
 
 delete from public.lesson_run
 where id in (
@@ -293,14 +386,40 @@ where id in (
   'cb400000-0000-4000-8000-000000000002'
 );
 
+delete from public.teacher_learner
+where teacher_account_id =
+    'ca200000-0000-4000-8000-000000000001'
+  and (
+    learner_profile_id in (
+      'ca300000-0000-4000-8000-000000000001',
+      'ca300000-0000-4000-8000-000000000002'
+    )
+    or learner_profile_id in (
+      select profile.id
+      from public.learner_profile as profile
+      where profile.account_id =
+        'ca200000-0000-4000-8000-000000000002'
+    )
+  );
+
 delete from public.learner_profile
-where id = 'ca300000-0000-4000-8000-000000000001';
+where id in (
+    'ca300000-0000-4000-8000-000000000001',
+    'ca300000-0000-4000-8000-000000000002'
+  )
+   or account_id = 'ca200000-0000-4000-8000-000000000002';
 
 delete from public.account
-where id = 'ca200000-0000-4000-8000-000000000001';
+where id in (
+  'ca200000-0000-4000-8000-000000000001',
+  'ca200000-0000-4000-8000-000000000002'
+);
 
 delete from auth.users
-where id = 'ca100000-0000-4000-8000-000000000001';
+where id in (
+  'ca100000-0000-4000-8000-000000000001',
+  'ca100000-0000-4000-8000-000000000002'
+);
 
 commit;
 SQL
@@ -345,9 +464,15 @@ cleanup() {
   stop_background_session "$race_seven_objective_pid"
   stop_background_session "$race_eight_objective_pid"
   stop_background_session "$race_eight_publish_pid"
+  stop_background_session "$race_nine_refresh_pid"
+  stop_background_session "$race_nine_correction_pid"
+  stop_background_session "$race_ten_refresh_pid"
+  stop_background_session "$race_ten_merge_pid"
+  stop_background_session "$race_eleven_refresh_pid"
+  stop_background_session "$race_eleven_erasure_pid"
 
   if ! cleanup_fixtures; then
-    echo "LA-M2 concurrency fixture cleanup failed." >&2
+    echo "LA-M3 concurrency fixture cleanup failed." >&2
     cleanup_status=1
   fi
 
@@ -367,7 +492,13 @@ cleanup() {
     "$race_seven_publish_log" \
     "$race_seven_objective_log" \
     "$race_eight_objective_log" \
-    "$race_eight_publish_log"
+    "$race_eight_publish_log" \
+    "$race_nine_refresh_log" \
+    "$race_nine_correction_log" \
+    "$race_ten_refresh_log" \
+    "$race_ten_merge_log" \
+    "$race_eleven_refresh_log" \
+    "$race_eleven_erasure_log"
   rmdir "$task_log_dir" 2>/dev/null || true
 
   if [[ "$exit_status" -eq 0 && "$cleanup_status" -eq 0 ]]; then
@@ -411,13 +542,21 @@ insert into auth.users (
   raw_user_meta_data,
   raw_app_meta_data
 )
-values (
-  'ca100000-0000-4000-8000-000000000001',
-  'la-concurrency-owner@test.invalid',
-  clock_timestamp(),
-  '{}'::jsonb,
-  '{}'::jsonb
-);
+values
+  (
+    'ca100000-0000-4000-8000-000000000001',
+    'la-concurrency-owner@test.invalid',
+    clock_timestamp(),
+    '{}'::jsonb,
+    '{}'::jsonb
+  ),
+  (
+    'ca100000-0000-4000-8000-000000000002',
+    'la-concurrency-subject@test.invalid',
+    clock_timestamp(),
+    '{}'::jsonb,
+    '{}'::jsonb
+  );
 
 insert into public.account (
   id,
@@ -425,19 +564,32 @@ insert into public.account (
   display_name,
   status
 )
-values (
-  'ca200000-0000-4000-8000-000000000001',
-  'ca100000-0000-4000-8000-000000000001',
-  'LA Concurrency Owner',
-  'active'
-);
+values
+  (
+    'ca200000-0000-4000-8000-000000000001',
+    'ca100000-0000-4000-8000-000000000001',
+    'LA Concurrency Owner',
+    'active'
+  ),
+  (
+    'ca200000-0000-4000-8000-000000000002',
+    'ca100000-0000-4000-8000-000000000002',
+    'LA Concurrency Subject',
+    'active'
+  );
 
 insert into public.learner_profile (id, display_name, account_id)
-values (
-  'ca300000-0000-4000-8000-000000000001',
-  'LA Concurrency Learner',
-  null
-);
+values
+  (
+    'ca300000-0000-4000-8000-000000000001',
+    'LA Concurrency Merge Source',
+    null
+  ),
+  (
+    'ca300000-0000-4000-8000-000000000002',
+    'LA Concurrency Subject',
+    'ca200000-0000-4000-8000-000000000002'
+  );
 
 insert into public.course (
   id,
@@ -487,6 +639,34 @@ values
     1,
     'learner_profile',
     'children'
+  );
+
+insert into public.teacher_learner (
+  teacher_account_id,
+  learner_profile_id,
+  display_name
+)
+values
+  (
+    'ca200000-0000-4000-8000-000000000001',
+    'ca300000-0000-4000-8000-000000000001',
+    'LA Concurrency Merge Source'
+  ),
+  (
+    'ca200000-0000-4000-8000-000000000001',
+    'ca300000-0000-4000-8000-000000000002',
+    'LA Concurrency Subject'
+  );
+
+insert into public.course_learner (course_id, learner_profile_id)
+values
+  (
+    'ca400000-0000-4000-8000-000000000001',
+    'ca300000-0000-4000-8000-000000000001'
+  ),
+  (
+    'ca400000-0000-4000-8000-000000000001',
+    'ca300000-0000-4000-8000-000000000002'
   );
 
 insert into public.lesson (id, course_id, position, title)
@@ -645,7 +825,10 @@ values
 update public.lesson_component
 set primary_learning_objective_id =
   'ca410000-0000-4000-8000-000000000001'
-where id = 'ca600000-0000-4000-8000-000000000006';
+where id in (
+  'ca600000-0000-4000-8000-000000000004',
+  'ca600000-0000-4000-8000-000000000006'
+);
 
 insert into public.lesson_run (
   id,
@@ -763,14 +946,27 @@ values
     'ca200000-0000-4000-8000-000000000001'
   );
 
+update public.learning_record as record
+set source_course_id_at_time = record.source_course_id,
+    source_lesson_id_at_time = record.source_lesson_id,
+    source_lesson_run_id_at_time = record.lesson_run_id
+where record.recorded_by_account_id =
+  'ca200000-0000-4000-8000-000000000001'
+  and record.source_course_id =
+    'ca400000-0000-4000-8000-000000000001';
+
 insert into public.lesson_component_observation (
   id,
   learning_record_id,
   lesson_component_id,
   source_lesson_component_id_at_time,
+  learning_objective_id,
+  source_learning_objective_id_at_time,
+  learning_objective_title_at_time,
   component_position_at_time,
   component_type_key_at_time,
   component_label_at_time,
+  component_visibility_at_time,
   observable_criterion_at_time,
   rating,
   entry_method,
@@ -784,9 +980,13 @@ values
     'ca800000-0000-4000-8000-000000000003',
     'ca600000-0000-4000-8000-000000000003',
     'ca600000-0000-4000-8000-000000000003',
+    null,
+    null,
+    null,
     1,
     'discussion',
     'Deletion-first context',
+    'staff_only',
     'Draft evidence is removed before completion',
     'independent',
     'direct',
@@ -799,9 +999,13 @@ values
     'ca800000-0000-4000-8000-000000000004',
     'ca600000-0000-4000-8000-000000000004',
     'ca600000-0000-4000-8000-000000000004',
+    'ca410000-0000-4000-8000-000000000001',
+    'ca410000-0000-4000-8000-000000000001',
+    'Concurrency objective A',
     1,
     'discussion',
-    'Completion-first context',
+    'LA_M3_STAFF_ONLY_CONCURRENCY_SENTINEL',
+    'staff_only',
     'Final evidence survives authored deletion',
     'with_support',
     'direct',
@@ -830,6 +1034,12 @@ race_seven_publish_app="la_m2_${session_suffix}_publish_before_objective"
 race_seven_objective_app="la_m2_${session_suffix}_objective_after_publish"
 race_eight_objective_app="la_m2_${session_suffix}_objective_before_publish"
 race_eight_publish_app="la_m2_${session_suffix}_publish_after_objective"
+race_nine_refresh_app="la_m3_${session_suffix}_refresh_before_correction"
+race_nine_correction_app="la_m3_${session_suffix}_correction_after_refresh"
+race_ten_refresh_app="la_m3_${session_suffix}_refresh_before_merge"
+race_ten_merge_app="la_m3_${session_suffix}_merge_after_refresh"
+race_eleven_refresh_app="la_m3_${session_suffix}_refresh_before_erasure"
+race_eleven_erasure_app="la_m3_${session_suffix}_erasure_after_refresh"
 
 wait_for_sleeping_session() {
   local application_name="$1"
@@ -1375,11 +1585,38 @@ race_four_state="$(
              'ca600000-0000-4000-8000-000000000004'
            and component_position_at_time = 1
            and component_type_key_at_time = 'discussion'
-           and component_label_at_time = 'Completion-first context'
+           and component_label_at_time =
+             'LA_M3_STAFF_ONLY_CONCURRENCY_SENTINEL'
+           and component_visibility_at_time = 'staff_only'
            and observable_criterion_at_time =
              'Final evidence survives authored deletion'
            and rating = 'with_support'
            and private_note = 'Completion-first private note'
+       )
+       and exists (
+         select 1
+         from public.learning_evidence as evidence
+         where evidence.learning_record_id =
+             'ca800000-0000-4000-8000-000000000004'
+           and evidence.source_observation_id =
+             'ca900000-0000-4000-8000-000000000004'
+           and evidence.lesson_component_id is null
+           and evidence.source_learning_objective_id_at_time =
+             'ca410000-0000-4000-8000-000000000001'
+           and evidence.component_visibility_at_time = 'staff_only'
+           and evidence.support = 'with_support'
+       )
+       and exists (
+         select 1
+         from public.learner_objective_state as state
+         where state.learner_profile_id =
+             'ca300000-0000-4000-8000-000000000001'
+           and state.recorded_by_account_id =
+             'ca200000-0000-4000-8000-000000000001'
+           and state.source_learning_objective_id_at_time =
+             'ca410000-0000-4000-8000-000000000001'
+           and state.status = 'forming'
+           and state.reason_code = 'latest_with_support'
        )
      then 'serialized' else '' end"
 )"
@@ -1959,5 +2196,479 @@ race_eight_state="$(
 )"
 if [[ "$race_eight_state" != "serialized" ]]; then
   echo "Race 8 publication did not capture the committed objective graph." >&2
+  exit 1
+fi
+
+# Race 9: an authenticated teacher profile refresh rebuilds the persisted
+# projection and retains the learner transaction lock until commit. A
+# correction must visibly wait, then atomically supersede record, observation,
+# evidence and state without a deadlock or stale post-refresh projection.
+PGAPPNAME="$race_nine_refresh_app" \
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  >"$race_nine_refresh_log" 2>&1 <<'SQL' &
+begin;
+set local statement_timeout = '15s';
+select set_config(
+  'request.jwt.claim.sub',
+  'ca100000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.get_teacher_learner_activity_profile(
+  'ca300000-0000-4000-8000-000000000001'
+);
+select pg_sleep(6);
+commit;
+SQL
+race_nine_refresh_pid=$!
+
+if ! wait_for_sleeping_session \
+  "$race_nine_refresh_app" \
+  "$race_nine_refresh_pid"; then
+  echo "Race 9 refresh did not reach its learner-lock hold." >&2
+  print_session_log "Race 9 refresh log" "$race_nine_refresh_log"
+  exit 1
+fi
+
+PGAPPNAME="$race_nine_correction_app" \
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  >"$race_nine_correction_log" 2>&1 <<'SQL' &
+begin;
+set local statement_timeout = '15s';
+select set_config(
+  'request.jwt.claim.sub',
+  'ca100000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.correct_finalized_lesson_component_observation(
+  'ca900000-0000-4000-8000-000000000004',
+  'ca300000-0000-4000-8000-000000000001',
+  'ca800000-0000-4000-8000-000000000004',
+  'not_yet',
+  'Race 9 corrected private note',
+  'Race 9 correction after refresh',
+  'cae00000-0000-4000-8000-000000000009',
+  '2099-01-01 00:00:00+00'
+);
+commit;
+SQL
+race_nine_correction_pid=$!
+
+if ! wait_for_blocked_pair \
+  "$race_nine_correction_app" \
+  "$race_nine_refresh_app" \
+  "$race_nine_correction_pid"; then
+  echo "Race 9 correction was not observed waiting on refresh." >&2
+  print_session_log "Race 9 refresh log" "$race_nine_refresh_log"
+  print_session_log "Race 9 correction log" "$race_nine_correction_log"
+  exit 1
+fi
+
+set +e
+wait "$race_nine_refresh_pid"
+race_nine_refresh_status=$?
+race_nine_refresh_pid=""
+wait "$race_nine_correction_pid"
+race_nine_correction_status=$?
+race_nine_correction_pid=""
+set -e
+
+if [[ "$race_nine_refresh_status" -ne 0 ]] \
+  || [[ "$race_nine_correction_status" -ne 0 ]]; then
+  echo "Race 9 refresh/correction transactions did not both commit." >&2
+  print_session_log "Race 9 refresh log" "$race_nine_refresh_log"
+  print_session_log "Race 9 correction log" "$race_nine_correction_log"
+  exit 1
+fi
+
+race_nine_state="$(
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc \
+    "select case when
+       exists (
+         select 1
+         from public.learning_record as source_record
+         join public.learning_record as corrected_record
+           on corrected_record.id = source_record.superseded_by_record_id
+          and corrected_record.corrected_from_record_id = source_record.id
+         join public.lesson_component_observation as corrected_observation
+           on corrected_observation.learning_record_id = corrected_record.id
+          and corrected_observation.corrected_from_observation_id =
+            'ca900000-0000-4000-8000-000000000004'
+         where source_record.id =
+             'ca800000-0000-4000-8000-000000000004'
+           and corrected_record.correction_idempotency_key =
+             'cae00000-0000-4000-8000-000000000009'
+           and corrected_record.superseded_by_record_id is null
+           and corrected_observation.rating = 'not_yet'
+           and corrected_observation.private_note =
+             'Race 9 corrected private note'
+           and corrected_observation.component_visibility_at_time =
+             'staff_only'
+       )
+       and exists (
+         select 1
+         from public.learning_evidence as prior_evidence
+         join public.learning_evidence as corrected_evidence
+           on corrected_evidence.id =
+             prior_evidence.superseded_by_evidence_id
+          and corrected_evidence.supersedes_evidence_id = prior_evidence.id
+         where prior_evidence.source_observation_id =
+             'ca900000-0000-4000-8000-000000000004'
+           and corrected_evidence.direction = 'negative'
+           and corrected_evidence.support is null
+           and corrected_evidence.component_visibility_at_time = 'staff_only'
+       )
+       and exists (
+         select 1
+         from public.learner_objective_state as state
+         join public.learner_objective_state_evidence as link
+           on link.learner_objective_state_id = state.id
+         join public.learning_evidence as evidence
+           on evidence.id = link.learning_evidence_id
+         where state.learner_profile_id =
+             'ca300000-0000-4000-8000-000000000001'
+           and state.recorded_by_account_id =
+             'ca200000-0000-4000-8000-000000000001'
+           and state.source_learning_objective_id_at_time =
+             'ca410000-0000-4000-8000-000000000001'
+           and state.status = 'forming'
+           and state.reason_code = 'latest_not_yet'
+           and evidence.direction = 'negative'
+           and evidence.superseded_by_evidence_id is null
+       )
+     then 'serialized' else '' end"
+)"
+if [[ "$race_nine_state" != "serialized" ]]; then
+  echo "Race 9 left a stale or split correction projection." >&2
+  exit 1
+fi
+
+# Prepare a canonical merge into an account-owned subject profile. Preview is
+# committed first so the race tests the real fingerprinted confirmation path.
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 >/dev/null <<'SQL'
+-- Earlier lifecycle races deliberately leave open draft attendance rows. They
+-- are unrelated to the finalized LA-M3 projection under test and are a
+-- documented canonical-merge blocker, so close that fixture-only surface
+-- before previewing the dedicated merge race.
+delete from public.learning_record
+where learner_profile_id = 'ca300000-0000-4000-8000-000000000001'
+  and occurred_at is null;
+
+insert into public.learner_profile_merge (
+  id,
+  source_learner_profile_id,
+  target_learner_profile_id,
+  requested_by_account_id,
+  subject_account_id,
+  expires_at
+) values (
+  'cac00000-0000-4000-8000-000000000001',
+  'ca300000-0000-4000-8000-000000000001',
+  'ca300000-0000-4000-8000-000000000002',
+  'ca200000-0000-4000-8000-000000000001',
+  'ca200000-0000-4000-8000-000000000002',
+  clock_timestamp() + interval '1 day'
+);
+SQL
+
+race_ten_merge_fingerprint="$(
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc \
+    "with configured as materialized (
+       select set_config(
+         'request.jwt.claim.sub',
+         'ca100000-0000-4000-8000-000000000002',
+         false
+       )
+     )
+     select public.preview_learner_profile_merge(
+       'cac00000-0000-4000-8000-000000000001'
+     ) ->> 'previewFingerprint'
+     from configured"
+)"
+if [[ -z "$race_ten_merge_fingerprint" ]]; then
+  echo "Race 10 merge preview did not produce a fingerprint." >&2
+  exit 1
+fi
+
+race_ten_merge_can_confirm="$(
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc \
+    "select preview_payload ->> 'canConfirm'
+     from public.learner_profile_merge
+     where id = 'cac00000-0000-4000-8000-000000000001'"
+)"
+if [[ "$race_ten_merge_can_confirm" != "true" ]]; then
+  echo "Race 10 merge preview unexpectedly retained blockers." >&2
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc \
+    "select preview_payload -> 'blockers'
+     from public.learner_profile_merge
+     where id = 'cac00000-0000-4000-8000-000000000001'" >&2
+  exit 1
+fi
+
+# Race 10: a teacher refresh owns the source learner lock. Canonical merge
+# confirmation must wait, then move every active/corrected LA-M3 row to the
+# target with no source residue and one deterministic state projection.
+PGAPPNAME="$race_ten_refresh_app" \
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  >"$race_ten_refresh_log" 2>&1 <<'SQL' &
+begin;
+set local statement_timeout = '15s';
+select set_config(
+  'request.jwt.claim.sub',
+  'ca100000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+select public.get_teacher_learner_activity_profile(
+  'ca300000-0000-4000-8000-000000000001'
+);
+select pg_sleep(6);
+commit;
+SQL
+race_ten_refresh_pid=$!
+
+if ! wait_for_sleeping_session \
+  "$race_ten_refresh_app" \
+  "$race_ten_refresh_pid"; then
+  echo "Race 10 refresh did not reach its learner-lock hold." >&2
+  print_session_log "Race 10 refresh log" "$race_ten_refresh_log"
+  exit 1
+fi
+
+PGAPPNAME="$race_ten_merge_app" \
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  >"$race_ten_merge_log" 2>&1 <<SQL &
+begin;
+set local statement_timeout = '15s';
+select set_config(
+  'request.jwt.claim.sub',
+  'ca100000-0000-4000-8000-000000000002',
+  true
+);
+set local role authenticated;
+select public.confirm_learner_profile_merge(
+  'cac00000-0000-4000-8000-000000000001',
+  '$race_ten_merge_fingerprint'
+);
+commit;
+SQL
+race_ten_merge_pid=$!
+
+if ! wait_for_blocked_pair \
+  "$race_ten_merge_app" \
+  "$race_ten_refresh_app" \
+  "$race_ten_merge_pid"; then
+  echo "Race 10 merge was not observed waiting on refresh." >&2
+  print_session_log "Race 10 refresh log" "$race_ten_refresh_log"
+  print_session_log "Race 10 merge log" "$race_ten_merge_log"
+  exit 1
+fi
+
+set +e
+wait "$race_ten_refresh_pid"
+race_ten_refresh_status=$?
+race_ten_refresh_pid=""
+wait "$race_ten_merge_pid"
+race_ten_merge_status=$?
+race_ten_merge_pid=""
+set -e
+
+if [[ "$race_ten_refresh_status" -ne 0 ]] \
+  || [[ "$race_ten_merge_status" -ne 0 ]]; then
+  echo "Race 10 refresh/merge transactions did not both commit." >&2
+  print_session_log "Race 10 refresh log" "$race_ten_refresh_log"
+  print_session_log "Race 10 merge log" "$race_ten_merge_log"
+  exit 1
+fi
+
+race_ten_state="$(
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc \
+    "select case when
+       not exists (
+         select 1 from public.learner_profile
+         where id = 'ca300000-0000-4000-8000-000000000001'
+       )
+       and exists (
+         select 1 from public.learner_profile_merge
+         where id = 'cac00000-0000-4000-8000-000000000001'
+           and status = 'completed'
+           and completed_at is not null
+       )
+       and not exists (
+         select 1 from public.learning_record
+         where learner_profile_id =
+           'ca300000-0000-4000-8000-000000000001'
+       )
+       and not exists (
+         select 1 from public.learning_evidence
+         where learner_profile_id =
+           'ca300000-0000-4000-8000-000000000001'
+       )
+       and not exists (
+         select 1 from public.learner_objective_state
+         where learner_profile_id =
+           'ca300000-0000-4000-8000-000000000001'
+       )
+       and exists (
+         select 1
+         from public.learner_objective_state as state
+         join public.learner_objective_state_evidence as link
+           on link.learner_objective_state_id = state.id
+         join public.learning_evidence as evidence
+           on evidence.id = link.learning_evidence_id
+         where state.learner_profile_id =
+             'ca300000-0000-4000-8000-000000000002'
+           and state.recorded_by_account_id =
+             'ca200000-0000-4000-8000-000000000001'
+           and state.source_learning_objective_id_at_time =
+             'ca410000-0000-4000-8000-000000000001'
+           and state.reason_code = 'latest_not_yet'
+           and evidence.learner_profile_id = state.learner_profile_id
+           and evidence.direction = 'negative'
+       )
+     then 'serialized' else '' end"
+)"
+if [[ "$race_ten_state" != "serialized" ]]; then
+  echo "Race 10 left source LA-M3 rows or missed the target rebuild." >&2
+  exit 1
+fi
+
+race_eleven_erasure_fingerprint="$(
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc \
+    "with configured as materialized (
+       select set_config(
+         'request.jwt.claim.sub',
+         'ca100000-0000-4000-8000-000000000002',
+         false
+       )
+     )
+     select public.preview_my_learning_data_erasure()
+       ->> 'previewFingerprint'
+     from configured"
+)"
+if [[ -z "$race_eleven_erasure_fingerprint" ]]; then
+  echo "Race 11 erasure preview did not produce a fingerprint." >&2
+  exit 1
+fi
+
+# Race 11: the subject-safe refresh holds the target profile lock after
+# rebuilding all recorder projections. Service-side erasure must wait, then
+# remove the complete corrected history/evidence/state and create only the
+# canonical fresh account profile.
+PGAPPNAME="$race_eleven_refresh_app" \
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  >"$race_eleven_refresh_log" 2>&1 <<'SQL' &
+begin;
+set local statement_timeout = '15s';
+select set_config(
+  'request.jwt.claim.sub',
+  'ca100000-0000-4000-8000-000000000002',
+  true
+);
+set local role authenticated;
+select public.get_my_learning_activity_profile();
+select pg_sleep(6);
+commit;
+SQL
+race_eleven_refresh_pid=$!
+
+if ! wait_for_sleeping_session \
+  "$race_eleven_refresh_app" \
+  "$race_eleven_refresh_pid"; then
+  echo "Race 11 refresh did not reach its learner-lock hold." >&2
+  print_session_log "Race 11 refresh log" "$race_eleven_refresh_log"
+  exit 1
+fi
+
+PGAPPNAME="$race_eleven_erasure_app" \
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  >"$race_eleven_erasure_log" 2>&1 <<SQL &
+begin;
+set local statement_timeout = '15s';
+set local role service_role;
+select public.confirm_my_learning_data_erasure(
+  'ca100000-0000-4000-8000-000000000002',
+  '$race_eleven_erasure_fingerprint'
+);
+commit;
+SQL
+race_eleven_erasure_pid=$!
+
+if ! wait_for_blocked_pair \
+  "$race_eleven_erasure_app" \
+  "$race_eleven_refresh_app" \
+  "$race_eleven_erasure_pid"; then
+  echo "Race 11 erasure was not observed waiting on refresh." >&2
+  print_session_log "Race 11 refresh log" "$race_eleven_refresh_log"
+  print_session_log "Race 11 erasure log" "$race_eleven_erasure_log"
+  exit 1
+fi
+
+set +e
+wait "$race_eleven_refresh_pid"
+race_eleven_refresh_status=$?
+race_eleven_refresh_pid=""
+wait "$race_eleven_erasure_pid"
+race_eleven_erasure_status=$?
+race_eleven_erasure_pid=""
+set -e
+
+if [[ "$race_eleven_refresh_status" -ne 0 ]] \
+  || [[ "$race_eleven_erasure_status" -ne 0 ]]; then
+  echo "Race 11 refresh/erasure transactions did not both commit." >&2
+  print_session_log "Race 11 refresh log" "$race_eleven_refresh_log"
+  print_session_log "Race 11 erasure log" "$race_eleven_erasure_log"
+  exit 1
+fi
+
+race_eleven_state="$(
+  psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc \
+    "select case when
+       not exists (
+         select 1 from public.learner_profile
+         where id in (
+           'ca300000-0000-4000-8000-000000000001',
+           'ca300000-0000-4000-8000-000000000002'
+         )
+       )
+       and (
+         select count(*)
+         from public.learner_profile
+         where account_id =
+           'ca200000-0000-4000-8000-000000000002'
+       ) = 1
+       and not exists (
+         select 1 from public.learning_record
+         where learner_profile_id in (
+           'ca300000-0000-4000-8000-000000000001',
+           'ca300000-0000-4000-8000-000000000002'
+         )
+       )
+       and not exists (
+         select 1 from public.learning_evidence
+         where learner_profile_id in (
+           'ca300000-0000-4000-8000-000000000001',
+           'ca300000-0000-4000-8000-000000000002'
+         )
+       )
+       and not exists (
+         select 1 from public.learner_objective_state
+         where learner_profile_id in (
+           'ca300000-0000-4000-8000-000000000001',
+           'ca300000-0000-4000-8000-000000000002'
+         )
+       )
+       and not exists (
+         select 1 from public.learner_recommendation_override
+         where learner_profile_id in (
+           'ca300000-0000-4000-8000-000000000001',
+           'ca300000-0000-4000-8000-000000000002'
+         )
+       )
+     then 'serialized' else '' end"
+)"
+if [[ "$race_eleven_state" != "serialized" ]]; then
+  echo "Race 11 retained erased LA-M3 history or broke account identity." >&2
   exit 1
 fi

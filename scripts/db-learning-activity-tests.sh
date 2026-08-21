@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Transactional acceptance harness for LA-M2 learning activities.
+# Transactional acceptance harness for LA-M3 learning activities.
 #
 # This script is deliberately impossible to point at the live ShiDao database:
 # the connected database name must be exactly `shidao_learning_activity_test`.
@@ -24,7 +24,7 @@ db_name="$(
     'select current_database()'
 )"
 if [[ "$db_name" != "shidao_learning_activity_test" ]]; then
-  echo "Refusing LA-M2 fixtures for database '$db_name'; expected exactly 'shidao_learning_activity_test'." >&2
+  echo "Refusing LA-M3 fixtures for database '$db_name'; expected exactly 'shidao_learning_activity_test'." >&2
   exit 2
 fi
 
@@ -39,6 +39,24 @@ schema_marker="$(
        and to_regclass('public.learning_record') is not null
        and to_regclass('public.lesson_component_observation') is not null
        and to_regclass('public.learning_objective') is not null
+       and to_regclass('public.learning_evidence') is not null
+       and to_regclass('public.learner_objective_state') is not null
+       and to_regclass('public.learner_objective_state_evidence') is not null
+       and to_regclass('public.learner_recommendation_override') is not null
+       and exists (
+         select 1
+         from information_schema.columns
+         where table_schema = 'public'
+           and table_name = 'lesson_component_observation'
+           and column_name = 'component_visibility_at_time'
+       )
+       and exists (
+         select 1
+         from information_schema.columns
+         where table_schema = 'public'
+           and table_name = 'learning_evidence'
+           and column_name = 'component_visibility_at_time'
+       )
        and exists (
          select 1
          from information_schema.columns
@@ -82,6 +100,27 @@ schema_marker="$(
        and to_regprocedure(
          'public.complete_lesson_run_v2(uuid,jsonb,text,timestamp with time zone,integer)'
        ) is not null
+       and to_regprocedure(
+         'public.correct_finalized_lesson_component_observation(uuid,uuid,uuid,text,text,text,uuid,timestamp with time zone)'
+       ) is not null
+       and to_regprocedure(
+         'public.get_teacher_learning_record_correction_history(uuid[])'
+       ) is not null
+       and to_regprocedure(
+         'public.get_teacher_learner_activity_profile(uuid)'
+       ) is not null
+       and to_regprocedure(
+         'public.get_my_learning_activity_profile()'
+       ) is not null
+       and to_regprocedure(
+         'public.get_observed_learner_activity_profile(uuid)'
+       ) is not null
+       and to_regprocedure(
+         'public.build_course_learning_activity_context(uuid,uuid)'
+       ) is not null
+       and to_regprocedure(
+         'public.build_cross_provider_learner_context(uuid,uuid)'
+       ) is not null
        and position(
          'lesson_run_absent_learner_has_observation'
          in pg_get_functiondef(to_regprocedure(
@@ -117,10 +156,10 @@ schema_marker="$(
            'public.update_lesson_component_v2(uuid,jsonb,boolean,jsonb,boolean,uuid,boolean,text,boolean)'
          )))
        )
-     then 'shidao-learning-activity-la-m2' else '' end"
+     then 'shidao-learning-activity-la-m3' else '' end"
 )"
-if [[ "$schema_marker" != "shidao-learning-activity-la-m2" ]]; then
-  echo "Refusing fixtures: '$db_name' is not a fully migrated ShiDao LA-M2 test database." >&2
+if [[ "$schema_marker" != "shidao-learning-activity-la-m3" ]]; then
+  echo "Refusing fixtures: '$db_name' is not a fully migrated ShiDao LA-M3 test database." >&2
   exit 2
 fi
 
@@ -151,6 +190,10 @@ begin
     or to_regclass('public.learning_record') is null
     or to_regclass('public.lesson_component_observation') is null
     or to_regclass('public.learning_objective') is null
+    or to_regclass('public.learning_evidence') is null
+    or to_regclass('public.learner_objective_state') is null
+    or to_regclass('public.learner_objective_state_evidence') is null
+    or to_regclass('public.learner_recommendation_override') is null
     or not exists (
       select 1
       from information_schema.columns
@@ -193,6 +236,21 @@ begin
     ) is null
     or to_regprocedure(
       'public.complete_lesson_run_v2(uuid,jsonb,text,timestamp with time zone,integer)'
+    ) is null
+    or to_regprocedure(
+      'public.correct_finalized_lesson_component_observation(uuid,uuid,uuid,text,text,text,uuid,timestamp with time zone)'
+    ) is null
+    or to_regprocedure(
+      'public.get_teacher_learner_activity_profile(uuid)'
+    ) is null
+    or to_regprocedure(
+      'public.get_my_learning_activity_profile()'
+    ) is null
+    or to_regprocedure(
+      'public.get_observed_learner_activity_profile(uuid)'
+    ) is null
+    or to_regprocedure(
+      'public.build_course_learning_activity_context(uuid,uuid)'
     ) is null
     or position(
       'for update of component'
@@ -298,6 +356,175 @@ select pg_temp.assert_true(
       and relation.relrowsecurity
   ),
   'learning-objective RLS is not enabled'
+);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from (
+      values
+        ('learning_evidence'),
+        ('learner_objective_state'),
+        ('learner_objective_state_evidence'),
+        ('learner_recommendation_override')
+    ) as expected(table_name)
+    where not exists (
+      select 1
+      from pg_class as relation
+      join pg_namespace as namespace on namespace.oid = relation.relnamespace
+      where namespace.nspname = 'public'
+        and relation.relname = expected.table_name
+        and relation.relrowsecurity
+    )
+  ),
+  'one or more LA-M3 evidence/profile tables lack RLS'
+);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1
+    from (
+      values
+        ('learning_evidence'),
+        ('learner_objective_state'),
+        ('learner_objective_state_evidence'),
+        ('learner_recommendation_override')
+    ) as expected(table_name)
+    where has_table_privilege(
+      'service_role', 'public.' || expected.table_name, 'SELECT'
+    )
+      or has_table_privilege(
+        'authenticated', 'public.' || expected.table_name, 'INSERT'
+      )
+      or has_table_privilege(
+        'authenticated', 'public.' || expected.table_name, 'UPDATE'
+      )
+      or has_table_privilege(
+        'authenticated', 'public.' || expected.table_name, 'DELETE'
+      )
+      or not has_table_privilege(
+        'authenticated', 'public.' || expected.table_name, 'SELECT'
+      )
+  ),
+  'LA-M3 raw table ACL is broader than recorder-scoped SELECT'
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from pg_constraint
+    where conrelid = 'public.learning_evidence'::regclass
+      and conname = 'learning_evidence_record_identity_fkey'
+      and contype = 'f'
+      and convalidated
+  )
+    and exists (
+      select 1
+      from pg_constraint
+      where conrelid =
+        'public.learner_objective_state_evidence'::regclass
+        and conname =
+          'learner_objective_state_evidence_state_identity_fkey'
+        and contype = 'f'
+        and convalidated
+    )
+    and exists (
+      select 1
+      from pg_constraint
+      where conrelid =
+        'public.learner_objective_state_evidence'::regclass
+        and conname =
+          'learner_objective_state_evidence_fact_identity_fkey'
+        and contype = 'f'
+        and convalidated
+    ),
+  'LA-M3 evidence/state identity constraints are absent'
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'lesson_component_observation'
+      and column_name = 'component_visibility_at_time'
+      and is_nullable = 'YES'
+  )
+    and exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'learning_evidence'
+        and column_name = 'component_visibility_at_time'
+        and is_nullable = 'NO'
+    )
+    and exists (
+      select 1
+      from pg_trigger
+      where tgrelid = 'public.lesson_component_observation'::regclass
+        and tgname = 'trg_observation_component_visibility'
+        and not tgisinternal
+    ),
+  'LA-M3 visibility-at-time capture contract is absent'
+);
+
+select pg_temp.assert_true(
+  has_function_privilege(
+    'service_role',
+    'public.complete_lesson_run_v2(uuid,jsonb,text,timestamp with time zone,integer)',
+    'EXECUTE'
+  )
+    and has_function_privilege(
+    'authenticated',
+    'public.get_teacher_learner_activity_profile(uuid)',
+    'EXECUTE'
+  )
+    and has_function_privilege(
+      'authenticated',
+      'public.get_teacher_learning_record_correction_history(uuid[])',
+      'EXECUTE'
+    )
+    and not has_function_privilege(
+      'service_role',
+      'public.get_teacher_learning_record_correction_history(uuid[])',
+      'EXECUTE'
+    )
+    and has_function_privilege(
+      'authenticated',
+      'public.get_my_learning_activity_profile()',
+      'EXECUTE'
+    )
+    and has_function_privilege(
+      'authenticated',
+      'public.get_observed_learner_activity_profile(uuid)',
+      'EXECUTE'
+    )
+    and not has_function_privilege(
+      'authenticated',
+      'public.build_course_learning_activity_context(uuid,uuid)',
+      'EXECUTE'
+    )
+    and has_function_privilege(
+      'service_role',
+      'public.build_course_learning_activity_context(uuid,uuid)',
+      'EXECUTE'
+    )
+    and has_function_privilege(
+      'service_role',
+      'public.build_cross_provider_learner_context(uuid,uuid)',
+      'EXECUTE'
+    )
+    and not has_function_privilege(
+      'authenticated',
+      'public.build_cross_provider_learner_context(uuid,uuid)',
+      'EXECUTE'
+    )
+    and not has_function_privilege(
+      'authenticated',
+      'public.rebuild_learner_objective_states(uuid,uuid,timestamp with time zone)',
+      'EXECUTE'
+    ),
+  'LA-M3 completion/profile/provider/rebuild RPC ACL is wrong'
 );
 
 select pg_temp.assert_true(
@@ -981,6 +1208,23 @@ values
     'b2000000-0000-4000-8000-000000000001'
   );
 
+-- Fixture bootstrap runs with triggers disabled so the local auth clone does
+-- not synthesize duplicate identities. Mirror the stable source fields that
+-- the LA-M3 insert trigger captures on ordinary runtime-created records.
+update public.learning_record as record
+set source_course_id_at_time = record.source_course_id,
+    source_lesson_id_at_time = record.source_lesson_id,
+    source_lesson_run_id_at_time = record.lesson_run_id
+where record.id in (
+  'b8000000-0000-4000-8000-000000000001',
+  'b8000000-0000-4000-8000-000000000002',
+  'b8000000-0000-4000-8000-000000000003',
+  'b8000000-0000-4000-8000-000000000004',
+  'b8000000-0000-4000-8000-000000000005',
+  'b8000000-0000-4000-8000-000000000006',
+  'b8000000-0000-4000-8000-000000000007'
+);
+
 -- A pre-LA-M2-shaped row proves the additive columns remain all-null for
 -- legacy observations. It deliberately omits every objective column.
 insert into public.lesson_component_observation (
@@ -1622,6 +1866,42 @@ select pg_temp.assert_true(
   'null rating did not clear the open draft'
 );
 
+-- Keep one live LA-M3 objective aligned to the three finalized-run fixtures
+-- below.  The earlier LA-M2 objective is deliberately archived/deleted above
+-- to prove at-time retention, so it cannot drive the M3 materializer.
+select id::text as m3_objective_id
+from public.create_learning_objective(
+  'b4000000-0000-4000-8000-000000000001',
+  'Цель профиля LA-M3',
+  null
+)
+\gset
+
+select id::text as m3_no_data_objective_id
+from public.create_learning_objective(
+  'b4000000-0000-4000-8000-000000000001',
+  'Цель без данных LA-M3',
+  null
+)
+\gset
+
+select (public.update_lesson_component_v2(
+  component_id,
+  null,
+  false,
+  null,
+  false,
+  :'m3_objective_id'::uuid,
+  true,
+  null,
+  false
+)).id
+from unnest(array[
+  'b6000000-0000-4000-8000-000000000005'::uuid,
+  'b6000000-0000-4000-8000-000000000006'::uuid,
+  'b6000000-0000-4000-8000-000000000007'::uuid
+]) as aligned(component_id);
+
 select count(*)
 from public.save_lesson_component_observations(
   'b7000000-0000-4000-8000-000000000002',
@@ -1755,6 +2035,82 @@ select public.complete_lesson_run_v2(
   20
 );
 
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.learning_evidence as evidence
+    where evidence.learning_record_id =
+        'b8000000-0000-4000-8000-000000000005'
+      and evidence.learner_profile_id =
+        'b3000000-0000-4000-8000-000000000001'
+      and evidence.recorded_by_account_id =
+        'b2000000-0000-4000-8000-000000000001'
+      and evidence.source_course_id_at_time =
+        'b4000000-0000-4000-8000-000000000001'
+      and evidence.source_learning_objective_id_at_time =
+        :'m3_objective_id'::uuid
+      and evidence.direction = 'positive'
+      and evidence.support = 'with_support'
+      and evidence.reason_code = 'supported_positive_evidence'
+      and evidence.component_visibility_at_time = 'staff_only'
+      and evidence.evidence_version = 1
+      and evidence.eligibility_policy_version = 1
+  )
+  ,
+  'completion did not materialize objective evidence'
+);
+
+select pg_temp.assert_true(
+  exists (
+      select 1
+      from public.learner_objective_state as state
+      where state.learner_profile_id =
+          'b3000000-0000-4000-8000-000000000001'
+        and state.recorded_by_account_id =
+          'b2000000-0000-4000-8000-000000000001'
+        and state.source_learning_objective_id_at_time =
+          :'m3_objective_id'::uuid
+        and state.status = 'forming'
+        and state.reason_code = 'latest_with_support'
+        and state.policy_version = 1
+        and (
+          select count(*)
+          from public.learner_objective_state_evidence as link
+          join public.learning_evidence as evidence
+            on evidence.id = link.learning_evidence_id
+          where link.learner_objective_state_id = state.id
+            and link.recorded_by_account_id = state.recorded_by_account_id
+            and link.learner_profile_id = state.learner_profile_id
+            and link.source_course_id_at_time =
+              state.source_course_id_at_time
+            and link.source_learning_objective_id_at_time =
+              state.source_learning_objective_id_at_time
+            and evidence.learning_record_id =
+              'b8000000-0000-4000-8000-000000000005'
+        ) = 1
+  ),
+  'completion did not rebuild the forming objective state'
+);
+
+reset role;
+select pg_temp.assert_raises(
+  $sql$
+    update public.learning_evidence
+    set criterion_at_time = 'Подмена неизменяемого доказательства'
+    where learning_record_id =
+      'b8000000-0000-4000-8000-000000000005'
+  $sql$,
+  '55000',
+  'learning_evidence_immutable',
+  'materialized evidence accepted an in-place semantic rewrite'
+);
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+
 select pg_temp.assert_raises(
   $sql$
     select *
@@ -1781,8 +2137,8 @@ select count(*)
 from public.save_lesson_component_observations(
   'b7000000-0000-4000-8000-000000000006',
   'b6000000-0000-4000-8000-000000000006',
-  'Снимок компонента',
-  'Сохраняет критерий',
+  'STAFF_ONLY_COMPONENT_SENTINEL_LA_M3',
+  'STAFF_ONLY_CRITERION_SENTINEL_LA_M3',
   'direct',
   '[{
     "learningRecordId":"b8000000-0000-4000-8000-000000000006",
@@ -1797,6 +2153,307 @@ select public.complete_lesson_run_v2(
   null,
   '2026-08-19 10:25:00+09',
   20
+);
+
+select id::text as m3_source_observation_id
+from public.lesson_component_observation
+where learning_record_id = 'b8000000-0000-4000-8000-000000000006'
+\gset
+
+select pg_temp.assert_raises(
+  format(
+    'select public.correct_finalized_lesson_component_observation(%L::uuid,%L::uuid,%L::uuid,%L,%L,%L,%L::uuid,%L::timestamptz)',
+    :'m3_source_observation_id',
+    'b3000000-0000-4000-8000-000000000001',
+    'b8000000-0000-4000-8000-000000000006',
+    'independent',
+    'Сохранить заметку',
+    'Ничего фактически не изменилось',
+    'ba900000-0000-4000-8000-000000000002',
+    '2099-01-01 00:00:00+00'
+  ),
+  '22023',
+  'learning_observation_correction_no_change',
+  'no-op correction created an ambiguous copied-observation lineage'
+);
+
+select public.correct_finalized_lesson_component_observation(
+  :'m3_source_observation_id'::uuid,
+  'b3000000-0000-4000-8000-000000000001',
+  'b8000000-0000-4000-8000-000000000006',
+  'not_yet',
+  'Закрытая заметка коррекции LA-M3',
+  'Исправлена ошибочная оценка',
+  'ba900000-0000-4000-8000-000000000001',
+  '2099-01-01 00:00:00+00'
+)::text as m3_correction_result
+\gset
+
+select pg_temp.assert_true(
+  (:'m3_correction_result'::jsonb ->> 'correctedAt')::timestamptz
+      < '2099-01-01 00:00:00+00'::timestamptz
+    and not (:'m3_correction_result'::jsonb ->> 'replayed')::boolean
+    and exists (
+      select 1
+      from public.learning_record as source_record
+      join public.learning_record as replacement_record
+        on replacement_record.id =
+          (:'m3_correction_result'::jsonb
+            ->> 'newLearningRecordId')::uuid
+       and replacement_record.corrected_from_record_id = source_record.id
+       and source_record.superseded_by_record_id = replacement_record.id
+      join public.lesson_component_observation as source_observation
+        on source_observation.id = :'m3_source_observation_id'::uuid
+       and source_observation.learning_record_id = source_record.id
+      join public.lesson_component_observation as replacement_observation
+        on replacement_observation.id =
+          (:'m3_correction_result'::jsonb ->> 'newObservationId')::uuid
+       and replacement_observation.corrected_from_observation_id =
+          source_observation.id
+       and source_observation.superseded_by_observation_id =
+          replacement_observation.id
+       and replacement_observation.rating = 'not_yet'
+      where source_record.id =
+        'b8000000-0000-4000-8000-000000000006'
+    )
+    and exists (
+      select 1
+      from public.learning_evidence as old_evidence
+      join public.learning_evidence as new_evidence
+        on new_evidence.supersedes_evidence_id = old_evidence.id
+       and old_evidence.superseded_by_evidence_id = new_evidence.id
+       and new_evidence.direction = 'negative'
+       and new_evidence.support is null
+      where old_evidence.learning_record_id =
+        'b8000000-0000-4000-8000-000000000006'
+        and old_evidence.learner_profile_id = new_evidence.learner_profile_id
+        and old_evidence.recorded_by_account_id =
+          new_evidence.recorded_by_account_id
+        and old_evidence.source_course_id_at_time =
+          new_evidence.source_course_id_at_time
+        and old_evidence.source_learning_objective_id_at_time =
+          new_evidence.source_learning_objective_id_at_time
+    )
+    and exists (
+      select 1
+      from public.learner_objective_state as state
+      where state.learner_profile_id =
+          'b3000000-0000-4000-8000-000000000001'
+        and state.source_learning_objective_id_at_time =
+          :'m3_objective_id'::uuid
+        and state.status = 'forming'
+        and state.reason_code = 'latest_not_yet'
+    ),
+  'DB-clock correction did not supersede history/evidence or rebuild state'
+);
+
+select public.get_teacher_learning_record_correction_history(array[
+  (:'m3_correction_result'::jsonb ->> 'newLearningRecordId')::uuid
+])::text as m3_correction_history
+\gset
+
+select pg_temp.assert_true(
+  :'m3_correction_history'::jsonb ->> 'truncated' = 'false'
+    and jsonb_array_length(
+      :'m3_correction_history'::jsonb -> 'items'
+    ) = 1
+    and (
+      select count(*) = 13
+        and bool_and(key in (
+          'activeLearningRecordId', 'learningRecordId',
+          'correctedFromLearningRecordId', 'observationId',
+          'correctedFromObservationId', 'componentPositionAtTime',
+          'componentLabelAtTime', 'oldRating', 'newRating',
+          'oldPrivateNote', 'newPrivateNote', 'correctionReason',
+          'correctedAt'
+        ))
+      from jsonb_object_keys(
+        :'m3_correction_history'::jsonb -> 'items' -> 0
+      ) as field(key)
+    )
+    and :'m3_correction_history'::jsonb #>>
+      '{items,0,activeLearningRecordId}' =
+        :'m3_correction_result'::jsonb ->> 'newLearningRecordId'
+    and :'m3_correction_history'::jsonb #>>
+      '{items,0,correctedFromLearningRecordId}' =
+        'b8000000-0000-4000-8000-000000000006'
+    and :'m3_correction_history'::jsonb #>> '{items,0,oldRating}' =
+      'independent'
+    and :'m3_correction_history'::jsonb #>> '{items,0,newRating}' =
+      'not_yet'
+    and :'m3_correction_history'::jsonb #>>
+      '{items,0,oldPrivateNote}' = 'Сохранить заметку'
+    and :'m3_correction_history'::jsonb #>>
+      '{items,0,newPrivateNote}' = 'Закрытая заметка коррекции LA-M3'
+    and :'m3_correction_history'::jsonb #>>
+      '{items,0,componentLabelAtTime}' =
+        'STAFF_ONLY_COMPONENT_SENTINEL_LA_M3'
+    and :'m3_correction_history'::jsonb #>>
+      '{items,0,correctionReason}' = 'Исправлена ошибочная оценка',
+  'bounded teacher correction-history RPC omitted or reshaped the audit pair'
+);
+
+-- A 201-event chain proves the 200-item teacher audit cap reports truncation
+-- instead of silently treating the bounded recursion window as complete.
+reset role;
+set local session_replication_role = replica;
+
+insert into public.learning_record (
+  id,
+  learner_profile_id,
+  lesson_run_id,
+  source_course_id,
+  source_lesson_id,
+  source_course_id_at_time,
+  source_lesson_id_at_time,
+  source_lesson_run_id_at_time,
+  occurred_at,
+  was_present,
+  needs_repeat,
+  course_title_at_time,
+  lesson_title_at_time,
+  subject_at_time,
+  recorded_by_account_id,
+  corrected_from_record_id,
+  superseded_by_record_id,
+  correction_reason,
+  correction_idempotency_key,
+  corrected_at
+)
+select
+  md5('m3-history-record-' || generated.ordinal::text)::uuid,
+  'b3000000-0000-4000-8000-000000000001',
+  null,
+  'b4000000-0000-4000-8000-000000000001',
+  'b5000000-0000-4000-8000-000000000006',
+  'b4000000-0000-4000-8000-000000000001',
+  'b5000000-0000-4000-8000-000000000006',
+  md5('m3-history-run')::uuid,
+  '2026-01-01 00:00:00+00'::timestamptz
+    + generated.ordinal * interval '1 second',
+  true,
+  false,
+  'LA-M3 correction history cap',
+  'Bounded correction chain',
+  'Русский язык',
+  'b2000000-0000-4000-8000-000000000001',
+  case when generated.ordinal = 1 then null
+    else md5(
+      'm3-history-record-' || (generated.ordinal - 1)::text
+    )::uuid end,
+  case when generated.ordinal = 202 then null
+    else md5(
+      'm3-history-record-' || (generated.ordinal + 1)::text
+    )::uuid end,
+  case when generated.ordinal = 1 then null
+    else 'Bounded history correction ' || generated.ordinal::text end,
+  case when generated.ordinal = 1 then null
+    else md5('m3-history-key-' || generated.ordinal::text)::uuid end,
+  case when generated.ordinal = 1 then null
+    else '2026-01-01 00:00:00+00'::timestamptz
+      + generated.ordinal * interval '1 second' end
+from generate_series(1, 202) as generated(ordinal);
+
+insert into public.lesson_component_observation (
+  id,
+  learning_record_id,
+  lesson_component_id,
+  source_lesson_component_id_at_time,
+  component_position_at_time,
+  component_type_key_at_time,
+  component_label_at_time,
+  component_visibility_at_time,
+  observable_criterion_at_time,
+  rating,
+  entry_method,
+  private_note,
+  observed_at,
+  recorded_by_account_id,
+  corrected_from_observation_id,
+  superseded_by_observation_id
+)
+select
+  md5('m3-history-observation-' || generated.ordinal::text)::uuid,
+  md5('m3-history-record-' || generated.ordinal::text)::uuid,
+  null,
+  md5('m3-history-component')::uuid,
+  1,
+  'discussion',
+  'Bounded correction audit component',
+  'staff_only',
+  'Bounded correction audit criterion',
+  case when generated.ordinal % 2 = 0
+    then 'independent' else 'not_yet' end,
+  'direct',
+  'Bounded private note ' || generated.ordinal::text,
+  '2026-01-01 00:00:00+00'::timestamptz
+    + generated.ordinal * interval '1 second',
+  'b2000000-0000-4000-8000-000000000001',
+  case when generated.ordinal = 1 then null
+    else md5(
+      'm3-history-observation-' || (generated.ordinal - 1)::text
+    )::uuid end,
+  case when generated.ordinal = 202 then null
+    else md5(
+      'm3-history-observation-' || (generated.ordinal + 1)::text
+    )::uuid end
+from generate_series(1, 202) as generated(ordinal);
+
+set local session_replication_role = origin;
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+
+select public.get_teacher_learning_record_correction_history(array[
+  md5('m3-history-record-202')::uuid
+])::text as m3_bounded_correction_history
+\gset
+
+select pg_temp.assert_true(
+  (:'m3_bounded_correction_history'::jsonb ->> 'truncated')::boolean
+    and jsonb_array_length(
+      :'m3_bounded_correction_history'::jsonb -> 'items'
+    ) = 200
+    and :'m3_bounded_correction_history'::jsonb #>>
+      '{items,0,activeLearningRecordId}' =
+        md5('m3-history-record-202')::uuid::text,
+  'teacher correction-history cap omitted the one-event truncation lookahead'
+);
+
+select pg_temp.assert_true(
+  (
+    public.correct_finalized_lesson_component_observation(
+      :'m3_source_observation_id'::uuid,
+      'b3000000-0000-4000-8000-000000000001',
+      'b8000000-0000-4000-8000-000000000006',
+      'not_yet',
+      'Закрытая заметка коррекции LA-M3',
+      'Исправлена ошибочная оценка',
+      'ba900000-0000-4000-8000-000000000001',
+      '2098-01-01 00:00:00+00'
+    ) ->> 'replayed'
+  )::boolean,
+  'equivalent correction idempotency replay was not recognized'
+);
+
+select pg_temp.assert_raises(
+  format(
+    'select public.correct_finalized_lesson_component_observation(%L::uuid,%L::uuid,%L::uuid,%L,%L,%L,%L::uuid,%L::timestamptz)',
+    :'m3_source_observation_id',
+    'b3000000-0000-4000-8000-000000000001',
+    'b8000000-0000-4000-8000-000000000006',
+    'with_support',
+    'Закрытая заметка коррекции LA-M3',
+    'Исправлена ошибочная оценка',
+    'ba900000-0000-4000-8000-000000000001',
+    '2097-01-01 00:00:00+00'
+  ),
+  '23505',
+  'correction_idempotency_conflict',
+  'correction idempotency key accepted a mismatched payload'
 );
 
 reset role;
@@ -1814,8 +2471,10 @@ select pg_temp.assert_true(
         'b6000000-0000-4000-8000-000000000006'
       and component_position_at_time = 1
       and component_type_key_at_time = 'discussion'
-      and component_label_at_time = 'Снимок компонента'
-      and observable_criterion_at_time = 'Сохраняет критерий'
+      and component_label_at_time = 'STAFF_ONLY_COMPONENT_SENTINEL_LA_M3'
+      and component_visibility_at_time = 'staff_only'
+      and observable_criterion_at_time =
+        'STAFF_ONLY_CRITERION_SENTINEL_LA_M3'
       and rating = 'independent'
       and private_note = 'Сохранить заметку'
   ),
@@ -1857,6 +2516,381 @@ select pg_temp.assert_true(
   'Lesson deletion did not retain finalized record and observation snapshots'
 );
 
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.learning_evidence as evidence
+    where evidence.learning_record_id =
+        (:'m3_correction_result'::jsonb
+          ->> 'newLearningRecordId')::uuid
+      and evidence.lesson_component_id is null
+      and evidence.source_component_id_at_time =
+        'b6000000-0000-4000-8000-000000000006'
+      and evidence.source_lesson_id_at_time =
+        'b5000000-0000-4000-8000-000000000006'
+      and evidence.course_title_at_time = 'LA-M2 acceptance course'
+      and evidence.lesson_title_at_time = 'At-time retention'
+      and evidence.component_label_at_time =
+        'STAFF_ONLY_COMPONENT_SENTINEL_LA_M3'
+      and evidence.component_visibility_at_time = 'staff_only'
+      and evidence.objective_title_at_time = 'Цель профиля LA-M3'
+      and evidence.criterion_at_time =
+        'STAFF_ONLY_CRITERION_SENTINEL_LA_M3'
+      and evidence.direction = 'negative'
+      and evidence.supersedes_evidence_id is not null
+  ),
+  'Component/Lesson deletion erased the corrected evidence snapshot'
+);
+
+select public.get_teacher_learner_activity_profile(
+  'b3000000-0000-4000-8000-000000000001'
+)::text as m3_teacher_profile
+\gset
+
+select pg_temp.assert_true(
+  (:'m3_teacher_profile'::jsonb ->> 'projectionVersion')::integer = 1
+    and jsonb_array_length(:'m3_teacher_profile'::jsonb -> 'states') <= 200
+    and exists (
+      select 1
+      from jsonb_array_elements(
+        :'m3_teacher_profile'::jsonb -> 'states'
+      ) as item(value)
+      where item.value ->> 'sourceLearningObjectiveIdAtTime' =
+          :'m3_no_data_objective_id'
+        and item.value ->> 'status' = 'no_data'
+        and item.value -> 'stateId' = 'null'::jsonb
+        and item.value -> 'lastEvidenceAt' = 'null'::jsonb
+        and item.value -> 'freshnessDueAt' = 'null'::jsonb
+        and item.value -> 'evidence' = '[]'::jsonb
+        and item.value -> 'recommendation' = 'null'::jsonb
+        and (item.value ->> 'policyVersion')::integer = 1
+    )
+    and exists (
+      select 1
+      from jsonb_array_elements(
+        :'m3_teacher_profile'::jsonb -> 'states'
+      ) as item(value)
+      where item.value ->> 'sourceLearningObjectiveIdAtTime' =
+          :'m3_objective_id'
+        and item.value ->> 'status' = 'forming'
+        and item.value ->> 'reasonCode' = 'latest_not_yet'
+        and jsonb_array_length(item.value -> 'evidence') >= 1
+    )
+    and position(
+      'STAFF_ONLY_COMPONENT_SENTINEL_LA_M3'
+      in :'m3_teacher_profile'
+    ) > 0
+    and position(
+      'STAFF_ONLY_CRITERION_SENTINEL_LA_M3'
+      in :'m3_teacher_profile'
+    ) > 0,
+  'teacher profile omitted persisted evidence or synthesized no_data state'
+);
+
+select item.value ->> 'evaluatedAt' as m3_state_evaluated_at
+from jsonb_array_elements(
+  :'m3_teacher_profile'::jsonb -> 'states'
+) as item(value)
+where item.value ->> 'sourceLearningObjectiveIdAtTime' = :'m3_objective_id'
+\gset
+
+select public.get_teacher_learner_activity_profile(
+  'b3000000-0000-4000-8000-000000000001'
+)::text as m3_teacher_profile_repeat
+\gset
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from jsonb_array_elements(
+      :'m3_teacher_profile_repeat'::jsonb -> 'states'
+    ) as item(value)
+    where item.value ->> 'sourceLearningObjectiveIdAtTime' =
+        :'m3_objective_id'
+      and item.value ->> 'evaluatedAt' = :'m3_state_evaluated_at'
+  ),
+  'semantically unchanged profile read invalidated the override token'
+);
+
+select public.set_learner_recommendation_override(
+  'b3000000-0000-4000-8000-000000000001',
+  :'m3_objective_id'::uuid,
+  'replace',
+  'repeat',
+  'PRIVATE_OVERRIDE_SENTINEL_LA_M3',
+  :'m3_state_evaluated_at'::timestamptz
+)::text as m3_override_result
+\gset
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.learner_recommendation_override as override_row
+    where override_row.learner_profile_id =
+        'b3000000-0000-4000-8000-000000000001'
+      and override_row.source_learning_objective_id_at_time =
+        :'m3_objective_id'::uuid
+      and override_row.updated_at =
+        (:'m3_override_result'::jsonb ->> 'updatedAt')::timestamptz
+      and override_row.private_reason = 'PRIVATE_OVERRIDE_SENTINEL_LA_M3'
+  ),
+  'override RPC returned a timestamp different from the persisted row'
+);
+
+reset role;
+select pg_temp.assert_true(
+  position(
+    'PRIVATE_OVERRIDE_SENTINEL_LA_M3'
+    in public.safe_learning_activity_profile_projection(
+      'b3000000-0000-4000-8000-000000000001',
+      clock_timestamp()
+    )::text
+  ) = 0,
+  'private override reason leaked into the learner-safe projection'
+);
+
+-- A historical state from another recorder for this same learner/Course/live
+-- objective must not suppress the current Course owner's synthesized no_data.
+insert into public.learning_record (
+  id,
+  learner_profile_id,
+  lesson_run_id,
+  source_course_id,
+  source_lesson_id,
+  source_course_id_at_time,
+  source_lesson_id_at_time,
+  source_lesson_run_id_at_time,
+  occurred_at,
+  was_present,
+  needs_repeat,
+  course_title_at_time,
+  lesson_title_at_time,
+  subject_at_time,
+  recorded_by_account_id
+) values (
+  'bad00000-0000-4000-8000-000000000001',
+  'b3000000-0000-4000-8000-000000000001',
+  null,
+  'b4000000-0000-4000-8000-000000000001',
+  'b5000000-0000-4000-8000-000000000005',
+  'b4000000-0000-4000-8000-000000000001',
+  'b5000000-0000-4000-8000-000000000005',
+  'baf00000-0000-4000-8000-000000000001',
+  '2026-08-18 10:25:00+09',
+  true,
+  false,
+  'FOREIGN_COURSE_TITLE_SENTINEL',
+  'FOREIGN_LESSON_TITLE_SENTINEL',
+  'Русский язык',
+  'b2000000-0000-4000-8000-000000000002'
+);
+
+insert into public.lesson_component_observation (
+  id,
+  learning_record_id,
+  lesson_component_id,
+  source_lesson_component_id_at_time,
+  learning_objective_id,
+  source_learning_objective_id_at_time,
+  learning_objective_title_at_time,
+  component_position_at_time,
+  component_type_key_at_time,
+  component_label_at_time,
+  observable_criterion_at_time,
+  rating,
+  entry_method,
+  observed_at,
+  recorded_by_account_id
+) values (
+  'bae00000-0000-4000-8000-000000000001',
+  'bad00000-0000-4000-8000-000000000001',
+  'b6000000-0000-4000-8000-000000000005',
+  'b6000000-0000-4000-8000-000000000005',
+  :'m3_no_data_objective_id'::uuid,
+  :'m3_no_data_objective_id'::uuid,
+  'FOREIGN_OBJECTIVE_TITLE_SENTINEL',
+  1,
+  'discussion',
+  'FOREIGN_COMPONENT_LABEL_SENTINEL',
+  'FOREIGN_RECORDER_SENTINEL',
+  'independent',
+  'direct',
+  '2026-08-18 10:20:00+09',
+  'b2000000-0000-4000-8000-000000000002'
+);
+
+select public.materialize_learning_evidence_for_records(
+  array['bad00000-0000-4000-8000-000000000001'::uuid],
+  clock_timestamp()
+);
+select public.rebuild_learner_objective_state_for_actor(
+  'b2000000-0000-4000-8000-000000000002',
+  'b3000000-0000-4000-8000-000000000001',
+  :'m3_no_data_objective_id'::uuid,
+  clock_timestamp()
+);
+
+set local role service_role;
+select public.build_course_learning_activity_context(
+  'b1000000-0000-4000-8000-000000000001',
+  'b4000000-0000-4000-8000-000000000001'
+)::text as m3_course_context
+\gset
+select public.build_course_learning_activity_context(
+  'b1000000-0000-4000-8000-000000000001',
+  'b4000000-0000-4000-8000-000000000001'
+)::text as m3_course_context_repeat
+\gset
+select public.build_course_learning_activity_context(
+  'b1000000-0000-4000-8000-000000000001',
+  'b4000000-0000-4000-8000-000000000002'
+)::text as m3_course_context_unused
+\gset
+reset role;
+
+select pg_temp.assert_true(
+  (:'m3_course_context'::jsonb ->> 'used')::boolean
+    and :'m3_course_context'::jsonb ->> 'revision'
+      ~ '^[a-f0-9]{64}$'
+    and :'m3_course_context'::jsonb ->> 'revision' =
+      :'m3_course_context_repeat'::jsonb ->> 'revision'
+    and (:'m3_course_context'::jsonb ->> 'projectionVersion')::integer = 1
+    and (
+      select count(*) = 5
+        and bool_and(key in (
+          'used', 'revision', 'projectionVersion', 'summary', 'states'
+        ))
+      from jsonb_object_keys(:'m3_course_context'::jsonb) as root(key)
+    )
+    and (
+      select count(*) = 7
+        and bool_and(key in (
+          'totalStateCount', 'includedStateCount', 'formingCount',
+          'confirmedCount', 'recheckDueCount', 'evidenceReferenceCount',
+          'truncated'
+        ))
+      from jsonb_object_keys(
+        :'m3_course_context'::jsonb -> 'summary'
+      ) as summary(key)
+    )
+    and jsonb_array_length(:'m3_course_context'::jsonb -> 'states') between 1 and 80
+    and (:'m3_course_context'::jsonb -> 'summary'
+      ->> 'includedStateCount')::integer =
+      jsonb_array_length(:'m3_course_context'::jsonb -> 'states')
+    and (:'m3_course_context'::jsonb -> 'summary'
+      ->> 'evidenceReferenceCount')::integer <= 240
+    and not exists (
+      select 1
+      from jsonb_array_elements(
+        :'m3_course_context'::jsonb -> 'states'
+      ) as state(value)
+      where state.value ->> 'key' !~ '^las_[a-f0-9]{64}$'
+        or state.value ->> 'courseTitle' <> 'LA-M2 acceptance course'
+        or state.value ->> 'state' not in (
+          'no_data', 'forming', 'confirmed', 'recheck_due'
+        )
+        or jsonb_array_length(state.value -> 'evidenceReferences') > 3
+        or (
+          select count(*) <> 12
+            or not bool_and(key in (
+              'key', 'courseTitle', 'subject', 'objectiveTitle', 'state',
+              'reasonCode', 'reasonText', 'evaluatedAt', 'lastEvidenceAt',
+              'freshnessDueAt', 'evidenceReferences', 'recommendation'
+            ))
+          from jsonb_object_keys(state.value) as state_key(key)
+        )
+        or exists (
+          select 1
+          from jsonb_array_elements(
+            state.value -> 'evidenceReferences'
+          ) as evidence(value)
+          where evidence.value ->> 'key' !~ '^lae_[a-f0-9]{64}$'
+            or (
+              select count(*) <> 10
+                or not bool_and(key in (
+                  'key', 'direction', 'support', 'observedAt', 'evidenceAt',
+                  'courseTitle', 'lessonTitle', 'componentLabel',
+                  'objectiveTitle', 'criterion'
+                ))
+              from jsonb_object_keys(evidence.value) as evidence_key(key)
+            )
+        )
+        or (
+          state.value -> 'recommendation' <> 'null'::jsonb
+          and (
+            jsonb_array_length(
+              state.value -> 'recommendation' -> 'evidenceReferenceKeys'
+            ) > 3
+            or exists (
+              select 1
+              from jsonb_array_elements_text(
+                state.value -> 'recommendation'
+                  -> 'evidenceReferenceKeys'
+              ) as evidence_key(value)
+              where evidence_key.value !~ '^lae_[a-f0-9]{64}$'
+            )
+            or (
+              select count(*) <> 6
+                or not bool_and(key in (
+                  'type', 'reasonCode', 'reasonText', 'source',
+                  'generatedAt', 'evidenceReferenceKeys'
+                ))
+              from jsonb_object_keys(
+                state.value -> 'recommendation'
+              ) as recommendation_key(key)
+            )
+          )
+        )
+    )
+    and position('PRIVATE_OVERRIDE_SENTINEL_LA_M3'
+      in :'m3_course_context') = 0
+    and position('LA-M2 cross-Course objective fixture'
+      in :'m3_course_context') = 0
+    and position('Цель другого курса' in :'m3_course_context') = 0
+    and position('FOREIGN_RECORDER_SENTINEL'
+      in :'m3_course_context') = 0
+    and position('FOREIGN_COURSE_TITLE_SENTINEL'
+      in :'m3_course_context') = 0
+    and position('STAFF_ONLY_COMPONENT_SENTINEL_LA_M3'
+      in :'m3_course_context') = 0
+    and position('STAFF_ONLY_CRITERION_SENTINEL_LA_M3'
+      in :'m3_course_context') = 0
+    and position('Служебный компонент преподавателя'
+      in :'m3_course_context') > 0
+    and position('Служебный критерий преподавателя'
+      in :'m3_course_context') > 0
+    and position('b3000000-0000-4000-8000-000000000001'
+      in :'m3_course_context') = 0,
+  'Course activity context violated strict shape, cap, scope or privacy'
+);
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from jsonb_array_elements(
+      :'m3_course_context'::jsonb -> 'states'
+    ) as state(value)
+    where state.value ->> 'objectiveTitle' = 'Цель без данных LA-M3'
+      and state.value ->> 'state' = 'no_data'
+      and state.value -> 'evidenceReferences' = '[]'::jsonb
+  ),
+  'foreign-recorder state suppressed the current recorder no_data state'
+);
+
+select pg_temp.assert_true(
+  not (:'m3_course_context_unused'::jsonb ->> 'used')::boolean
+    and :'m3_course_context_unused'::jsonb ->> 'revision' = repeat('0', 64)
+    and :'m3_course_context_unused'::jsonb -> 'states' = '[]'::jsonb,
+  'empty effective audience did not return the canonical unused payload'
+);
+
+select set_config(
+  'request.jwt.claim.sub',
+  'b1000000-0000-4000-8000-000000000001',
+  true
+);
+set local role authenticated;
+
 select set_config(
   'request.jwt.claim.sub',
   'b1000000-0000-4000-8000-000000000001',
@@ -1868,8 +2902,8 @@ select count(*)
 from public.save_lesson_component_observations(
   'b7000000-0000-4000-8000-000000000007',
   'b6000000-0000-4000-8000-000000000007',
-  'До удаления данных',
-  'Данные принадлежат субъекту',
+  'STAFF_ONLY_SELF_SENTINEL_LA_M3',
+  'STAFF_ONLY_SELF_CRITERION_SENTINEL_LA_M3',
   'direct',
   '[{"learningRecordId":"b8000000-0000-4000-8000-000000000007","rating":"not_yet","privateNote":"Строго личная заметка LA-M1"}]'::jsonb
 );
@@ -1899,6 +2933,56 @@ select pg_temp.assert_true(
   'private observation note leaked into learner history projection'
 );
 
+select public.get_my_learning_activity_profile()::text
+  as m3_self_activity_profile
+\gset
+
+select pg_temp.assert_true(
+  (:'m3_self_activity_profile'::jsonb
+    ->> 'projectionVersion')::integer = 1
+    and jsonb_array_length(
+      :'m3_self_activity_profile'::jsonb -> 'states'
+    ) <= 200
+    and exists (
+      select 1
+      from jsonb_array_elements(
+        :'m3_self_activity_profile'::jsonb -> 'states'
+      ) as state(value)
+      where state.value ->> 'key' ~ '^las_[a-f0-9]{64}$'
+        and state.value ->> 'state' = 'forming'
+        and state.value ->> 'reasonCode' = 'latest_not_yet'
+        and jsonb_array_length(state.value -> 'evidenceReferences') = 1
+    )
+    and not exists (
+      select 1
+      from jsonb_array_elements(
+        :'m3_self_activity_profile'::jsonb -> 'states'
+      ) as state(value)
+      where state.value ->> 'key' !~ '^las_[a-f0-9]{64}$'
+        or jsonb_array_length(state.value -> 'evidenceReferences') > 5
+        or exists (
+          select 1
+          from jsonb_array_elements(
+            state.value -> 'evidenceReferences'
+          ) as evidence(value)
+          where evidence.value ->> 'key' !~ '^lae_[a-f0-9]{64}$'
+        )
+    )
+    and position('Строго личная заметка LA-M1'
+      in :'m3_self_activity_profile') = 0
+    and position('STAFF_ONLY_SELF_SENTINEL_LA_M3'
+      in :'m3_self_activity_profile') = 0
+    and position('STAFF_ONLY_SELF_CRITERION_SENTINEL_LA_M3'
+      in :'m3_self_activity_profile') = 0
+    and position('Служебный компонент преподавателя'
+      in :'m3_self_activity_profile') > 0
+    and position('Служебный критерий преподавателя'
+      in :'m3_self_activity_profile') > 0
+    and position('b2000000-0000-4000-8000-000000000001'
+      in :'m3_self_activity_profile') = 0,
+  'self activity profile leaked private/raw data or violated safe DTO caps'
+);
+
 reset role;
 select set_config(
   'request.jwt.claim.sub',
@@ -1919,7 +3003,37 @@ select pg_temp.assert_true(
   'private observation note leaked into observer history projection'
 );
 
+select public.get_observed_learner_activity_profile(
+  'b3000000-0000-4000-8000-000000000003'
+)::text as m3_observer_activity_profile
+\gset
+
 reset role;
+
+select pg_temp.assert_true(
+  :'m3_observer_activity_profile'::jsonb -> 'states' =
+      :'m3_self_activity_profile'::jsonb -> 'states'
+    and position('Строго личная заметка LA-M1'
+      in :'m3_observer_activity_profile') = 0
+    and position('STAFF_ONLY_SELF_SENTINEL_LA_M3'
+      in :'m3_observer_activity_profile') = 0
+    and position('STAFF_ONLY_SELF_CRITERION_SENTINEL_LA_M3'
+      in :'m3_observer_activity_profile') = 0
+    and position('Служебный компонент преподавателя'
+      in :'m3_observer_activity_profile') > 0
+    and position('Служебный критерий преподавателя'
+      in :'m3_observer_activity_profile') > 0
+    and exists (
+      select 1
+      from public.learner_identity_audit_event as event
+      where event.event_type = 'learner_observer_activity_profile_read'
+        and event.actor_account_id =
+          'b2000000-0000-4000-8000-000000000002'
+        and event.learner_profile_id =
+          'b3000000-0000-4000-8000-000000000003'
+    ),
+  'observer profile diverged from safe self projection or missed audit'
+);
 
 do $erasure$
 declare
@@ -1952,6 +3066,24 @@ select pg_temp.assert_true(
     )
     and not exists (
       select 1
+      from public.learning_evidence
+      where learner_profile_id =
+        'b3000000-0000-4000-8000-000000000003'
+    )
+    and not exists (
+      select 1
+      from public.learner_objective_state
+      where learner_profile_id =
+        'b3000000-0000-4000-8000-000000000003'
+    )
+    and not exists (
+      select 1
+      from public.learner_recommendation_override
+      where learner_profile_id =
+        'b3000000-0000-4000-8000-000000000003'
+    )
+    and not exists (
+      select 1
       from public.learner_profile
       where id = 'b3000000-0000-4000-8000-000000000003'
     )
@@ -1961,6 +3093,276 @@ select pg_temp.assert_true(
       where account_id = 'b2000000-0000-4000-8000-000000000003'
     ) = 1,
   'canonical learner erasure did not cascade observation deletion'
+);
+
+delete from public.learning_objective
+where id = :'m3_objective_id'::uuid;
+
+select pg_temp.assert_true(
+  exists (
+    select 1
+    from public.learning_evidence as evidence
+    where evidence.learner_profile_id =
+        'b3000000-0000-4000-8000-000000000001'
+      and evidence.source_learning_objective_id_at_time =
+        :'m3_objective_id'::uuid
+      and evidence.learning_objective_id is null
+      and evidence.objective_title_at_time = 'Цель профиля LA-M3'
+  )
+    and exists (
+      select 1
+      from public.learner_objective_state as state
+      where state.learner_profile_id =
+          'b3000000-0000-4000-8000-000000000001'
+        and state.source_learning_objective_id_at_time =
+          :'m3_objective_id'::uuid
+        and state.learning_objective_id is null
+        and state.objective_title_at_time = 'Цель профиля LA-M3'
+        and exists (
+          select 1
+          from public.learner_objective_state_evidence as link
+          where link.learner_objective_state_id = state.id
+        )
+    ),
+  'Objective deletion did not monotonically clear live FKs and retain provenance'
+);
+
+-- A same-Run merge conflict with corrected histories must compare only the
+-- two active vertices.  Both ancestor -> correction links must survive.
+set local session_replication_role = replica;
+insert into auth.users (
+  id,
+  email,
+  email_confirmed_at,
+  raw_user_meta_data,
+  raw_app_meta_data
+) values (
+  'bc100000-0000-4000-8000-000000000001',
+  'la-merge-target@test.invalid',
+  clock_timestamp(),
+  '{}'::jsonb,
+  '{}'::jsonb
+);
+
+insert into public.account (id, auth_user_id, display_name, status)
+values (
+  'bc200000-0000-4000-8000-000000000001',
+  'bc100000-0000-4000-8000-000000000001',
+  'LA Merge Target',
+  'active'
+);
+
+insert into public.learner_profile (id, display_name, account_id)
+values
+  (
+    'bc300000-0000-4000-8000-000000000001',
+    'LA Merge Source',
+    null
+  ),
+  (
+    'bc300000-0000-4000-8000-000000000002',
+    'LA Merge Target',
+    'bc200000-0000-4000-8000-000000000001'
+  );
+
+insert into public.learning_record (
+  id,
+  learner_profile_id,
+  lesson_run_id,
+  source_course_id,
+  source_lesson_id,
+  source_course_id_at_time,
+  source_lesson_id_at_time,
+  source_lesson_run_id_at_time,
+  occurred_at,
+  was_present,
+  needs_repeat,
+  course_title_at_time,
+  lesson_title_at_time,
+  subject_at_time,
+  recorded_by_account_id,
+  superseded_by_record_id,
+  corrected_from_record_id,
+  correction_reason,
+  correction_idempotency_key,
+  corrected_at
+)
+values
+  (
+    'bc800000-0000-4000-8000-000000000001',
+    'bc300000-0000-4000-8000-000000000001',
+    'b7000000-0000-4000-8000-000000000005',
+    'b4000000-0000-4000-8000-000000000001',
+    'b5000000-0000-4000-8000-000000000005',
+    'b4000000-0000-4000-8000-000000000001',
+    'b5000000-0000-4000-8000-000000000005',
+    'b7000000-0000-4000-8000-000000000005',
+    '2026-08-19 10:25:00+09',
+    true,
+    false,
+    'LA-M2 acceptance course',
+    'Completion conflict',
+    'Русский язык',
+    'b2000000-0000-4000-8000-000000000001',
+    'bc800000-0000-4000-8000-000000000002',
+    null,
+    null,
+    null,
+    null
+  ),
+  (
+    'bc800000-0000-4000-8000-000000000002',
+    'bc300000-0000-4000-8000-000000000001',
+    'b7000000-0000-4000-8000-000000000005',
+    'b4000000-0000-4000-8000-000000000001',
+    'b5000000-0000-4000-8000-000000000005',
+    'b4000000-0000-4000-8000-000000000001',
+    'b5000000-0000-4000-8000-000000000005',
+    'b7000000-0000-4000-8000-000000000005',
+    '2026-08-19 10:25:00+09',
+    true,
+    false,
+    'LA-M2 acceptance course',
+    'Completion conflict',
+    'Русский язык',
+    'b2000000-0000-4000-8000-000000000001',
+    null,
+    'bc800000-0000-4000-8000-000000000001',
+    'Source correction',
+    'bc900000-0000-4000-8000-000000000001',
+    '2026-08-20 10:25:00+09'
+  ),
+  (
+    'bc800000-0000-4000-8000-000000000003',
+    'bc300000-0000-4000-8000-000000000002',
+    'b7000000-0000-4000-8000-000000000005',
+    'b4000000-0000-4000-8000-000000000001',
+    'b5000000-0000-4000-8000-000000000005',
+    'b4000000-0000-4000-8000-000000000001',
+    'b5000000-0000-4000-8000-000000000005',
+    'b7000000-0000-4000-8000-000000000005',
+    '2026-08-19 10:25:00+09',
+    true,
+    false,
+    'LA-M2 acceptance course',
+    'Completion conflict',
+    'Русский язык',
+    'b2000000-0000-4000-8000-000000000001',
+    'bc800000-0000-4000-8000-000000000004',
+    null,
+    null,
+    null,
+    null
+  ),
+  (
+    'bc800000-0000-4000-8000-000000000004',
+    'bc300000-0000-4000-8000-000000000002',
+    'b7000000-0000-4000-8000-000000000005',
+    'b4000000-0000-4000-8000-000000000001',
+    'b5000000-0000-4000-8000-000000000005',
+    'b4000000-0000-4000-8000-000000000001',
+    'b5000000-0000-4000-8000-000000000005',
+    'b7000000-0000-4000-8000-000000000005',
+    '2026-08-19 10:25:00+09',
+    true,
+    false,
+    'LA-M2 acceptance course',
+    'Completion conflict',
+    'Русский язык',
+    'b2000000-0000-4000-8000-000000000001',
+    null,
+    'bc800000-0000-4000-8000-000000000003',
+    'Target correction',
+    'bc900000-0000-4000-8000-000000000002',
+    '2026-08-20 10:25:00+09'
+  );
+set local session_replication_role = origin;
+
+insert into public.learner_profile_merge (
+  id,
+  source_learner_profile_id,
+  target_learner_profile_id,
+  requested_by_account_id,
+  subject_account_id,
+  expires_at
+) values (
+  'bca00000-0000-4000-8000-000000000001',
+  'bc300000-0000-4000-8000-000000000001',
+  'bc300000-0000-4000-8000-000000000002',
+  'bc200000-0000-4000-8000-000000000001',
+  'bc200000-0000-4000-8000-000000000001',
+  clock_timestamp() + interval '1 hour'
+);
+
+select public.learner_profile_merge_preview_for_actor(
+  'bca00000-0000-4000-8000-000000000001',
+  'bc200000-0000-4000-8000-000000000001'
+)::text as m3_merge_preview
+\gset
+
+select pg_temp.assert_true(
+  jsonb_array_length(:'m3_merge_preview'::jsonb -> 'conflicts') = 1,
+  'merge preview counted correction ancestors as active Run conflicts'
+);
+
+select public.execute_learner_profile_merge_for_actor(
+  'bca00000-0000-4000-8000-000000000001',
+  'bc200000-0000-4000-8000-000000000001',
+  :'m3_merge_preview'::jsonb ->> 'previewFingerprint'
+);
+
+select pg_temp.assert_true(
+  not exists (
+    select 1 from public.learner_profile
+    where id = 'bc300000-0000-4000-8000-000000000001'
+  )
+    and exists (
+      select 1 from public.learner_profile_alias
+      where source_learner_profile_id =
+          'bc300000-0000-4000-8000-000000000001'
+        and target_learner_profile_id =
+          'bc300000-0000-4000-8000-000000000002'
+    )
+    and exists (
+      select 1
+      from public.learner_profile_merge_conflict
+      where merge_operation_id =
+          'bca00000-0000-4000-8000-000000000001'
+        and primary_record_id =
+          'bc800000-0000-4000-8000-000000000004'
+        and superseded_record_id =
+          'bc800000-0000-4000-8000-000000000002'
+    )
+    and exists (
+      select 1
+      from public.learning_record as source_ancestor
+      join public.learning_record as source_active
+        on source_active.id =
+          'bc800000-0000-4000-8000-000000000002'
+       and source_active.corrected_from_record_id = source_ancestor.id
+       and source_ancestor.superseded_by_record_id = source_active.id
+      join public.learning_record as target_active
+        on target_active.id = source_active.superseded_by_record_id
+      join public.learning_record as target_ancestor
+        on target_ancestor.id = target_active.corrected_from_record_id
+       and target_ancestor.superseded_by_record_id = target_active.id
+      where source_ancestor.id =
+          'bc800000-0000-4000-8000-000000000001'
+        and target_ancestor.id =
+          'bc800000-0000-4000-8000-000000000003'
+        and target_active.id =
+          'bc800000-0000-4000-8000-000000000004'
+        and source_active.lesson_run_id is null
+        and source_ancestor.lesson_run_id =
+          'b7000000-0000-4000-8000-000000000005'
+        and target_ancestor.lesson_run_id =
+          'b7000000-0000-4000-8000-000000000005'
+        and source_ancestor.learner_profile_id =
+          'bc300000-0000-4000-8000-000000000002'
+        and source_active.learner_profile_id =
+          'bc300000-0000-4000-8000-000000000002'
+    ),
+  'merge rewrote correction ancestry or selected a non-active conflict vertex'
 );
 
 -- Multi-session race recipe (intentionally not executed here because this

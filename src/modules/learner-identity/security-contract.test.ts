@@ -39,6 +39,10 @@ const emailChangeTemplateSource = readFileSync(
   "public/email-templates/email-change.html",
   "utf8",
 );
+const identityDbHarnessSource = readFileSync(
+  "scripts/db-identity-tests.sh",
+  "utf8",
+);
 
 function configureAdminEnvironment(t: test.TestContext) {
   const names = [
@@ -71,6 +75,31 @@ test("authenticated PostgREST repository has no secret-bearing RPC arguments", (
   assert.doesNotMatch(userRepositorySource, /p_recipient_email_digest/);
   assert.doesNotMatch(userRepositorySource, /p_raw_pin/);
   assert.doesNotMatch(userRepositorySource, /createProfileInvitation/);
+});
+
+test("identity DB harness models the trusted Auth writer without weakening auth RLS", () => {
+  const rollbackBoundary = identityDbHarnessSource.indexOf("rollback;\nSQL");
+  const createRole = identityDbHarnessSource.indexOf(
+    "create role shidao_identity_auth_harness nologin nosuperuser nocreatedb nocreaterole noinherit noreplication bypassrls",
+  );
+  const alterRole = identityDbHarnessSource.indexOf(
+    "alter role shidao_identity_auth_harness nologin nosuperuser nocreatedb nocreaterole noinherit noreplication bypassrls",
+  );
+
+  assert.ok(createRole > -1 && createRole < rollbackBoundary);
+  assert.ok(alterRole > -1 && alterRole < rollbackBoundary);
+  assert.match(
+    identityDbHarnessSource,
+    /reserved Auth harness role is not isolated/,
+  );
+  assert.doesNotMatch(
+    identityDbHarnessSource,
+    /alter table auth\.users (?:disable|no force) row level security/i,
+  );
+  assert.doesNotMatch(
+    identityDbHarnessSource,
+    /create policy[\s\S]*?on auth\.users/i,
+  );
 });
 
 test("email delivery sends GoTrue only a non-secret invitation handoff", async (t) => {

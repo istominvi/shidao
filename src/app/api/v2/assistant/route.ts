@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createRouterAiClient } from "@/modules/ai/routerai";
 import { createAiCourseBuilderService } from "@/modules/ai/course-builder-service";
+import { learningActivityContextProvider } from "@/modules/ai/learning-activity-context";
 import { sharedHistoryProvider } from "@/modules/ai/shared-history";
 import { aiApiError, runBoundedAiRequest } from "@/modules/ai/server-context";
 import { createSystemAssistantService } from "@/modules/ai/system-assistant-service";
@@ -21,6 +22,7 @@ export async function POST(request: NextRequest) {
       service,
       learningHistoryService: learningService,
       sharedHistoryProvider,
+      learningActivityContextProvider,
       createProvider: createRouterAiClient,
     });
     const result = await runBoundedAiRequest(
@@ -37,6 +39,7 @@ export async function POST(request: NextRequest) {
           courseService: service,
           learningService,
           sharedHistoryProvider,
+          learningActivityContextProvider,
           createProvider: createRouterAiClient,
           lessonPlanningService: {
             planLesson: (courseId, lessonInput, signal) =>

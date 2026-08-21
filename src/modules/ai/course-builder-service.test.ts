@@ -477,6 +477,96 @@ test("lesson apply fails closed when shared-history consent revision changes", a
   assert.equal(state.course.lessons[0]?.components.length, 0);
 });
 
+test("lesson apply is stale when the bounded learning-activity revision changes", async () => {
+  const course = emptyCourse(1);
+  const state = inMemoryService(course);
+  const lesson = await state.service.addLesson(ACTOR, COURSE_ID, {
+    title: "Знакомство",
+    summary: "",
+  });
+  let revision = "c".repeat(64);
+  const learningActivityContextProvider = {
+    async load() {
+      return {
+        used: true,
+        revision,
+        projectionVersion: 1 as const,
+        summary: {
+          totalStateCount: 0,
+          includedStateCount: 0,
+          formingCount: 0,
+          confirmedCount: 0,
+          recheckDueCount: 0,
+          evidenceReferenceCount: 0,
+          truncated: false,
+        },
+        states: [],
+      };
+    },
+  };
+  const ai = createAiCourseBuilderService({
+    actor: ACTOR,
+    service: state.service,
+    learningActivityContextProvider,
+    provider: jsonProvider(LESSON_PROVIDER_PLAN),
+    audit: () => undefined,
+  });
+  const preview = await ai.planLesson(COURSE_ID, {
+    lessonId: lesson.id,
+    title: lesson.title,
+    instruction: "",
+  });
+
+  revision = "d".repeat(64);
+  await assert.rejects(
+    ai.applyLessonPlan(COURSE_ID, {
+      lessonId: preview.lessonId,
+      title: preview.title,
+      baseContextFingerprint: preview.baseContextFingerprint,
+      sharedHistoryRevision: preview.sharedHistoryRevision,
+      baseLessonIds: preview.baseLessonIds,
+      baseComponentIds: preview.baseComponentIds,
+      plan: preview.plan,
+    }),
+    /Курс или урок изменились после предпросмотра/,
+  );
+  assert.equal(state.course.lessons[0]?.components.length, 0);
+});
+
+test("lesson planning degrades to a fingerprinted empty activity projection", async () => {
+  const course = emptyCourse(1);
+  const state = inMemoryService(course);
+  const lesson = await state.service.addLesson(ACTOR, COURSE_ID, {
+    title: "Знакомство",
+    summary: "",
+  });
+  let providerInput = "";
+  const ai = createAiCourseBuilderService({
+    actor: ACTOR,
+    service: state.service,
+    learningActivityContextProvider: {
+      async load() {
+        throw new Error("temporary activity projection failure");
+      },
+    },
+    provider: jsonProvider(LESSON_PROVIDER_PLAN, (input) => {
+      providerInput = JSON.stringify(input.messages);
+    }),
+    audit: () => undefined,
+  });
+
+  const preview = await ai.planLesson(COURSE_ID, {
+    lessonId: lesson.id,
+    title: lesson.title,
+    instruction: "",
+  });
+
+  assert.ok(preview.baseContextFingerprint.length > 0);
+  assert.match(providerInput, /learningActivityProfile/);
+  assert.equal(providerInput.includes("0".repeat(64)), true);
+  assert.equal(providerInput.includes('\\"used\\":false'), true);
+});
+
 test("teacher-facing AI output cannot quote a shared learner comment", async () => {
   const sharedComment = "Материал усвоен уверенно.";
   const sharedHistoryProvider = {

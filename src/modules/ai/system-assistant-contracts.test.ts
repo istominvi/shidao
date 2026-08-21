@@ -320,3 +320,22 @@ test("planned Lesson actions reuse the canonical lesson-plan Apply contract", ()
     "course.add_lesson_with_plan may only create a new Lesson",
   );
 });
+
+test("assistant action contract has no direct learning-activity mutations", () => {
+  for (const type of [
+    "learning_evidence.create",
+    "learner_objective_state.update",
+    "learning_recommendation.override",
+  ]) {
+    assert.equal(
+      systemAssistantActionSchema.safeParse({
+        type,
+        courseId: COURSE_ID,
+        learnerProfileId: LEARNER_ID,
+        value: "confirmed",
+      }).success,
+      false,
+      type,
+    );
+  }
+});

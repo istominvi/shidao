@@ -1,7 +1,7 @@
 # Roadmap ShiDao V2
 
 **Статус:** current / next / later priorities после production identity release
-**Актуально на:** 20 августа 2026 года
+**Актуально на:** 21 августа 2026 года
 
 Фактически реализованное состояние находится в
 [`docs/project-state.md`](./project-state.md). Этот документ описывает только
@@ -1120,9 +1120,9 @@ Course только открывают этот же центр на нужно�
 
 **Next:** отдельными slices добавить durable action/job и token-usage ledger,
 quota reservation/settlement с distributed enforcement, reliable background
-completion producers, Learning Activity evidence/profile projections по
-отдельному P1/P3 contract, Realtime/presence и push/email delivery. Текущий
-тестовый meter не используется как billing balance.
+completion producers, завершить dependent web delivery текущего production DB
+LA-M3 evidence/profile contract, Realtime/presence и push/email delivery.
+Текущий тестовый meter не используется как billing balance.
 
 ## P0.4: reusable Course catalog
 
@@ -1365,9 +1365,58 @@ production fixtures. Exact local strict production-mode browser suite прошё
 editor smoke не был выполнен из-за отсутствия authenticated browser session и
 не подменяется guest smoke.
 
-Rebuildable objective state и прозрачные recommendations остаются LA-M3
-после objective alignment; один score, completion или eligible observation не
-считается mastery.
+Rebuildable objective state и прозрачные recommendations уже входят в current
+production DB LA-M3 после objective alignment; один score, completion или
+eligible observation не считается mastery. Dependent application/UI source
+реализован в task tree, но deployed web/source остаётся LA-M2 до task
+commit/push, Coolify exact-SHA rollout и production smoke.
+
+## P1.2A: учебный профиль, evidence и рекомендации (**CURRENT PRODUCTION DB / DEPENDENT WEB ROLLOUT PENDING**)
+
+Текущий task tree реализует один manual-first vertical slice поверх LA-M1/LA-M2:
+
+- finalized Course → Lesson → LessonRun → observation history остаётся source of
+  truth; correction создаёт explicit superseding chain, а не переписывает
+  исходную запись;
+- только finalized, present, objective-aligned, confirmed и active observation
+  материализует typed evidence; старые LA-M1 строки с `NULL` objective остаются
+  history-only;
+- `objective-state-v1` различает `no_data | forming | confirmed |
+recheck_due`, требует две independent opportunities из разных stable Runs и
+  использует прозрачную 90-day freshness boundary без процентов/весов;
+- persisted state существует только при evidence. `no_data` синтезируется в
+  projection, имеет nullable state ID/last-evidence, пустой evidence list и не
+  получает recommendation или override action;
+- `recommendation-rules-v1` даёт объяснимый следующий шаг, а teacher может
+  явно replace/dismiss/clear override без изменения authored Component/Slide
+  order;
+- recorder получает teacher projection; subject и active observer — отдельный
+  strict safe DTO с opaque references; private note/override reason, Account IDs
+  и evaluator/policy payloads не выдаются;
+- manual `/profile`, `/students` learner dialog и observing surface не зависят
+  от AI; AI boundary остаётся bounded, а server-side logical read может только
+  детерминированно refresh-ить derived projection и писать audit без
+  model-controlled/direct mutation action.
+
+Frozen migration SHA-256
+`a7e7dad7db4632f98cf0857597dae99b58cf653bd39ec57d0eb91f540c9793f8`
+(`5335` строк) прошла exact `COMMIT` на production-derived PostgreSQL `15.8`
+clone, `85` functional assertions, `11/11` LA races и identity
+functional/concurrency. После verified production backup owner apply завершился
+наблюдаемым `COMMIT`; canonical tuple `19/6/22/84/2/2/0/0`, publication
+`1/9056/2832fcf2ee1a4c3ccdf01501fc4f60f3` и пустые LA-M3 relations `0/0/0/0`
+не изменились; обе source LearningRecord сохранили empty
+correction/supersession metadata. RLS `4/4`, `4` policies,
+ACL/RPC/security, `0` identity violations и PostgREST denial/resolution probes
+прошли. Current production-head PostgreSQL `15.8` snapshot имеет SHA-256
+`a1768f22f829d58c01a5846b68cdb7be60a363ebb771869ed90fb83dd316cbc2`,
+`29533` строки, `66` public tables и `235` functions.
+
+Dependent source gate прошёл `893/893` unit/API, `30/30` strict browser
+scenarios, typecheck, lint и production build. **Next:** выполнить только
+dependent web gate: task commit/push, Coolify exact SHA/image и production
+HTTP/API/CSRF/browser smoke. Они пока не заявлены. LA-M4–LA-M6 от DB rollout
+LA-M3 не становятся реализованными.
 
 ## P1.3: persisted Homework authoring
 

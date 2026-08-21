@@ -20,8 +20,23 @@ if [[ ! "$db_name" =~ (test|tmp|ci|clone|concurr) ]] \
 fi
 
 if [[ "$(psql "$DATABASE_URL" -X -Atqc \
-  "select to_regprocedure('public.activate_offline_learner_account(uuid,uuid,bytea,bytea,text,text,uuid,boolean,boolean)') is not null")" != "t" ]]; then
-  echo "Learner identity migrations are not fully applied." >&2
+  "select
+     to_regprocedure('public.activate_offline_learner_account(uuid,uuid,bytea,bytea,text,text,uuid,boolean,boolean)') is not null
+     and to_regclass('public.learning_evidence') is not null
+     and to_regprocedure('public.build_course_learning_activity_context(uuid,uuid)') is not null
+     and position(
+       'for update of operation'
+       in lower(pg_get_functiondef(to_regprocedure(
+         'public.learner_profile_merge_preview_for_actor(uuid,uuid)'
+       )))
+     ) > 0
+     and position(
+       'operation.status in (''pending'', ''ready'')'
+       in lower(pg_get_functiondef(to_regprocedure(
+         'public.learner_profile_merge_preview_for_actor(uuid,uuid)'
+       )))
+     ) > 0")" != "t" ]]; then
+  echo "Learner identity/LA-M3 migrations are not fully applied." >&2
   exit 2
 fi
 
@@ -317,6 +332,115 @@ assert_sql_true "open/draft merge is blocked" "
   select not (public.preview_learner_profile_merge(
     'd5000000-0000-0000-0000-000000000002'
   )->>'canConfirm')::boolean from configured;
+"
+
+# Preview reads the operation, then waits on Profile locks.  Cancellation wins
+# the operation while preview is blocked.  Once released, preview must re-read
+# the cancelled terminal state and may never write ready/pending over it.
+"${psql_base[@]}" <<'SQL'
+insert into public.learner_profile (id,display_name)
+values ('d2000000-0000-0000-0000-000000000022','Cancel Race Source');
+insert into public.learner_profile_merge (
+  id,source_learner_profile_id,target_learner_profile_id,
+  requested_by_account_id,subject_account_id,expires_at
+)
+select
+  'd5000000-0000-0000-0000-000000000003',
+  'd2000000-0000-0000-0000-000000000022',
+  profile.id,
+  subject.id,
+  subject.id,
+  now()+interval '1 day'
+from public.account as subject
+join public.learner_profile as profile on profile.account_id=subject.id
+where subject.auth_user_id='d1000000-0000-0000-0000-000000000030';
+SQL
+
+merge_cancel_sql="
+  begin;
+  set local application_name = 'identity_merge_cancel_race';
+  select set_config(
+    'request.jwt.claim.sub',
+    'd1000000-0000-0000-0000-000000000030',
+    true
+  );
+  select profile.id
+  from public.learner_profile as profile
+  where profile.id in (
+    'd2000000-0000-0000-0000-000000000022',
+    (
+      select owned.id
+      from public.learner_profile as owned
+      join public.account as subject on subject.id=owned.account_id
+      where subject.auth_user_id=
+        'd1000000-0000-0000-0000-000000000030'
+    )
+  )
+  order by profile.id
+  for update of profile;
+  select pg_sleep(2);
+  select public.cancel_learner_profile_merge(
+    'd5000000-0000-0000-0000-000000000003'
+  );
+  commit;
+"
+"${psql_base[@]}" -c "$merge_cancel_sql" \
+  >"$task_tmp_dir/b.out" 2>&1 &
+merge_cancel_pid=$!
+
+merge_cancel_ready=""
+for _attempt in $(seq 1 50); do
+  merge_cancel_ready="$("${psql_base[@]}" -c "
+    select exists (
+      select 1 from pg_stat_activity
+      where application_name='identity_merge_cancel_race'
+        and state='active'
+        and wait_event='PgSleep'
+    );
+  ")"
+  if [[ "$merge_cancel_ready" == "t" ]]; then
+    break
+  fi
+  sleep 0.1
+done
+if [[ "$merge_cancel_ready" != "t" ]]; then
+  kill "$merge_cancel_pid" 2>/dev/null || true
+  wait "$merge_cancel_pid" 2>/dev/null || true
+  show_failure "preview/cancel race setup"
+  echo "preview/cancel race could not observe the Profile-lock holder." >&2
+  exit 1
+fi
+
+set +e
+"${psql_base[@]}" -c "
+  begin;
+  set local application_name = 'identity_merge_preview_race';
+  select set_config(
+    'request.jwt.claim.sub',
+    'd1000000-0000-0000-0000-000000000030',
+    true
+  );
+  select public.preview_learner_profile_merge(
+    'd5000000-0000-0000-0000-000000000003'
+  );
+  commit;
+" >"$task_tmp_dir/a.out" 2>&1
+merge_preview_rc=$?
+wait "$merge_cancel_pid"
+merge_cancel_rc=$?
+set -e
+
+if (( merge_preview_rc == 0 || merge_cancel_rc != 0 )) \
+  || ! grep -Fq \
+    "learner_profile_merge_not_available" "$task_tmp_dir/a.out"; then
+  show_failure "preview/cancel terminal race"
+  echo "preview/cancel race did not reject the stale preview; rc=($merge_preview_rc,$merge_cancel_rc)." >&2
+  exit 1
+fi
+assert_sql_true "cancelled merge cannot be resurrected by preview" "
+  select status='cancelled' and cancelled_at is not null
+  from public.learner_profile_merge
+  where id='d5000000-0000-0000-0000-000000000003';
 "
 
 # Observer reads and erasure overlap after the preview. The observer session

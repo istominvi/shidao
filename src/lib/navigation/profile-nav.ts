@@ -3,6 +3,8 @@ import { ROUTES } from "../auth";
 export const PROFILE_TAB_IDS = [
   "profile",
   "history",
+  "skills",
+  "recommendations",
   "attestation",
   "observers",
   "settings",
@@ -21,6 +23,8 @@ export const PROFILE_NAV_ITEMS: ReadonlyArray<{
 }> = [
   { id: "profile", label: "Профиль" },
   { id: "history", label: "История" },
+  { id: "skills", label: "Навыки" },
+  { id: "recommendations", label: "Рекомендации" },
   { id: "attestation", label: "Аттестация" },
   { id: "observers", label: "Наблюдатели" },
   { id: "settings", label: "Настройки" },

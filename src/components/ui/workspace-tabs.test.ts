@@ -171,14 +171,22 @@ test("identity workspace tabs keep persistent owned tab panels", () => {
         "src/components/learner-identity/learning-profile-workspace.tsx",
       ),
       idConstant: "LEARNING_PROFILE_TABS_ID",
-      values: ["profile", "history", "attestation", "observers", "settings"],
+      values: [
+        "profile",
+        "history",
+        "skills",
+        "recommendations",
+        "attestation",
+        "observers",
+        "settings",
+      ],
     },
     {
       component: source(
         "src/components/learner-identity/observing-workspace.tsx",
       ),
       idConstant: "OBSERVING_PROJECTION_TABS_ID",
-      values: ["progress", "history"],
+      values: ["progress", "history", "skills", "recommendations"],
     },
   ] as const;
 

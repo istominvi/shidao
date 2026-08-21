@@ -49,13 +49,18 @@ test("browser-facing code cannot write the observation table directly", () => {
   ]) {
     assert.match(clientBoundary, new RegExp(`"${column}"`));
   }
+  const saveBoundary =
+    /async saveRunObservations\(input\)[\s\S]*?\n\s*},\n\n\s*correctFinalizedObservation/.exec(
+      clientBoundary,
+    )?.[0] ?? "";
+  assert.ok(saveBoundary);
   assert.doesNotMatch(
-    clientBoundary,
+    saveBoundary,
     /p_(?:learning_objective_id|source_learning_objective_id_at_time|learning_objective_title_at_time)/,
   );
 });
 
-test("history adapters can reuse one authenticated actor without a second session context", () => {
+test("history adapters preserve existing observations when evidence is unavailable", () => {
   assert.match(
     serverContext,
     /export function createLearningActivitiesServiceForActor/,
@@ -70,6 +75,34 @@ test("history adapters can reuse one authenticated actor without a second sessio
   );
   for (const historyRoute of historyRoutes) {
     assert.match(historyRoute, /\.listHistoryObservations\(/);
+    assert.match(historyRoute, /\.listHistoryCorrections\(/);
+    assert.match(historyRoute, /\.listHistoryEvidence\(/);
+    assert.match(historyRoute, /const learningActivities =/);
+    assert.match(historyRoute, /Promise\.allSettled\(/);
+    assert.match(
+      historyRoute,
+      /observationsResult\.status === "rejected"[\s\S]*?throw observationsResult\.reason/,
+    );
+    assert.match(
+      historyRoute,
+      /const evidenceUnavailable = evidenceResult\.status === "rejected"/,
+    );
+    assert.match(
+      historyRoute,
+      /const correctionsUnavailable = correctionsResult\.status === "rejected"/,
+    );
+    assert.match(
+      historyRoute,
+      /const evidence =[\s\S]*?evidenceResult\.status === "fulfilled" \? evidenceResult\.value : \[\]/,
+    );
+    assert.match(
+      historyRoute,
+      /observations: observationsResult\.value,[\s\S]*?corrections:[\s\S]*?correctionsTruncated:[\s\S]*?correctionsUnavailable,[\s\S]*?evidence,[\s\S]*?evidenceUnavailable,/,
+    );
+    assert.doesNotMatch(
+      historyRoute,
+      /correctionsResult\.status === "rejected"[\s\S]*?throw correctionsResult\.reason/,
+    );
     assert.doesNotMatch(
       historyRoute,
       /createLearningActivitiesRepository|lesson_component_observation|\/rest\/v1/,

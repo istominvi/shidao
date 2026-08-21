@@ -8,7 +8,11 @@ import type {
   LearnerProfile,
   LessonRun,
 } from "@/modules/lesson-runs/domain";
-import type { LessonComponentObservation } from "@/modules/learning-activities";
+import type {
+  LearningEvidence,
+  LessonObservationCorrection,
+  LessonComponentObservation,
+} from "@/modules/learning-activities";
 
 function encoded(value: string) {
   return encodeURIComponent(value);
@@ -200,6 +204,11 @@ async function loadRunHistory(path: string) {
   return courseBuilderRequest<{
     runs: LessonRun[];
     observations: LessonComponentObservation[];
+    corrections: LessonObservationCorrection[];
+    correctionsTruncated: boolean;
+    correctionsUnavailable: boolean;
+    evidence: LearningEvidence[];
+    evidenceUnavailable: boolean;
   }>(path, {
     cache: "no-store",
   });
@@ -217,6 +226,11 @@ export async function loadLearnerHistory(learnerProfileId: string) {
   return courseBuilderRequest<{
     records: LearningRecord[];
     observations: LessonComponentObservation[];
+    corrections: LessonObservationCorrection[];
+    correctionsTruncated: boolean;
+    correctionsUnavailable: boolean;
+    evidence: LearningEvidence[];
+    evidenceUnavailable: boolean;
   }>(`/api/v2/learner-profiles/${encoded(learnerProfileId)}/history`, {
     cache: "no-store",
   });

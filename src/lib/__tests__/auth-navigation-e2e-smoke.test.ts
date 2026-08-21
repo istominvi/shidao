@@ -471,13 +471,13 @@ test("e2e smoke: authenticated /login redirects and legacy security URL stays co
   assert.match(canonicalHtml, /E2E Adult/);
 
   const legacyProfileResponse = await fetch(
-    `http://127.0.0.1:${appPort}/learning-profile?tab=observers&source=e2e`,
+    `http://127.0.0.1:${appPort}/learning-profile?tab=skills&source=e2e&tag=one&tag=two`,
     { headers: { cookie }, redirect: "manual" },
   );
   assert.equal(legacyProfileResponse.status, 307);
   assert.equal(
     legacyProfileResponse.headers.get("location"),
-    "/profile?tab=observers&source=e2e",
+    "/profile?tab=skills&source=e2e&tag=one&tag=two",
   );
 });
 

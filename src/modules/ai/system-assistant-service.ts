@@ -35,6 +35,10 @@ import {
   aiLessonPlanApplyRequestSchema,
   type AiLessonPlanPreview,
 } from "./course-builder-contracts";
+import {
+  EMPTY_LEARNING_ACTIVITY_AI_CONTEXT,
+  type LearningActivityAiContext,
+} from "./learning-activity-context";
 import type { RouterAiClient, RouterAiJsonCompletion } from "./routerai";
 import { RouterAiError } from "./routerai";
 import {
@@ -107,6 +111,12 @@ export type SystemAssistantDependencies = {
       actorAuthUserId: string,
       courseId: string,
     ): Promise<SharedLearnerHistoryContext>;
+  };
+  learningActivityContextProvider?: {
+    load(
+      actorAuthUserId: string,
+      courseId: string,
+    ): Promise<LearningActivityAiContext>;
   };
   provider?: RouterAiClient;
   createProvider?: () => RouterAiClient;
@@ -905,6 +915,7 @@ export function createSystemAssistantService(
     lessonPlanningService,
     learningService,
     sharedHistoryProvider,
+    learningActivityContextProvider,
     audit = (event) => logger.info("[ai] system assistant", event),
   } = dependencies;
 
@@ -943,6 +954,24 @@ export function createSystemAssistantService(
     };
   }
 
+  async function loadLearningActivityContext(courseId: string) {
+    if (!learningActivityContextProvider) {
+      return EMPTY_LEARNING_ACTIVITY_AI_CONTEXT;
+    }
+    try {
+      return await learningActivityContextProvider.load(
+        actor.authUserId,
+        courseId,
+      );
+    } catch {
+      logger.warn("[ai] system assistant activity context unavailable", {
+        actorAuthUserId: actor.authUserId,
+        courseId,
+      });
+      return EMPTY_LEARNING_ACTIVITY_AI_CONTEXT;
+    }
+  }
+
   async function loadPageContext(input: SystemAssistantRequest) {
     const needsDirectory =
       input.page.surface === "students" &&
@@ -972,17 +1001,20 @@ export function createSystemAssistantService(
       currentCourse,
       selectedLesson,
     );
-    const [learningHistory, sharedHistory] = currentCourse
-      ? await Promise.all([
-          loadCourseLearningHistory(currentCourse.id),
-          sharedHistoryProvider
-            ? sharedHistoryProvider.load(actor.authUserId, currentCourse.id)
-            : Promise.resolve(EMPTY_SHARED_LEARNER_HISTORY),
-        ])
-      : [
-          { runs: [], records: [] } satisfies CourseLearningHistory,
-          EMPTY_SHARED_LEARNER_HISTORY,
-        ];
+    const [learningHistory, sharedHistory, learningActivityContext] =
+      currentCourse
+        ? await Promise.all([
+            loadCourseLearningHistory(currentCourse.id),
+            sharedHistoryProvider
+              ? sharedHistoryProvider.load(actor.authUserId, currentCourse.id)
+              : Promise.resolve(EMPTY_SHARED_LEARNER_HISTORY),
+            loadLearningActivityContext(currentCourse.id),
+          ])
+        : [
+            { runs: [], records: [] } satisfies CourseLearningHistory,
+            EMPTY_SHARED_LEARNER_HISTORY,
+            EMPTY_LEARNING_ACTIVITY_AI_CONTEXT,
+          ];
     const references = orderedCourseReferences(courses, currentCourse);
     return {
       references,
@@ -990,6 +1022,7 @@ export function createSystemAssistantService(
       selectedLesson,
       currentAudience: learningHistory.audience ?? null,
       sharedHistory,
+      learningActivityContext,
       context: boundAiContext({
         page: {
           surface: input.page.surface,
@@ -1008,6 +1041,7 @@ export function createSystemAssistantService(
                 selectedLesson,
                 learningHistory,
                 sharedHistory,
+                learningActivityContext,
               ),
               lessonReferences: compactLessonReferences(lessonReferences),
             }

@@ -102,21 +102,44 @@ test("isSafeRelativePath rejects external and protocol-relative redirects", () =
 test("profile tabs have stable addressable URLs and fail closed to profile", () => {
   assert.deepEqual(
     PROFILE_NAV_ITEMS.map((item) => item.id),
-    ["profile", "history", "attestation", "observers", "settings"],
+    [
+      "profile",
+      "history",
+      "skills",
+      "recommendations",
+      "attestation",
+      "observers",
+      "settings",
+    ],
   );
   assert.equal(profileTabHref("profile"), ROUTES.profile);
+  assert.equal(profileTabHref("skills"), `${ROUTES.profile}?tab=skills`);
+  assert.equal(
+    profileTabHref("recommendations"),
+    `${ROUTES.profile}?tab=recommendations`,
+  );
   assert.equal(profileTabHref("observers"), `${ROUTES.profile}?tab=observers`);
   assert.equal(
     profileSettingsStatusHref("emailChanged"),
     `${ROUTES.profile}?tab=settings&emailChanged=1`,
   );
   assert.equal(resolveProfileTab("history"), "history");
+  assert.equal(resolveProfileTab("skills"), "skills");
+  assert.equal(resolveProfileTab("recommendations"), "recommendations");
   assert.equal(resolveProfileTab(["settings", "history"]), "settings");
   assert.equal(resolveProfileTab("unknown"), "profile");
   assert.equal(resolveProfileTab(undefined), "profile");
 });
 
 test("legacy profile redirects retain safe query values and forced tab semantics", () => {
+  assert.equal(
+    profileCompatibilityHref({
+      tab: "skills",
+      source: "e2e",
+      tag: ["one", "two"],
+    }),
+    `${ROUTES.profile}?tab=skills&source=e2e&tag=one&tag=two`,
+  );
   assert.equal(
     profileCompatibilityHref({
       tab: ["history", "settings"],

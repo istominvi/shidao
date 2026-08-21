@@ -32,12 +32,47 @@ begin
 end
 $$;
 
+-- Production auth.users intentionally has RLS with no policies.  GoTrue's
+-- trusted Auth writer reaches it as the table owner/BYPASSRLS; model that
+-- boundary with an isolated NOLOGIN role instead of changing auth.users RLS.
+-- Role attributes and grants are transactional and roll back with this matrix.
 do $$
+declare
+  v_role oid;
 begin
-  if not exists (
-    select 1 from pg_roles where rolname = 'shidao_identity_auth_harness'
+  select role.oid
+  into v_role
+  from pg_roles as role
+  where role.rolname = 'shidao_identity_auth_harness';
+
+  if v_role is not null and (
+    exists (
+      select 1
+      from pg_roles as role
+      where role.oid = v_role
+        and (
+          role.rolcanlogin
+          or role.rolsuper
+          or role.rolcreatedb
+          or role.rolcreaterole
+          or role.rolreplication
+        )
+    )
+    or exists (
+      select 1
+      from pg_auth_members as membership
+      where membership.roleid = v_role
+        or membership.member = v_role
+    )
   ) then
-    execute 'create role shidao_identity_auth_harness nologin';
+    raise exception
+      'identity_acceptance_failed: reserved Auth harness role is not isolated';
+  end if;
+
+  if v_role is null then
+    execute 'create role shidao_identity_auth_harness nologin nosuperuser nocreatedb nocreaterole noinherit noreplication bypassrls';
+  else
+    execute 'alter role shidao_identity_auth_harness nologin nosuperuser nocreatedb nocreaterole noinherit noreplication bypassrls';
   end if;
 end
 $$;

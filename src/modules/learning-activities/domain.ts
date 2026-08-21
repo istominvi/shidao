@@ -9,6 +9,233 @@ export type ObservationRating = "independent" | "with_support" | "not_yet";
 
 export type ObservationEntryMethod = "direct" | "bulk_confirmed";
 
+export const LEARNING_EVIDENCE_VERSION = 1 as const;
+export const EVIDENCE_ELIGIBILITY_POLICY_VERSION = 1 as const;
+export const OBJECTIVE_STATE_POLICY_VERSION = 1 as const;
+export const RECOMMENDATION_RULE_VERSION = 1 as const;
+
+export type LearningEvidenceDirection = "positive" | "negative";
+export type LearningEvidenceSupport = "independent" | "with_support" | null;
+
+export type LearningEvidenceReasonCode =
+  | "independent_positive_evidence"
+  | "supported_positive_evidence"
+  | "not_yet_negative_evidence";
+
+/**
+ * Immutable, typed pedagogical evidence materialized from an eligible,
+ * objective-aligned finalized teacher observation. It deliberately excludes
+ * private notes, full Component payloads, evaluator payloads and scores.
+ */
+export type LearningEvidence = {
+  id: string;
+  learnerProfileId: string;
+  recordedByAccountId: string;
+  learningRecordId: string;
+  sourceObservationId: string;
+  sourceCourseIdAtTime: string;
+  sourceLessonIdAtTime: string;
+  sourceLessonRunIdAtTime: string;
+  sourceComponentIdAtTime: string;
+  sourceLearningObjectiveIdAtTime: string;
+  lessonComponentId: string | null;
+  learningObjectiveId: string | null;
+  courseTitleAtTime: string;
+  lessonTitleAtTime: string;
+  subjectAtTime: string | null;
+  componentTypeAtTime: string;
+  componentLabelAtTime: string;
+  objectiveTitleAtTime: string;
+  criterionAtTime: string;
+  direction: LearningEvidenceDirection;
+  support: LearningEvidenceSupport;
+  observedAt: string;
+  finalizedAt: string;
+  materializedAt: string;
+  evidenceVersion: typeof LEARNING_EVIDENCE_VERSION;
+  eligibilityPolicyVersion: typeof EVIDENCE_ELIGIBILITY_POLICY_VERSION;
+  reasonCode: LearningEvidenceReasonCode;
+  supersedesEvidenceId: string | null;
+  supersededByEvidenceId: string | null;
+};
+
+export type LearnerObjectiveStateStatus =
+  "no_data" | "forming" | "confirmed" | "recheck_due";
+
+export type LearnerObjectiveStateReasonCode =
+  | "no_eligible_evidence"
+  | "latest_not_yet"
+  | "latest_with_support"
+  | "independent_opportunities_missing"
+  | "multiple_independent_opportunities"
+  | "confirmed_evidence_stale";
+
+export type LearningRecommendationType =
+  | "repeat"
+  | "try_without_support"
+  | "apply_in_new_context"
+  | "move_forward"
+  | "recheck_freshness";
+
+export type LearningRecommendationReasonCode =
+  | "repeat_after_not_yet"
+  | "try_without_support_after_supported_success"
+  | "apply_in_new_context_after_one_independent_opportunity"
+  | "move_forward_after_confirmation"
+  | "recheck_due_to_freshness";
+
+export type ProjectedLearnerObjectiveStateV1 = {
+  status: LearnerObjectiveStateStatus;
+  reasonCode: LearnerObjectiveStateReasonCode;
+  reasonText: string;
+  policyVersion: typeof OBJECTIVE_STATE_POLICY_VERSION;
+  evaluatedAt: string;
+  lastEvidenceAt: string | null;
+  freshnessDueAt: string | null;
+  evidenceIds: string[];
+};
+
+export type ProjectedLearningRecommendationV1 = {
+  type: LearningRecommendationType;
+  reasonCode: LearningRecommendationReasonCode;
+  reasonText: string;
+  ruleVersion: typeof RECOMMENDATION_RULE_VERSION;
+  generatedAt: string;
+  evidenceIds: string[];
+};
+
+export type TeacherRecommendationOverride = {
+  action: "replace" | "dismiss";
+  recommendationType: LearningRecommendationType | null;
+  privateReason: string;
+  updatedAt: string;
+};
+
+export type TeacherLearningRecommendation = {
+  recommendationId: string;
+  type: LearningRecommendationType;
+  reasonCode: LearningRecommendationReasonCode;
+  reasonText: string;
+  ruleVersion: typeof RECOMMENDATION_RULE_VERSION;
+  generatedAt: string;
+  evidenceIds: string[];
+  effectiveType: LearningRecommendationType | null;
+  effectiveReasonText: string | null;
+  source: "rule" | "teacher_override";
+  override: TeacherRecommendationOverride | null;
+};
+
+export type TeacherLearnerObjectiveState = {
+  /** Null only for a synthesized no-data projection with no persisted row. */
+  stateId: string | null;
+  learningObjectiveId: string | null;
+  sourceLearningObjectiveIdAtTime: string;
+  sourceCourseIdAtTime: string;
+  courseTitleAtTime: string;
+  subjectAtTime: string | null;
+  objectiveTitleAtTime: string;
+  status: LearnerObjectiveStateStatus;
+  reasonCode: LearnerObjectiveStateReasonCode;
+  reasonText: string;
+  policyVersion: typeof OBJECTIVE_STATE_POLICY_VERSION;
+  evaluatedAt: string;
+  lastEvidenceAt: string | null;
+  freshnessDueAt: string | null;
+  evidence: LearningEvidence[];
+  recommendation: TeacherLearningRecommendation | null;
+};
+
+export type TeacherLearnerActivityProfile = {
+  projectionVersion: 1;
+  learnerProfileId: string;
+  generatedAt: string;
+  states: TeacherLearnerObjectiveState[];
+};
+
+/** Learner/observer-safe evidence reference. Every key is opaque and scoped. */
+export type LearnerSafeEvidenceReference = {
+  key: string;
+  direction: LearningEvidenceDirection;
+  support: LearningEvidenceSupport;
+  observedAt: string;
+  evidenceAt: string;
+  courseTitle: string;
+  lessonTitle: string;
+  componentLabel: string;
+  objectiveTitle: string;
+  criterion: string;
+};
+
+export type LearnerSafeRecommendation = {
+  type: LearningRecommendationType;
+  reasonCode: LearningRecommendationReasonCode;
+  reasonText: string;
+  source: "rule" | "teacher_override";
+  generatedAt: string;
+  evidenceReferenceKeys: string[];
+};
+
+export type LearnerSafeObjectiveState = {
+  key: string;
+  courseTitle: string;
+  subject: string | null;
+  objectiveTitle: string;
+  state: LearnerObjectiveStateStatus;
+  reasonCode: LearnerObjectiveStateReasonCode;
+  reasonText: string;
+  evaluatedAt: string;
+  lastEvidenceAt: string | null;
+  freshnessDueAt: string | null;
+  evidenceReferences: LearnerSafeEvidenceReference[];
+  recommendation: LearnerSafeRecommendation | null;
+};
+
+export type LearnerSafeActivityProfile = {
+  projectionVersion: 1;
+  generatedAt: string;
+  states: LearnerSafeObjectiveState[];
+};
+
+export type FinalizedObservationCorrectionResult = {
+  idempotencyKey: string;
+  newLearningRecordId: string;
+  newObservationId: string;
+  correctedAt: string;
+  replayed: boolean;
+};
+
+/**
+ * Teacher-only audit edge for one explicit correction of a finalized
+ * observation. The active LearningRecord stays the grouping anchor while the
+ * old/new values are read from the append-only ancestor chain.
+ */
+export type LessonObservationCorrection = {
+  activeLearningRecordId: string;
+  learningRecordId: string;
+  correctedFromLearningRecordId: string;
+  observationId: string;
+  correctedFromObservationId: string;
+  componentPositionAtTime: number;
+  componentLabelAtTime: string;
+  oldRating: ObservationRating;
+  newRating: ObservationRating;
+  oldPrivateNote: string | null;
+  newPrivateNote: string | null;
+  correctionReason: string;
+  correctedAt: string;
+};
+
+export type LessonObservationCorrectionHistory = {
+  items: LessonObservationCorrection[];
+  truncated: boolean;
+};
+
+export type RecommendationOverrideResult = {
+  action: "replace" | "dismiss" | "clear";
+  stateId: string;
+  updatedAt: string;
+};
+
 /**
  * One teacher-owned, component-level observation for one expected learner in
  * a LessonRun. While its LearningRecord is a draft the row may be replaced or
@@ -17,6 +244,9 @@ export type ObservationEntryMethod = "direct" | "bulk_confirmed";
 export type LessonComponentObservation = {
   id: string;
   learningRecordId: string;
+  /** Explicit append-only correction chain; finalized rows are never edited. */
+  correctedFromObservationId: string | null;
+  supersededByObservationId: string | null;
   lessonComponentId: string | null;
   sourceComponentIdAtTime: string;
   /** Nullable live FK; deletion does not erase the stable fields below. */

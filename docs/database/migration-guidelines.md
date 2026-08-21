@@ -2,30 +2,35 @@
 
 **Статус:** обязательная политика для всех новых DB changes
 **Последний подтверждённый production schema head:**
-`20260820090529_course_publication_snapshot_v2.sql`, применённый после
-`20260820085049_learning_objectives_component_alignment.sql` с SHA-256
-`82734db13f473c011ae61b24fc67601ac84cca986bf64395ac9ddd98ce07988a`, затем
-publication V2 migration с SHA-256
-`19d4f9fddbed2beedd1b3ad60e0100e27d8d774852c4a4d95e23593fbf82e8f8`.
-Production-derived clone прошёл exact rollback/apply, functional harness и
-восемь multi-session races; contract snapshot снят
-`2026-08-20T09:54:46Z`, SHA-256
-`46aabae2c1a00723c2c4a3322060cb49bd48f40a0ac23d7f8a294c64c630b8b3`.
+`20260820132725_learning_activity_profile_history_skills_recommendations.sql`,
+exact SHA-256
+`a7e7dad7db4632f98cf0857597dae99b58cf653bd39ec57d0eb91f540c9793f8`,
+`5335` строк. Production-derived PostgreSQL `15.8` clone из source dump
+SHA-256
+`6db636b32c1256efaf7b70321a031e3e93196788d265368561d4dbe239b456c1`
+(`1801` restore-list entries) прошёл exact apply с наблюдаемым `COMMIT`, `85`
+functional assertions, `11/11` LA races и identity functional/concurrency.
 После project-local read-only sanity создан verified backup
-`/root/shidao-db-backups/shidao-before-learning-objective-alignment-20260820T104240Z.dump`
-(size `1507990`, mode `600`, `1771` restore-list entries, SHA-256
-`d508626107c6dc5a4222a77c483db929778a06a1825b61ff3bd6d3df271743c1`).
-Обе migrations завершились наблюдаемым `COMMIT`; RLS/ACL/RPC/FK/trigger,
-lock-order, publication V2, PostgREST visibility, unchanged canonical counts и
-legacy V1 bytes/checksum прошли postflight без production fixtures. Task
-commit и dependent web rollout exact source
-`014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0` завершены; clone provenance
-по-прежнему отделена от production execution record.
+`/root/shidao-db-backups/shidao-before-learning-activity-profile-20260821T002135Z.dump`
+(size `1552941`, mode `600`, `1801` restore-list entries, SHA-256
+`0d89e0be74aba44f20b0ee82ad5cafb6f887da1f55821350e84959a502f8a88e`).
+Production owner apply завершился наблюдаемым `COMMIT`; canonical tuple
+`19/6/22/84/2/2/0/0`, publication
+`1/9056/2832fcf2ee1a4c3ccdf01501fc4f60f3` и LA-M3 rows `0/0/0/0` не изменились;
+обе source LearningRecord сохранили empty correction/supersession metadata. RLS
+`4/4`, `4` policies, ACL/RPC/security, `0` identity violations подтверждены.
+PostgREST raw probes вернули anon
+`401/42501` и service role `403/42501`; narrow service RPC достиг ожидаемого
+domain `P0002` (`500`), а не schema-cache `PGRST202`. Current production-head
+PostgreSQL `15.8` snapshot сгенерирован `2026-08-21T00:25:53Z`, имеет SHA-256
+`a1768f22f829d58c01a5846b68cdb7be60a363ebb771869ed90fb83dd316cbc2`,
+`29533` строки, `66` public tables и `235` functions; body побайтово совпадает
+с snapshot, replayed из production-derived clone.
 **Последняя применённая authored-data-only migration:**
 exact tracked `20260813063716_unify_heading_rich_text_components.sql` применён
 production; `psql` зафиксировал `COMMIT`, а maximum `updated_at`
 преобразованных строк — `2026-08-13T07:05:50.169297Z`. Она не меняла
-physical schema; последующие E2A, AV1, CC1, A2, LA-M1 и LA-M2 schema rollout
+physical schema; последующие E2A, AV1, CC1, A2 и LA-M1–LA-M3 schema rollout
 отражены в production contract и execution record выше.
 **Последний документированный coupled application rollout source:**
 `014aee43bb82aa2ce486fe8e8f9d60ddc58c87c0`; Coolify deployment `1003`
@@ -33,6 +38,12 @@ physical schema; последующие E2A, AV1, CC1, A2, LA-M1 и LA-M2 schema
 зелёным HTTPS/API/CSRF/browser guest postflight. Exact local strict
 production-mode browser suite прошёл `30/30`; authenticated production no-write
 editor smoke не заявляется из-за отсутствия authenticated browser session.
+
+**LA-M3 delivery boundary:** physical production DB и DB postflight current.
+Dependent application/UI task commit/push, Coolify exact-SHA deploy и
+production HTTP/API/browser smoke ещё **PENDING**; последний documented coupled
+application rollout поэтому остаётся LA-M2 source выше. Не добавлять deployment
+ID, container/image или smoke timestamp до их фактического измерения.
 
 Исторический U1-compatible source
 `dea92ca2c9af99fd5738e95fa9ca511aa10ca3da` был развёрнут и проверен до U1
@@ -223,6 +234,12 @@ generated SQL snapshot не переписывается только ради �
   RPC, canonical Component update RPC и parent-first lock order,
   same-Course/archive/role constraints, observation objective-at-time
   provenance и exact publication V1/V2 compatibility/remap.
+- для current LA-M3 — stable LearningRecord correction provenance,
+  reciprocal observation/evidence supersession, evidence/state/link/override
+  tables, closed raw mutation ACL, narrow correction/profile/override RPC,
+  completion/merge/erasure rebuild hooks, safe self/observer projections и
+  единый learner-first/objective-sorted lock order. Synthesized `no_data` не
+  должен появляться как persisted state row.
 
 Скрипт сначала проверяет read-only ShiDao schema signature, пишет во временный
 файл и не должен менять migration history. Полученный snapshot не применяется
@@ -273,6 +290,35 @@ generated SQL snapshot не переписывается только ради �
   legacy revision bytes/checksum;
 - evidence eligibility остаётся pure projection и не создаёт persisted
   evidence, objective state или mastery.
+
+Фактически выполненный LA-M3 production gate дополнительно включал:
+
+- migration была отрепетирована на production-derived isolated clone; old
+  LA-M1 `NULL` objective rows остаются history-only, а существующие eligible
+  finalized LA-M2 rows материализуются без production fixtures;
+- functional harness проверил draft/finalized/absent lifecycle, все три
+  ratings, missing objective/criterion/confirmation, stable deleted provenance,
+  correction chain/idempotent retry, deterministic fixed-clock rebuild,
+  distinct Run opportunities, точную 90-day freshness boundary и
+  replace/dismiss/clear override/reload;
+- identity harness проверил transfer/rebuild при merge, исключение superseded
+  same-Run result и полное включение LA-M3 rows в erasure fingerprint/cleanup;
+- реальные multi-session sessions доказали completion↔save,
+  completion↔rebuild, correction↔correction/rebuild, merge↔correction/rebuild и
+  erasure↔rebuild в явно зафиксированных harness lock/overlap orders с
+  наблюдаемым ожиданием блокировки; знак `↔` обозначает boundary overlap, а не
+  обязательность обоих порядков. Последовательная transaction или UI retry этот
+  gate не заменяет;
+- RLS/ACL/PostgREST postflight проверил recorder, subject, active/revoked observer,
+  cross-account/cross-recorder и anon. Safe DTO/AI projection не содержат raw
+  UUID/Account IDs, private observation/override notes или evaluator/internal
+  policy payloads;
+- application history отфильтровывает superseded LearningRecord при
+  Run hydration, а rebuild читает полный authoritative evidence set, не
+  ограниченный UI history window;
+- production apply принял exact tracked checksum и завершился наблюдаемым
+  `COMMIT`; snapshot/checksum/counts/backup evidence записаны только после
+  фактической проверки, а deployment evidence остаётся pending.
 
 Записать измеримые результаты в commit/hand-off, а не только «migration
 успешна».

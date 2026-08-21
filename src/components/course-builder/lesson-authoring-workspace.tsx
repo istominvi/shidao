@@ -68,7 +68,11 @@ import type {
   LessonComponent,
 } from "@/modules/course-builder/domain";
 import type { LearnerProfile, LessonRun } from "@/modules/lesson-runs/domain";
-import type { LessonComponentObservation } from "@/modules/learning-activities";
+import type {
+  LearningEvidence,
+  LessonObservationCorrection,
+  LessonComponentObservation,
+} from "@/modules/learning-activities";
 import {
   creatableComponentDefinitions,
   getComponentDefinition,
@@ -97,6 +101,12 @@ type LessonAuthoringWorkspaceProps = {
   onOpenRun: (lessonRunId: string) => void;
   runs: LessonRun[];
   observations: LessonComponentObservation[];
+  corrections: LessonObservationCorrection[];
+  correctionsTruncated: boolean;
+  correctionsUnavailable: boolean;
+  evidence: LearningEvidence[];
+  evidenceUnavailable: boolean;
+  onReloadHistory: () => void;
   learners: LearnerProfile[];
 };
 
@@ -1028,15 +1038,33 @@ function LessonHistorySurface({
   lesson,
   runs,
   observations,
+  corrections,
+  correctionsTruncated,
+  correctionsUnavailable,
+  evidence,
+  evidenceUnavailable,
+  onReload,
 }: {
   lesson: CourseLesson;
   runs: LessonRun[];
   observations: LessonComponentObservation[];
+  corrections: LessonObservationCorrection[];
+  correctionsTruncated: boolean;
+  correctionsUnavailable: boolean;
+  evidence: LearningEvidence[];
+  evidenceUnavailable: boolean;
+  onReload: () => void;
 }) {
   return (
     <RunHistoryList
       runs={runs.filter((run) => Boolean(run.endedAt))}
       observations={observations}
+      corrections={corrections}
+      correctionsTruncated={correctionsTruncated}
+      correctionsUnavailable={correctionsUnavailable}
+      evidence={evidence}
+      evidenceUnavailable={evidenceUnavailable}
+      onReload={onReload}
       emptyTitle={`Урок ${lesson.position} ещё не проводился`}
       emptyDescription="Назначьте дату урока. После завершения здесь сохранятся отчёт преподавателя, посещаемость и индивидуальные результаты."
     />
@@ -1057,6 +1085,12 @@ export function LessonAuthoringWorkspace({
   onOpenRun,
   runs,
   observations,
+  corrections,
+  correctionsTruncated,
+  correctionsUnavailable,
+  evidence,
+  evidenceUnavailable,
+  onReloadHistory,
   learners,
 }: LessonAuthoringWorkspaceProps) {
   const teachingEnabled = course.learningAudience === "children";
@@ -1284,6 +1318,12 @@ export function LessonAuthoringWorkspace({
                 lesson={lesson}
                 runs={runs}
                 observations={observations}
+                corrections={corrections}
+                correctionsTruncated={correctionsTruncated}
+                correctionsUnavailable={correctionsUnavailable}
+                evidence={evidence}
+                evidenceUnavailable={evidenceUnavailable}
+                onReload={onReloadHistory}
               />
             ) : null}
           </div>

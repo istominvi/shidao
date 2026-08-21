@@ -79,9 +79,9 @@ overlapping Group/Course links, finalized same-Run conflict, open/draft blocker
 и erasure всей lineage. Простая последовательная SQL transaction не заменяет
 multi-session race test.
 
-Для LA-M1/LA-M2 learning activities дополнительно обязательны isolated
-functional и multi-session checks на disposable database с exact именем
-`shidao_learning_activity_test`:
+Для LA-M1–LA-M3 learning activities дополнительно обязательны
+isolated functional и multi-session checks на disposable database с exact
+именем `shidao_learning_activity_test`:
 
 ```bash
 DATABASE_URL='postgresql://...' ./scripts/db-learning-activity-tests.sh
@@ -95,6 +95,14 @@ contract/lifecycle/ACL workflow и завершает fixture transaction чер
 исходов: четыре LA-M1 races, оба alignment↔observation-save и оба
 publication↔objective-update. Простая последовательная transaction этот gate
 не заменяет.
+
+Для LA-M3 тот же harness обязан дополнительно доказать completion/correction/
+rebuild/merge/erasure integration, correction idempotency, distinct-Run и
+fixed-clock freshness policy, safe self/observer/RLS boundaries и реальные
+overlap races correction↔rebuild, merge↔correction/rebuild и erasure↔rebuild в
+зафиксированных harness orders; знак `↔` обозначает boundary overlap, а не
+обязательность обоих порядков. Current production DB LA-M3 gate имеет эти
+зелёные результаты. При будущем изменении contract их нужно повторить до apply.
 
 Provider tests в AI-release используют только fake credentials и локальный
 mock. CI/build не получают реальный `ROUTERAI_API_KEY`; если сборка требует
@@ -131,6 +139,74 @@ Worktree должен содержать только изменения тек�
 чужие локальные правки или `.local-backups`.
 
 ## 4. Если release содержит DB migration
+
+### LA-M3 profile/evidence/recommendations — production DB execution record / dependent web pending
+
+**Статус: CURRENT PRODUCTION DB / DEPENDENT WEB ROLLOUT PENDING.** Physical DB
+gate завершён. Dependent application/UI task commit/push, Coolify deployment и
+production HTTP/API/browser smoke не выполнены и ниже не заявляются; deployed
+web/source пока остаётся LA-M2.
+
+Неизменяемые inputs и clone evidence:
+
+- forward migration
+  `20260820132725_learning_activity_profile_history_skills_recommendations.sql`
+  имеет `5335` строк и SHA-256
+  `a7e7dad7db4632f98cf0857597dae99b58cf653bd39ec57d0eb91f540c9793f8`;
+- production-derived PostgreSQL `15.8` source dump имеет SHA-256
+  `6db636b32c1256efaf7b70321a031e3e93196788d265368561d4dbe239b456c1`
+  и `1801` restore-list entries;
+- isolated production-derived clone прошёл exact owner apply с наблюдаемым
+  `COMMIT`, `85` functional assertions, `11/11` LA multi-session races и
+  identity functional/concurrency;
+- final application gate до rollout: `893/893` unit/API, `30/30` strict browser
+  scenarios, typecheck, lint и production build зелёные. Это local release
+  evidence, а не production web smoke.
+
+Production backup и apply:
+
+- full-format backup
+  `/root/shidao-db-backups/shidao-before-learning-activity-profile-20260821T002135Z.dump`
+  имеет size `1552941`, mode `600`, `1801` restore-list entries и SHA-256
+  `0d89e0be74aba44f20b0ee82ad5cafb6f887da1f55821350e84959a502f8a88e`;
+- production owner apply exact tracked migration завершился наблюдаемым
+  `COMMIT`;
+- pre/post tuple Account/Course/Lesson/Component/LessonRun/LearningRecord/
+  LearningObjective/Observation остался `19/6/22/84/2/2/0/0`;
+- immutable publication tuple остался
+  `1/9056/2832fcf2ee1a4c3ccdf01501fc4f60f3`;
+- `learning_evidence` / `learner_objective_state` /
+  `learner_objective_state_evidence` / `learner_recommendation_override`
+  остались `0/0/0/0`; обе source LearningRecord сохранили empty
+  correction/supersession metadata;
+- postflight подтвердил LA-M3 RLS `4/4`, `4` policies, ACL/RPC/security
+  contract и `0` identity violations;
+- PostgREST raw probe для anon вернул `401/42501`, raw service-role probe —
+  `403/42501`. Narrow service RPC разрешился до ожидаемого domain error `P0002`
+  (`500`), а не schema-cache `PGRST202`.
+
+Production-head snapshot:
+
+- сгенерирован `2026-08-21T00:25:53Z` из PostgreSQL `15.8`;
+- SHA-256
+  `a1768f22f829d58c01a5846b68cdb7be60a363ebb771869ed90fb83dd316cbc2`,
+  `29533` строки, `66` public tables и `235` functions;
+- body побайтово совпадает с snapshot, clean replayed из production-derived
+  clone.
+
+Оставшийся dependent web gate:
+
+1. Stage только task files, создать task commit и выполнить normal fast-forward
+   push `main`.
+2. Дождаться Coolify exact `SOURCE_COMMIT`/image, running state и проверить
+   restart count.
+3. Выполнить production HTTPS/API/CSRF/browser smoke для manual teacher
+   correction/override, self profile, active observer, revoke и reload без AI.
+
+До завершения этих трёх шагов не записывать commit, deployment, container/image
+или production browser evidence. Уже применённую migration не переписывать;
+исправление после apply — только новая forward migration или отдельно
+согласованный restore.
 
 ### LA-M2 Course objectives / Component alignment — production execution record
 

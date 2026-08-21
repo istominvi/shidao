@@ -11,7 +11,7 @@ set -euo pipefail
 # The signature accepts exactly two learner-identity compatibility stages. Both
 # must contain every learner-identity M1-M3 object/invariant plus the M5/M6
 # Auth hardening. The generated snapshot must also contain the current
-# Learning Activity System schema through LA-M2. The expand stage requires the
+# Learning Activity System schema through LA-M3. The expand stage requires the
 # complete, known legacy compatibility contract; the final stage requires the
 # complete M4 helper/type/ACL cleanup. A partial stage is rejected.
 
@@ -19,6 +19,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 OUT_FILE="${PROJECT_ROOT}/supabase/schema/current-schema.sql"
 CROSS_SCHEMA_MARKER="-- Cross-schema Supabase objects owned by the active Course Builder model"
+CROSS_SCHEMA_END_MARKER="-- End reviewed cross-schema Supabase objects"
+LEGACY_PUBLIC_TAIL_MARKER="-- Course publication catalog (schema-only projection of migration"
 
 for required_command in pg_dump psql; do
   if ! command -v "${required_command}" >/dev/null 2>&1; then
@@ -239,6 +241,10 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and to_regclass('public.lesson_run') is not null
          and to_regclass('public.learning_record') is not null
          and to_regclass('public.lesson_component_observation') is not null
+         and to_regclass('public.learning_evidence') is not null
+         and to_regclass('public.learner_objective_state') is not null
+         and to_regclass('public.learner_objective_state_evidence') is not null
+         and to_regclass('public.learner_recommendation_override') is not null
          and to_regclass('public.account_login_alias') is not null
          and to_regclass('public.account_security') is not null
          and to_regclass('public.account_preference') is not null
@@ -903,8 +909,52 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and to_regprocedure(
            'public.complete_lesson_run_v2(uuid,jsonb,text,timestamptz,integer)'
          ) is not null
+         and has_function_privilege(
+           'service_role',
+           'public.complete_lesson_run_v2(uuid,jsonb,text,timestamptz,integer)',
+           'EXECUTE'
+         )
          and to_regprocedure(
            'public.save_lesson_component_observations(uuid,uuid,text,text,text,jsonb)'
+         ) is not null
+         and to_regprocedure(
+           'public.correct_finalized_lesson_component_observation(uuid,uuid,uuid,text,text,text,uuid,timestamp with time zone)'
+         ) is not null
+         and to_regprocedure(
+           'public.get_teacher_learning_record_correction_history(uuid[])'
+         ) is not null
+         and to_regprocedure(
+           'public.correct_finalized_lesson_component_observation(uuid,uuid,text,text,text,uuid,timestamp with time zone)'
+         ) is null
+         and to_regprocedure(
+           'public.set_learner_recommendation_override(uuid,uuid,text,text,text,timestamp with time zone)'
+         ) is not null
+         and to_regprocedure(
+           'public.get_teacher_learner_activity_profile(uuid)'
+         ) is not null
+         and to_regprocedure(
+           'public.get_my_learning_activity_profile()'
+         ) is not null
+         and to_regprocedure(
+           'public.get_observed_learner_activity_profile(uuid)'
+         ) is not null
+         and to_regprocedure(
+           'public.build_course_learning_activity_context(uuid,uuid)'
+         ) is not null
+         and to_regprocedure(
+           'public.build_cross_provider_learning_activity_context(uuid,uuid)'
+         ) is null
+         and to_regprocedure(
+           'public.materialize_learning_evidence_for_records(uuid[],timestamp with time zone)'
+         ) is not null
+         and to_regprocedure(
+           'public.capture_observation_component_visibility()'
+         ) is not null
+         and to_regprocedure(
+           'public.rebuild_learner_objective_state_for_actor(uuid,uuid,uuid,timestamp with time zone)'
+         ) is not null
+         and to_regprocedure(
+           'public.rebuild_learner_objective_states(uuid,uuid,timestamp with time zone)'
          ) is not null
          and to_regprocedure(
            'public.delete_draft_observations_for_lesson_component()'
@@ -981,6 +1031,24 @@ SHIDAO_SCHEMA_SIGNATURE="$({
          and to_regprocedure(
            'public.build_cross_provider_learner_context(uuid,uuid)'
          ) is not null
+         and exists (
+           select 1
+           from information_schema.columns
+           where table_schema = 'public'
+             and table_name = 'lesson_component_observation'
+             and column_name = 'component_visibility_at_time'
+             and data_type = 'text'
+             and is_nullable = 'YES'
+         )
+         and exists (
+           select 1
+           from information_schema.columns
+           where table_schema = 'public'
+             and table_name = 'learning_evidence'
+             and column_name = 'component_visibility_at_time'
+             and data_type = 'text'
+             and is_nullable = 'NO'
+         )
          and exists (
            select 1
            from information_schema.columns
@@ -1472,6 +1540,244 @@ SHIDAO_SCHEMA_SIGNATURE="$({
              'EXECUTE'
            )
          )
+         and not exists (
+           select 1
+           from unnest(array[
+             'learning_evidence',
+             'learner_objective_state',
+             'learner_objective_state_evidence',
+             'learner_recommendation_override'
+           ]) as expected(table_name)
+           join pg_class as relation
+             on relation.oid = to_regclass(
+               'public.' || expected.table_name
+             )
+           where not relation.relrowsecurity
+              or has_table_privilege(
+                'service_role',
+                'public.' || expected.table_name,
+                'SELECT'
+              )
+              or not has_table_privilege(
+                'authenticated',
+                'public.' || expected.table_name,
+                'SELECT'
+              )
+              or has_table_privilege(
+                'authenticated',
+                'public.' || expected.table_name,
+                'INSERT'
+              )
+              or has_table_privilege(
+                'authenticated',
+                'public.' || expected.table_name,
+                'UPDATE'
+              )
+              or has_table_privilege(
+                'authenticated',
+                'public.' || expected.table_name,
+                'DELETE'
+              )
+              or has_table_privilege(
+                'anon',
+                'public.' || expected.table_name,
+                'SELECT'
+              )
+         )
+         and not exists (
+           select 1
+           from unnest(array[
+             'public.correct_finalized_lesson_component_observation(uuid,uuid,uuid,text,text,text,uuid,timestamp with time zone)',
+             'public.get_teacher_learning_record_correction_history(uuid[])',
+             'public.set_learner_recommendation_override(uuid,uuid,text,text,text,timestamp with time zone)',
+             'public.get_teacher_learner_activity_profile(uuid)',
+             'public.get_my_learning_activity_profile()',
+             'public.get_observed_learner_activity_profile(uuid)',
+             'public.build_course_learning_activity_context(uuid,uuid)'
+           ]) as required(signature)
+           left join pg_proc as procedure
+             on procedure.oid = to_regprocedure(required.signature)
+           where procedure.oid is null
+              or not procedure.prosecdef
+              or not (
+                procedure.proconfig @> array['search_path=\"\"']::text[]
+              )
+         )
+         and has_function_privilege(
+           'service_role',
+           'public.build_course_learning_activity_context(uuid,uuid)',
+           'EXECUTE'
+         )
+         and has_function_privilege(
+           'authenticated',
+           'public.get_teacher_learning_record_correction_history(uuid[])',
+           'EXECUTE'
+         )
+         and not has_function_privilege(
+           'service_role',
+           'public.get_teacher_learning_record_correction_history(uuid[])',
+           'EXECUTE'
+         )
+         and has_function_privilege(
+           'service_role',
+           'public.build_cross_provider_learner_context(uuid,uuid)',
+           'EXECUTE'
+         )
+         and not exists (
+           select 1
+           from unnest(array['anon', 'authenticated']) as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             'public.build_course_learning_activity_context(uuid,uuid)',
+             'EXECUTE'
+           )
+         )
+         and not exists (
+           select 1
+           from unnest(array['anon', 'authenticated']) as actor(role_name)
+           where has_function_privilege(
+             actor.role_name,
+             'public.build_cross_provider_learner_context(uuid,uuid)',
+             'EXECUTE'
+           )
+         )
+         and not has_function_privilege(
+           'authenticated',
+           'public.rebuild_learner_objective_states(uuid,uuid,timestamp with time zone)',
+           'EXECUTE'
+         )
+         and position(
+           'private_reason'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.safe_learning_activity_profile_projection(uuid,timestamp with time zone)'
+           )))
+         ) = 0
+         and position(
+           'private_reason'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.course_learning_activity_projection(uuid[],uuid,uuid,timestamp with time zone)'
+           )))
+         ) = 0
+         and position(
+           'Служебный компонент преподавателя'
+           in pg_get_functiondef(to_regprocedure(
+             'public.safe_learning_activity_profile_projection(uuid,timestamp with time zone)'
+           ))
+         ) > 0
+         and position(
+           'Служебный компонент преподавателя'
+           in pg_get_functiondef(to_regprocedure(
+             'public.course_learning_activity_projection(uuid[],uuid,uuid,timestamp with time zone)'
+           ))
+         ) > 0
+         and position(
+           'Служебный критерий преподавателя'
+           in pg_get_functiondef(to_regprocedure(
+             'public.safe_learning_activity_profile_projection(uuid,timestamp with time zone)'
+           ))
+         ) > 0
+         and position(
+           'Служебный критерий преподавателя'
+           in pg_get_functiondef(to_regprocedure(
+             'public.course_learning_activity_projection(uuid[],uuid,uuid,timestamp with time zone)'
+           ))
+         ) > 0
+         and position(
+           'learner_ai_consent'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.build_course_learning_activity_context(uuid,uuid)'
+           )))
+         ) = 0
+         and position(
+           'state.recorded_by_account_id = p_recorded_by_account_id'
+           in pg_get_functiondef(to_regprocedure(
+             'public.course_learning_activity_projection(uuid[],uuid,uuid,timestamp with time zone)'
+           ))
+         ) > 0
+         and position(
+           'state.source_course_id_at_time = p_course_id'
+           in pg_get_functiondef(to_regprocedure(
+             'public.course_learning_activity_projection(uuid[],uuid,uuid,timestamp with time zone)'
+           ))
+         ) > 0
+         and exists (
+           select 1
+           from pg_trigger as trigger
+           where trigger.tgrelid =
+               'public.lesson_component_observation'::regclass
+             and trigger.tgname = 'trg_observation_component_visibility'
+             and not trigger.tgisinternal
+         )
+         and exists (
+           select 1
+           from pg_constraint
+           where conrelid = 'public.learning_evidence'::regclass
+             and conname = 'learning_evidence_record_identity_fkey'
+             and contype = 'f'
+             and convalidated
+         )
+         and exists (
+           select 1
+           from pg_constraint
+           where conrelid =
+               'public.learner_objective_state_evidence'::regclass
+             and conname =
+               'learner_objective_state_evidence_state_identity_fkey'
+             and contype = 'f'
+             and convalidated
+         )
+         and exists (
+           select 1
+           from pg_constraint
+           where conrelid =
+               'public.learner_objective_state_evidence'::regclass
+             and conname =
+               'learner_objective_state_evidence_fact_identity_fkey'
+             and contype = 'f'
+             and convalidated
+         )
+         and position(
+           'materialize_learning_evidence_for_records'
+           in pg_get_functiondef(to_regprocedure(
+             'public.complete_lesson_run_v2(uuid,jsonb,text,timestamp with time zone,integer)'
+           ))
+         ) > 0
+         and position(
+           'rebuild_learner_objective_state_for_actor'
+           in pg_get_functiondef(to_regprocedure(
+             'public.complete_lesson_run_v2(uuid,jsonb,text,timestamp with time zone,integer)'
+           ))
+         ) > 0
+         and position(
+           'source_record.superseded_by_record_id is null'
+           in pg_get_functiondef(to_regprocedure(
+             'public.learner_profile_merge_preview_for_actor(uuid,uuid)'
+           ))
+         ) > 0
+         and position(
+           'for update of operation'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.learner_profile_merge_preview_for_actor(uuid,uuid)'
+           )))
+         ) > 0
+         and position(
+           'operation.status in (''pending'', ''ready'')'
+           in lower(pg_get_functiondef(to_regprocedure(
+             'public.learner_profile_merge_preview_for_actor(uuid,uuid)'
+           )))
+         ) > 0
+         and position(
+           'target_record.superseded_by_record_id is null'
+           in pg_get_functiondef(to_regprocedure(
+             'public.execute_learner_profile_merge_for_actor(uuid,uuid,text)'
+           ))
+         ) > 0
+         and position(
+           'delete from public.learning_evidence'
+           in pg_get_functiondef(to_regprocedure(
+             'public.confirm_my_learning_data_erasure(uuid,text)'
+           ))
+         ) > 0
          and exists (
            select 1
            from pg_proc as procedure
@@ -2091,8 +2397,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
-awk -v marker="${CROSS_SCHEMA_MARKER}" '
+awk \
+  -v marker="${CROSS_SCHEMA_MARKER}" \
+  -v end_marker="${CROSS_SCHEMA_END_MARKER}" \
+  -v legacy_public_tail_marker="${LEGACY_PUBLIC_TAIL_MARKER}" '
   $0 == marker { keep = 1 }
+  keep && ($0 == end_marker || index($0, legacy_public_tail_marker) == 1) {
+    exit
+  }
   keep && ($0 == "-- PostgreSQL database dump complete" ||
     $0 == "-- PostgreSQL database dump complete --") { exit }
   keep { print }
@@ -2132,6 +2444,13 @@ if grep -Fq -- "CREATE POLICY profile_avatars_" "${TMP_CROSS}" \
   exit 1
 fi
 
+if grep -Eiq \
+  '^(create|alter|drop|grant|revoke)[[:space:]]+(table|function|type|sequence|view|materialized[[:space:]]+view|index)[[:space:]]+public[.]' \
+  "${TMP_CROSS}"; then
+  echo "Refusing to refresh: reviewed Auth/Storage section contains public-schema DDL." >&2
+  exit 1
+fi
+
 if pg_dump --help 2>&1 | grep -Fq -- "--restrict-key"; then
   pg_dump \
     --schema-only \
@@ -2163,9 +2482,31 @@ fi
     { print }
   ' "${TMP_PUBLIC}"
   cat "${TMP_CROSS}"
+  echo "${CROSS_SCHEMA_END_MARKER}"
   echo "-- PostgreSQL database dump complete"
   echo "--"
 } > "${TMP_RESULT}"
+
+if [[ "$(grep -Fxc -- "${CROSS_SCHEMA_MARKER}" "${TMP_RESULT}")" -ne 1 \
+  || "$(grep -Fxc -- "${CROSS_SCHEMA_END_MARKER}" "${TMP_RESULT}")" -ne 1 ]]; then
+  echo "Refusing to replace snapshot: reviewed cross-schema section is not bounded exactly once." >&2
+  exit 1
+fi
+
+DUPLICATE_PUBLIC_DDL="$(
+  awk '
+    {
+      normalized = tolower($0)
+      if (normalized ~ /^(create|alter)[[:space:]]+(table|function|type|sequence|view|materialized[[:space:]]+view)[[:space:]]+public[.]/) {
+        print normalized
+      }
+    }
+  ' "${TMP_RESULT}" | sort | uniq -d | sed -n '1p'
+)"
+if [[ -n "${DUPLICATE_PUBLIC_DDL}" ]]; then
+  echo "Refusing to replace snapshot: duplicate public-schema DDL: ${DUPLICATE_PUBLIC_DDL}." >&2
+  exit 1
+fi
 
 for required in \
   "GRANT" \
@@ -2183,6 +2524,19 @@ for required in \
   "CREATE TABLE public.learning_record" \
   "CREATE TABLE public.lesson_component_observation" \
   "CREATE TABLE public.learning_objective" \
+  "CREATE TABLE public.learning_evidence" \
+  "CREATE TABLE public.learner_objective_state" \
+  "CREATE TABLE public.learner_objective_state_evidence" \
+  "CREATE TABLE public.learner_recommendation_override" \
+  "source_course_id_at_time uuid" \
+  "source_lesson_id_at_time uuid" \
+  "source_lesson_run_id_at_time uuid" \
+  "corrected_from_record_id uuid" \
+  "corrected_from_observation_id uuid" \
+  "component_visibility_at_time text" \
+  "learning_evidence_record_identity_fkey" \
+  "learner_objective_state_evidence_state_identity_fkey" \
+  "learner_objective_state_evidence_fact_identity_fkey" \
   "primary_learning_objective_id uuid" \
   "activity_role text" \
   "source_learning_objective_id_at_time uuid" \
@@ -2267,6 +2621,23 @@ for required in \
   "CREATE FUNCTION public.schedule_lesson_run" \
   "CREATE FUNCTION public.complete_lesson_run_v2" \
   "CREATE FUNCTION public.save_lesson_component_observations" \
+  "CREATE FUNCTION public.correct_finalized_lesson_component_observation" \
+  "CREATE FUNCTION public.get_teacher_learning_record_correction_history" \
+  "CREATE FUNCTION public.set_learner_recommendation_override" \
+  "CREATE FUNCTION public.get_teacher_learner_activity_profile" \
+  "CREATE FUNCTION public.get_my_learning_activity_profile" \
+  "CREATE FUNCTION public.get_observed_learner_activity_profile" \
+  "CREATE FUNCTION public.build_course_learning_activity_context" \
+  "CREATE FUNCTION public.materialize_learning_evidence_for_records" \
+  "CREATE FUNCTION public.capture_observation_component_visibility" \
+  "CREATE FUNCTION public.rebuild_learner_objective_state_for_actor" \
+  "CREATE FUNCTION public.rebuild_learner_objective_states" \
+  "CREATE FUNCTION public.course_learning_activity_projection" \
+  "CREATE TRIGGER trg_learning_evidence_immutable" \
+  "CREATE TRIGGER trg_observation_component_visibility" \
+  "CREATE CONSTRAINT TRIGGER trg_learning_evidence_supersession_chain" \
+  "CREATE POLICY learning_evidence_recorder_select" \
+  "CREATE POLICY learner_objective_state_recorder_select" \
   "CREATE FUNCTION public.create_learning_objective" \
   "CREATE FUNCTION public.update_learning_objective" \
   "CREATE FUNCTION public.archive_learning_objective" \
@@ -2306,6 +2677,13 @@ done
 
 if grep -Eq 'CREATE TABLE public[.]lesson_step([ (]|$)' "${TMP_RESULT}"; then
   echo "Refusing to replace snapshot: generated result restores forbidden Lesson Step storage." >&2
+  exit 1
+fi
+
+if grep -Fq \
+  "CREATE FUNCTION public.build_cross_provider_learning_activity_context" \
+  "${TMP_RESULT}"; then
+  echo "Refusing to replace snapshot: generated result contains the superseded detailed cross-provider RPC." >&2
   exit 1
 fi
 

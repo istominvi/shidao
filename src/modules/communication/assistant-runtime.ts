@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { createAiCourseBuilderService } from "@/modules/ai/course-builder-service";
+import { learningActivityContextProvider } from "@/modules/ai/learning-activity-context";
 import { createRouterAiClient } from "@/modules/ai/routerai";
 import { runBoundedAiRequest } from "@/modules/ai/server-context";
 import { sharedHistoryProvider } from "@/modules/ai/shared-history";
@@ -30,6 +31,7 @@ export async function runCommunicationAssistantChat(
     service,
     learningHistoryService: learningService,
     sharedHistoryProvider,
+    learningActivityContextProvider,
     createProvider: createRouterAiClient,
   });
   const assistant = createSystemAssistantService({
@@ -37,6 +39,7 @@ export async function runCommunicationAssistantChat(
     courseService: service,
     learningService,
     sharedHistoryProvider,
+    learningActivityContextProvider,
     createProvider: createRouterAiClient,
     lessonPlanningService: {
       planLesson: (courseId, lessonInput, planningSignal) =>

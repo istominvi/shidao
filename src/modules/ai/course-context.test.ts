@@ -293,6 +293,79 @@ test("consented shared history is bounded, de-attributed and separate from raw r
   assert.doesNotMatch(serialized, /aaaaaaaa-aaaa|cccccccc-cccc/);
 });
 
+test("learning-activity context is separate, bounded and contains only opaque safe references", () => {
+  const course = workspace();
+  const stateKey = `las_${"3".repeat(64)}`;
+  const evidenceKey = `lae_${"4".repeat(64)}`;
+  const context = buildLessonPlanningContext(
+    course,
+    course.lessons[0]!,
+    course.lessons[0]!.title,
+    { runs: [], records: [] },
+    undefined,
+    {
+      used: true,
+      revision: "b".repeat(64),
+      projectionVersion: 1,
+      summary: {
+        totalStateCount: 1,
+        includedStateCount: 1,
+        formingCount: 1,
+        confirmedCount: 0,
+        recheckDueCount: 0,
+        evidenceReferenceCount: 1,
+        truncated: false,
+      },
+      states: [
+        {
+          key: stateKey,
+          courseTitle: course.title,
+          subject: course.subject,
+          objectiveTitle: "Сравнивает дроби",
+          state: "forming",
+          reasonCode: "independent_opportunities_missing",
+          reasonText: "Нужна ещё одна самостоятельная возможность.",
+          evaluatedAt: "2026-08-20T12:00:00.000Z",
+          lastEvidenceAt: "2026-08-20T11:00:00.000Z",
+          freshnessDueAt: null,
+          evidenceReferences: [
+            {
+              key: evidenceKey,
+              direction: "positive",
+              support: "independent",
+              observedAt: "2026-08-20T11:00:00.000Z",
+              evidenceAt: "2026-08-20T11:01:00.000Z",
+              courseTitle: course.title,
+              lessonTitle: "Дроби",
+              componentLabel: "Сравнение карточек",
+              objectiveTitle: "Сравнивает дроби",
+              criterion: "Объясняет выбор большего числителя",
+            },
+          ],
+          recommendation: {
+            type: "apply_in_new_context",
+            reasonCode:
+              "apply_in_new_context_after_one_independent_opportunity",
+            reasonText: "Попробуйте применить навык в новой задаче.",
+            source: "rule",
+            generatedAt: "2026-08-20T12:00:00.000Z",
+            evidenceReferenceKeys: [evidenceKey],
+          },
+        },
+      ],
+    },
+  );
+  const serialized = JSON.stringify(context.learningActivityProfile);
+
+  assert.equal(context.learningActivityProfile.summary.includedStateCount, 1);
+  assert.match(serialized, /las_3333|lae_4444|Сравнивает дроби/);
+  assert.doesNotMatch(
+    serialized,
+    /learnerProfileId|recordedByAccountId|privateNote|policyVersion|evaluator/,
+  );
+  assert.doesNotMatch(serialized, /aaaaaaaa-aaaa|bbbbbbbb-bbbb/);
+});
+
 test("AI context describes mixed audience without duplicating technical identity", () => {
   const course = workspace();
   const anna = learnerProfile("30000000-0000-4000-8000-000000000002", "Анна");

@@ -14,17 +14,22 @@ import { CourseBuilderRepositoryError } from "@/modules/course-builder/repositor
 import type { LearningRecord, LessonRun } from "@/modules/lesson-runs/domain";
 import { HISTORY_OBSERVATION_LEARNING_RECORD_IDS_MAX } from "./contracts";
 import type {
+  LearnerSafeActivityProfile,
   LessonComponentObservation,
   ObservationEntryMethod,
+  TeacherLearnerActivityProfile,
 } from "./domain";
 import type {
+  CorrectFinalizedObservationRepositoryInput,
   LearningActivitiesRepository,
   SaveRunObservationsRepositoryInput,
+  SetRecommendationOverrideRepositoryInput,
 } from "./repository";
 import {
   createLearningActivitiesService,
   observationComponentLabel,
 } from "./service";
+import { fixedLearningActivityClock } from "./objective-state-v1";
 
 const NOW = "2026-08-19T01:00:00.000Z";
 
@@ -173,6 +178,8 @@ function observation(
   return {
     id: uuid(20),
     learningRecordId: RECORD_ID,
+    correctedFromObservationId: null,
+    supersededByObservationId: null,
     lessonComponentId: COMPONENT_ID,
     sourceComponentIdAtTime: COMPONENT_ID,
     learningObjectiveId: null,
@@ -196,7 +203,14 @@ function observation(
 class InMemoryLearningActivitiesRepository implements LearningActivitiesRepository {
   observations: LessonComponentObservation[] = [];
   historyReads: string[][] = [];
+  evidenceHistoryReads: string[][] = [];
+  correctionHistoryReads: string[][] = [];
+  teacherProfileReads: string[] = [];
+  observedProfileReads: string[] = [];
+  selfProfileReadCount = 0;
   saves: SaveRunObservationsRepositoryInput[] = [];
+  corrections: CorrectFinalizedObservationRepositoryInput[] = [];
+  overrides: SetRecommendationOverrideRepositoryInput[] = [];
   saveError: Error | null = null;
   objectiveContext: Pick<
     LessonComponentObservation,
@@ -213,6 +227,16 @@ class InMemoryLearningActivitiesRepository implements LearningActivitiesReposito
     this.historyReads.push(learningRecordIds);
     const ids = new Set(learningRecordIds);
     return this.observations.filter((item) => ids.has(item.learningRecordId));
+  }
+
+  async listEvidenceByLearningRecordIds(learningRecordIds: string[]) {
+    this.evidenceHistoryReads.push(learningRecordIds);
+    return [];
+  }
+
+  async listHistoryCorrections(activeLearningRecordIds: string[]) {
+    this.correctionHistoryReads.push(activeLearningRecordIds);
+    return { items: [], truncated: false };
   }
 
   async saveRunObservations(input: SaveRunObservationsRepositoryInput) {
@@ -241,6 +265,60 @@ class InMemoryLearningActivitiesRepository implements LearningActivitiesReposito
         }),
       );
     }
+  }
+
+  async correctFinalizedObservation(
+    input: CorrectFinalizedObservationRepositoryInput,
+  ) {
+    if (this.saveError) throw this.saveError;
+    this.corrections.push(input);
+    return {
+      idempotencyKey: input.idempotencyKey,
+      newLearningRecordId: uuid(90),
+      newObservationId: uuid(91),
+      correctedAt: input.correctedAt,
+      replayed: false,
+    };
+  }
+
+  async setRecommendationOverride(
+    input: SetRecommendationOverrideRepositoryInput,
+  ) {
+    if (this.saveError) throw this.saveError;
+    this.overrides.push(input);
+    return {
+      action: input.action,
+      stateId: uuid(92),
+      updatedAt: input.expectedStateUpdatedAt,
+    };
+  }
+
+  async getTeacherLearnerActivityProfile(learnerProfileId: string) {
+    this.teacherProfileReads.push(learnerProfileId);
+    return {
+      projectionVersion: 1,
+      learnerProfileId,
+      generatedAt: NOW,
+      states: [],
+    } satisfies TeacherLearnerActivityProfile;
+  }
+
+  async getMyLearningActivityProfile() {
+    this.selfProfileReadCount += 1;
+    return {
+      projectionVersion: 1,
+      generatedAt: NOW,
+      states: [],
+    } satisfies LearnerSafeActivityProfile;
+  }
+
+  async getObservedLearnerActivityProfile(_learnerProfileId: string) {
+    this.observedProfileReads.push(_learnerProfileId);
+    return {
+      projectionVersion: 1,
+      generatedAt: NOW,
+      states: [],
+    } satisfies LearnerSafeActivityProfile;
   }
 }
 
@@ -272,10 +350,29 @@ test("history observations validate a bounded UUID list before recorder-scoped r
   assert.equal(repository.historyReads.length, 1);
 });
 
+test("teacher correction history validates active records and delegates to the bounded RPC repository", async () => {
+  const { repository, service } = fixture();
+  assert.deepEqual(
+    await service.listHistoryCorrections(actor, [
+      learningRecord({ occurredAt: NOW }),
+      learningRecord({ occurredAt: NOW }),
+    ]),
+    { items: [], truncated: false },
+  );
+  assert.deepEqual(repository.correctionHistoryReads, [[RECORD_ID]]);
+  await assert.rejects(
+    service.listHistoryCorrections(actor, [
+      learningRecord({ id: "not-a-uuid", occurredAt: NOW }),
+    ]),
+    CourseBuilderValidationError,
+  );
+});
+
 function fixture(input?: {
   run?: LessonRun;
   course?: CourseWorkspace;
   repository?: InMemoryLearningActivitiesRepository;
+  clock?: ReturnType<typeof fixedLearningActivityClock>;
 }) {
   const repository =
     input?.repository ?? new InMemoryLearningActivitiesRepository();
@@ -297,6 +394,7 @@ function fixture(input?: {
           return course;
         },
       },
+      clock: input?.clock,
     }),
   };
 }
@@ -493,6 +591,192 @@ test("service maps atomic RPC lifecycle and validation failures", async () => {
   );
   await assert.rejects(
     service.saveRunObservations(actor, RUN_ID, input),
+    CourseBuilderValidationError,
+  );
+});
+
+test("history evidence and activity-profile reads validate IDs before fail-closed repository calls", async () => {
+  const { repository, service } = fixture();
+  assert.deepEqual(
+    await service.listHistoryEvidence(actor, [RECORD_ID, RECORD_ID]),
+    [],
+  );
+  assert.deepEqual(repository.evidenceHistoryReads, [[RECORD_ID]]);
+
+  assert.equal(
+    (await service.getTeacherLearnerActivityProfile(actor, LEARNER_ID))
+      .learnerProfileId,
+    LEARNER_ID,
+  );
+  assert.equal(
+    (await service.getMyActivityProfile(actor)).projectionVersion,
+    1,
+  );
+  assert.equal(
+    (await service.getObservedActivityProfile(actor, LEARNER_ID))
+      .projectionVersion,
+    1,
+  );
+  assert.deepEqual(repository.teacherProfileReads, [LEARNER_ID]);
+  assert.deepEqual(repository.observedProfileReads, [LEARNER_ID]);
+  assert.equal(repository.selfProfileReadCount, 1);
+
+  await assert.rejects(
+    service.listHistoryEvidence(actor, ["not-a-uuid"]),
+    CourseBuilderValidationError,
+  );
+  await assert.rejects(
+    service.getTeacherLearnerActivityProfile(actor, "not-a-uuid"),
+    CourseBuilderValidationError,
+  );
+  await assert.rejects(
+    service.getObservedActivityProfile(actor, "not-a-uuid"),
+    CourseBuilderValidationError,
+  );
+  assert.equal(repository.evidenceHistoryReads.length, 1);
+});
+
+test("finalized correction uses the injected server clock and never trusts browser time", async () => {
+  const repository = new InMemoryLearningActivitiesRepository();
+  const correctedAt = "2026-08-20T12:34:56.000Z";
+  const { service } = fixture({
+    repository,
+    clock: fixedLearningActivityClock(correctedAt),
+  });
+  const idempotencyKey = uuid(70);
+
+  const result = await service.correctFinalizedObservation(actor, LEARNER_ID, {
+    observationId: uuid(20),
+    expectedLearningRecordId: RECORD_ID,
+    rating: "not_yet",
+    privateNote: "  Перепроверить на следующем уроке  ",
+    correctionReason: "  Ошибка при завершении  ",
+    idempotencyKey,
+  });
+
+  assert.equal(result.correctedAt, correctedAt);
+  assert.deepEqual(repository.corrections, [
+    {
+      observationId: uuid(20),
+      learnerProfileId: LEARNER_ID,
+      expectedLearningRecordId: RECORD_ID,
+      rating: "not_yet",
+      privateNote: "Перепроверить на следующем уроке",
+      correctionReason: "Ошибка при завершении",
+      idempotencyKey,
+      correctedAt,
+    },
+  ]);
+
+  await assert.rejects(
+    service.correctFinalizedObservation(actor, LEARNER_ID, {
+      observationId: uuid(20),
+      expectedLearningRecordId: RECORD_ID,
+      rating: "independent",
+      privateNote: null,
+      correctionReason: "Исправление",
+      idempotencyKey,
+      correctedAt: "2030-01-01T00:00:00.000Z",
+    }),
+    CourseBuilderValidationError,
+  );
+  assert.equal(repository.corrections.length, 1);
+});
+
+test("teacher recommendation override preserves explicit action and stale-write guard", async () => {
+  const repository = new InMemoryLearningActivitiesRepository();
+  const { service } = fixture({ repository });
+  const expectedStateUpdatedAt = "2026-08-20T00:00:00.000Z";
+  const result = await service.setRecommendationOverride(actor, LEARNER_ID, {
+    sourceLearningObjectiveIdAtTime: OBJECTIVE_ID,
+    action: "dismiss",
+    recommendationType: null,
+    privateReason: "Сейчас приоритет у другой темы",
+    expectedStateUpdatedAt,
+  });
+  assert.equal(result.action, "dismiss");
+  assert.deepEqual(repository.overrides, [
+    {
+      learnerProfileId: LEARNER_ID,
+      sourceLearningObjectiveIdAtTime: OBJECTIVE_ID,
+      action: "dismiss",
+      recommendationType: null,
+      privateReason: "Сейчас приоритет у другой темы",
+      expectedStateUpdatedAt,
+    },
+  ]);
+
+  await assert.rejects(
+    service.setRecommendationOverride(actor, LEARNER_ID, {
+      sourceLearningObjectiveIdAtTime: OBJECTIVE_ID,
+      action: "replace",
+      recommendationType: null,
+      privateReason: "Причина",
+      expectedStateUpdatedAt,
+    }),
+    CourseBuilderValidationError,
+  );
+  assert.equal(repository.overrides.length, 1);
+});
+
+test("service maps correction and recommendation races to explicit conflicts", async () => {
+  const repository = new InMemoryLearningActivitiesRepository();
+  const { service } = fixture({ repository });
+  repository.saveError = new CourseBuilderRepositoryError(
+    "finalized_observation_changed",
+    409,
+    "40001",
+  );
+  await assert.rejects(
+    service.correctFinalizedObservation(actor, LEARNER_ID, {
+      observationId: uuid(20),
+      expectedLearningRecordId: RECORD_ID,
+      rating: "independent",
+      privateNote: null,
+      correctionReason: "Исправление",
+      idempotencyKey: uuid(70),
+    }),
+    (error: unknown) =>
+      error instanceof CourseBuilderConflictError &&
+      error.code === "observation_correction_conflict",
+  );
+
+  repository.saveError = new CourseBuilderRepositoryError(
+    "learner_recommendation_override_state_changed",
+    409,
+    "40001",
+  );
+  await assert.rejects(
+    service.setRecommendationOverride(actor, LEARNER_ID, {
+      sourceLearningObjectiveIdAtTime: OBJECTIVE_ID,
+      action: "clear",
+      recommendationType: null,
+      privateReason: null,
+      expectedStateUpdatedAt: "2026-08-20T00:00:00.000Z",
+    }),
+    (error: unknown) =>
+      error instanceof CourseBuilderConflictError &&
+      error.code === "recommendation_state_stale",
+  );
+});
+
+test("service maps a no-op finalized correction to safe validation", async () => {
+  const repository = new InMemoryLearningActivitiesRepository();
+  const { service } = fixture({ repository });
+  repository.saveError = new CourseBuilderRepositoryError(
+    "learning_observation_correction_no_change",
+    400,
+    "22023",
+  );
+  await assert.rejects(
+    service.correctFinalizedObservation(actor, LEARNER_ID, {
+      observationId: uuid(20),
+      expectedLearningRecordId: RECORD_ID,
+      rating: "independent",
+      privateNote: null,
+      correctionReason: "Проверка",
+      idempotencyKey: uuid(70),
+    }),
     CourseBuilderValidationError,
   );
 });
